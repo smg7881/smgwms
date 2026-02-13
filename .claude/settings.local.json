@@ -23,7 +23,9 @@
       "Bash(binrails db:test:prepare test test/helpers/ag_grid_helper_test.rb test/controllers/posts_controller_test.rb)",
       "Bash(ruby:*)",
       "WebFetch(domain:cdn.jsdelivr.net)",
-      "WebFetch(domain:www.npmjs.com)"
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(test:*)",
+      "Bash(cd:*)"
     ]
   }
 }

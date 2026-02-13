@@ -6,6 +6,24 @@
     </div>
   </div>
 
+  <%= search_form_tag(
+    url: posts_path,
+    fields: [
+      { field: "title", type: "input", label: "제목", placeholder: "제목 검색..." },
+      { field: "status", type: "select", label: "상태",
+        options: [
+          { label: "전체", value: "" },
+          { label: "게시됨", value: "published" },
+          { label: "임시저장", value: "draft" }
+        ],
+        include_blank: false # "전체" 옵션이 있으므로 자동 blank 제외
+      },
+      { field: "created_at", type: "date_range", label: "작성일" }
+    ],
+    cols: 3,
+    enable_collapse: true
+  ) %>
+
   <%= ag_grid_tag(
     columns: [
       { field: "id", headerName: "#", maxWidth: 80, filter: false },
@@ -14,7 +32,7 @@
       { field: "created_at", headerName: "작성일", maxWidth: 160, formatter: "date" }
     ],
     url: posts_path(format: :json),
-    height: "calc(100vh - 220px)",
+    height: "calc(100vh - 320px)",
     page_size: 20
   ) %>
 <% end %>

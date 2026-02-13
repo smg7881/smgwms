@@ -1,0 +1,15 @@
+<%# app/views/shared/search_form/fields/_date_picker.html.erb %>
+<% field_id = "q_#{field[:field]}" %>
+<div class="sf-field <%= span_classes_for(field, cols: cols) %>" data-search-form-target="fieldGroup">
+  <label class="sf-label" for="<%= field_id %>"><%= resolve_label(field) %></label>
+  <div class="sf-control">
+    <input type="<%= field[:date_type] == 'datetime' ? 'datetime-local' : 'date' %>"
+           id="<%= field_id %>"
+           name="q[<%= field[:field] %>]"
+           value="<%= q_value(field[:field]) %>"
+           class="sf-input sf-date"
+           <%= "disabled" if field[:disabled] %>
+           <%= "min=\"#{field[:min]}\"".html_safe if field[:min] %>
+           <%= "max=\"#{field[:max]}\"".html_safe if field[:max] %>>
+  </div>
+</div>

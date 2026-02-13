@@ -1,0 +1,25 @@
+<%# app/views/shared/search_form/_form.html.erb %>
+<div class="sf-wrapper"
+     data-controller="search-form"
+     data-search-form-collapsed-value="<%= enable_collapse %>"
+     data-search-form-enable-collapse-value="<%= enable_collapse %>"
+     data-search-form-collapsed-rows-value="<%= collapsed_rows %>"
+     data-search-form-cols-value="<%= cols %>"
+     <%= html_options.map { |k, v| "#{k}=\"#{v}\"" }.join(" ").html_safe %>>
+  
+  <%= form_with url: url, method: :get, 
+        data: { search_form_target: "form", turbo_frame: turbo_frame, action: "submit->search-form#search" },
+        html: { novalidate: true } do |f| %>
+    
+    <div class="sf-grid">
+      <% fields.each do |field| %>
+        <%= render partial: "shared/search_form/fields/#{field[:type]}", locals: { field: field, cols: cols } %>
+      <% end %>
+
+      <% if show_buttons %>
+        <%= render partial: "shared/search_form/buttons" %>
+      <% end %>
+    </div>
+
+  <% end %>
+</div>

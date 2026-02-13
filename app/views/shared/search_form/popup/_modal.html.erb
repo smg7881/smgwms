@@ -1,0 +1,21 @@
+<%# app/views/shared/search_form/popup/_modal.html.erb %>
+<%# 
+  Phase 3 Modal Template 
+  This template is used by the SearchPopupController to structure the modal content.
+  However, in the current JS implementation, the controller constructs the HTML string directly.
+  If we want strict server-side rendering, we would render this via a dedicated endpoint.
+  
+  For Phase 3 Scaffolding:
+  This file serves as a reference or a base if we move the HTML construction to server-side later.
+%>
+<div class="sf-modal-content">
+  <div class="sf-modal-header">
+    <h3><%= title %></h3>
+    <button type="button" class="btn-close" onclick="document.getElementById('search-popup-modal').close()">×</button>
+  </div>
+  <div class="sf-modal-body">
+     <turbo-frame id="search_popup_frame" src="<%= url %>" loading="lazy">
+       <div class="sf-loading">로딩 중...</div>
+     </turbo-frame>
+  </div>
+</div>

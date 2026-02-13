@@ -1,8 +1,12 @@
 class PostsController < ApplicationController
-  before_action :set_post, only: [:show, :edit, :update, :destroy]
+  before_action :set_post, only: [ :show, :edit, :update, :destroy ]
 
   def index
     @posts = Post.order(created_at: :desc)
+    @posts = @posts.where("title LIKE ?", "%#{search_params[:title]}%") if search_params[:title].present?
+    @posts = @posts.where(status: search_params[:status]) if search_params[:status].present?
+    @posts = @posts.where("created_at >= ?", search_params[:created_at_from]) if search_params[:created_at_from].present?
+    @posts = @posts.where("created_at <= ?", "#{search_params[:created_at_to]} 23:59:59") if search_params[:created_at_to].present?
 
     respond_to do |format|
       format.html
@@ -46,6 +50,10 @@ class PostsController < ApplicationController
 
   def set_post
     @post = Post.find(params[:id])
+  end
+
+  def search_params
+    params.fetch(:q, {}).permit(:title, :status, :created_at_from, :created_at_to)
   end
 
   def post_params
