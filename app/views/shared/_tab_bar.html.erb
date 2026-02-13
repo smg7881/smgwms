@@ -1,0 +1,21 @@
+<%# 주의: 이 파셜은 <turbo-frame id="tab-bar"> 내부에 렌더됨 (update 대상) %>
+<div class="tab-bar-inner">
+  <% (tabs || []).each do |tab| %>
+    <% tab_id = tab["id"] %>
+    <% is_active = (tab_id == active) %>
+
+    <button class="tab-item <%= "active" if is_active %>"
+            type="button"
+            data-action="click->tabs#activateTab"
+            data-tab-id="<%= tab_id %>">
+      <span class="tab-dot" style="background:<%= TabRegistry.color_css(tab_id) %>"></span>
+      <%= tab["label"] %>
+
+      <% if tab_id != "overview" %>
+        <span class="tab-close"
+              data-action="click->tabs#closeTab:stop"
+              data-tab-id="<%= tab_id %>">✕</span>
+      <% end %>
+    </button>
+  <% end %>
+</div>

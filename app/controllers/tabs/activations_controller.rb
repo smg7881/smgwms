@@ -1,0 +1,44 @@
+class Tabs::ActivationsController < ApplicationController
+  def create
+    tab_id = params[:tab_id]
+
+    unless open_tabs.any? { |t| t["id"] == tab_id }
+      head :not_found
+      return
+    end
+
+    session[:active_tab] = tab_id
+
+    respond_to do |format|
+      format.turbo_stream { render_tab_update }
+      format.html { redirect_to TabRegistry.url_for(tab_id) || root_path }
+    end
+  end
+
+  private
+    def open_tabs
+      session[:open_tabs]
+    end
+
+    def render_tab_update
+      active_id    = session[:active_tab]
+      active_url   = TabRegistry.url_for(active_id) || "/"
+      active_label = TabRegistry.find(active_id)&.label || "개요"
+
+      render turbo_stream: [
+        turbo_stream.update("tab-bar",
+          partial: "shared/tab_bar",
+          locals: { tabs: open_tabs, active: active_id }
+        ),
+        turbo_stream.update("breadcrumb-current", active_label),
+        turbo_stream.replace("main-content",
+          helpers.turbo_frame_tag("main-content", src: active_url, loading: :eager) {
+            helpers.content_tag(:div, class: "loading-state") {
+              helpers.content_tag(:div, "", class: "spinner") +
+              helpers.content_tag(:span, "로딩 중...")
+            }
+          }
+        )
+      ]
+    end
+end

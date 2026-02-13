@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(bin/rails routes:*)",
+      "Bash(bin/rails db:test:prepare:*)",
+      "Bash(bin/rails runner:*)",
+      "Bash(if not exist \"D:\\\\myProject\\\\my_first_app\\\\doc\\\\메인화면\" mkdir \"D:\\\\myProject\\\\my_first_app\\\\doc\\\\메인화면\")",
+      "Bash(findstr:*)",
+      "Bash(ls -la \"D:\\\\myProject\\\\my_first_app\\\\app\\\\assets\\\\stylesheets\"\" 2>/dev/null || echo \"No stylesheets directory found \")",
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(bundle install:*)",
+      "Bash(bin\\\\rails generate:*)",
+      "Bash(bundle exec rails generate:*)",
+      "Bash(bundle exec rails db:migrate:*)",
+      "Bash(bundle exec rails db:migrate:status:*)",
+      "Bash(bundle exec rails:*)",
+      "Bash(bundle exec rubocop:*)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__query-docs",
+      "WebFetch(domain:registry.npmjs.org)",
+      "WebSearch",
+      "Bash(binrails db:test:prepare test test/helpers/ag_grid_helper_test.rb test/controllers/posts_controller_test.rb)",
+      "Bash(ruby:*)",
+      "WebFetch(domain:cdn.jsdelivr.net)",
+      "WebFetch(domain:www.npmjs.com)"
+    ]
+  }
+}

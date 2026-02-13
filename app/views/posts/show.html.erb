@@ -1,0 +1,24 @@
+<%= turbo_frame_tag "main-content" do %>
+  <div class="page-header">
+    <h2><%= @post.title %></h2>
+    <div class="page-actions">
+      <%= link_to "수정", edit_post_path(@post), class: "btn btn-secondary" %>
+      <%= button_to "삭제", post_path(@post), method: :delete,
+            class: "btn btn-danger",
+            data: { turbo_confirm: "정말 삭제하시겠습니까?" } %>
+      <%= link_to "목록으로", posts_path, class: "btn btn-secondary" %>
+    </div>
+  </div>
+
+  <div class="post-content-card">
+    <div class="post-meta">
+      <span class="mono">작성일: <%= @post.created_at.strftime("%Y-%m-%d %H:%M") %></span>
+      <% if @post.updated_at != @post.created_at %>
+        <span class="mono">수정일: <%= @post.updated_at.strftime("%Y-%m-%d %H:%M") %></span>
+      <% end %>
+    </div>
+    <div class="post-body">
+      <%= simple_format(@post.content) %>
+    </div>
+  </div>
+<% end %>

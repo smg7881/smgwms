@@ -1,0 +1,40 @@
+<%# data-controller="sidebar" 만 — tabs는 상위 app-layout에 있음 %>
+<aside class="sidebar" data-controller="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">W</div>
+    <span>WMS Pro</span>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">메인</div>
+
+    <%= sidebar_menu_button "개요", tab_id: "overview", icon: "📊", url: "/" %>
+
+    <div class="nav-section-label">게시물</div>
+
+    <button class="nav-item has-children" type="button"
+            data-action="click->sidebar#toggleTree">
+      <span class="icon">📝</span> 게시물 관리
+      <span class="chevron">▶</span>
+    </button>
+    <div class="nav-tree-children">
+      <%= sidebar_menu_button "게시물 목록", tab_id: "posts-list", icon: "📋", url: "/posts" %>
+      <%= sidebar_menu_button "게시물 작성", tab_id: "posts-new",  icon: "✏️", url: "/posts/new" %>
+    </div>
+
+    <div class="nav-section-label">분석</div>
+
+    <%= sidebar_menu_button "통계", tab_id: "reports", icon: "📈", url: "/reports" %>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="avatar">WM</div>
+    <div class="user-info">
+      <div class="user-name">관리자</div>
+      <div class="user-email"><%= Current.user&.email_address %></div>
+    </div>
+    <%= button_to session_path, method: :delete, class: "btn btn-sm btn-secondary" do %>
+      로그아웃
+    <% end %>
+  </div>
+</aside>

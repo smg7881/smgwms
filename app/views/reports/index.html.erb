@@ -1,0 +1,47 @@
+<%= turbo_frame_tag "main-content" do %>
+  <div class="page-header">
+    <h2>📈 통계</h2>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">전체 게시물</div>
+      <div class="stat-value"><%= number_with_delimiter(@total_posts) %></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">월 평균</div>
+      <div class="stat-value" style="color:var(--accent-green)">
+        <%= @monthly_counts.any? ? (@total_posts.to_f / @monthly_counts.size).round(1) : 0 %>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-header">
+    <h3>월별 게시물 수</h3>
+  </div>
+
+  <div class="data-table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>월</th>
+          <th>게시물 수</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @monthly_counts.any? %>
+          <% @monthly_counts.each do |month, count| %>
+            <tr>
+              <td class="mono"><%= month %></td>
+              <td class="mono"><%= number_with_delimiter(count) %></td>
+            </tr>
+          <% end %>
+        <% else %>
+          <tr>
+            <td colspan="2" class="empty-state">통계 데이터가 없습니다.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>

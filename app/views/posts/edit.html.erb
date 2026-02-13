@@ -1,0 +1,8 @@
+<%= turbo_frame_tag "main-content" do %>
+  <div class="page-header">
+    <h2>✏️ 게시물 수정</h2>
+    <%= link_to "← 목록으로", posts_path, class: "btn btn-secondary" %>
+  </div>
+
+  <%= render "form", post: @post %>
+<% end %>

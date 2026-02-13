@@ -1,0 +1,61 @@
+<%= turbo_frame_tag "main-content" do %>
+  <div class="page-header">
+    <h2>📊 대시보드 개요</h2>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">전체 게시물</div>
+      <div class="stat-value"><%= number_with_delimiter(@total_posts) %></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">오늘 작성</div>
+      <div class="stat-value" style="color:var(--accent-green)"><%= @posts_today %></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">이번 주</div>
+      <div class="stat-value" style="color:var(--accent-cyan)"><%= @posts_this_week %></div>
+      <% if @week_change_pct %>
+        <div class="stat-change <%= @week_change_pct >= 0 ? "up" : "down" %>">
+          <%= @week_change_pct >= 0 ? "↑" : "↓" %> <%= @week_change_pct.abs %>%
+        </div>
+      <% end %>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">이번 달</div>
+      <div class="stat-value" style="color:var(--accent-amber)"><%= @posts_this_month %></div>
+    </div>
+  </div>
+
+  <div class="section-header">
+    <h3>최근 게시물</h3>
+    <%= link_to "전체 보기 →", posts_path, class: "btn btn-secondary btn-sm" %>
+  </div>
+
+  <div class="data-table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>제목</th>
+          <th>작성일</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @recent_posts.any? %>
+          <% @recent_posts.each do |post| %>
+            <tr>
+              <td class="mono"><%= post.id %></td>
+              <td><%= link_to post.title, post_path(post) %></td>
+              <td class="mono"><%= post.created_at.strftime("%Y-%m-%d %H:%M") %></td>
+            </tr>
+          <% end %>
+        <% else %>
+          <tr>
+            <td colspan="3" class="empty-state">게시물이 없습니다. <%= link_to "첫 게시물 작성하기", new_post_path %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>

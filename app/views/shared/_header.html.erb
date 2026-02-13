@@ -1,0 +1,26 @@
+<header class="main-header">
+  <button class="sidebar-toggle-btn" type="button"
+          data-action="click->tabs#toggleSidebar"
+          aria-label="사이드바 열기/닫기">
+    <span class="toggle-icon-collapse">«</span>
+    <span class="toggle-icon-expand">»</span>
+  </button>
+  <div class="breadcrumb">
+    <span class="breadcrumb-home">⌂</span>
+    <span class="sep">/</span>
+    <span class="current" id="breadcrumb-current">
+      <%= TabRegistry.find(session[:active_tab] || "overview")&.label || "개요" %>
+    </span>
+  </div>
+  <div class="header-actions">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="검색... (⌘K)">
+    </div>
+    <button class="icon-btn" type="button">🔔</button>
+    <button class="icon-btn" type="button">⚙️</button>
+    <%= button_to session_path, method: :delete, class: "icon-btn", form: { style: "display: contents" } do %>
+      🚪
+    <% end %>
+  </div>
+</header>

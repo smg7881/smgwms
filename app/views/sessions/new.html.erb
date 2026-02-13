@@ -1,0 +1,35 @@
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-header">
+      <div class="logo-icon">W</div>
+      <span>WMS Pro</span>
+    </div>
+
+    <div class="login-section-title">로그인</div>
+
+    <% if flash[:alert] %>
+      <div class="error-messages">
+        <h4><%= flash[:alert] %></h4>
+      </div>
+    <% end %>
+
+    <%= form_with url: session_path, method: :post do |f| %>
+      <div class="form-group">
+        <label class="form-label" for="email_address">이메일</label>
+        <input type="email" name="email_address" id="email_address"
+               class="form-control" placeholder="이메일을 입력하세요"
+               value="<%= params[:email_address] %>" autofocus required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">비밀번호</label>
+        <input type="password" name="password" id="password"
+               class="form-control" placeholder="비밀번호를 입력하세요" required>
+      </div>
+
+      <div class="login-actions">
+        <button type="submit" class="btn btn-primary btn-login">확인</button>
+      </div>
+    <% end %>
+  </div>
+</div>

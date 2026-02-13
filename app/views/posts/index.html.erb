@@ -1,0 +1,20 @@
+<%= turbo_frame_tag "main-content" do %>
+  <div class="page-header">
+    <h2>게시물 목록</h2>
+    <div class="page-actions">
+      <%= link_to "새 게시물", new_post_path, class: "btn btn-primary" %>
+    </div>
+  </div>
+
+  <%= ag_grid_tag(
+    columns: [
+      { field: "id", headerName: "#", maxWidth: 80, filter: false },
+      { field: "title", headerName: "제목", flex: 2, cellRenderer: "link", cellRendererParams: { path: "/posts/${id}" } },
+      { field: "content", headerName: "내용" },
+      { field: "created_at", headerName: "작성일", maxWidth: 160, formatter: "date" }
+    ],
+    url: posts_path(format: :json),
+    height: "calc(100vh - 220px)",
+    page_size: 20
+  ) %>
+<% end %>
