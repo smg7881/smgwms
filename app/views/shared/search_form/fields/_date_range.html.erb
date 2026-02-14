@@ -1,19 +1,20 @@
 <%# app/views/shared/search_form/fields/_date_range.html.erb %>
 <% field_id_from = "q_#{field[:field]}_from" %>
 <% field_id_to = "q_#{field[:field]}_to" %>
-<div class="sf-field <%= span_classes_for(field, cols: cols) %>" data-search-form-target="fieldGroup">
-  <label class="sf-label"><%= resolve_label(field) %></label>
-  <div class="sf-control sf-date-range">
+<div class="form-grid-field <%= span_classes_for(field, cols: cols) %>" data-search-form-target="fieldGroup">
+  <label class="form-grid-label"><%= resolve_label(field) %></label>
+  <div class="form-grid-control form-grid-date-range">
     <input type="date"
            id="<%= field_id_from %>"
            name="q[<%= field[:field] %>_from]"
            value="<%= q_value("#{field[:field]}_from") %>"
-           class="sf-input sf-date">
-    <span class="sf-range-sep">~</span>
+           class="form-grid-input form-grid-date">
+    <span class="form-grid-range-sep">~</span>
     <input type="date"
            id="<%= field_id_to %>"
            name="q[<%= field[:field] %>_to]"
            value="<%= q_value("#{field[:field]}_to") %>"
-           class="sf-input sf-date">
+           class="form-grid-input form-grid-date">
   </div>
 </div>
+

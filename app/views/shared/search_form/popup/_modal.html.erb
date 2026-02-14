@@ -8,14 +8,15 @@
   For Phase 3 Scaffolding:
   This file serves as a reference or a base if we move the HTML construction to server-side later.
 %>
-<div class="sf-modal-content">
-  <div class="sf-modal-header">
+<div class="form-grid-modal-content">
+  <div class="form-grid-modal-header">
     <h3><%= title %></h3>
     <button type="button" class="btn-close" onclick="document.getElementById('search-popup-modal').close()">×</button>
   </div>
-  <div class="sf-modal-body">
+  <div class="form-grid-modal-body">
      <turbo-frame id="search_popup_frame" src="<%= url %>" loading="lazy">
-       <div class="sf-loading">로딩 중...</div>
+       <div class="form-grid-loading">로딩 중...</div>
      </turbo-frame>
   </div>
 </div>
+

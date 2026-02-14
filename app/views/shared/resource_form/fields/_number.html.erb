@@ -1,0 +1,36 @@
+<%# app/views/shared/resource_form/fields/_number.html.erb %>
+<div class="form-grid-field <%= span_classes_for(field, cols: cols) %>"
+     data-resource-form-target="fieldGroup"
+     data-field-name="<%= field[:field] %>">
+  <label class="form-grid-label" for="<%= "#{model.model_name.param_key}_#{field[:field]}" %>">
+    <%= resolve_label(field) %>
+    <% if field[:required] %><span class="rf-required">*</span><% end %>
+  </label>
+  <div class="form-grid-control">
+    <%= f.number_field field[:field].to_sym,
+          id: "#{model.model_name.param_key}_#{field[:field]}",
+          class: "form-grid-input #{'rf-field-error' if model.errors[field[:field].to_sym].any?}",
+          value: field[:value],
+          placeholder: resolve_placeholder(field),
+          required: field[:required],
+          disabled: field[:disabled],
+          readonly: field[:readonly],
+          min: field[:min],
+          max: field[:max],
+          step: field[:step],
+          data: {
+            resource_form_target: "input",
+            menu_crud_target: field[:target],
+            action: "blur->resource-form#validateField"
+          } %>
+  </div>
+  <% if model.errors[field[:field].to_sym].any? %>
+    <span class="rf-error-msg"><%= model.errors[field[:field].to_sym].first %></span>
+  <% end %>
+  <% if field[:help].present? %>
+    <span class="rf-help"><%= field[:help] %></span>
+  <% end %>
+</div>
+
+
+

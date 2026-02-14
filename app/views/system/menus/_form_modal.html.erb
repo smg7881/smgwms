@@ -1,73 +1,48 @@
 <div class="modal-overlay" data-menu-crud-target="overlay"
      data-action="click->menu-crud#closeModal" hidden>
-  <div class="modal-content" data-action="click->menu-crud#stopPropagation">
-    <div class="modal-header">
+  <div class="modal-content"
+       data-menu-crud-target="modal"
+       data-action="click->menu-crud#stopPropagation">
+    <div class="modal-header" data-action="mousedown->menu-crud#startDrag">
       <h3 data-menu-crud-target="modalTitle">메뉴 추가</h3>
       <button type="button" class="modal-close"
               data-action="click->menu-crud#closeModal">&times;</button>
     </div>
-    <div class="modal-body">
-      <form id="menu-crud-form" data-menu-crud-target="form"
-            data-action="submit->menu-crud#submitMenu">
-        <input type="hidden" name="id" data-menu-crud-target="fieldId">
 
-        <div class="form-group">
-          <label>메뉴코드 <span class="required">*</span></label>
-          <input type="text" name="menu_cd" maxlength="20" required
-                 data-menu-crud-target="fieldMenuCd">
-        </div>
-        <div class="form-group">
-          <label>메뉴명 <span class="required">*</span></label>
-          <input type="text" name="menu_nm" maxlength="100" required
-                 data-menu-crud-target="fieldMenuNm">
-        </div>
-        <div class="form-group">
-          <label>상위메뉴코드</label>
-          <input type="text" name="parent_cd" maxlength="20" readonly
-                 data-menu-crud-target="fieldParentCd">
-        </div>
-        <div class="form-group">
-          <label>URL</label>
-          <input type="text" name="menu_url" maxlength="200"
-                 data-menu-crud-target="fieldMenuUrl">
-        </div>
-        <div class="form-group">
-          <label>아이콘</label>
-          <input type="text" name="menu_icon" maxlength="10"
-                 data-menu-crud-target="fieldMenuIcon">
-        </div>
-        <div class="form-group">
-          <label>정렬순서</label>
-          <input type="number" name="sort_order" value="0"
-                 data-menu-crud-target="fieldSortOrder">
-        </div>
-        <div class="form-group">
-          <label>레벨</label>
-          <input type="number" name="menu_level" readonly
-                 data-menu-crud-target="fieldMenuLevel">
-        </div>
-        <div class="form-group">
-          <label>타입</label>
-          <select name="menu_type" data-menu-crud-target="fieldMenuType">
-            <option value="FOLDER">FOLDER</option>
-            <option value="MENU">MENU</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>사용여부</label>
-          <select name="use_yn" data-menu-crud-target="fieldUseYn">
-            <option value="Y">Y</option>
-            <option value="N">N</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>탭ID</label>
-          <input type="text" name="tab_id" maxlength="50"
-                 data-menu-crud-target="fieldTabId">
-        </div>
-      </form>
+    <div class="modal-body">
+      <input type="hidden" data-menu-crud-target="fieldId" />
+
+      <%= resource_form_tag(
+        model: AdmMenu.new,
+        url: "#",
+        cols: 2,
+        show_buttons: false,
+        fields: [
+          { field: "menu_cd", type: "input", label: "메뉴코드", required: true, maxlength: 20, target: "fieldMenuCd" },
+          { field: "menu_nm", type: "input", label: "메뉴명", required: true, maxlength: 100, target: "fieldMenuNm" },
+          { field: "parent_cd", type: "input", label: "상위메뉴코드", maxlength: 20, readonly: true, target: "fieldParentCd" },
+          { field: "menu_url", type: "input", label: "URL", maxlength: 200, target: "fieldMenuUrl" },
+          { field: "menu_icon", type: "input", label: "아이콘", maxlength: 10, target: "fieldMenuIcon" },
+          { field: "sort_order", type: "number", label: "정렬순서", value: 0, target: "fieldSortOrder" },
+          { field: "menu_level", type: "number", label: "레벨", readonly: true, target: "fieldMenuLevel" },
+          { field: "menu_type", type: "select", label: "타입", include_blank: false,
+            options: [ { label: "FOLDER", value: "FOLDER" }, { label: "MENU", value: "MENU" } ], target: "fieldMenuType" },
+          { field: "use_yn", type: "select", label: "사용여부", include_blank: false,
+            options: [ { label: "Y", value: "Y" }, { label: "N", value: "N" } ], target: "fieldUseYn" },
+          { field: "tab_id", type: "input", label: "탭ID", maxlength: 50, target: "fieldTabId" }
+        ],
+        form_data: {
+          menu_crud_target: "form",
+          action: "submit->resource-form#submit submit->menu-crud#submitMenu"
+        },
+        form_html: {
+          id: "menu-crud-form",
+          novalidate: true
+        }
+      ) %>
     </div>
-    <div class="modal-footer">
+
+    <div class="modal-footer form-grid-buttons rf-buttons">
       <button type="button" class="btn btn-sm btn-secondary"
               data-menu-crud-role="cancel"
               data-action="click->menu-crud#closeModal">취소</button>

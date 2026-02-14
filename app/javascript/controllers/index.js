@@ -11,3 +11,7 @@ application.register("ag-grid", AgGridController)
 
 import MenuCrudController from "controllers/menu_crud_controller"
 application.register("menu-crud", MenuCrudController)
+
+import ResourceFormController from "controllers/resource_form_controller"
+application.register("resource-form", ResourceFormController)
+

@@ -25,7 +25,9 @@
       "WebFetch(domain:cdn.jsdelivr.net)",
       "WebFetch(domain:www.npmjs.com)",
       "Bash(test:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(bin/rails test:*)",
+      "Bash(bin/rubocop:*)"
     ]
   }
 }

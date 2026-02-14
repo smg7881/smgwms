@@ -17,8 +17,11 @@
   border: 1px solid var(--border, #30363d);
   border-radius: 8px;
   width: 480px;
+  max-width: calc(100vw - 32px);
   max-height: 90vh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
 }
 
@@ -28,6 +31,11 @@
   align-items: center;
   padding: 16px 20px;
   border-bottom: 1px solid var(--border, #30363d);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg-primary, #0f1117);
+  cursor: move;
 }
 
 .modal-header h3 {
@@ -45,6 +53,33 @@
 
 .modal-body {
   padding: 20px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.modal-body::-webkit-scrollbar {
+  width: 10px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: var(--bg-secondary, #161b22);
+  border-left: 1px solid var(--border, #30363d);
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary, #30363d);
+  border-radius: 999px;
+  border: 2px solid var(--bg-secondary, #161b22);
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted, #8b949e);
+}
+
+.modal-body {
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-tertiary, #30363d) var(--bg-secondary, #161b22);
 }
 
 .modal-body .form-group {
@@ -84,6 +119,10 @@
   gap: 8px;
   padding: 12px 20px;
   border-top: 1px solid var(--border, #30363d);
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  background: var(--bg-primary, #0f1117);
 }
 
 .ag-row .tree-menu-folder {

@@ -1,27 +1,24 @@
-<%= form_with(model: post, class: "post-form") do |form| %>
-  <% if post.errors.any? %>
-    <div class="error-messages">
-      <h4><%= post.errors.count %>개의 오류가 발생했습니다:</h4>
-      <ul>
-        <% post.errors.full_messages.each do |message| %>
-          <li><%= message %></li>
-        <% end %>
-      </ul>
-    </div>
-  <% end %>
+<%= resource_form_tag(
+  model: post,
+  fields: [
+    {
+      field: "title",
+      type: "input",
+      label: "제목",
+      placeholder: "제목을 입력하세요",
+      required: true,
+      span: "24"
+    },
+    {
+      field: "content",
+      type: "textarea",
+      label: "내용",
+      placeholder: "내용을 입력하세요",
+      rows: 8,
+      span: "24"
+    }
+  ],
+  submit_label: post.new_record? ? "작성하기" : "수정하기",
+  cancel_url: posts_path
+) %>
 
-  <div class="form-group">
-    <%= form.label :title, "제목", class: "form-label" %>
-    <%= form.text_field :title, class: "form-control", placeholder: "제목을 입력하세요" %>
-  </div>
-
-  <div class="form-group">
-    <%= form.label :content, "내용", class: "form-label" %>
-    <%= form.text_area :content, class: "form-control", rows: 8, placeholder: "내용을 입력하세요" %>
-  </div>
-
-  <div class="form-actions">
-    <%= form.submit post.new_record? ? "작성하기" : "수정하기", class: "btn btn-primary" %>
-    <%= link_to "취소", posts_path, class: "btn btn-secondary" %>
-  </div>
-<% end %>

@@ -1,0 +1,44 @@
+<%# app/views/shared/resource_form/fields/_radio.html.erb %>
+<%
+  current_value = model.send(field[:field].to_sym) rescue nil
+%>
+<div class="form-grid-field <%= span_classes_for(field, cols: cols) %>"
+     data-resource-form-target="fieldGroup"
+     data-field-name="<%= field[:field] %>">
+  <label class="form-grid-label">
+    <%= resolve_label(field) %>
+    <% if field[:required] %><span class="rf-required">*</span><% end %>
+  </label>
+  <div class="form-grid-control rf-radio-group">
+    <% (field[:options] || []).each do |opt| %>
+      <%
+        label, value = if opt.is_a?(Hash)
+          [opt[:label] || opt["label"], opt[:value] || opt["value"]]
+        elsif opt.is_a?(Array)
+          [opt.first, opt.last]
+        else
+          [opt, opt]
+        end
+      %>
+      <label class="rf-radio-label">
+        <%= f.radio_button field[:field].to_sym, value,
+              checked: current_value.to_s == value.to_s,
+              required: field[:required],
+              disabled: field[:disabled],
+              data: {
+                resource_form_target: "input"
+              } %>
+        <span><%= label %></span>
+      </label>
+    <% end %>
+  </div>
+  <% if model.errors[field[:field].to_sym].any? %>
+    <span class="rf-error-msg"><%= model.errors[field[:field].to_sym].first %></span>
+  <% end %>
+  <% if field[:help].present? %>
+    <span class="rf-help"><%= field[:help] %></span>
+  <% end %>
+</div>
+
+
+

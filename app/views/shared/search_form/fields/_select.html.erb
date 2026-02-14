@@ -1,9 +1,9 @@
 <%# app/views/shared/search_form/fields/_select.html.erb %>
 <% field_id = "q_#{field[:field]}" %>
-<div class="sf-field <%= span_classes_for(field, cols: cols) %>" data-search-form-target="fieldGroup">
-  <label class="sf-label" for="<%= field_id %>"><%= resolve_label(field) %></label>
-  <div class="sf-control">
-    <select id="<%= field_id %>" name="q[<%= field[:field] %>]" class="sf-select" <%= "disabled" if field[:disabled] %>>
+<div class="form-grid-field <%= span_classes_for(field, cols: cols) %>" data-search-form-target="fieldGroup">
+  <label class="form-grid-label" for="<%= field_id %>"><%= resolve_label(field) %></label>
+  <div class="form-grid-control">
+    <select id="<%= field_id %>" name="q[<%= field[:field] %>]" class="form-grid-select" <%= "disabled" if field[:disabled] %>>
       <% if field[:include_blank] != false %>
         <option value=""><%= resolve_placeholder(field) || "선택하세요" %></option>
       <% end %>
@@ -24,3 +24,4 @@
     </select>
   </div>
 </div>
+

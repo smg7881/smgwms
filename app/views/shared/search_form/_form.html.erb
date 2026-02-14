@@ -1,5 +1,5 @@
 <%# app/views/shared/search_form/_form.html.erb %>
-<div class="sf-wrapper"
+<div class="form-grid-wrapper"
      data-controller="search-form"
      data-search-form-collapsed-value="<%= enable_collapse %>"
      data-search-form-enable-collapse-value="<%= enable_collapse %>"
@@ -11,7 +11,7 @@
         data: { search_form_target: "form", turbo_frame: turbo_frame, action: "submit->search-form#search" },
         html: { novalidate: true } do |f| %>
     
-    <div class="sf-grid">
+    <div class="form-grid-grid">
       <% fields.each do |field| %>
         <%= render partial: "shared/search_form/fields/#{field[:type]}", locals: { field: field, cols: cols } %>
       <% end %>
@@ -23,3 +23,4 @@
 
   <% end %>
 </div>
+

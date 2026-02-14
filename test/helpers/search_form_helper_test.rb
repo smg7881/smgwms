@@ -23,11 +23,11 @@ class SearchFormHelperTest < ActionView::TestCase
 
   test "span_classes_for handles different formats" do
     field_with_string = { span: "24 s:12 m:8" }
-    assert_equal "sf-span-24 sf-span-sm-12 sf-span-md-8", span_classes_for(field_with_string, cols: 3)
+    assert_equal "form-grid-span-24 form-grid-span-sm-12 form-grid-span-md-8", span_classes_for(field_with_string, cols: 3)
 
     field_without_span = {}
-    assert_equal "sf-span-24 sf-span-sm-12 sf-span-md-8", span_classes_for(field_without_span, cols: 3)
-    assert_equal "sf-span-24 sf-span-sm-12 sf-span-md-6", span_classes_for(field_without_span, cols: 4)
+    assert_equal "form-grid-span-24 form-grid-span-sm-12 form-grid-span-md-8", span_classes_for(field_without_span, cols: 3)
+    assert_equal "form-grid-span-24 form-grid-span-sm-12 form-grid-span-md-6", span_classes_for(field_without_span, cols: 4)
   end
 
   test "resolve_label prioritizes label > label_key > humanized field" do

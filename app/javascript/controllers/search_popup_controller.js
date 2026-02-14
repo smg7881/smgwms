@@ -23,7 +23,7 @@ export default class extends Controller {
         if (!modal) {
             modal = document.createElement("dialog")
             modal.id = "search-popup-modal"
-            modal.className = "sf-modal"
+            modal.className = "form-grid-modal"
             document.body.appendChild(modal)
 
             // Close on backdrop click
@@ -38,14 +38,14 @@ export default class extends Controller {
 
         // 3. Set Content (Turbo Frame)
         modal.innerHTML = `
-      <div class="sf-modal-content">
-        <div class="sf-modal-header">
+      <div class="form-grid-modal-content">
+        <div class="form-grid-modal-header">
           <h3>${this.typeValue} 검색</h3>
           <button type="button" class="btn-close" onclick="document.getElementById('search-popup-modal').close()">×</button>
         </div>
-        <div class="sf-modal-body">
+        <div class="form-grid-modal-body">
            <turbo-frame id="search_popup_frame" src="${src}" loading="lazy">
-             <div class="sf-loading">로딩 중...</div>
+             <div class="form-grid-loading">로딩 중...</div>
            </turbo-frame>
         </div>
       </div>
@@ -75,3 +75,4 @@ export default class extends Controller {
         this.displayTarget.dispatchEvent(new Event("change", { bubbles: true }))
     }
 }
+

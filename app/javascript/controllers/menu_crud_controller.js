@@ -2,7 +2,7 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
   static targets = [
-    "overlay", "modalTitle", "form",
+    "overlay", "modal", "modalTitle", "form",
     "fieldId", "fieldMenuCd", "fieldMenuNm", "fieldParentCd",
     "fieldMenuUrl", "fieldMenuIcon", "fieldSortOrder",
     "fieldMenuLevel", "fieldMenuType", "fieldUseYn", "fieldTabId"
@@ -15,10 +15,13 @@ export default class extends Controller {
   }
 
   connect() {
+    this.dragState = null
     this.element.addEventListener("menu-crud:add-child", this.handleAddChild)
     this.element.addEventListener("menu-crud:edit", this.handleEdit)
     this.element.addEventListener("menu-crud:delete", this.handleDelete)
     this.element.addEventListener("click", this.handleDelegatedClick)
+    window.addEventListener("mousemove", this.handleDragMove)
+    window.addEventListener("mouseup", this.endDrag)
   }
 
   disconnect() {
@@ -26,6 +29,8 @@ export default class extends Controller {
     this.element.removeEventListener("menu-crud:edit", this.handleEdit)
     this.element.removeEventListener("menu-crud:delete", this.handleDelete)
     this.element.removeEventListener("click", this.handleDelegatedClick)
+    window.removeEventListener("mousemove", this.handleDragMove)
+    window.removeEventListener("mouseup", this.endDrag)
   }
 
   openAddTopLevel() {
@@ -95,7 +100,17 @@ export default class extends Controller {
 
   async saveMenu() {
     const formData = new FormData(this.formTarget)
-    const menu = Object.fromEntries(formData)
+    const menu = {}
+    for (const [rawKey, value] of formData.entries()) {
+      const match = rawKey.match(/^[^\[]+\[([^\]]+)\]$/)
+      const key = match ? match[1] : rawKey
+      menu[key] = value
+    }
+
+    if (this.hasFieldIdTarget && this.fieldIdTarget.value) {
+      menu.id = this.fieldIdTarget.value
+    }
+
     Object.keys(menu).forEach((key) => {
       if (menu[key] === "") menu[key] = null
     })
@@ -143,6 +158,7 @@ export default class extends Controller {
 
   closeModal() {
     this.overlayTarget.hidden = true
+    this.endDrag()
   }
 
   stopPropagation(event) {
@@ -175,6 +191,49 @@ export default class extends Controller {
     if (cancelButton) {
       event.preventDefault()
       this.closeModal()
+    }
+  }
+
+  startDrag(event) {
+    if (event.button !== 0) return
+    if (!this.hasModalTarget || !this.hasOverlayTarget) return
+    if (event.target.closest("button")) return
+
+    const modalRect = this.modalTarget.getBoundingClientRect()
+    this.modalTarget.style.position = "absolute"
+    this.modalTarget.style.left = `${modalRect.left}px`
+    this.modalTarget.style.top = `${modalRect.top}px`
+    this.modalTarget.style.margin = "0"
+
+    this.dragState = {
+      offsetX: event.clientX - modalRect.left,
+      offsetY: event.clientY - modalRect.top
+    }
+
+    document.body.style.userSelect = "none"
+    this.modalTarget.style.cursor = "grabbing"
+    event.preventDefault()
+  }
+
+  handleDragMove = (event) => {
+    if (!this.dragState || !this.hasModalTarget) return
+
+    const maxLeft = Math.max(0, window.innerWidth - this.modalTarget.offsetWidth)
+    const maxTop = Math.max(0, window.innerHeight - this.modalTarget.offsetHeight)
+    const nextLeft = event.clientX - this.dragState.offsetX
+    const nextTop = event.clientY - this.dragState.offsetY
+    const clampedLeft = Math.min(Math.max(0, nextLeft), maxLeft)
+    const clampedTop = Math.min(Math.max(0, nextTop), maxTop)
+
+    this.modalTarget.style.left = `${clampedLeft}px`
+    this.modalTarget.style.top = `${clampedTop}px`
+  }
+
+  endDrag = () => {
+    this.dragState = null
+    document.body.style.userSelect = ""
+    if (this.hasModalTarget) {
+      this.modalTarget.style.cursor = ""
     }
   }
 }
