@@ -6,25 +6,22 @@
   </div>
 
   <nav class="sidebar-nav">
-    <div class="nav-section-label">메인</div>
-
-    <%= sidebar_menu_button "개요", tab_id: "overview", icon: "📊", url: "/" %>
-
-    <div class="nav-section-label">게시물</div>
-
-    <button class="nav-item has-children" type="button"
-            data-action="click->sidebar#toggleTree">
-      <span class="icon">📝</span> 게시물 관리
-      <span class="chevron">▶</span>
-    </button>
-    <div class="nav-tree-children">
-      <%= sidebar_menu_button "게시물 목록", tab_id: "posts-list", icon: "📋", url: "/posts" %>
-      <%= sidebar_menu_button "게시물 작성", tab_id: "posts-new",  icon: "✏️", url: "/posts/new" %>
-    </div>
-
-    <div class="nav-section-label">분석</div>
-
-    <%= sidebar_menu_button "통계", tab_id: "reports", icon: "📈", url: "/reports" %>
+    <% if dynamic_sidebar_available? %>
+      <% grouped = AdmMenu.sidebar_tree %>
+      <% (grouped[nil] || []).each do |menu| %>
+        <% next unless menu.menu_type == "FOLDER" %>
+        <%= render_sidebar_folder_tree(menu, grouped) %>
+      <% end %>
+    <% else %>
+      <button class="nav-item has-children" type="button"
+              data-action="click->sidebar#toggleTree">
+        <span class="icon">📁</span> 메인
+        <span class="chevron">▶</span>
+      </button>
+      <div class="nav-tree-children">
+        <%= sidebar_menu_button "개요", tab_id: "overview", icon: "📊", url: "/" %>
+      </div>      
+    <% end %>
   </nav>
 
   <div class="sidebar-footer">

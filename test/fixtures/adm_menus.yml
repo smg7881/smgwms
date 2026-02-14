@@ -1,0 +1,47 @@
+main:
+  menu_cd: MAIN
+  menu_nm: 메인
+  parent_cd:
+  menu_url:
+  menu_icon:
+  sort_order: 1
+  menu_level: 1
+  menu_type: FOLDER
+  use_yn: Y
+  tab_id:
+
+overview:
+  menu_cd: OVERVIEW
+  menu_nm: 개요
+  parent_cd: MAIN
+  menu_url: /
+  menu_icon: 📊
+  sort_order: 1
+  menu_level: 2
+  menu_type: MENU
+  use_yn: Y
+  tab_id: overview
+
+system:
+  menu_cd: SYSTEM
+  menu_nm: 시스템
+  parent_cd:
+  menu_url:
+  menu_icon:
+  sort_order: 4
+  menu_level: 1
+  menu_type: FOLDER
+  use_yn: Y
+  tab_id:
+
+sys_menu:
+  menu_cd: SYS_MENU
+  menu_nm: 메뉴관리
+  parent_cd: SYSTEM
+  menu_url: /system/menus
+  menu_icon: ⚙️
+  sort_order: 1
+  menu_level: 2
+  menu_type: MENU
+  use_yn: Y
+  tab_id: system-menus

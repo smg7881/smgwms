@@ -7,4 +7,8 @@ User.find_or_create_by!(email_address: "admin@example.com") do |user|
   user.password_confirmation = "password"
 end
 
+if defined?(AdmMenu) && ActiveRecord::Base.connection.data_source_exists?(:adm_menus)
+  load Rails.root.join("db/seeds/adm_menus.rb")
+end
+
 puts "기본 사용자 생성: admin@example.com / password"

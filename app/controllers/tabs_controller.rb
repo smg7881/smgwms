@@ -1,21 +1,25 @@
 class TabsController < ApplicationController
   def create
-    tab_id = tab_params[:id]
-
-    entry = TabRegistry.find(tab_id)
-    unless entry
+    tab_id = tab_params[:id].to_s
+    label = tab_params[:label].to_s
+    url = tab_params[:url].to_s
+    if tab_id.blank? || label.blank? || url.blank?
       head :unprocessable_entity
       return
     end
 
+    entry = TabRegistry.find(tab_id)
+    effective_label = entry&.label || label
+    effective_url = entry&.url || url
+
     unless open_tabs.any? { |t| t["id"] == tab_id }
-      open_tabs << { "id" => entry.id, "label" => entry.label, "url" => entry.url }
+      open_tabs << { "id" => tab_id, "label" => effective_label, "url" => effective_url }
     end
     session[:active_tab] = tab_id
 
     respond_to do |format|
       format.turbo_stream { render_tab_update }
-      format.html { redirect_to entry.url }
+      format.html { redirect_to effective_url }
     end
   end
 
@@ -50,8 +54,9 @@ class TabsController < ApplicationController
 
     def render_tab_update
       active_id    = session[:active_tab]
-      active_url   = TabRegistry.url_for(active_id) || "/"
-      active_label = TabRegistry.find(active_id)&.label || "개요"
+      active_tab = open_tabs.find { |t| t["id"] == active_id }
+      active_url = active_tab&.dig("url") || TabRegistry.url_for(active_id) || "/"
+      active_label = active_tab&.dig("label") || TabRegistry.find(active_id)&.label || "개요"
 
       render turbo_stream: [
         turbo_stream.update("tab-bar",

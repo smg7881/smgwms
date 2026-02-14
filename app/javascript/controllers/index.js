@@ -8,3 +8,6 @@ application.register("tabs", TabsController)
 
 import AgGridController from "controllers/ag_grid_controller"
 application.register("ag-grid", AgGridController)
+
+import MenuCrudController from "controllers/menu_crud_controller"
+application.register("menu-crud", MenuCrudController)

@@ -10,7 +10,25 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_12_142618) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_14_090000) do
+  create_table "adm_menus", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "menu_cd", limit: 20, null: false
+    t.string "menu_icon", limit: 10
+    t.integer "menu_level", default: 1, null: false
+    t.string "menu_nm", limit: 100, null: false
+    t.string "menu_type", limit: 10, default: "MENU", null: false
+    t.string "menu_url", limit: 200
+    t.string "parent_cd", limit: 20
+    t.integer "sort_order", default: 0, null: false
+    t.string "tab_id", limit: 50
+    t.datetime "updated_at", null: false
+    t.string "use_yn", limit: 1, default: "Y", null: false
+    t.index ["menu_cd"], name: "index_adm_menus_on_menu_cd", unique: true
+    t.index ["parent_cd", "sort_order", "menu_cd"], name: "index_adm_menus_on_parent_cd_and_sort_order_and_menu_cd"
+    t.index ["parent_cd"], name: "index_adm_menus_on_parent_cd"
+  end
+
   create_table "posts", force: :cascade do |t|
     t.text "content"
     t.datetime "created_at", null: false

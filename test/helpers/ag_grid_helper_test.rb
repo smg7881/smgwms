@@ -31,13 +31,13 @@ class AgGridHelperTest < ActionView::TestCase
 
   test "ag_grid_tag sanitizes disallowed column keys" do
     html = ag_grid_tag(
-      columns: [ { field: "name", valueFormatter: "evil()", cellRenderer: "xss" } ],
+      columns: [ { field: "name", valueFormatter: "evil()", cellRenderer: "link" } ],
       url: "/items.json"
     )
     assert_not_includes html, "valueFormatter"
-    assert_not_includes html, "cellRenderer"
     assert_not_includes html, "evil()"
-    assert_not_includes html, "xss"
+    assert_includes html, "cellRenderer"
+    assert_includes html, "link"
     # 허용된 키는 유지됨
     assert_includes html, "name"
   end

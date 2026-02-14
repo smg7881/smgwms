@@ -1,0 +1,79 @@
+<div class="modal-overlay" data-menu-crud-target="overlay"
+     data-action="click->menu-crud#closeModal" hidden>
+  <div class="modal-content" data-action="click->menu-crud#stopPropagation">
+    <div class="modal-header">
+      <h3 data-menu-crud-target="modalTitle">메뉴 추가</h3>
+      <button type="button" class="modal-close"
+              data-action="click->menu-crud#closeModal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="menu-crud-form" data-menu-crud-target="form"
+            data-action="submit->menu-crud#submitMenu">
+        <input type="hidden" name="id" data-menu-crud-target="fieldId">
+
+        <div class="form-group">
+          <label>메뉴코드 <span class="required">*</span></label>
+          <input type="text" name="menu_cd" maxlength="20" required
+                 data-menu-crud-target="fieldMenuCd">
+        </div>
+        <div class="form-group">
+          <label>메뉴명 <span class="required">*</span></label>
+          <input type="text" name="menu_nm" maxlength="100" required
+                 data-menu-crud-target="fieldMenuNm">
+        </div>
+        <div class="form-group">
+          <label>상위메뉴코드</label>
+          <input type="text" name="parent_cd" maxlength="20" readonly
+                 data-menu-crud-target="fieldParentCd">
+        </div>
+        <div class="form-group">
+          <label>URL</label>
+          <input type="text" name="menu_url" maxlength="200"
+                 data-menu-crud-target="fieldMenuUrl">
+        </div>
+        <div class="form-group">
+          <label>아이콘</label>
+          <input type="text" name="menu_icon" maxlength="10"
+                 data-menu-crud-target="fieldMenuIcon">
+        </div>
+        <div class="form-group">
+          <label>정렬순서</label>
+          <input type="number" name="sort_order" value="0"
+                 data-menu-crud-target="fieldSortOrder">
+        </div>
+        <div class="form-group">
+          <label>레벨</label>
+          <input type="number" name="menu_level" readonly
+                 data-menu-crud-target="fieldMenuLevel">
+        </div>
+        <div class="form-group">
+          <label>타입</label>
+          <select name="menu_type" data-menu-crud-target="fieldMenuType">
+            <option value="FOLDER">FOLDER</option>
+            <option value="MENU">MENU</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>사용여부</label>
+          <select name="use_yn" data-menu-crud-target="fieldUseYn">
+            <option value="Y">Y</option>
+            <option value="N">N</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>탭ID</label>
+          <input type="text" name="tab_id" maxlength="50"
+                 data-menu-crud-target="fieldTabId">
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-sm btn-secondary"
+              data-menu-crud-role="cancel"
+              data-action="click->menu-crud#closeModal">취소</button>
+      <button type="submit" class="btn btn-sm btn-primary"
+              form="menu-crud-form"
+              data-menu-crud-role="save">저장</button>
+    </div>
+  </div>
+</div>

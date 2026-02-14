@@ -55,6 +55,66 @@ const RENDERER_REGISTRY = {
     a.href = href
     a.textContent = String(params.value)
     return a
+  },
+  treeMenuCellRenderer: (params) => {
+    const level = Number(params.data?.menu_level || 1)
+    const indent = Math.max(level - 1, 0) * 20
+    const isFolder = params.data?.menu_type === "FOLDER"
+    const icon = isFolder ? "📁" : "📄"
+
+    const span = document.createElement("span")
+    span.style.paddingLeft = `${indent}px`
+    span.textContent = `${icon} ${params.value ?? ""}`
+    if (isFolder) span.classList.add("tree-menu-folder")
+    return span
+  },
+  actionCellRenderer: (params) => {
+    const container = document.createElement("div")
+    container.classList.add("grid-action-buttons")
+
+    const addBtn = document.createElement("button")
+    addBtn.type = "button"
+    addBtn.innerHTML = "➕"
+    addBtn.title = "하위메뉴추가"
+    addBtn.classList.add("grid-action-btn")
+    addBtn.addEventListener("click", () => {
+      const event = new CustomEvent("menu-crud:add-child", {
+        detail: { parentCd: params.data.menu_cd, parentLevel: params.data.menu_level },
+        bubbles: true
+      })
+      container.dispatchEvent(event)
+    })
+
+    const editBtn = document.createElement("button")
+    editBtn.type = "button"
+    editBtn.innerHTML = "✏️"
+    editBtn.title = "수정"
+    editBtn.classList.add("grid-action-btn")
+    editBtn.addEventListener("click", () => {
+      const event = new CustomEvent("menu-crud:edit", {
+        detail: { menuData: params.data },
+        bubbles: true
+      })
+      container.dispatchEvent(event)
+    })
+
+    const deleteBtn = document.createElement("button")
+    deleteBtn.type = "button"
+    deleteBtn.innerHTML = "🗑️"
+    deleteBtn.title = "삭제"
+    deleteBtn.classList.add("grid-action-btn", "grid-action-btn--danger")
+    deleteBtn.addEventListener("click", () => {
+      const event = new CustomEvent("menu-crud:delete", {
+        detail: { id: params.data.id, menuCd: params.data.menu_cd },
+        bubbles: true
+      })
+      container.dispatchEvent(event)
+    })
+
+    container.appendChild(addBtn)
+    container.appendChild(editBtn)
+    container.appendChild(deleteBtn)
+    return container
   }
 }
 

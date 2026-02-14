@@ -9,7 +9,9 @@
     <span class="breadcrumb-home">⌂</span>
     <span class="sep">/</span>
     <span class="current" id="breadcrumb-current">
-      <%= TabRegistry.find(session[:active_tab] || "overview")&.label || "개요" %>
+      <% active_id = session[:active_tab] || "overview" %>
+      <% active_tab = (session[:open_tabs] || []).find { |t| t["id"] == active_id } %>
+      <%= active_tab&.dig("label") || TabRegistry.find(active_id)&.label || "개요" %>
     </span>
   </div>
   <div class="header-actions">
