@@ -15,3 +15,6 @@ application.register("menu-crud", MenuCrudController)
 import ResourceFormController from "controllers/resource_form_controller"
 application.register("resource-form", ResourceFormController)
 
+import UserCrudController from "controllers/user_crud_controller"
+application.register("user-crud", UserCrudController)
+

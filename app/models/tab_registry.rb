@@ -6,7 +6,8 @@ class TabRegistry
     Entry.new(id: "posts-list",  label: "게시물 목록", icon: "📋", url: "/posts",       color_group: :green),
     Entry.new(id: "posts-new",   label: "게시물 작성", icon: "✏️", url: "/posts/new",   color_group: :cyan),
     Entry.new(id: "reports",     label: "통계",       icon: "📈", url: "/reports",     color_group: :amber),
-    Entry.new(id: "system-menus", label: "메뉴관리",   icon: "⚙️", url: "/system/menus", color_group: :rose)
+    Entry.new(id: "system-menus", label: "메뉴관리",   icon: "⚙️", url: "/system/menus", color_group: :rose),
+    Entry.new(id: "system-users", label: "사용자관리", icon: "👤", url: "/system/users", color_group: :rose)
   ].freeze
 
   INDEX = ENTRIES.index_by(&:id).freeze

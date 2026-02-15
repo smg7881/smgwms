@@ -2,6 +2,7 @@ module ResourceFormHelper
   RESOURCE_ALLOWED_FIELD_KEYS = %i[
     field type label label_key placeholder placeholder_key
     span options required disabled readonly value target
+    rowspan colspan row_span col_span
     pattern minlength maxlength inputmode autocomplete
     date_type min max step
     rows cols
@@ -14,12 +15,13 @@ module ResourceFormHelper
 
   RESOURCE_FIELD_TYPES = %w[
     input number select date_picker
-    textarea checkbox radio switch
+    textarea checkbox radio switch photo
   ].freeze
 
   def resource_form_tag(model:, fields:, url: nil, cols: 3,
                         show_buttons: true, submit_label: "저장",
-                        cancel_url: nil, form_data: {}, form_html: {}, **html_options)
+                        cancel_url: nil, form_data: {}, form_html: {},
+                        target_controller: nil, **html_options)
     safe_fields = sanitize_resource_field_defs(fields)
     dependencies = extract_dependencies(safe_fields)
     wrapper_options = build_wrapper_options(html_options, dependencies)
@@ -34,7 +36,8 @@ module ResourceFormHelper
       cancel_url: cancel_url,
       form_data: form_data,
       form_html: form_html,
-      wrapper_options: wrapper_options
+      wrapper_options: wrapper_options,
+      target_controller: target_controller
     }
   end
 
@@ -43,11 +46,11 @@ module ResourceFormHelper
       options = html_options.deep_dup
       data = (options.delete(:data) || {}).deep_dup
 
-      data[:controller] = [ data[:controller], "resource-form" ].compact.join(" ")
+      data[:controller] = [data[:controller], "resource-form"].compact.join(" ")
       data[:resource_form_dependencies_value] = dependencies.to_json
       data[:resource_form_loading_value] = false
 
-      options[:class] = [ "form-grid-wrapper", "rf-wrapper", options[:class] ].compact.join(" ")
+      options[:class] = ["form-grid-wrapper", "rf-wrapper", options[:class]].compact.join(" ")
       options[:data] = data
       options
     end

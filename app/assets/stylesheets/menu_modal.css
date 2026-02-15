@@ -133,6 +133,12 @@
   display: flex;
   gap: 4px;
   align-items: center;
+  height: 100%;
+}
+
+.ag-cell-actions {
+  display: flex;
+  align-items: center;
 }
 
 .grid-action-btn {
@@ -142,6 +148,12 @@
   padding: 2px 4px;
   font-size: 14px;
   border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  line-height: 1;
+  vertical-align: middle;
 }
 
 .grid-action-btn:hover {

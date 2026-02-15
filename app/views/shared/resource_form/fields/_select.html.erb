@@ -22,8 +22,8 @@
               data-depends-on="<%= field[:depends_on] %>"
               data-depends-filter="<%= field[:depends_filter] || field[:depends_on] %>"
             <% end %>
-            <% if field[:target].present? %>
-              data-menu-crud-target="<%= field[:target] %>"
+            <% if field[:target].present? && local_assigns[:target_controller].present? %>
+              data-<%= local_assigns[:target_controller].to_s.dasherize %>-target="<%= field[:target] %>"
             <% end %>
             data-resource-form-target="input"
             data-action="<%= has_dependency ? '' : 'change->resource-form#onSelectChange' %> blur->resource-form#validateField">

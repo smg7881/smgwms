@@ -18,20 +18,8 @@
     <span data-resource-form-target="submitText"><%= submit_label %></span>
     <%# 로딩 스피너 (기본 숨김) %>
     <span class="rf-spinner" data-resource-form-target="submitSpinner" hidden>
-      <%# SVG 로딩 스피너 %>
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        
-        <%# 
-          cx, cy, r: 중심점 (8,8) 반지름 6인 원 
-          stroke-dasharray: 점선의 길이와 간격 (28px 길이의 선을 그림)
-          stroke-dashoffset: 점선의 시작점 오프셋
-        %>
         <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="8">
-          
-          <%# 
-            0.8초마다 360도 회전 애니메이션 반복
-            from/to "각도 중심X 중심Y": (8,8)을 중심으로 회전
-          %>
           <animateTransform attributeName="transform" type="rotate" from="0 8 8" to="360 8 8" dur="0.8s" repeatCount="indefinite"/>
         </circle>
       </svg>

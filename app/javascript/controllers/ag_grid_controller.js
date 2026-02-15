@@ -68,6 +68,52 @@ const RENDERER_REGISTRY = {
     if (isFolder) span.classList.add("tree-menu-folder")
     return span
   },
+  workStatusCellRenderer: (params) => {
+    const span = document.createElement("span")
+    span.style.fontWeight = "bold"
+    if (params.value === "ACTIVE") {
+      span.style.color = "#18a058"
+      span.textContent = "재직"
+    } else {
+      span.style.color = "#d03050"
+      span.textContent = "퇴사"
+    }
+    return span
+  },
+  userActionCellRenderer: (params) => {
+    const container = document.createElement("div")
+    container.classList.add("grid-action-buttons")
+
+    const editBtn = document.createElement("button")
+    editBtn.type = "button"
+    editBtn.innerHTML = "✏️"
+    editBtn.title = "수정"
+    editBtn.classList.add("grid-action-btn")
+    editBtn.addEventListener("click", () => {
+      const event = new CustomEvent("user-crud:edit", {
+        detail: { userData: params.data },
+        bubbles: true
+      })
+      container.dispatchEvent(event)
+    })
+
+    const deleteBtn = document.createElement("button")
+    deleteBtn.type = "button"
+    deleteBtn.innerHTML = "🗑️"
+    deleteBtn.title = "삭제"
+    deleteBtn.classList.add("grid-action-btn", "grid-action-btn--danger")
+    deleteBtn.addEventListener("click", () => {
+      const event = new CustomEvent("user-crud:delete", {
+        detail: { id: params.data.id, userNm: params.data.user_nm },
+        bubbles: true
+      })
+      container.dispatchEvent(event)
+    })
+
+    container.appendChild(editBtn)
+    container.appendChild(deleteBtn)
+    return container
+  },
   actionCellRenderer: (params) => {
     const container = document.createElement("div")
     container.classList.add("grid-action-buttons")

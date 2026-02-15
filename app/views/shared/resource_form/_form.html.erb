@@ -32,7 +32,8 @@
       <%# 정의된 fields 배열을 순회하며 각 필드 타입에 맞는 파셜을 동적으로 렌더링 %>
       <% fields.each do |field| %>
         <%= render partial: "shared/resource_form/fields/#{field[:type]}",
-                   locals: { f: f, model: model, field: field, cols: cols } %>
+                   locals: { f: f, model: model, field: field, cols: cols,
+                             target_controller: local_assigns[:target_controller] } %>
       <% end %>
 
       <%# show_buttons 옵션이 true인 경우 저장/취소 버튼 영역 렌더링 %>

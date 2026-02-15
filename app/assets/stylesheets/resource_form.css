@@ -187,5 +187,64 @@
   cursor: not-allowed;
 }
 
+/* Photo Upload */
+.form-grid-field--photo .form-grid-control {
+  justify-content: center;
+  width: 100%;
+}
+
+.photo-upload-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.photo-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.photo-preview {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border, #30363d);
+  background: var(--bg-tertiary, #1c2333);
+}
+
+.rf-photo-file-input {
+  display: none;
+}
+
+.photo-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+  border-radius: 4px;
+  transition: background-color 0.15s;
+  color: var(--text-secondary, #8b949e);
+}
+
+.photo-icon-btn:hover {
+  background-color: var(--bg-tertiary, #1c2333);
+}
+
+.photo-icon-btn--danger:hover {
+  background-color: rgba(248, 81, 73, 0.15);
+}
+
 
 

@@ -13,6 +13,9 @@ Rails.application.routes.draw do
   resources :reports, only: [ :index ]
   namespace :system do
     resources :menus, only: [ :index, :create, :update, :destroy ]
+    resources :users do
+      get :check_id, on: :collection
+    end
   end
 
   get "up" => "rails/health#show", as: :rails_health_check

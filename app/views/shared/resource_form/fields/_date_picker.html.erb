@@ -18,7 +18,7 @@
             data: {
               resource_form_target: "input",
               action: "blur->resource-form#validateField"
-            } %>
+            }.merge(field[:target].present? && local_assigns[:target_controller].present? ? { "#{local_assigns[:target_controller]}_target" => field[:target] } : {}) %>
     <% else %>
       <%= f.date_field field[:field].to_sym,
             id: "#{model.model_name.param_key}_#{field[:field]}",
@@ -30,7 +30,7 @@
             data: {
               resource_form_target: "input",
               action: "blur->resource-form#validateField"
-            } %>
+            }.merge(field[:target].present? && local_assigns[:target_controller].present? ? { "#{local_assigns[:target_controller]}_target" => field[:target] } : {}) %>
     <% end %>
   </div>
   <% if model.errors[field[:field].to_sym].any? %>

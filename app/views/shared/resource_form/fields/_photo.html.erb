@@ -1,0 +1,50 @@
+<%# app/views/shared/resource_form/fields/_photo.html.erb %>
+<%
+  layout_styles = []
+  logical_col_span = (field[:col_span] || field[:colspan]).to_i
+  logical_row_span = (field[:row_span] || field[:rowspan]).to_i
+
+  if logical_col_span.positive?
+    total_logical_cols = [cols.to_i * 2, 1].max
+    grid_units = [(24.0 / total_logical_cols * logical_col_span).round, 1].max
+    layout_styles << "grid-column: span #{grid_units};"
+  end
+
+  if logical_row_span.positive?
+    layout_styles << "grid-row: span #{logical_row_span};"
+  end
+%>
+<div class="form-grid-field form-grid-field--photo <%= span_classes_for(field, cols: cols) %>"
+     data-resource-form-target="fieldGroup"
+     data-field-name="<%= field[:field] %>"
+     style="<%= layout_styles.join(' ') %>">
+  <label class="form-grid-label">
+    <%= resolve_label(field) %>
+    <% if field[:required] %><span class="rf-required">*</span><% end %>
+  </label>
+  <div class="form-grid-control">
+    <div class="photo-upload-area">
+      <img class="photo-preview"
+           src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Crect width='80' height='80' rx='8' fill='%23d0d7de'/%3E%3Cpath d='M30 50h20l-4-5-3 4-3-2-6 8zm-5-20v24a2 2 0 002 2h26a2 2 0 002-2V30a2 2 0 00-2-2h-5l-2-3H34l-2 3h-5a2 2 0 00-2 2zm15 4a6 6 0 110 12 6 6 0 010-12z' fill='%23fff'/%3E%3C/svg%3E"
+           alt="사진 미리보기"
+           data-<%= target_controller&.tr("_", "-") %>-target="photoPreview" />
+      <div class="photo-actions">
+        <input type="file"
+               accept="image/*"
+               class="rf-photo-file-input"
+               data-<%= target_controller&.tr("_", "-") %>-target="photoInput"
+               data-action="change-><%= target_controller&.tr("_", "-") %>#previewPhoto" />
+        <button type="button"
+                class="photo-icon-btn"
+                data-action="click-><%= target_controller&.tr("_", "-") %>#triggerPhotoSelect"
+                title="사진 선택">&#x1F4F7;</button>
+        <button type="button"
+                class="photo-icon-btn photo-icon-btn--danger"
+                data-<%= target_controller&.tr("_", "-") %>-target="photoRemoveBtn"
+                data-action="click-><%= target_controller&.tr("_", "-") %>#removePhoto"
+                title="사진 삭제"
+                hidden>&#x1F5D1;&#xFE0F;</button>
+      </div>
+    </div>
+  </div>
+</div>

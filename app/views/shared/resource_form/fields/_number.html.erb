@@ -20,9 +20,8 @@
           step: field[:step],
           data: {
             resource_form_target: "input",
-            menu_crud_target: field[:target],
             action: "blur->resource-form#validateField"
-          } %>
+          }.merge(field[:target].present? && local_assigns[:target_controller].present? ? { "#{local_assigns[:target_controller]}_target" => field[:target] } : {}) %>
   </div>
   <% if model.errors[field[:field].to_sym].any? %>
     <span class="rf-error-msg"><%= model.errors[field[:field].to_sym].first %></span>

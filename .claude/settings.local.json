@@ -27,7 +27,10 @@
       "Bash(test:*)",
       "Bash(cd:*)",
       "Bash(bin/rails test:*)",
-      "Bash(bin/rubocop:*)"
+      "Bash(bin/rubocop:*)",
+      "Bash(grep:*)",
+      "Bash(bin/rails db:migrate:*)",
+      "Bash(bin/rails active_storage:install:*)"
     ]
   }
 }
