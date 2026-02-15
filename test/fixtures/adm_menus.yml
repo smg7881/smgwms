@@ -1,6 +1,6 @@
-main:
+﻿main:
   menu_cd: MAIN
-  menu_nm: 메인
+  menu_nm: Main
   parent_cd:
   menu_url:
   menu_icon:
@@ -12,10 +12,10 @@ main:
 
 overview:
   menu_cd: OVERVIEW
-  menu_nm: 개요
+  menu_nm: Overview
   parent_cd: MAIN
   menu_url: /
-  menu_icon: 📊
+  menu_icon: dashboard
   sort_order: 1
   menu_level: 2
   menu_type: MENU
@@ -24,7 +24,7 @@ overview:
 
 system:
   menu_cd: SYSTEM
-  menu_nm: 시스템
+  menu_nm: System
   parent_cd:
   menu_url:
   menu_icon:
@@ -36,12 +36,24 @@ system:
 
 sys_menu:
   menu_cd: SYS_MENU
-  menu_nm: 메뉴관리
+  menu_nm: Menu Management
   parent_cd: SYSTEM
   menu_url: /system/menus
-  menu_icon: ⚙️
+  menu_icon: settings
   sort_order: 1
   menu_level: 2
   menu_type: MENU
   use_yn: Y
   tab_id: system-menus
+
+sys_dept:
+  menu_cd: SYS_DEPT
+  menu_nm: Department Management
+  parent_cd: SYSTEM
+  menu_url: /system/dept
+  menu_icon: office
+  sort_order: 2
+  menu_level: 2
+  menu_type: MENU
+  use_yn: Y
+  tab_id: system-dept

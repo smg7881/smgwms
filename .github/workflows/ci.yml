@@ -65,6 +65,9 @@ jobs:
       - name: Lint code for consistent style
         run: bin/rubocop -f github
 
+      - name: Lint Stimulus action wiring
+        run: ruby bin/lint-stimulus-actions
+
   test:
     runs-on: ubuntu-latest
 

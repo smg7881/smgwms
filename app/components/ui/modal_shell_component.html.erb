@@ -1,0 +1,27 @@
+<div class="modal-overlay"
+     data-<%= controller %>-target="overlay"
+     <%= overlay_action_attr&.html_safe %>
+     hidden>
+  <div class="modal-content"
+       data-<%= controller %>-target="modal"
+       data-action="click-><%= controller %>#stopPropagation">
+    <div class="modal-header" data-action="mousedown-><%= controller %>#startDrag">
+      <h3 data-<%= controller %>-target="modalTitle"><%= title %></h3>
+      <button type="button" class="modal-close"
+              data-action="click-><%= controller %>#closeModal">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <%= body %>
+    </div>
+
+    <div class="modal-footer form-grid-buttons rf-buttons">
+      <button type="button" class="btn btn-sm btn-secondary"
+              <%= cancel_role_attr&.html_safe %>
+              data-action="click-><%= controller %>#closeModal"><%= cancel_text %></button>
+      <button type="submit" class="btn btn-sm btn-primary"
+              form="<%= save_form_id %>"
+              <%= save_role_attr&.html_safe %>><%= save_text %></button>
+    </div>
+  </div>
+</div>

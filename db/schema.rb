@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_15_090001) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_15_120000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -39,10 +39,28 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_15_090001) do
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
+  create_table "adm_depts", id: false, force: :cascade do |t|
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "dept_code", limit: 50, null: false
+    t.string "dept_nm", limit: 100, null: false
+    t.integer "dept_order", default: 0, null: false
+    t.string "dept_type", limit: 50
+    t.text "description"
+    t.string "parent_dept_code", limit: 50
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn", limit: 1, default: "Y", null: false
+    t.index ["dept_code"], name: "index_adm_depts_on_dept_code", unique: true
+    t.index ["parent_dept_code", "dept_order", "dept_code"], name: "index_adm_depts_on_parent_order_and_code"
+    t.index ["parent_dept_code"], name: "index_adm_depts_on_parent_dept_code"
+    t.index ["use_yn"], name: "index_adm_depts_on_use_yn"
+  end
+
   create_table "adm_menus", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "menu_cd", limit: 20, null: false
-    t.string "menu_icon", limit: 10
+    t.string "menu_icon", limit: 50
     t.integer "menu_level", default: 1, null: false
     t.string "menu_nm", limit: 100, null: false
     t.string "menu_type", limit: 10, default: "MENU", null: false

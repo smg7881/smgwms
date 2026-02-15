@@ -37,7 +37,33 @@ class System::MenusControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "rejects delete when children exist" do
-    delete system_menu_url(adm_menus(:main)), as: :json
+    parent = AdmMenu.create!(
+      menu_cd: "PARENT_MENU",
+      menu_nm: "Parent",
+      parent_cd: nil,
+      menu_url: nil,
+      menu_icon: nil,
+      sort_order: 100,
+      menu_level: 1,
+      menu_type: "FOLDER",
+      use_yn: "Y",
+      tab_id: nil
+    )
+
+    AdmMenu.create!(
+      menu_cd: "CHILD_MENU",
+      menu_nm: "Child",
+      parent_cd: parent.menu_cd,
+      menu_url: "/child",
+      menu_icon: nil,
+      sort_order: 1,
+      menu_level: 2,
+      menu_type: "MENU",
+      use_yn: "Y",
+      tab_id: "child-menu"
+    )
+
+    delete system_menu_url(parent), as: :json
     assert_response :unprocessable_entity
   end
 end

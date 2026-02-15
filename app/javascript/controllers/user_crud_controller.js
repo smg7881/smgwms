@@ -1,6 +1,6 @@
-import { Controller } from "@hotwired/stimulus"
+import BaseCrudController from "controllers/base_crud_controller"
 
-export default class extends Controller {
+export default class extends BaseCrudController {
   static PLACEHOLDER_PHOTO = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Crect width='80' height='80' rx='8' fill='%23d0d7de'/%3E%3Cpath d='M30 50h20l-4-5-3 4-3-2-6 8zm-5-20v24a2 2 0 002 2h26a2 2 0 002-2V30a2 2 0 00-2-2h-5l-2-3H34l-2 3h-5a2 2 0 00-2 2zm15 4a6 6 0 110 12 6 6 0 010-12z' fill='%23fff'/%3E%3C/svg%3E"
 
   static targets = [
@@ -20,29 +20,29 @@ export default class extends Controller {
   }
 
   connect() {
-    this.dragState = null
-    this.element.addEventListener("user-crud:edit", this.handleEdit)
-    this.element.addEventListener("user-crud:delete", this.handleDelete)
-    this.element.addEventListener("click", this.handleDelegatedClick)
-    window.addEventListener("mousemove", this.handleDragMove)
-    window.addEventListener("mouseup", this.endDrag)
+    this.connectBase({
+      events: [
+        { name: "user-crud:edit", handler: this.handleEdit },
+        { name: "user-crud:delete", handler: this.handleDelete }
+      ]
+    })
   }
 
   disconnect() {
-    this.element.removeEventListener("user-crud:edit", this.handleEdit)
-    this.element.removeEventListener("user-crud:delete", this.handleDelete)
-    this.element.removeEventListener("click", this.handleDelegatedClick)
-    window.removeEventListener("mousemove", this.handleDragMove)
-    window.removeEventListener("mouseup", this.endDrag)
+    this.disconnectBase()
   }
 
-  openAdd() {
+  openCreate() {
     this.resetForm()
     this.modalTitleTarget.textContent = "사용자 추가"
     this.fieldUserIdCodeTarget.readOnly = false
     this.fieldWorkStatusTarget.value = "ACTIVE"
     this.mode = "create"
     this.openModal()
+  }
+
+  openAdd() {
+    this.openCreate()
   }
 
   handleEdit = (event) => {
@@ -78,11 +78,9 @@ export default class extends Controller {
     if (!confirm(`"${userNm}" 사용자를 삭제하시겠습니까?`)) return
 
     try {
-      const response = await fetch(this.deleteUrlValue.replace(":id", id), {
-        method: "DELETE",
-        headers: { "X-CSRF-Token": this.csrfToken }
+      const { response, result } = await this.requestJson(this.deleteUrlValue.replace(":id", id), {
+        method: "DELETE"
       })
-      const result = await response.json()
       if (!response.ok || !result.success) {
         alert("삭제 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
         return
@@ -97,38 +95,21 @@ export default class extends Controller {
 
   async saveUser() {
     const formData = new FormData(this.formTarget)
-
-    // 사진 파일 추가
     const photoFile = this.photoInputTarget.files[0]
-    if (photoFile) {
-      formData.append("user[photo]", photoFile)
-    }
+    if (photoFile) formData.append("user[photo]", photoFile)
 
-    let id = null
-    if (this.hasFieldIdTarget && this.fieldIdTarget.value) {
-      id = this.fieldIdTarget.value
-    }
-
-    let url
-    let method
-    if (this.mode === "create") {
-      url = this.createUrlValue
-      method = "POST"
-    } else {
-      url = this.updateUrlValue.replace(":id", id)
-      method = "PATCH"
-    }
+    const id = this.hasFieldIdTarget && this.fieldIdTarget.value ? this.fieldIdTarget.value : null
+    const isCreate = this.mode === "create"
+    const url = isCreate ? this.createUrlValue : this.updateUrlValue.replace(":id", id)
+    const method = isCreate ? "POST" : "PATCH"
 
     try {
-      const response = await fetch(url, {
+      const { response, result } = await this.requestJson(url, {
         method,
-        headers: {
-          "X-CSRF-Token": this.csrfToken
-        },
-        body: formData
+        body: formData,
+        isMultipart: true
       })
 
-      const result = await response.json()
       if (!response.ok || !result.success) {
         alert("저장 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
         return
@@ -148,14 +129,14 @@ export default class extends Controller {
 
   previewPhoto() {
     const file = this.photoInputTarget.files[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        this.photoPreviewTarget.src = e.target.result
-        this.photoRemoveBtnTarget.hidden = false
-      }
-      reader.readAsDataURL(file)
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      this.photoPreviewTarget.src = event.target.result
+      this.photoRemoveBtnTarget.hidden = false
     }
+    reader.readAsDataURL(file)
   }
 
   removePhoto() {
@@ -169,84 +150,10 @@ export default class extends Controller {
     this.saveUser()
   }
 
-  closeModal() {
-    this.overlayTarget.hidden = true
-    this.endDrag()
-  }
-
-  stopPropagation(event) {
-    event.stopPropagation()
-  }
-
-  get csrfToken() {
-    return document.querySelector("[name='csrf-token']")?.content || ""
-  }
-
-  openModal() {
-    this.overlayTarget.hidden = false
-  }
-
   resetForm() {
     this.formTarget.reset()
     this.fieldIdTarget.value = ""
     this.fieldWorkStatusTarget.value = "ACTIVE"
     this.removePhoto()
-  }
-
-  refreshGrid() {
-    const agGridEl = this.element.querySelector("[data-controller='ag-grid']")
-    const agGridController = this.application.getControllerForElementAndIdentifier(agGridEl, "ag-grid")
-    agGridController?.refresh()
-  }
-
-  handleDelegatedClick = (event) => {
-    const cancelButton = event.target.closest("[data-user-crud-role='cancel']")
-    if (cancelButton) {
-      event.preventDefault()
-      this.closeModal()
-    }
-  }
-
-  startDrag(event) {
-    if (event.button !== 0) return
-    if (!this.hasModalTarget || !this.hasOverlayTarget) return
-    if (event.target.closest("button")) return
-
-    const modalRect = this.modalTarget.getBoundingClientRect()
-    this.modalTarget.style.position = "absolute"
-    this.modalTarget.style.left = `${modalRect.left}px`
-    this.modalTarget.style.top = `${modalRect.top}px`
-    this.modalTarget.style.margin = "0"
-
-    this.dragState = {
-      offsetX: event.clientX - modalRect.left,
-      offsetY: event.clientY - modalRect.top
-    }
-
-    document.body.style.userSelect = "none"
-    this.modalTarget.style.cursor = "grabbing"
-    event.preventDefault()
-  }
-
-  handleDragMove = (event) => {
-    if (!this.dragState || !this.hasModalTarget) return
-
-    const maxLeft = Math.max(0, window.innerWidth - this.modalTarget.offsetWidth)
-    const maxTop = Math.max(0, window.innerHeight - this.modalTarget.offsetHeight)
-    const nextLeft = event.clientX - this.dragState.offsetX
-    const nextTop = event.clientY - this.dragState.offsetY
-    const clampedLeft = Math.min(Math.max(0, nextLeft), maxLeft)
-    const clampedTop = Math.min(Math.max(0, nextTop), maxTop)
-
-    this.modalTarget.style.left = `${clampedLeft}px`
-    this.modalTarget.style.top = `${clampedTop}px`
-  }
-
-  endDrag = () => {
-    this.dragState = null
-    document.body.style.userSelect = ""
-    if (this.hasModalTarget) {
-      this.modalTarget.style.cursor = ""
-    }
   }
 }

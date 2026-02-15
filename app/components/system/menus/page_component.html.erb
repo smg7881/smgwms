@@ -1,0 +1,26 @@
+﻿<div data-controller="menu-crud"
+     data-menu-crud-create-url-value="<%= create_url %>"
+     data-menu-crud-update-url-value="<%= update_url %>"
+     data-menu-crud-delete-url-value="<%= delete_url %>">
+  <%= render Ui::SearchFormComponent.new(
+    url: create_url,
+    fields: search_fields,
+    cols: 3,
+    enable_collapse: true
+  ) %>
+
+  <%= render Ui::GridToolbarComponent.new(
+    buttons: [
+      { label: "理쒖긽??硫붾돱 異붽?", class: "btn btn-sm btn-primary", action: "click->menu-crud#openCreate" }
+    ]
+  ) %>
+
+  <%= render Ui::AgGridComponent.new(
+    columns: columns,
+    url: grid_url,
+    height: "calc(100vh - 370px)",
+    page_size: 20
+  ) %>
+
+  <%= render System::Menus::FormModalComponent.new %>
+</div>

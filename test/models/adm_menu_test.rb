@@ -2,7 +2,18 @@ require "test_helper"
 
 class AdmMenuTest < ActiveSupport::TestCase
   test "valid fixture" do
-    assert adm_menus(:overview).valid?
+    menu = AdmMenu.new(
+      menu_cd: "VALID_MENU",
+      menu_nm: "Valid Menu",
+      parent_cd: nil,
+      menu_url: nil,
+      menu_level: 1,
+      menu_type: "FOLDER",
+      use_yn: "Y",
+      sort_order: 1
+    )
+
+    assert menu.valid?
   end
 
   test "menu type MENU requires menu_url" do

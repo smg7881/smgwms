@@ -1,0 +1,29 @@
+<%= render Ui::ModalShellComponent.new(
+  controller: "dept-crud",
+  title: "부서 추가",
+  save_form_id: "dept-crud-form",
+  cancel_role: "cancel",
+  save_role: "save"
+) do |modal| %>
+  <% modal.with_body do %>
+      <input type="hidden" data-dept-crud-target="fieldId" />
+
+      <%= render Ui::ResourceFormComponent.new(
+        model: AdmDept.new,
+        url: "#",
+        cols: 2,
+        show_buttons: false,
+        target_controller: "dept_crud",
+        fields: form_fields,
+        form_data: {
+          dept_crud_target: "form",
+          action: "submit->resource-form#submit submit->dept-crud#submitDept"
+        },
+        form_html: {
+          id: "dept-crud-form",
+          novalidate: true,
+          autocomplete: "off"
+        }
+      ) %>
+  <% end %>
+<% end %>

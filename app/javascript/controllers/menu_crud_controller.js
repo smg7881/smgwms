@@ -1,6 +1,6 @@
-import { Controller } from "@hotwired/stimulus"
+import BaseCrudController from "controllers/base_crud_controller"
 
-export default class extends Controller {
+export default class extends BaseCrudController {
   static targets = [
     "overlay", "modal", "modalTitle", "form",
     "fieldId", "fieldMenuCd", "fieldMenuNm", "fieldParentCd",
@@ -15,25 +15,20 @@ export default class extends Controller {
   }
 
   connect() {
-    this.dragState = null
-    this.element.addEventListener("menu-crud:add-child", this.handleAddChild)
-    this.element.addEventListener("menu-crud:edit", this.handleEdit)
-    this.element.addEventListener("menu-crud:delete", this.handleDelete)
-    this.element.addEventListener("click", this.handleDelegatedClick)
-    window.addEventListener("mousemove", this.handleDragMove)
-    window.addEventListener("mouseup", this.endDrag)
+    this.connectBase({
+      events: [
+        { name: "menu-crud:add-child", handler: this.handleAddChild },
+        { name: "menu-crud:edit", handler: this.handleEdit },
+        { name: "menu-crud:delete", handler: this.handleDelete }
+      ]
+    })
   }
 
   disconnect() {
-    this.element.removeEventListener("menu-crud:add-child", this.handleAddChild)
-    this.element.removeEventListener("menu-crud:edit", this.handleEdit)
-    this.element.removeEventListener("menu-crud:delete", this.handleDelete)
-    this.element.removeEventListener("click", this.handleDelegatedClick)
-    window.removeEventListener("mousemove", this.handleDragMove)
-    window.removeEventListener("mouseup", this.endDrag)
+    this.disconnectBase()
   }
 
-  openAddTopLevel() {
+  openCreate() {
     this.resetForm()
     this.modalTitleTarget.textContent = "최상위 메뉴 추가"
     this.fieldParentCdTarget.value = ""
@@ -42,6 +37,10 @@ export default class extends Controller {
     this.fieldMenuCdTarget.readOnly = false
     this.mode = "create"
     this.openModal()
+  }
+
+  openAddTopLevel() {
+    this.openCreate()
   }
 
   handleAddChild = (event) => {
@@ -81,11 +80,9 @@ export default class extends Controller {
     if (!confirm(`"${menuCd}" 메뉴를 삭제하시겠습니까?`)) return
 
     try {
-      const response = await fetch(this.deleteUrlValue.replace(":id", id), {
-        method: "DELETE",
-        headers: { "X-CSRF-Token": this.csrfToken }
+      const { response, result } = await this.requestJson(this.deleteUrlValue.replace(":id", id), {
+        method: "DELETE"
       })
-      const result = await response.json()
       if (!response.ok || !result.success) {
         alert("삭제 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
         return
@@ -99,21 +96,8 @@ export default class extends Controller {
   }
 
   async saveMenu() {
-    const formData = new FormData(this.formTarget)
-    const menu = {}
-    for (const [rawKey, value] of formData.entries()) {
-      const match = rawKey.match(/^[^\[]+\[([^\]]+)\]$/)
-      const key = match ? match[1] : rawKey
-      menu[key] = value
-    }
-
-    if (this.hasFieldIdTarget && this.fieldIdTarget.value) {
-      menu.id = this.fieldIdTarget.value
-    }
-
-    Object.keys(menu).forEach((key) => {
-      if (menu[key] === "") menu[key] = null
-    })
+    const menu = this.buildJsonPayload()
+    if (this.hasFieldIdTarget && this.fieldIdTarget.value) menu.id = this.fieldIdTarget.value
 
     let url
     let method
@@ -128,16 +112,11 @@ export default class extends Controller {
     }
 
     try {
-      const response = await fetch(url, {
+      const { response, result } = await this.requestJson(url, {
         method,
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": this.csrfToken
-        },
-        body: JSON.stringify({ menu })
+        body: { menu }
       })
 
-      const result = await response.json()
       if (!response.ok || !result.success) {
         alert("저장 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
         return
@@ -156,84 +135,10 @@ export default class extends Controller {
     this.saveMenu()
   }
 
-  closeModal() {
-    this.overlayTarget.hidden = true
-    this.endDrag()
-  }
-
-  stopPropagation(event) {
-    event.stopPropagation()
-  }
-
-  get csrfToken() {
-    return document.querySelector("[name='csrf-token']")?.content || ""
-  }
-
-  openModal() {
-    this.overlayTarget.hidden = false
-  }
-
   resetForm() {
     this.formTarget.reset()
     this.fieldIdTarget.value = ""
     this.fieldSortOrderTarget.value = 0
     this.fieldUseYnTarget.value = "Y"
-  }
-
-  refreshGrid() {
-    const agGridEl = this.element.querySelector("[data-controller='ag-grid']")
-    const agGridController = this.application.getControllerForElementAndIdentifier(agGridEl, "ag-grid")
-    agGridController?.refresh()
-  }
-
-  handleDelegatedClick = (event) => {
-    const cancelButton = event.target.closest("[data-menu-crud-role='cancel']")
-    if (cancelButton) {
-      event.preventDefault()
-      this.closeModal()
-    }
-  }
-
-  startDrag(event) {
-    if (event.button !== 0) return
-    if (!this.hasModalTarget || !this.hasOverlayTarget) return
-    if (event.target.closest("button")) return
-
-    const modalRect = this.modalTarget.getBoundingClientRect()
-    this.modalTarget.style.position = "absolute"
-    this.modalTarget.style.left = `${modalRect.left}px`
-    this.modalTarget.style.top = `${modalRect.top}px`
-    this.modalTarget.style.margin = "0"
-
-    this.dragState = {
-      offsetX: event.clientX - modalRect.left,
-      offsetY: event.clientY - modalRect.top
-    }
-
-    document.body.style.userSelect = "none"
-    this.modalTarget.style.cursor = "grabbing"
-    event.preventDefault()
-  }
-
-  handleDragMove = (event) => {
-    if (!this.dragState || !this.hasModalTarget) return
-
-    const maxLeft = Math.max(0, window.innerWidth - this.modalTarget.offsetWidth)
-    const maxTop = Math.max(0, window.innerHeight - this.modalTarget.offsetHeight)
-    const nextLeft = event.clientX - this.dragState.offsetX
-    const nextTop = event.clientY - this.dragState.offsetY
-    const clampedLeft = Math.min(Math.max(0, nextLeft), maxLeft)
-    const clampedTop = Math.min(Math.max(0, nextTop), maxTop)
-
-    this.modalTarget.style.left = `${clampedLeft}px`
-    this.modalTarget.style.top = `${clampedTop}px`
-  }
-
-  endDrag = () => {
-    this.dragState = null
-    document.body.style.userSelect = ""
-    if (this.hasModalTarget) {
-      this.modalTarget.style.cursor = ""
-    }
   }
 }

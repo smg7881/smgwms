@@ -146,7 +146,9 @@
   border: none;
   cursor: pointer;
   padding: 2px 4px;
+  color: var(--text-primary, #ffffff);
   font-size: 14px;
+  font-weight: 600;
   border-radius: 3px;
   display: inline-flex;
   align-items: center;
@@ -154,6 +156,12 @@
   height: 24px;
   line-height: 1;
   vertical-align: middle;
+}
+
+.grid-action-btn .lucide-icon {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
 }
 
 .grid-action-btn:hover {

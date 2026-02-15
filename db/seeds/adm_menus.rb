@@ -10,6 +10,8 @@ menus = [
   { menu_cd: "SYS_MENU", menu_nm: "메뉴관리", parent_cd: "SYSTEM", menu_url: "/system/menus", menu_icon: "⚙️", sort_order: 1, menu_level: 2, menu_type: "MENU", tab_id: "system-menus" }
 ]
 
+menus << { menu_cd: "SYS_DEPT", menu_nm: "부서관리", parent_cd: "SYSTEM", menu_url: "/system/dept", menu_icon: "🏢", sort_order: 2, menu_level: 2, menu_type: "MENU", tab_id: "system-dept" }
+
 menus.each do |attrs|
   record = AdmMenu.find_or_initialize_by(menu_cd: attrs[:menu_cd])
   record.assign_attributes(attrs.merge(use_yn: "Y"))

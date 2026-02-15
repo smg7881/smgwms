@@ -66,3 +66,5 @@ group :test do
 end
 
 gem "fiddle"
+
+gem "view_component", "~> 4.4"

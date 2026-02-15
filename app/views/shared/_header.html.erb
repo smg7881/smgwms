@@ -2,11 +2,11 @@
   <button class="sidebar-toggle-btn" type="button"
           data-action="click->tabs#toggleSidebar"
           aria-label="사이드바 열기/닫기">
-    <span class="toggle-icon-collapse">«</span>
-    <span class="toggle-icon-expand">»</span>
+    <%= lucide_icon("chevrons-left", css_class: "toggle-icon-collapse") %>
+    <%= lucide_icon("chevrons-right", css_class: "toggle-icon-expand") %>
   </button>
   <div class="breadcrumb">
-    <span class="breadcrumb-home">⌂</span>
+    <%= lucide_icon("house", css_class: "breadcrumb-home") %>
     <span class="sep">/</span>
     <span class="current" id="breadcrumb-current">
       <% active_id = session[:active_tab] || "overview" %>
@@ -16,13 +16,17 @@
   </div>
   <div class="header-actions">
     <div class="search-box">
-      <span class="search-icon">🔍</span>
+      <%= lucide_icon("search", css_class: "search-icon") %>
       <input type="text" placeholder="검색... (⌘K)">
     </div>
-    <button class="icon-btn" type="button">🔔</button>
-    <button class="icon-btn" type="button">⚙️</button>
+    <button class="icon-btn" type="button" aria-label="알림">
+      <%= lucide_icon("bell") %>
+    </button>
+    <button class="icon-btn" type="button" aria-label="설정">
+      <%= lucide_icon("settings") %>
+    </button>
     <%= button_to session_path, method: :delete, class: "icon-btn", form: { style: "display: contents" } do %>
-      🚪
+      <%= lucide_icon("log-out") %>
     <% end %>
   </div>
 </header>

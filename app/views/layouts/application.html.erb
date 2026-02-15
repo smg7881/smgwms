@@ -14,7 +14,7 @@
   <%= stylesheet_link_tag "menu_modal", "data-turbo-track": "reload" %>
   <%= javascript_importmap_tags %>
 </head>
-<body>
+<body data-controller="lucide">
   <%# data-controller="tabs" 는 반드시 app-layout 최상위에 (Stimulus 스코프: 탭바/사이드바 모두 접근 가능) %>
   <div class="app-layout" data-controller="tabs">
 

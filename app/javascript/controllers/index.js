@@ -18,3 +18,8 @@ application.register("resource-form", ResourceFormController)
 import UserCrudController from "controllers/user_crud_controller"
 application.register("user-crud", UserCrudController)
 
+import DeptCrudController from "controllers/dept_crud_controller"
+application.register("dept-crud", DeptCrudController)
+
+import LucideController from "controllers/lucide_controller"
+application.register("lucide", LucideController)

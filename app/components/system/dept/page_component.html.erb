@@ -1,0 +1,27 @@
+﻿<div data-controller="dept-crud"
+     data-dept-crud-create-url-value="<%= create_url %>"
+     data-dept-crud-update-url-value="<%= update_url %>"
+     data-dept-crud-delete-url-value="<%= delete_url %>">
+  <%= render Ui::SearchFormComponent.new(
+    url: create_url,
+    fields: search_fields,
+    cols: 3,
+    enable_collapse: true
+  ) %>
+
+  <%= render Ui::GridToolbarComponent.new(
+    buttons: [
+      { label: "?묒? ?ㅼ슫濡쒕뱶", class: "btn btn-sm btn-secondary", action: "click->dept-crud#exportCsv" },
+      { label: "異붽?", class: "btn btn-sm btn-primary", action: "click->dept-crud#openCreate" }
+    ]
+  ) %>
+
+  <%= render Ui::AgGridComponent.new(
+    columns: columns,
+    url: grid_url,
+    height: "calc(100vh - 370px)",
+    page_size: 20
+  ) %>
+
+  <%= render System::Dept::FormModalComponent.new %>
+</div>

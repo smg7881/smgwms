@@ -1,0 +1,38 @@
+hq:
+  dept_code: HQ
+  dept_nm: 본부
+  dept_type: HQ
+  parent_dept_code:
+  description: 최상위 부서
+  dept_order: 1
+  use_yn: Y
+  create_by: admin
+  create_time: <%= Time.current %>
+  update_by: admin
+  update_time: <%= Time.current %>
+
+sales_team:
+  dept_code: SALES
+  dept_nm: 영업팀
+  dept_type: TEAM
+  parent_dept_code: HQ
+  description: 영업 조직
+  dept_order: 1
+  use_yn: Y
+  create_by: admin
+  create_time: <%= Time.current %>
+  update_by: admin
+  update_time: <%= Time.current %>
+
+cs_part:
+  dept_code: CS
+  dept_nm: 고객지원파트
+  dept_type: PART
+  parent_dept_code: SALES
+  description: 고객지원
+  dept_order: 1
+  use_yn: Y
+  create_by: admin
+  create_time: <%= Time.current %>
+  update_by: admin
+  update_time: <%= Time.current %>
