@@ -1,6 +1,10 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
+  static resourceName = ""
+  static deleteConfirmKey = ""
+  static entityLabel = ""
+
   connectBase({ events = [] } = {}) {
     this.dragState = null
     this._eventSubscriptions = events.map(({ name, handler }) => {
@@ -132,6 +136,62 @@ export default class extends Controller {
     })
 
     return payload
+  }
+
+  handleDelete = async (event) => {
+    const { id } = event.detail
+    const displayName = event.detail[this.constructor.deleteConfirmKey] || id
+    if (!confirm(`"${displayName}" ${this.constructor.entityLabel}를 삭제하시겠습니까?`)) return
+
+    try {
+      const { response, result } = await this.requestJson(this.deleteUrlValue.replace(":id", id), {
+        method: "DELETE"
+      })
+
+      if (!response.ok || !result.success) {
+        alert("삭제 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
+        return
+      }
+
+      alert(result.message || "삭제되었습니다.")
+      this.refreshGrid()
+    } catch {
+      alert("삭제 실패: 네트워크 오류")
+    }
+  }
+
+  async save() {
+    const payload = this.buildJsonPayload()
+    if (this.hasFieldIdTarget && this.fieldIdTarget.value) payload.id = this.fieldIdTarget.value
+
+    const isCreate = this.mode === "create"
+    const id = payload.id
+    delete payload.id
+    const url = isCreate ? this.createUrlValue : this.updateUrlValue.replace(":id", id)
+    const method = isCreate ? "POST" : "PATCH"
+
+    try {
+      const { response, result } = await this.requestJson(url, {
+        method,
+        body: { [this.constructor.resourceName]: payload }
+      })
+
+      if (!response.ok || !result.success) {
+        alert("저장 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
+        return
+      }
+
+      alert(result.message || "저장되었습니다.")
+      this.closeModal()
+      this.refreshGrid()
+    } catch {
+      alert("저장 실패: 네트워크 오류")
+    }
+  }
+
+  submit(event) {
+    event.preventDefault()
+    this.save()
   }
 
   async requestJson(url, { method, body, isMultipart = false }) {

@@ -1,6 +1,10 @@
 import BaseCrudController from "controllers/base_crud_controller"
 
 export default class extends BaseCrudController {
+  static resourceName = "user"
+  static deleteConfirmKey = "userNm"
+  static entityLabel = "사용자"
+
   static PLACEHOLDER_PHOTO = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Crect width='80' height='80' rx='8' fill='%23d0d7de'/%3E%3Cpath d='M30 50h20l-4-5-3 4-3-2-6 8zm-5-20v24a2 2 0 002 2h26a2 2 0 002-2V30a2 2 0 00-2-2h-5l-2-3H34l-2 3h-5a2 2 0 00-2 2zm15 4a6 6 0 110 12 6 6 0 010-12z' fill='%23fff'/%3E%3C/svg%3E"
 
   static targets = [
@@ -73,27 +77,7 @@ export default class extends BaseCrudController {
     this.openModal()
   }
 
-  handleDelete = async (event) => {
-    const { id, userNm } = event.detail
-    if (!confirm(`"${userNm}" 사용자를 삭제하시겠습니까?`)) return
-
-    try {
-      const { response, result } = await this.requestJson(this.deleteUrlValue.replace(":id", id), {
-        method: "DELETE"
-      })
-      if (!response.ok || !result.success) {
-        alert("삭제 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
-        return
-      }
-
-      alert(result.message || "삭제되었습니다.")
-      this.refreshGrid()
-    } catch {
-      alert("삭제 실패: 네트워크 오류")
-    }
-  }
-
-  async saveUser() {
+  async save() {
     const formData = new FormData(this.formTarget)
     const photoFile = this.photoInputTarget.files[0]
     if (photoFile) formData.append("user[photo]", photoFile)
@@ -143,11 +127,6 @@ export default class extends BaseCrudController {
     this.photoInputTarget.value = ""
     this.photoPreviewTarget.src = this.constructor.PLACEHOLDER_PHOTO
     this.photoRemoveBtnTarget.hidden = true
-  }
-
-  submitUser(event) {
-    event.preventDefault()
-    this.saveUser()
   }
 
   resetForm() {

@@ -7,6 +7,20 @@
   - `menu_crud_controller.js`
   - `user_crud_controller.js`
 
+### Static config (서브클래스 필수)
+```javascript
+static resourceName = "dept"        // JSON body 키 + URL 치환
+static deleteConfirmKey = "deptNm"  // event.detail에서 삭제 확인 표시명 추출 키
+static entityLabel = "부서"          // 삭제 확인 메시지 라벨
+```
+
+### Base에서 제공하는 공통 메서드
+- `handleDelete` — 삭제 확인 + DELETE 요청 (static config 사용)
+- `save()` — JSON payload 빌드 + POST/PATCH 요청 (static `resourceName`으로 body 키 결정)
+- `submit(event)` — `event.preventDefault()` 후 `save()` 호출
+
+서브클래스에서 오버라이드 가능 (예: `user_crud`는 multipart 전송을 위해 `save()` 오버라이드).
+
 ### Required targets
 - `overlay`, `modal`, `modalTitle`, `form`, `fieldId`
 
@@ -14,6 +28,7 @@
 - Toolbar create button: `click->*-crud#openCreate`
 - Modal cancel button role: `data-*-crud-role="cancel"`
 - Modal close action: `click->*-crud#closeModal`
+- Form submit: `submit->*-crud#submit`
 
 ### Event naming
 - Add child: `*-crud:add-child`
@@ -66,19 +81,31 @@
 - Page-specific CRUD controllers only handle transport (create/update/delete).
 
 ## 5. ViewComponent + Stimulus Wiring
-- UI wrappers:
-  - `Ui::SearchFormComponent`
-  - `Ui::AgGridComponent`
-  - `Ui::ResourceFormComponent`
-  - `Ui::GridToolbarComponent`
-  - `Ui::ModalShellComponent`
-- Screen composition:
-  - `System::*::PageComponent`
-  - `System::*::FormModalComponent`
+
+### UI 헬퍼 (직접 호출)
+검색 폼, 그리드, 리소스 폼은 ViewComponent 래퍼 없이 헬퍼를 직접 호출한다.
+- `helpers.search_form_tag(...)` — `SearchFormHelper`
+- `helpers.ag_grid_tag(...)` — `AgGridHelper`
+- `helpers.resource_form_tag(...)` — `ResourceFormHelper`
+
+### UI ViewComponent
+- `Ui::GridToolbarComponent` — 그리드 상단 버튼 툴바
+- `Ui::ModalShellComponent` — 드래그 가능한 모달 셸 (header/body/footer)
+
+### Screen composition
+- `System::BasePageComponent` — 공통 `initialize`, URL 헬퍼 (`create_url`, `update_url`, `delete_url`, `grid_url`)
+- `System::*::PageComponent` — `BasePageComponent` 상속. 검색 필드, 그리드 컬럼, 폼 필드, 모달을 하나의 컴포넌트에서 정의
+
+서브클래스는 `collection_path`와 `member_path`만 구현하면 된다:
+```ruby
+def collection_path(**) = helpers.system_dept_index_path(**)
+def member_path(id, **) = helpers.system_dept_path(id, **)
+```
 
 ### Rule
-- ViewComponent defines markup and `data-*` attributes.
-- Stimulus controllers only consume those attributes and events.
+- ViewComponent는 마크업과 `data-*` 속성을 정의한다.
+- Stimulus 컨트롤러는 해당 속성과 이벤트만 소비한다.
+- 헬퍼를 그대로 위임만 하는 래퍼 컴포넌트는 만들지 않는다.
 
 ## 6. Tabs Controller Convention
 - Controller: `app/javascript/controllers/tabs_controller.js`

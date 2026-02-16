@@ -1,8 +1,8 @@
-﻿<div data-controller="menu-crud"
+<div data-controller="menu-crud"
      data-menu-crud-create-url-value="<%= create_url %>"
      data-menu-crud-update-url-value="<%= update_url %>"
      data-menu-crud-delete-url-value="<%= delete_url %>">
-  <%= render Ui::SearchFormComponent.new(
+  <%= helpers.search_form_tag(
     url: create_url,
     fields: search_fields,
     cols: 3,
@@ -15,12 +15,40 @@
     ]
   ) %>
 
-  <%= render Ui::AgGridComponent.new(
+  <%= helpers.ag_grid_tag(
     columns: columns,
     url: grid_url,
     height: "calc(100vh - 370px)",
     page_size: 20
   ) %>
 
-  <%= render System::Menus::FormModalComponent.new %>
+  <%= render Ui::ModalShellComponent.new(
+    controller: "menu-crud",
+    title: "메뉴 추가",
+    overlay_click_action: "click->menu-crud#closeModal",
+    save_form_id: "menu-crud-form",
+    cancel_role: "cancel",
+    save_role: "save"
+  ) do |modal| %>
+    <% modal.with_body do %>
+      <input type="hidden" data-menu-crud-target="fieldId" />
+
+      <%= helpers.resource_form_tag(
+        model: AdmMenu.new,
+        url: "#",
+        cols: 2,
+        show_buttons: false,
+        target_controller: "menu_crud",
+        fields: form_fields,
+        form_data: {
+          menu_crud_target: "form",
+          action: "submit->resource-form#submit submit->menu-crud#submit"
+        },
+        form_html: {
+          id: "menu-crud-form",
+          novalidate: true
+        }
+      ) %>
+    <% end %>
+  <% end %>
 </div>

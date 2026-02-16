@@ -1,6 +1,10 @@
 import BaseCrudController from "controllers/base_crud_controller"
 
 export default class extends BaseCrudController {
+  static resourceName = "dept"
+  static deleteConfirmKey = "deptNm"
+  static entityLabel = "부서"
+
   static targets = [
     "overlay", "modal", "modalTitle", "form",
     "fieldId", "fieldDeptCode", "fieldDeptNm", "fieldParentDeptCode",
@@ -37,7 +41,6 @@ export default class extends BaseCrudController {
     this.openModal()
   }
 
-  // Backward compatibility for existing data-action wiring.
   openAddTopLevel() {
     this.openCreate()
   }
@@ -74,67 +77,6 @@ export default class extends BaseCrudController {
 
     this.mode = "update"
     this.openModal()
-  }
-
-  handleDelete = async (event) => {
-    const { id, deptNm } = event.detail
-    if (!confirm(`"${deptNm}" 부서를 삭제하시겠습니까?`)) return
-
-    try {
-      const { response, result } = await this.requestJson(this.deleteUrlValue.replace(":id", id), {
-        method: "DELETE"
-      })
-
-      if (!response.ok || !result.success) {
-        alert("삭제 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
-        return
-      }
-
-      alert(result.message || "삭제되었습니다.")
-      this.refreshGrid()
-    } catch {
-      alert("삭제 실패: 네트워크 오류")
-    }
-  }
-
-  async saveDept() {
-    const dept = this.buildJsonPayload()
-    if (this.hasFieldIdTarget && this.fieldIdTarget.value) dept.id = this.fieldIdTarget.value
-
-    let url
-    let method
-    if (this.mode === "create") {
-      url = this.createUrlValue
-      method = "POST"
-      delete dept.id
-    } else {
-      url = this.updateUrlValue.replace(":id", dept.id)
-      method = "PATCH"
-      delete dept.id
-    }
-
-    try {
-      const { response, result } = await this.requestJson(url, {
-        method,
-        body: { dept }
-      })
-
-      if (!response.ok || !result.success) {
-        alert("저장 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
-        return
-      }
-
-      alert(result.message || "저장되었습니다.")
-      this.closeModal()
-      this.refreshGrid()
-    } catch {
-      alert("저장 실패: 네트워크 오류")
-    }
-  }
-
-  submitDept(event) {
-    event.preventDefault()
-    this.saveDept()
   }
 
   resetForm() {

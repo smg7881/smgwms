@@ -1,26 +1,7 @@
-class System::Menus::PageComponent < ApplicationComponent
-  def initialize(query_params:)
-    @query_params = query_params
-  end
-
+class System::Menus::PageComponent < System::BasePageComponent
   private
-    attr_reader :query_params
-
-    def create_url
-      helpers.system_menus_path
-    end
-
-    def update_url
-      helpers.system_menu_path(":id")
-    end
-
-    def delete_url
-      helpers.system_menu_path(":id")
-    end
-
-    def grid_url
-      helpers.system_menus_path(format: :json, q: query_params["q"])
-    end
+    def collection_path(**) = helpers.system_menus_path(**)
+    def member_path(id, **) = helpers.system_menu_path(id, **)
 
     def search_fields
       [
@@ -50,6 +31,35 @@ class System::Menus::PageComponent < ApplicationComponent
         { field: "use_yn", headerName: "사용", maxWidth: 70 },
         { field: "tab_id", headerName: "탭ID", minWidth: 120 },
         { field: "actions", headerName: "작업", minWidth: 130, maxWidth: 130, filter: false, sortable: false, cellRenderer: "actionCellRenderer" }
+      ]
+    end
+
+    def form_fields
+      [
+        { field: "menu_cd", type: "input", label: "Menu Code", required: true, maxlength: 20, target: "fieldMenuCd" },
+        { field: "menu_nm", type: "input", label: "Menu Name", required: true, maxlength: 100, target: "fieldMenuNm" },
+        { field: "parent_cd", type: "input", label: "Parent Menu Code", maxlength: 20, readonly: true, target: "fieldParentCd" },
+        { field: "menu_url", type: "input", label: "URL", maxlength: 200, target: "fieldMenuUrl" },
+        { field: "menu_icon", type: "input", label: "Icon (lucide)", maxlength: 50, target: "fieldMenuIcon" },
+        { field: "sort_order", type: "number", label: "Sort Order", value: 0, target: "fieldSortOrder" },
+        { field: "menu_level", type: "number", label: "Level", readonly: true, target: "fieldMenuLevel" },
+        {
+          field: "menu_type",
+          type: "select",
+          label: "Type",
+          include_blank: false,
+          options: [ { label: "FOLDER", value: "FOLDER" }, { label: "MENU", value: "MENU" } ],
+          target: "fieldMenuType"
+        },
+        {
+          field: "use_yn",
+          type: "select",
+          label: "Use Y/N",
+          include_blank: false,
+          options: [ { label: "Y", value: "Y" }, { label: "N", value: "N" } ],
+          target: "fieldUseYn"
+        },
+        { field: "tab_id", type: "input", label: "Tab ID", maxlength: 50, target: "fieldTabId" }
       ]
     end
 end

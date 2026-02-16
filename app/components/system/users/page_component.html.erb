@@ -1,9 +1,9 @@
-﻿<div data-controller="user-crud"
+<div data-controller="user-crud"
      data-user-crud-create-url-value="<%= create_url %>"
      data-user-crud-update-url-value="<%= update_url %>"
      data-user-crud-delete-url-value="<%= delete_url %>"
      data-user-crud-check-id-url-value="<%= check_id_url %>">
-  <%= render Ui::SearchFormComponent.new(
+  <%= helpers.search_form_tag(
     url: create_url,
     fields: search_fields,
     cols: 3,
@@ -16,12 +16,40 @@
     ]
   ) %>
 
-  <%= render Ui::AgGridComponent.new(
+  <%= helpers.ag_grid_tag(
     columns: columns,
     url: grid_url,
     height: "calc(100vh - 370px)",
     page_size: 20
   ) %>
 
-  <%= render System::Users::FormModalComponent.new %>
+  <%= render Ui::ModalShellComponent.new(
+    controller: "user-crud",
+    title: "사용자 추가",
+    save_form_id: "user-crud-form",
+    cancel_role: "cancel",
+    save_role: "save"
+  ) do |modal| %>
+    <% modal.with_body do %>
+      <input type="hidden" data-user-crud-target="fieldId" />
+
+      <%= helpers.resource_form_tag(
+        model: User.new,
+        url: "#",
+        cols: 2,
+        show_buttons: false,
+        target_controller: "user_crud",
+        fields: form_fields,
+        form_data: {
+          user_crud_target: "form",
+          action: "submit->resource-form#submit submit->user-crud#submit"
+        },
+        form_html: {
+          id: "user-crud-form",
+          novalidate: true,
+          autocomplete: "off"
+        }
+      ) %>
+    <% end %>
+  <% end %>
 </div>

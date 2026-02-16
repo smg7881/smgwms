@@ -1,6 +1,10 @@
 import BaseCrudController from "controllers/base_crud_controller"
 
 export default class extends BaseCrudController {
+  static resourceName = "menu"
+  static deleteConfirmKey = "menuCd"
+  static entityLabel = "메뉴"
+
   static targets = [
     "overlay", "modal", "modalTitle", "form",
     "fieldId", "fieldMenuCd", "fieldMenuNm", "fieldParentCd",
@@ -73,66 +77,6 @@ export default class extends BaseCrudController {
     this.fieldTabIdTarget.value = data.tab_id || ""
     this.mode = "update"
     this.openModal()
-  }
-
-  handleDelete = async (event) => {
-    const { id, menuCd } = event.detail
-    if (!confirm(`"${menuCd}" 메뉴를 삭제하시겠습니까?`)) return
-
-    try {
-      const { response, result } = await this.requestJson(this.deleteUrlValue.replace(":id", id), {
-        method: "DELETE"
-      })
-      if (!response.ok || !result.success) {
-        alert("삭제 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
-        return
-      }
-
-      alert(result.message || "삭제되었습니다.")
-      this.refreshGrid()
-    } catch {
-      alert("삭제 실패: 네트워크 오류")
-    }
-  }
-
-  async saveMenu() {
-    const menu = this.buildJsonPayload()
-    if (this.hasFieldIdTarget && this.fieldIdTarget.value) menu.id = this.fieldIdTarget.value
-
-    let url
-    let method
-    if (this.mode === "create") {
-      url = this.createUrlValue
-      method = "POST"
-      delete menu.id
-    } else {
-      url = this.updateUrlValue.replace(":id", menu.id)
-      method = "PATCH"
-      delete menu.id
-    }
-
-    try {
-      const { response, result } = await this.requestJson(url, {
-        method,
-        body: { menu }
-      })
-
-      if (!response.ok || !result.success) {
-        alert("저장 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
-        return
-      }
-
-      alert(result.message || "저장되었습니다.")
-      this.closeModal()
-      this.refreshGrid()
-    } catch {
-      alert("저장 실패: 네트워크 오류")
-    }
-  }
-
-  submitMenu(event) {
-    event.preventDefault()
-    this.saveMenu()
   }
 
   resetForm() {
