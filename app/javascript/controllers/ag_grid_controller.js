@@ -89,6 +89,7 @@ export default class extends Controller {
   }
 
   connect() {
+    this.focusedRowNode = null
     this.initGrid()
     this._beforeCache = () => this.teardown()
     document.addEventListener("turbo:before-cache", this._beforeCache)
@@ -121,6 +122,8 @@ export default class extends Controller {
       paginationPageSizeSelector: [10, 20, 50, 100],
       localeText: AG_GRID_LOCALE_KO,
       animateRows: true,
+      getRowClass: (params) => this.buildRowClass(params),
+      onCellFocused: (event) => this.handleCellFocused(event),
       rowData: [],
       overlayNoRowsTemplate: `<span class="ag-overlay-no-rows-center">${AG_GRID_LOCALE_KO.noRowsToShow}</span>`
     }
@@ -131,15 +134,26 @@ export default class extends Controller {
       gridOptions.rowSelection = {
         mode: this.rowSelectionValue === "single" ? "singleRow" : "multiRow"
       }
+      gridOptions.selectionColumnDef = {
+        width: 46,
+        minWidth: 46,
+        maxWidth: 46,
+        sortable: false,
+        filter: false,
+        resizable: false,
+        suppressHeaderMenuButton: true
+      }
     }
 
     this.gridTarget.style.height = this.heightValue
     this.gridTarget.style.width = "100%"
     this.gridApi = createGrid(this.gridTarget, gridOptions)
+    this.ensureStatusColumnOrder()
 
     if (this.hasUrlValue && this.urlValue) {
       this.fetchData()
     } else if (this.rowDataValue.length > 0) {
+      this.focusedRowNode = null
       this.gridApi.setGridOption("rowData", this.rowDataValue)
     }
   }
@@ -162,6 +176,10 @@ export default class extends Controller {
 
       if (def.cellRenderer && RENDERER_REGISTRY[def.cellRenderer]) {
         def.cellRenderer = RENDERER_REGISTRY[def.cellRenderer]
+      }
+
+      if (def.editable === true) {
+        def.editable = (params) => !params?.data?.__is_deleted
       }
 
       return def
@@ -189,6 +207,7 @@ export default class extends Controller {
       .then((data) => {
         this.gridApi.setGridOption("loading", false)
         this.gridApi.setGridOption("overlayNoRowsTemplate", this.defaultNoRowsTemplate)
+        this.focusedRowNode = null
         this.gridApi.setGridOption("rowData", data)
         if (data.length === 0) this.gridApi.showNoRowsOverlay()
       })
@@ -204,5 +223,69 @@ export default class extends Controller {
         )
         this.gridApi.showNoRowsOverlay()
       })
+  }
+
+  handleCellFocused(event) {
+    if (typeof event?.rowIndex !== "number") return
+    if (this.isSelectionCheckboxColumn(event)) return
+
+    const nextFocusedNode = this.gridApi.getDisplayedRowAtIndex(event.rowIndex)
+    if (!nextFocusedNode) return
+    if (this.focusedRowNode === nextFocusedNode) return
+
+    const prevFocusedNode = this.focusedRowNode
+    this.focusedRowNode = nextFocusedNode
+
+    const rowNodes = []
+    if (prevFocusedNode) rowNodes.push(prevFocusedNode)
+    rowNodes.push(nextFocusedNode)
+
+    if (rowNodes.length > 0) {
+      this.gridApi.redrawRows({ rowNodes })
+    }
+  }
+
+  buildRowClass(params) {
+    const classes = []
+    if (params.node === this.focusedRowNode) classes.push("ag-row-keyboard-focus")
+    if (params.data?.__is_deleted) classes.push("ag-row-soft-deleted")
+    return classes.join(" ")
+  }
+
+  isSelectionCheckboxColumn(event) {
+    const column = event?.column
+    if (!column) return false
+
+    const colDef = column.getColDef?.()
+    if (colDef?.checkboxSelection) return true
+
+    const colId = column.getColId?.()
+    if (!colId) return false
+
+    return colId === "ag-Grid-SelectionColumn" || colId.includes("SelectionColumn")
+  }
+
+  ensureStatusColumnOrder() {
+    const reposition = () => {
+      if (!this.gridApi?.moveColumns || !this.gridApi?.getAllGridColumns) return
+
+      const columns = this.gridApi.getAllGridColumns()
+      const hasStatus = columns.some((column) => column.getColId?.() === "__row_status")
+      if (!hasStatus) return
+
+      const selectionIndex = columns.findIndex((column) => {
+        const colId = column.getColId?.() || ""
+        return colId === "ag-Grid-SelectionColumn" || colId.includes("SelectionColumn")
+      })
+      if (selectionIndex < 0) return
+
+      const statusIndex = columns.findIndex((column) => column.getColId?.() === "__row_status")
+      if (statusIndex === selectionIndex + 1) return
+
+      this.gridApi.moveColumns(["__row_status"], selectionIndex + 1)
+    }
+
+    queueMicrotask(reposition)
+    setTimeout(reposition, 0)
   }
 }

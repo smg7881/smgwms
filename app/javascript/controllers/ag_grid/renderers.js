@@ -114,6 +114,37 @@ export const RENDERER_REGISTRY = {
     return span
   },
 
+  rowStatusCellRenderer: (params) => {
+    const row = params.data || {}
+    const span = document.createElement("span")
+    span.className = "row-status-icon"
+
+    if (row.__is_deleted) {
+      span.textContent = "−"
+      span.title = "행삭제"
+      span.classList.add("is-delete")
+      return span
+    }
+
+    if (row.__is_new) {
+      span.textContent = "+"
+      span.title = "행추가"
+      span.classList.add("is-add")
+      return span
+    }
+
+    if (row.__is_updated) {
+      span.textContent = "✎"
+      span.title = "행수정"
+      span.classList.add("is-edit")
+      return span
+    }
+
+    span.textContent = ""
+    span.title = ""
+    return span
+  },
+
   deptActionCellRenderer: (params) => {
     const container = document.createElement("div")
     container.classList.add("grid-action-buttons")
@@ -166,4 +197,3 @@ export const RENDERER_REGISTRY = {
     return container
   }
 }
-

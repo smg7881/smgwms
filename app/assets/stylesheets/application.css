@@ -823,6 +823,39 @@ turbo-frame#tab-bar { display: block; }
   text-decoration: underline;
 }
 
+.ag-row.ag-row-keyboard-focus .ag-cell {
+  background: rgba(88, 166, 255, 0.14) !important;
+}
+
+.ag-row.ag-row-soft-deleted .ag-cell {
+  opacity: 0.6;
+}
+
+.ag-row.ag-row-soft-deleted .ag-cell-value {
+  text-decoration: line-through;
+}
+
+.row-status-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.row-status-icon.is-add {
+  color: #2ea043;
+}
+
+.row-status-icon.is-edit {
+  color: #58a6ff;
+}
+
+.row-status-icon.is-delete {
+  color: #f85149;
+}
+
 .code-page-panels {
   display: grid;
   grid-template-columns: 1fr 1fr;

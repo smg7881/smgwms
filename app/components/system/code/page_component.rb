@@ -52,6 +52,19 @@
 
     def master_columns
       [
+        {
+          field: "__row_status",
+          headerName: "상태",
+          width: 68,
+          minWidth: 68,
+          maxWidth: 68,
+          editable: false,
+          sortable: false,
+          filter: false,
+          resizable: false,
+          cellStyle: { textAlign: "center" },
+          cellRenderer: "rowStatusCellRenderer"
+        },
         { field: "code", headerName: "코드", minWidth: 130, editable: true },
         { field: "code_name", headerName: "코드명", minWidth: 180, editable: true },
         {
@@ -72,6 +85,19 @@
 
     def detail_columns
       [
+        {
+          field: "__row_status",
+          headerName: "상태",
+          width: 68,
+          minWidth: 68,
+          maxWidth: 68,
+          editable: false,
+          sortable: false,
+          filter: false,
+          resizable: false,
+          cellStyle: { textAlign: "center" },
+          cellRenderer: "rowStatusCellRenderer"
+        },
         { field: "detail_code", headerName: "상세코드", minWidth: 130, editable: true },
         { field: "detail_code_name", headerName: "상세코드명", minWidth: 180, editable: true },
         { field: "short_name", headerName: "단축명", minWidth: 120, editable: true },

@@ -37,6 +37,8 @@ export default class extends Controller {
 
     this.masterApi.addEventListener("rowClicked", this.handleMasterRowClicked)
     this.masterApi.addEventListener("cellFocused", this.handleMasterCellFocused)
+    this.masterApi.addEventListener("cellValueChanged", this.handleMasterCellValueChanged)
+    this.detailApi.addEventListener("cellValueChanged", this.handleDetailCellValueChanged)
 
     setTimeout(() => {
       this.resetMasterTracking()
@@ -49,6 +51,10 @@ export default class extends Controller {
     if (this.masterApi) {
       this.masterApi.removeEventListener("rowClicked", this.handleMasterRowClicked)
       this.masterApi.removeEventListener("cellFocused", this.handleMasterCellFocused)
+      this.masterApi.removeEventListener("cellValueChanged", this.handleMasterCellValueChanged)
+    }
+    if (this.detailApi) {
+      this.detailApi.removeEventListener("cellValueChanged", this.handleDetailCellValueChanged)
     }
   }
 
@@ -67,7 +73,7 @@ export default class extends Controller {
 
   async handleMasterRowChange(rowData) {
     const code = rowData?.code
-    if (!code) {
+    if (!code || rowData?.__is_deleted) {
       this.selectedCodeValue = ""
       this.refreshSelectedCodeLabel()
       this.detailApi.setGridOption("rowData", [])
@@ -113,19 +119,36 @@ export default class extends Controller {
   }
 
   deleteMasterRows() {
-    const selectedRows = this.masterApi.getSelectedRows()
-    if (!selectedRows.length) {
+    const selectedNodes = this.masterApi.getSelectedNodes()
+    if (!selectedNodes.length) {
       alert("삭제할 행을 선택하세요.")
       return
     }
 
-    selectedRows.forEach((row) => {
-      if (!row.__is_new && row.code) {
-        this.masterDeletedCodes.push(row.code)
+    const rowsToRemove = []
+    const nodesToRefresh = []
+
+    selectedNodes.forEach((node) => {
+      const row = node.data
+      if (!row) return
+
+      if (row.__is_new) {
+        rowsToRemove.push(row)
+        return
       }
+
+      if (row.code) this.masterDeletedCodes.push(row.code)
+      row.__is_deleted = true
+      delete row.__is_updated
+      nodesToRefresh.push(node)
     })
 
-    this.masterApi.applyTransaction({ remove: selectedRows })
+    if (rowsToRemove.length > 0) {
+      this.masterApi.applyTransaction({ remove: rowsToRemove })
+    }
+    if (nodesToRefresh.length > 0) {
+      this.refreshStatusCells(this.masterApi, nodesToRefresh)
+    }
   }
 
   async saveMasterRows() {
@@ -169,19 +192,36 @@ export default class extends Controller {
   }
 
   deleteDetailRows() {
-    const selectedRows = this.detailApi.getSelectedRows()
-    if (!selectedRows.length) {
+    const selectedNodes = this.detailApi.getSelectedNodes()
+    if (!selectedNodes.length) {
       alert("삭제할 행을 선택하세요.")
       return
     }
 
-    selectedRows.forEach((row) => {
-      if (!row.__is_new && row.detail_code) {
-        this.detailDeletedCodes.push(row.detail_code)
+    const rowsToRemove = []
+    const nodesToRefresh = []
+
+    selectedNodes.forEach((node) => {
+      const row = node.data
+      if (!row) return
+
+      if (row.__is_new) {
+        rowsToRemove.push(row)
+        return
       }
+
+      if (row.detail_code) this.detailDeletedCodes.push(row.detail_code)
+      row.__is_deleted = true
+      delete row.__is_updated
+      nodesToRefresh.push(node)
     })
 
-    this.detailApi.applyTransaction({ remove: selectedRows })
+    if (rowsToRemove.length > 0) {
+      this.detailApi.applyTransaction({ remove: rowsToRemove })
+    }
+    if (nodesToRefresh.length > 0) {
+      this.refreshStatusCells(this.detailApi, nodesToRefresh)
+    }
   }
 
   async saveDetailRows() {
@@ -208,17 +248,22 @@ export default class extends Controller {
     const rows = this.collectRows(this.masterApi)
 
     const rowsToInsert = rows
-      .filter((row) => row.__is_new)
+      .filter((row) => row.__is_new && !row.__is_deleted)
       .map((row) => this.pickMasterFields(row))
 
     const rowsToUpdate = rows
-      .filter((row) => !row.__is_new && this.masterRowChanged(row))
+      .filter((row) => !row.__is_new && !row.__is_deleted && this.masterRowChanged(row))
       .map((row) => this.pickMasterFields(row))
+
+    const rowsToDelete = [
+      ...this.masterDeletedCodes,
+      ...rows.filter((row) => row.__is_deleted && row.code).map((row) => row.code)
+    ]
 
     return {
       rowsToInsert,
       rowsToUpdate,
-      rowsToDelete: [...new Set(this.masterDeletedCodes)]
+      rowsToDelete: [...new Set(rowsToDelete)]
     }
   }
 
@@ -226,17 +271,22 @@ export default class extends Controller {
     const rows = this.collectRows(this.detailApi)
 
     const rowsToInsert = rows
-      .filter((row) => row.__is_new)
+      .filter((row) => row.__is_new && !row.__is_deleted)
       .map((row) => this.pickDetailFields(row))
 
     const rowsToUpdate = rows
-      .filter((row) => !row.__is_new && this.detailRowChanged(row))
+      .filter((row) => !row.__is_new && !row.__is_deleted && this.detailRowChanged(row))
       .map((row) => this.pickDetailFields(row))
+
+    const rowsToDelete = [
+      ...this.detailDeletedCodes,
+      ...rows.filter((row) => row.__is_deleted && row.detail_code).map((row) => row.detail_code)
+    ]
 
     return {
       rowsToInsert,
       rowsToUpdate,
-      rowsToDelete: [...new Set(this.detailDeletedCodes)]
+      rowsToDelete: [...new Set(rowsToDelete)]
     }
   }
 
@@ -385,6 +435,8 @@ export default class extends Controller {
     this.collectRows(this.masterApi).forEach((row) => {
       if (row.code) this.masterOriginalMap.set(row.code, { ...row })
       delete row.__is_new
+      delete row.__is_updated
+      delete row.__is_deleted
       delete row.__temp_id
     })
   }
@@ -395,7 +447,37 @@ export default class extends Controller {
     this.collectRows(this.detailApi).forEach((row) => {
       if (row.detail_code) this.detailOriginalMap.set(row.detail_code, { ...row })
       delete row.__is_new
+      delete row.__is_updated
+      delete row.__is_deleted
       delete row.__temp_id
+    })
+  }
+
+  handleMasterCellValueChanged = (event) => {
+    this.markRowUpdated(this.masterApi, event)
+  }
+
+  handleDetailCellValueChanged = (event) => {
+    this.markRowUpdated(this.detailApi, event)
+  }
+
+  markRowUpdated(api, event) {
+    if (!event?.node?.data) return
+    if (event.colDef?.field === "__row_status") return
+    if (event.newValue === event.oldValue) return
+
+    const row = event.node.data
+    if (row.__is_new || row.__is_deleted) return
+
+    row.__is_updated = true
+    this.refreshStatusCells(api, [event.node])
+  }
+
+  refreshStatusCells(api, rowNodes) {
+    api.refreshCells({
+      rowNodes,
+      columns: ["__row_status"],
+      force: true
     })
   }
 
