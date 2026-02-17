@@ -686,6 +686,18 @@ textarea.form-control { resize: vertical; }
   color: var(--text-primary);
 }
 
+.btn-success {
+  background: transparent;
+  color: var(--accent-green);
+  border-color: var(--accent-green);
+}
+
+.btn-success:hover {
+  background: var(--accent-green);
+  color: #fff;
+  text-decoration: none;
+}
+
 .btn-danger {
   background: transparent;
   color: var(--accent-rose);
@@ -803,4 +815,43 @@ turbo-frame#tab-bar { display: block; }
 
 .ag-grid-link:hover {
   text-decoration: underline;
+}
+
+.code-page-panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.code-page-panel {
+  min-width: 0;
+}
+
+.code-page-panel-title {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.code-page-panel-title h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.code-page-selected-code {
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.code-page-panel .grid-toolbar {
+  margin: 0;
+}
+
+@media (max-width: 1200px) {
+  .code-page-panels {
+    grid-template-columns: 1fr;
+  }
 }

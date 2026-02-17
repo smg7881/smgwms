@@ -1,0 +1,73 @@
+﻿<div class="code-page"
+     data-controller="code-grid"
+     data-code-grid-master-batch-url-value="<%= master_batch_save_url %>"
+     data-code-grid-detail-batch-url-template-value="<%= detail_batch_save_url_template %>"
+     data-code-grid-detail-list-url-template-value="/system/code/:code/details.json"
+     data-code-grid-selected-code-value="<%= selected_code.to_s %>">
+  <%= helpers.search_form_tag(
+    url: create_url,
+    fields: search_fields,
+    cols: 3,
+    enable_collapse: true
+  ) %>
+
+  <div class="code-page-panels">
+    <section class="code-page-panel">
+      <div class="code-page-panel-title">
+        <h3>코드 목록</h3>
+        <%= render Ui::GridToolbarComponent.new(
+          buttons: [
+            { label: "행추가", class: "btn btn-sm btn-primary", action: "click->code-grid#addMasterRow" },
+            { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->code-grid#deleteMasterRows" },
+            { label: "저장", class: "btn btn-sm btn-success", action: "click->code-grid#saveMasterRows" }
+          ]
+        ) %>
+      </div>
+
+      <%= helpers.ag_grid_tag(
+        columns: master_columns,
+        url: grid_url,
+        height: "calc(100vh - 420px)",
+        page_size: 20,
+        row_selection: "multiple",
+        data: { code_grid_target: "masterGrid" }
+      ) %>
+    </section>
+
+    <section class="code-page-panel">
+      <div class="code-page-panel-title">
+        <div>
+          <h3>상세코드 목록</h3>
+          <p class="code-page-selected-code" data-code-grid-target="selectedCodeLabel"><%= selected_code_label %></p>
+        </div>
+        <%= render Ui::GridToolbarComponent.new(
+          buttons: [
+            { label: "행추가", class: "btn btn-sm btn-primary", action: "click->code-grid#addDetailRow" },
+            { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->code-grid#deleteDetailRows" },
+            { label: "저장", class: "btn btn-sm btn-success", action: "click->code-grid#saveDetailRows" }
+          ]
+        ) %>
+      </div>
+
+      <% if detail_grid_url.present? %>
+        <%= helpers.ag_grid_tag(
+          columns: detail_columns,
+          url: detail_grid_url,
+          height: "calc(100vh - 420px)",
+          page_size: 20,
+          row_selection: "multiple",
+          data: { code_grid_target: "detailGrid" }
+        ) %>
+      <% else %>
+        <%= helpers.ag_grid_tag(
+          columns: detail_columns,
+          row_data: [],
+          height: "calc(100vh - 420px)",
+          page_size: 20,
+          row_selection: "multiple",
+          data: { code_grid_target: "detailGrid" }
+        ) %>
+      <% end %>
+    </section>
+  </div>
+</div>

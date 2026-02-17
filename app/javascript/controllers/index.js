@@ -21,5 +21,8 @@ application.register("user-crud", UserCrudController)
 import DeptCrudController from "controllers/dept_crud_controller"
 application.register("dept-crud", DeptCrudController)
 
+import CodeGridController from "controllers/code_grid_controller"
+application.register("code-grid", CodeGridController)
+
 import LucideController from "controllers/lucide_controller"
 application.register("lucide", LucideController)

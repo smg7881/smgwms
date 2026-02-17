@@ -1,35 +1,36 @@
-module AgGridHelper
-  # ── 허용된 컬럼 속성 목록 (White List) ──
-  # 보안 및 데이터 무결성을 위해, 클라이언트(브라우저)로 전달될 컬럼 정의(Column Definition) 객체에서
-  # 허용할 키(Key)들을 명시적으로 정의합니다.
-  # 여기에 없는 키는 `sanitize_column_defs` 메서드에서 제거됩니다.
+﻿module AgGridHelper
+  # ?? ?덉슜??而щ읆 ?띿꽦 紐⑸줉 (White List) ??
+  # 蹂댁븞 諛??곗씠??臾닿껐?깆쓣 ?꾪빐, ?대씪?댁뼵??釉뚮씪?곗?)濡??꾨떖??而щ읆 ?뺤쓽(Column Definition) 媛앹껜?먯꽌
+  # ?덉슜????Key)?ㅼ쓣 紐낆떆?곸쑝濡??뺤쓽?⑸땲??
+  # ?ш린???녿뒗 ?ㅻ뒗 `sanitize_column_defs` 硫붿꽌?쒖뿉???쒓굅?⑸땲??
   ALLOWED_COLUMN_KEYS = %i[
-    field headerName # 데이터 필드명, 헤더 표시명
-    flex minWidth maxWidth width # 컬럼 크기 관련
-    filter sortable resizable editable # 기능 활성화 여부
-    pinned hide cellStyle # 고정, 숨김, 스타일
-    formatter # 클라이언트 측 포맷터 함수 이름 (controller.js의 FORMATTER_REGISTRY 키)
-    cellRenderer cellRendererParams # 셀 렌더러 및 파라미터
+    field headerName
+    flex minWidth maxWidth width
+    filter sortable resizable editable
+    pinned hide cellStyle
+    type cellEditor cellEditorParams
+    formatter
+    cellRenderer cellRendererParams
   ].freeze
 
-  # ── AG Grid 생성 헬퍼 메서드 ──
-  # 뷰(View)에서 AG Grid를 쉽게 생성하기 위한 헬퍼입니다.
-  # Stimulus 컨트롤러(`ag-grid`)와 연결되는 HTML 구조를 생성합니다.
+  # ?? AG Grid ?앹꽦 ?ы띁 硫붿꽌????
+  # 酉?View)?먯꽌 AG Grid瑜??쎄쾶 ?앹꽦?섍린 ?꾪븳 ?ы띁?낅땲??
+  # Stimulus 而⑦듃濡ㅻ윭(`ag-grid`)? ?곌껐?섎뒗 HTML 援ъ“瑜??앹꽦?⑸땲??
   #
-  # @param columns [Array<Hash>] 컬럼 정의 배열 (필수)
-  # @param url [String, nil] 데이터를 비동기로 로드할 API URL (선택)
-  # @param row_data [Array<Hash>, nil] 정적 데이터 (url이 없을 때 사용)
-  # @param pagination [Boolean] 페이지네이션 사용 여부 (기본값: true)
-  # @param page_size [Integer] 페이지당 행 수 (기본값: 20)
-  # @param height [String] 그리드 높이 (CSS 값, 기본값: "500px")
-  # @param row_selection [String, nil] 행 선택 모드 ("single" | "multiple" | nil)
-  # @param html_options [Hash] 래퍼 div에 적용할 추가 HTML 속성 (class, style 등)
+  # @param columns [Array<Hash>] 而щ읆 ?뺤쓽 諛곗뿴 (?꾩닔)
+  # @param url [String, nil] ?곗씠?곕? 鍮꾨룞湲곕줈 濡쒕뱶??API URL (?좏깮)
+  # @param row_data [Array<Hash>, nil] ?뺤쟻 ?곗씠??(url???놁쓣 ???ъ슜)
+  # @param pagination [Boolean] ?섏씠吏?ㅼ씠???ъ슜 ?щ? (湲곕낯媛? true)
+  # @param page_size [Integer] ?섏씠吏??????(湲곕낯媛? 20)
+  # @param height [String] 洹몃━???믪씠 (CSS 媛? 湲곕낯媛? "500px")
+  # @param row_selection [String, nil] ???좏깮 紐⑤뱶 ("single" | "multiple" | nil)
+  # @param html_options [Hash] ?섑띁 div???곸슜??異붽? HTML ?띿꽦 (class, style ??
   #
-  # @example 사용 예시
+  # @example ?ъ슜 ?덉떆
   #   <%= ag_grid_tag(
   #     columns: [
-  #       { field: "title", headerName: "제목" },
-  #       { field: "price", headerName: "가격", formatter: "currency" }
+  #       { field: "title", headerName: "?쒕ぉ" },
+  #       { field: "price", headerName: "媛寃?, formatter: "currency" }
   #     ],
   #     url: posts_path(format: :json),
   #     page_size: 10
@@ -37,53 +38,54 @@ module AgGridHelper
   def ag_grid_tag(columns:, url: nil, row_data: nil, pagination: true,
                   page_size: 20, height: "500px", row_selection: nil,
                   **html_options)
-    # 컬럼 정의 보안 처리 (허용되지 않은 속성 제거)
+    # 而щ읆 ?뺤쓽 蹂댁븞 泥섎━ (?덉슜?섏? ?딆? ?띿꽦 ?쒓굅)
     safe_columns = sanitize_column_defs(columns)
 
-    # Stemulus 컨트롤러에 전달할 데이터 속성 구성
-    # data-ag-grid-* 속성으로 변환되어 JS 컨트롤러의 values로 전달됩니다.
+    # Stemulus 而⑦듃濡ㅻ윭???꾨떖???곗씠???띿꽦 援ъ꽦
+    # data-ag-grid-* ?띿꽦?쇰줈 蹂?섎릺??JS 而⑦듃濡ㅻ윭??values濡??꾨떖?⑸땲??
     stimulus_data = {
-      controller: "ag-grid",             # 연결할 Stimulus 컨트롤러 이름
-      "ag-grid-columns-value" => safe_columns.to_json, # 컬럼 정의
-      "ag-grid-pagination-value" => pagination,        # 페이지네이션 여부
-      "ag-grid-page-size-value" => page_size,          # 페이지 크기
-      "ag-grid-height-value" => height                 # 높이
+      controller: "ag-grid",             # ?곌껐??Stimulus 而⑦듃濡ㅻ윭 ?대쫫
+      "ag-grid-columns-value" => safe_columns.to_json, # 而щ읆 ?뺤쓽
+      "ag-grid-pagination-value" => pagination,        # ?섏씠吏?ㅼ씠???щ?
+      "ag-grid-page-size-value" => page_size,          # ?섏씠吏 ?ш린
+      "ag-grid-height-value" => height                 # ?믪씠
     }
 
-    # 선택적 속성 추가
+    # ?좏깮???띿꽦 異붽?
     stimulus_data["ag-grid-url-value"] = url if url.present?
     stimulus_data["ag-grid-row-data-value"] = row_data.to_json if row_data.present?
     stimulus_data["ag-grid-row-selection-value"] = row_selection if row_selection.present?
 
-    # 사용자가 전달한 html_options와 stimulus_data 병합
-    wrapper_attrs = html_options.merge(data: stimulus_data)
+    # ?ъ슜?먭? ?꾨떖??html_options? stimulus_data 蹂묓빀
+    custom_data = html_options.delete(:data) || {}
+    wrapper_attrs = html_options.merge(data: custom_data.merge(stimulus_data))
 
-    # HTML 생성:
+    # HTML ?앹꽦:
     # <div data-controller="ag-grid" ...>
     #   <div data-ag-grid-target="grid"></div>
     # </div>
     content_tag(:div, wrapper_attrs) do
-      # 실제 그리드가 렌더링될 타겟 요소
+      # ?ㅼ젣 洹몃━?쒓? ?뚮뜑留곷맆 ?寃??붿냼
       content_tag(:div, "", data: { "ag-grid-target": "grid" })
     end
   end
 
   private
 
-    # ── 컬럼 정의 정제 (Sanitization) ──
-    # 입력받은 컬럼 정의 배열을 순회하며 허용된 키만 남기고 나머지는 제거합니다.
-    # 개발자가 실수로 유효하지 않은 키를 넣었을 때 경고 로그를 남겨 디버깅을 돕습니다.
+    # ?? 而щ읆 ?뺤쓽 ?뺤젣 (Sanitization) ??
+    # ?낅젰諛쏆? 而щ읆 ?뺤쓽 諛곗뿴???쒗쉶?섎ŉ ?덉슜???ㅻ쭔 ?④린怨??섎㉧吏???쒓굅?⑸땲??
+    # 媛쒕컻?먭? ?ㅼ닔濡??좏슚?섏? ?딆? ?ㅻ? ?ｌ뿀????寃쎄퀬 濡쒓렇瑜??④꺼 ?붾쾭源낆쓣 ?뺤뒿?덈떎.
     def sanitize_column_defs(columns)
       columns.map do |col|
         col = col.symbolize_keys
-        # 허용된 키만 슬라이스하여 안전한 객체 생성
+        # ?덉슜???ㅻ쭔 ?щ씪?댁뒪?섏뿬 ?덉쟾??媛앹껜 ?앹꽦
         sanitized = col.slice(*ALLOWED_COLUMN_KEYS)
 
-        # 제거된 키 확인 및 로그 출력
+        # ?쒓굅?????뺤씤 諛?濡쒓렇 異쒕젰
         rejected = col.keys - ALLOWED_COLUMN_KEYS
         if rejected.any?
           Rails.logger.warn(
-            "[ag_grid_helper] 허용되지 않은 columnDef 키 제거: #{rejected.join(', ')} " \
+            "[ag_grid_helper] ?덉슜?섏? ?딆? columnDef ???쒓굅: #{rejected.join(', ')} " \
             "(field: #{col[:field]})"
           )
         end
@@ -92,3 +94,4 @@ module AgGridHelper
       end
     end
 end
+

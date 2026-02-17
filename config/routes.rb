@@ -14,6 +14,12 @@ Rails.application.routes.draw do
   namespace :system do
     resources :dept, controller: :dept, only: [ :index, :show, :create, :update, :destroy ]
     resources :menus, only: [ :index, :create, :update, :destroy ]
+    resources :code, controller: :code, only: [ :index, :create, :update, :destroy ], param: :id do
+      post :batch_save, on: :collection
+      resources :details, controller: :code_details, only: [ :index, :create, :update, :destroy ], param: :detail_code do
+        post :batch_save, on: :collection
+      end
+    end
     resources :users do
       get :check_id, on: :collection
     end

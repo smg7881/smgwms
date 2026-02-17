@@ -1,0 +1,3 @@
+<%= turbo_frame_tag "main-content" do %>
+  <%= render System::Code::PageComponent.new(query_params: request.query_parameters, selected_code: params[:selected_code]) %>
+<% end %>

@@ -101,6 +101,19 @@ export const RENDERER_REGISTRY = {
     return span
   },
 
+  codeUseYnCellRenderer: (params) => {
+    const span = document.createElement("span")
+    span.style.fontWeight = "bold"
+    if (params.value === "Y") {
+      span.style.color = "#18a058"
+      span.textContent = "Y"
+    } else {
+      span.style.color = "#d03050"
+      span.textContent = "N"
+    }
+    return span
+  },
+
   deptActionCellRenderer: (params) => {
     const container = document.createElement("div")
     container.classList.add("grid-action-buttons")

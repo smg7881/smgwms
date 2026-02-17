@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_15_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_16_090100) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -37,6 +37,36 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_15_120000) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "adm_code_details", force: :cascade do |t|
+    t.string "code", limit: 50, null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "detail_code", limit: 50, null: false
+    t.string "detail_code_name", limit: 100, null: false
+    t.string "ref_code", limit: 50
+    t.string "short_name", limit: 100
+    t.integer "sort_order", default: 0, null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn", limit: 1, default: "Y", null: false
+    t.index ["code", "detail_code"], name: "index_adm_code_details_on_code_and_detail_code", unique: true
+    t.index ["code", "sort_order", "detail_code"], name: "index_adm_code_details_on_code_order_and_detail_code"
+    t.index ["code"], name: "index_adm_code_details_on_code"
+    t.index ["use_yn"], name: "index_adm_code_details_on_use_yn"
+  end
+
+  create_table "adm_code_headers", force: :cascade do |t|
+    t.string "code", limit: 50, null: false
+    t.string "code_name", limit: 100, null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn", limit: 1, default: "Y", null: false
+    t.index ["code"], name: "index_adm_code_headers_on_code", unique: true
+    t.index ["use_yn"], name: "index_adm_code_headers_on_use_yn"
   end
 
   create_table "adm_depts", id: false, force: :cascade do |t|
