@@ -15,7 +15,7 @@
     ]
   ) %>
 
-  <%= helpers.ag_grid_tag(
+  <%= render Ui::AgGridComponent.new(
     columns: columns,
     url: grid_url,
     height: "calc(100vh - 370px)",

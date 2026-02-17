@@ -24,7 +24,7 @@
     enable_collapse: true
   ) %>
 
-  <%= ag_grid_tag(
+  <%= render Ui::AgGridComponent.new(
     columns: [
       { field: "id", headerName: "#", maxWidth: 80, filter: false },
       { field: "title", headerName: "제목", flex: 2, cellRenderer: "link", cellRendererParams: { path: "/posts/${id}" } },
