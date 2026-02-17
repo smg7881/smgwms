@@ -397,6 +397,12 @@ turbo-frame#tab-bar {
   height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
+  background: var(--text-muted);
+  transition: background 0.15s;
+}
+
+.tab-item.active .tab-dot {
+  background: var(--accent);
 }
 
 .tab-close {

@@ -2,7 +2,7 @@
      data-dept-crud-create-url-value="<%= create_url %>"
      data-dept-crud-update-url-value="<%= update_url %>"
      data-dept-crud-delete-url-value="<%= delete_url %>">
-  <%= helpers.search_form_tag(
+  <%= render Ui::SearchFormComponent.new(
     url: create_url,
     fields: search_fields,
     cols: 3,
@@ -33,7 +33,7 @@
     <% modal.with_body do %>
       <input type="hidden" data-dept-crud-target="fieldId" />
 
-      <%= helpers.resource_form_tag(
+      <%= render Ui::ResourceFormComponent.new(
         model: AdmDept.new,
         url: "#",
         cols: 2,

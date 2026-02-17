@@ -1,3 +1,11 @@
+<% if @active_content_url.present? %>
+  <%= turbo_frame_tag "main-content", src: @active_content_url, loading: :eager do %>
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <span>Loading...</span>
+    </div>
+  <% end %>
+<% else %>
 <%= turbo_frame_tag "main-content" do %>
   <div class="page-header">
     <h2><%= lucide_icon("bar-chart-3", css_class: "title-icon") %> 대시보드 개요</h2>
@@ -58,4 +66,5 @@
       </tbody>
     </table>
   </div>
+<% end %>
 <% end %>

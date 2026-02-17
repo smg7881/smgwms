@@ -65,13 +65,13 @@ export const RENDERER_REGISTRY = {
 
     container.appendChild(createActionButton({
       text: "✎",
-      title: "?섏젙",
+      title: "수정",
       onClick: () => emit(container, "user-crud:edit", { userData: params.data })
     }))
     container.appendChild(createActionButton({
       text: "X",
-      title: "??젣",
-      classes: [ "grid-action-btn--danger" ],
+      title: "삭제",
+      classes: ["grid-action-btn--danger"],
       onClick: () => emit(container, "user-crud:delete", { id: params.data.id, userNm: params.data.user_nm })
     }))
     return container
@@ -120,18 +120,18 @@ export const RENDERER_REGISTRY = {
 
     container.appendChild(createActionButton({
       text: "+",
-      title: "?섏쐞遺?쒖텛媛",
+      title: "하위부서추가",
       onClick: () => emit(container, "dept-crud:add-child", { parentCode: params.data.dept_code })
     }))
     container.appendChild(createActionButton({
       text: "✎",
-      title: "?섏젙",
+      title: "수정",
       onClick: () => emit(container, "dept-crud:edit", { deptData: params.data })
     }))
     container.appendChild(createActionButton({
       text: "X",
-      title: "??젣",
-      classes: [ "grid-action-btn--danger" ],
+      title: "삭제",
+      classes: ["grid-action-btn--danger"],
       onClick: () => emit(container, "dept-crud:delete", { id: params.data.id, deptNm: params.data.dept_nm })
     }))
     return container
@@ -143,7 +143,7 @@ export const RENDERER_REGISTRY = {
 
     container.appendChild(createActionButton({
       text: "+",
-      title: "?섏쐞硫붾돱異붽?",
+      title: "하위메뉴추가",
       onClick: () => emit(container, "menu-crud:add-child", {
         parentCd: params.data.menu_cd,
         parentLevel: params.data.menu_level
@@ -151,13 +151,13 @@ export const RENDERER_REGISTRY = {
     }))
     container.appendChild(createActionButton({
       text: "✎",
-      title: "?섏젙",
+      title: "수정",
       onClick: () => emit(container, "menu-crud:edit", { menuData: params.data })
     }))
     container.appendChild(createActionButton({
       text: "X",
-      title: "??젣",
-      classes: [ "grid-action-btn--danger" ],
+      title: "삭제",
+      classes: ["grid-action-btn--danger"],
       onClick: () => emit(container, "menu-crud:delete", {
         id: params.data.id,
         menuCd: params.data.menu_cd

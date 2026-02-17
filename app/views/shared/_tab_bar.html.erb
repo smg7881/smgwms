@@ -7,7 +7,7 @@
             type="button"
             data-action="click->tabs#activateTab"
             data-tab-id="<%= tab_id %>">
-      <span class="tab-dot" style="background:<%= TabRegistry.color_css(tab_id) %>"></span>
+      <span class="tab-dot"></span>
       <%= tab["label"] %>
 
       <% if tab_id != "overview" %>

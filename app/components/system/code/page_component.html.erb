@@ -4,7 +4,7 @@
      data-code-grid-detail-batch-url-template-value="<%= detail_batch_save_url_template %>"
      data-code-grid-detail-list-url-template-value="/system/code/:code/details.json"
      data-code-grid-selected-code-value="<%= selected_code.to_s %>">
-  <%= helpers.search_form_tag(
+  <%= render Ui::SearchFormComponent.new(
     url: create_url,
     fields: search_fields,
     cols: 3,

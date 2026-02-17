@@ -1,5 +1,10 @@
 class DashboardController < ApplicationController
   def show
+    @active_content_url = active_content_url
+    if @active_content_url.present?
+      return
+    end
+
     @total_posts      = Post.count
     @posts_today      = Post.where(created_at: Time.current.beginning_of_day..).count
     @posts_this_week  = Post.where(created_at: Time.current.beginning_of_week..).count
@@ -13,4 +18,16 @@ class DashboardController < ApplicationController
       @week_change_pct = nil
     end
   end
+
+  private
+    def active_content_url
+      active_id = session[:active_tab].to_s
+      if active_id.blank? || active_id == "overview"
+        return nil
+      end
+
+      active_tab = (session[:open_tabs] || []).find { |tab| tab["id"] == active_id }
+      url = active_tab&.dig("url").presence || TabRegistry.url_for(active_id)
+      url.presence
+    end
 end

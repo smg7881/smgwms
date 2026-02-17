@@ -1,0 +1,29 @@
+<%# app/components/ui/resource_form_component.html.erb %>
+<div <%= tag.attributes(**wrapper_attrs) %>>
+  <% if model.errors.any? %>
+    <div class="rf-errors" data-resource-form-target="errorSummary">
+      <ul>
+        <% model.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <%= helpers.form_with(model: model, url: url, data: merged_form_data, html: merged_form_html) do |f| %>
+
+    <div class="form-grid-grid">
+      <% safe_fields.each do |field| %>
+        <%= render partial: "shared/resource_form/fields/#{field[:type]}",
+                   locals: { f: f, model: model, field: field, cols: cols,
+                             target_controller: target_controller } %>
+      <% end %>
+
+      <% if show_buttons %>
+        <%= render partial: "shared/resource_form/buttons",
+                   locals: { submit_label: submit_label, cancel_url: cancel_url } %>
+      <% end %>
+    </div>
+
+  <% end %>
+</div>

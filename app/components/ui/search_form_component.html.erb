@@ -1,0 +1,18 @@
+<%# app/components/ui/search_form_component.html.erb %>
+<div <%= tag.attributes(**wrapper_attrs) %>>
+  <%= helpers.form_with url: url, method: :get,
+        data: { search_form_target: "form", turbo_frame: turbo_frame, action: "submit->search-form#search" },
+        html: { novalidate: true } do |f| %>
+
+    <div class="form-grid-grid">
+      <% safe_fields.each do |field| %>
+        <%= render partial: "shared/search_form/fields/#{field[:type]}", locals: { field: field, cols: cols } %>
+      <% end %>
+
+      <% if show_buttons %>
+        <%= render partial: "shared/search_form/buttons" %>
+      <% end %>
+    </div>
+
+  <% end %>
+</div>

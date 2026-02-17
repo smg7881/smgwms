@@ -13,6 +13,7 @@ export default class extends Controller {
   connect() {
     this.masterDeletedCodes = []
     this.detailDeletedCodes = []
+    this.initialMasterSyncDone = false
 
     this.bindGridControllers()
   }
@@ -35,22 +36,37 @@ export default class extends Controller {
     }
 
     this.masterApi.addEventListener("rowClicked", this.handleMasterRowClicked)
+    this.masterApi.addEventListener("cellFocused", this.handleMasterCellFocused)
 
     setTimeout(() => {
       this.resetMasterTracking()
       this.resetDetailTracking()
-      this.refreshSelectedCodeLabel()
+      this.syncInitialMasterSelection()
     }, 120)
   }
 
   disconnect() {
     if (this.masterApi) {
       this.masterApi.removeEventListener("rowClicked", this.handleMasterRowClicked)
+      this.masterApi.removeEventListener("cellFocused", this.handleMasterCellFocused)
     }
   }
 
   handleMasterRowClicked = async (event) => {
-    const code = event.data?.code
+    await this.handleMasterRowChange(event.data)
+  }
+
+  handleMasterCellFocused = async (event) => {
+    if (event.rowIndex == null || event.rowIndex < 0) return
+
+    const rowNode = this.masterApi.getDisplayedRowAtIndex(event.rowIndex)
+    if (!rowNode?.data) return
+
+    await this.handleMasterRowChange(rowNode.data)
+  }
+
+  async handleMasterRowChange(rowData) {
+    const code = rowData?.code
     if (!code) {
       this.selectedCodeValue = ""
       this.refreshSelectedCodeLabel()
@@ -59,7 +75,7 @@ export default class extends Controller {
       return
     }
 
-    if (event.data?.__is_new) {
+    if (rowData?.__is_new) {
       this.selectedCodeValue = code
       this.refreshSelectedCodeLabel()
       this.detailApi.setGridOption("rowData", [])
@@ -67,26 +83,31 @@ export default class extends Controller {
       return
     }
 
-    if (this.selectedCodeValue === code) return
-
     this.selectedCodeValue = code
     this.refreshSelectedCodeLabel()
     await this.loadDetailRows(code)
   }
 
   addMasterRow() {
-    this.masterApi.applyTransaction({
+    const newRow = {
+      code: "",
+      code_name: "",
+      use_yn: "Y",
+      __is_new: true,
+      __temp_id: this.uuid()
+    }
+
+    const txResult = this.masterApi.applyTransaction({
       add: [
-        {
-          code: "",
-          code_name: "",
-          use_yn: "Y",
-          __is_new: true,
-          __temp_id: this.uuid()
-        }
+        newRow
       ],
       addIndex: 0
     })
+
+    const addedNode = txResult?.add?.[0]
+    if (addedNode?.data) {
+      this.handleMasterRowChange(addedNode.data)
+    }
 
     this.masterApi.startEditingCell({ rowIndex: 0, colKey: "code" })
   }
@@ -119,10 +140,6 @@ export default class extends Controller {
 
     alert("코드 저장이 완료되었습니다.")
     await this.reloadMasterRows()
-
-    if (this.selectedCodeValue) {
-      await this.loadDetailRows(this.selectedCodeValue)
-    }
   }
 
   addDetailRow() {
@@ -278,6 +295,45 @@ export default class extends Controller {
     const data = await response.json()
     this.masterApi.setGridOption("rowData", data)
     this.resetMasterTracking()
+    await this.syncMasterSelectionAfterLoad()
+  }
+
+  syncInitialMasterSelection(retryCount = 40) {
+    if (this.initialMasterSyncDone) return
+
+    const firstRowNode = this.masterApi.getDisplayedRowAtIndex(0)
+    if (firstRowNode?.data) {
+      this.initialMasterSyncDone = true
+      this.syncMasterSelectionAfterLoad()
+      return
+    }
+
+    if (retryCount <= 0) {
+      this.initialMasterSyncDone = true
+      this.syncMasterSelectionAfterLoad()
+      return
+    }
+
+    setTimeout(() => this.syncInitialMasterSelection(retryCount - 1), 100)
+  }
+
+  async syncMasterSelectionAfterLoad() {
+    const firstRowNode = this.masterApi.getDisplayedRowAtIndex(0)
+
+    if (!firstRowNode?.data) {
+      this.selectedCodeValue = ""
+      this.refreshSelectedCodeLabel()
+      this.detailApi.setGridOption("rowData", [])
+      this.resetDetailTracking()
+      return
+    }
+
+    const firstCol = this.masterApi.getAllDisplayedColumns()?.[0]
+    if (firstCol) {
+      this.masterApi.setFocusedCell(0, firstCol.getColId())
+    }
+
+    await this.handleMasterRowChange(firstRowNode.data)
   }
 
   async loadDetailRows(code) {

@@ -6,7 +6,7 @@
     </div>
   </div>
 
-  <%= search_form_tag(
+  <%= render Ui::SearchFormComponent.new(
     url: posts_path,
     fields: [
       { field: "title", type: "input", label: "제목", placeholder: "제목 검색..." },
