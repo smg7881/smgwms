@@ -12,7 +12,19 @@ Rails.application.routes.draw do
   resources :posts
   resources :reports, only: [ :index ]
   namespace :system do
-    resources :dept, controller: :dept, only: [ :index, :show, :create, :update, :destroy ]
+    resources :excel_import_tasks, only: [ :index ] do
+      member do
+        get :error_report
+      end
+    end
+
+    resources :dept, controller: :dept, only: [ :index, :show, :create, :update, :destroy ] do
+      collection do
+        get :excel_template
+        get :excel_export
+        post :excel_import
+      end
+    end
     resources :menus, only: [ :index, :create, :update, :destroy ]
     resources :code, controller: :code, only: [ :index, :create, :update, :destroy ], param: :id do
       post :batch_save, on: :collection
@@ -22,6 +34,11 @@ Rails.application.routes.draw do
     end
     resources :users do
       get :check_id, on: :collection
+      collection do
+        get :excel_template
+        get :excel_export
+        post :excel_import
+      end
     end
   end
 

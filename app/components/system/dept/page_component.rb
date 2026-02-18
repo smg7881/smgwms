@@ -3,6 +3,22 @@ class System::Dept::PageComponent < System::BasePageComponent
     def collection_path(**) = helpers.system_dept_index_path(**)
     def member_path(id, **) = helpers.system_dept_path(id, **)
 
+    def excel_template_url
+      helpers.excel_template_system_dept_index_path
+    end
+
+    def excel_export_url
+      helpers.excel_export_system_dept_index_path
+    end
+
+    def excel_import_url
+      helpers.excel_import_system_dept_index_path
+    end
+
+    def import_history_url
+      helpers.system_excel_import_tasks_path(q: { resource_key: "dept" })
+    end
+
     def search_fields
       [
         { field: "dept_code", type: "input", label: "부서코드", placeholder: "부서코드를 입력하세요" },

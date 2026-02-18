@@ -122,6 +122,40 @@ export default class extends Controller {
     agGridController?.exportCsv()
   }
 
+  downloadExcel() {
+    if (this.hasExcelExportUrlValue) {
+      window.location.href = this.excelExportUrlValue
+    }
+  }
+
+  downloadExcelTemplate() {
+    if (this.hasExcelTemplateUrlValue) {
+      window.location.href = this.excelTemplateUrlValue
+    }
+  }
+
+  openImportHistory() {
+    if (this.hasImportHistoryUrlValue) {
+      window.location.href = this.importHistoryUrlValue
+    }
+  }
+
+  openExcelImport() {
+    const fileInput = this.element.querySelector("[data-excel-import-input]")
+    if (fileInput) {
+      fileInput.click()
+    }
+  }
+
+  submitExcelImport(event) {
+    const input = event.target
+    if (input.files.length === 0) return
+
+    const form = input.closest("form")
+    form?.requestSubmit()
+    input.value = ""
+  }
+
   buildJsonPayload() {
     const formData = new FormData(this.formTarget)
     const payload = {}

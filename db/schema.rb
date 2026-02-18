@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_16_090100) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_18_093000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -127,6 +127,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_16_090100) do
     t.index ["work_status"], name: "index_adm_users_on_work_status"
   end
 
+  create_table "excel_import_tasks", force: :cascade do |t|
+    t.datetime "completed_at"
+    t.datetime "created_at", null: false
+    t.text "error_summary"
+    t.integer "failed_rows", default: 0, null: false
+    t.integer "requested_by_id"
+    t.string "resource_key", null: false
+    t.bigint "source_byte_size"
+    t.string "source_filename"
+    t.datetime "started_at"
+    t.string "status", default: "queued", null: false
+    t.integer "success_rows", default: 0, null: false
+    t.integer "total_rows", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.index ["requested_by_id"], name: "index_excel_import_tasks_on_requested_by_id"
+    t.index ["resource_key", "created_at"], name: "index_excel_import_tasks_on_resource_key_and_created_at"
+    t.index ["status"], name: "index_excel_import_tasks_on_status"
+  end
+
   create_table "posts", force: :cascade do |t|
     t.text "content"
     t.datetime "created_at", null: false
@@ -147,5 +166,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_16_090100) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "excel_import_tasks", "adm_users", column: "requested_by_id"
   add_foreign_key "sessions", "adm_users", column: "user_id"
 end

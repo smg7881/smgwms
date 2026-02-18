@@ -14,7 +14,10 @@ export default class extends BaseCrudController {
   static values = {
     createUrl: String,
     updateUrl: String,
-    deleteUrl: String
+    deleteUrl: String,
+    excelExportUrl: String,
+    excelTemplateUrl: String,
+    importHistoryUrl: String
   }
 
   connect() {

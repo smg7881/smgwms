@@ -1,8 +1,11 @@
-<div data-controller="user-crud"
+﻿<div data-controller="user-crud"
      data-user-crud-create-url-value="<%= create_url %>"
      data-user-crud-update-url-value="<%= update_url %>"
      data-user-crud-delete-url-value="<%= delete_url %>"
-     data-user-crud-check-id-url-value="<%= check_id_url %>">
+     data-user-crud-check-id-url-value="<%= check_id_url %>"
+     data-user-crud-excel-export-url-value="<%= excel_export_url %>"
+     data-user-crud-excel-template-url-value="<%= excel_template_url %>"
+     data-user-crud-import-history-url-value="<%= import_history_url %>">
   <%= render Ui::SearchFormComponent.new(
     url: create_url,
     fields: search_fields,
@@ -12,6 +15,10 @@
 
   <%= render Ui::GridToolbarComponent.new(
     buttons: [
+      { label: "엑셀양식", class: "btn btn-sm btn-secondary", action: "click->user-crud#downloadExcelTemplate" },
+      { label: "엑셀다운로드", class: "btn btn-sm btn-secondary", action: "click->user-crud#downloadExcel" },
+      { label: "엑셀업로드", class: "btn btn-sm btn-secondary", action: "click->user-crud#openExcelImport" },
+      { label: "업로드이력", class: "btn btn-sm btn-secondary", action: "click->user-crud#openImportHistory" },
       { label: "사용자추가", class: "btn btn-sm btn-primary", action: "click->user-crud#openCreate" }
     ]
   ) %>
@@ -52,4 +59,18 @@
       ) %>
     <% end %>
   <% end %>
+
+  <form action="<%= excel_import_url %>"
+        accept-charset="UTF-8"
+        enctype="multipart/form-data"
+        method="post"
+        class="hidden"
+        data-excel-import-form>
+    <input type="hidden" name="authenticity_token" value="<%= helpers.form_authenticity_token %>">
+    <input type="file"
+           name="file"
+           accept=".xlsx,.csv"
+           data-action="change->user-crud#submitExcelImport"
+           data-excel-import-input>
+  </form>
 </div>

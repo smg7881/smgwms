@@ -1,14 +1,8 @@
 class System::UsersController < System::BaseController
+  include System::ExcelTransferable
+
   def index
-    @users = if search_params.values.any?(&:present?)
-      scope = User.ordered
-      scope = scope.where("user_nm LIKE ?", "%#{search_params[:user_nm]}%") if search_params[:user_nm].present?
-      scope = scope.where("dept_nm LIKE ?", "%#{search_params[:dept_nm]}%") if search_params[:dept_nm].present?
-      scope = scope.where(work_status: search_params[:work_status]) if search_params[:work_status].present?
-      scope
-    else
-      User.ordered
-    end
+    @users = filtered_users_scope
 
     respond_to do |format|
       format.html
@@ -57,6 +51,26 @@ class System::UsersController < System::BaseController
   end
 
   private
+    def excel_resource_key
+      :users
+    end
+
+    def excel_export_scope
+      filtered_users_scope
+    end
+
+    def filtered_users_scope
+      if search_params.values.any?(&:present?)
+        scope = User.ordered
+        scope = scope.where("user_nm LIKE ?", "%#{search_params[:user_nm]}%") if search_params[:user_nm].present?
+        scope = scope.where("dept_nm LIKE ?", "%#{search_params[:dept_nm]}%") if search_params[:dept_nm].present?
+        scope = scope.where(work_status: search_params[:work_status]) if search_params[:work_status].present?
+        scope
+      else
+        User.ordered
+      end
+    end
+
     def search_params
       params.fetch(:q, {}).permit(:user_nm, :dept_nm, :work_status)
     end

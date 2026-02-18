@@ -14,6 +14,8 @@ export default class extends Controller {
     this.masterDeletedCodes = []
     this.detailDeletedCodes = []
     this.initialMasterSyncDone = false
+    this.bindRetryTimer = null
+    this.initialSyncTimer = null
 
     this.bindGridControllers()
   }
@@ -23,7 +25,7 @@ export default class extends Controller {
     this.detailGridController = this.application.getControllerForElementAndIdentifier(this.detailGridTarget, "ag-grid")
 
     if (!this.masterGridController || !this.detailGridController) {
-      setTimeout(() => this.bindGridControllers(), 60)
+      this.bindRetryTimer = setTimeout(() => this.bindGridControllers(), 60)
       return
     }
 
@@ -31,7 +33,7 @@ export default class extends Controller {
     this.detailApi = this.detailGridController.api
 
     if (!this.masterApi || !this.detailApi) {
-      setTimeout(() => this.bindGridControllers(), 60)
+      this.bindRetryTimer = setTimeout(() => this.bindGridControllers(), 60)
       return
     }
 
@@ -40,7 +42,7 @@ export default class extends Controller {
     this.masterApi.addEventListener("cellValueChanged", this.handleMasterCellValueChanged)
     this.detailApi.addEventListener("cellValueChanged", this.handleDetailCellValueChanged)
 
-    setTimeout(() => {
+    this.initialSyncTimer = setTimeout(() => {
       this.resetMasterTracking()
       this.resetDetailTracking()
       this.syncInitialMasterSelection()
@@ -48,6 +50,9 @@ export default class extends Controller {
   }
 
   disconnect() {
+    if (this.bindRetryTimer) clearTimeout(this.bindRetryTimer)
+    if (this.initialSyncTimer) clearTimeout(this.initialSyncTimer)
+
     if (this.masterApi) {
       this.masterApi.removeEventListener("rowClicked", this.handleMasterRowClicked)
       this.masterApi.removeEventListener("cellFocused", this.handleMasterCellFocused)
@@ -56,6 +61,11 @@ export default class extends Controller {
     if (this.detailApi) {
       this.detailApi.removeEventListener("cellValueChanged", this.handleDetailCellValueChanged)
     }
+
+    this.masterApi = null
+    this.detailApi = null
+    this.masterGridController = null
+    this.detailGridController = null
   }
 
   handleMasterRowClicked = async (event) => {
@@ -64,6 +74,7 @@ export default class extends Controller {
 
   handleMasterCellFocused = async (event) => {
     if (event.rowIndex == null || event.rowIndex < 0) return
+    if (!this.isApiAlive(this.masterApi)) return
 
     const rowNode = this.masterApi.getDisplayedRowAtIndex(event.rowIndex)
     if (!rowNode?.data) return
@@ -72,6 +83,8 @@ export default class extends Controller {
   }
 
   async handleMasterRowChange(rowData) {
+    if (!this.isApiAlive(this.detailApi)) return
+
     const code = rowData?.code
     if (!code || rowData?.__is_deleted) {
       this.selectedCodeValue = ""
@@ -95,6 +108,8 @@ export default class extends Controller {
   }
 
   addMasterRow() {
+    if (!this.isApiAlive(this.masterApi)) return
+
     const newRow = {
       code: "",
       code_name: "",
@@ -120,6 +135,8 @@ export default class extends Controller {
   }
 
   deleteMasterRows() {
+    if (!this.isApiAlive(this.masterApi)) return
+
     const selectedNodes = this.masterApi.getSelectedNodes()
     if (!selectedNodes.length) {
       alert("삭제할 행을 선택하세요.")
@@ -167,6 +184,8 @@ export default class extends Controller {
   }
 
   addDetailRow() {
+    if (!this.isApiAlive(this.detailApi)) return
+
     if (this.blockDetailActionIfMasterChanged()) return
 
     if (!this.selectedCodeValue) {
@@ -196,6 +215,8 @@ export default class extends Controller {
   }
 
   deleteDetailRows() {
+    if (!this.isApiAlive(this.detailApi)) return
+
     if (this.blockDetailActionIfMasterChanged()) return
 
     const selectedNodes = this.detailApi.getSelectedNodes()
@@ -341,6 +362,8 @@ export default class extends Controller {
   }
 
   collectRows(api) {
+    if (!this.isApiAlive(api)) return []
+
     const rows = []
     api.forEachNode((node) => {
       if (node.data) rows.push(node.data)
@@ -349,6 +372,8 @@ export default class extends Controller {
   }
 
   async reloadMasterRows() {
+    if (!this.isApiAlive(this.masterApi)) return
+
     const response = await fetch(this.masterGridController.urlValue, { headers: { Accept: "application/json" } })
     const data = await response.json()
     this.masterApi.setGridOption("rowData", data)
@@ -358,6 +383,7 @@ export default class extends Controller {
 
   syncInitialMasterSelection(retryCount = 40) {
     if (this.initialMasterSyncDone) return
+    if (!this.isApiAlive(this.masterApi) || !this.isApiAlive(this.detailApi)) return
 
     const firstRowNode = this.masterApi.getDisplayedRowAtIndex(0)
     if (firstRowNode?.data) {
@@ -372,10 +398,12 @@ export default class extends Controller {
       return
     }
 
-    setTimeout(() => this.syncInitialMasterSelection(retryCount - 1), 100)
+    this.initialSyncTimer = setTimeout(() => this.syncInitialMasterSelection(retryCount - 1), 100)
   }
 
   async syncMasterSelectionAfterLoad() {
+    if (!this.isApiAlive(this.masterApi) || !this.isApiAlive(this.detailApi)) return
+
     const firstRowNode = this.masterApi.getDisplayedRowAtIndex(0)
 
     if (!firstRowNode?.data) {
@@ -395,6 +423,8 @@ export default class extends Controller {
   }
 
   async loadDetailRows(code) {
+    if (!this.isApiAlive(this.detailApi)) return
+
     if (!code) {
       this.detailApi.setGridOption("rowData", [])
       this.resetDetailTracking()
@@ -510,7 +540,7 @@ export default class extends Controller {
   }
 
   hasMasterPendingChanges() {
-    if (!this.masterApi) return false
+    if (!this.isApiAlive(this.masterApi)) return false
     const masterOperations = this.buildMasterOperations()
     return this.hasChanges(masterOperations)
   }
@@ -573,11 +603,15 @@ export default class extends Controller {
   }
 
   hideNoRowsOverlay(api) {
-    if (!api) return
+    if (!this.isApiAlive(api)) return
 
     const rowCount = api.getDisplayedRowCount?.() || 0
     if (rowCount > 0) {
       api.hideOverlay?.()
     }
+  }
+
+  isApiAlive(api) {
+    return Boolean(api) && !(typeof api.isDestroyed === "function" && api.isDestroyed())
   }
 }

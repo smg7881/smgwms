@@ -7,6 +7,22 @@ class System::Users::PageComponent < System::BasePageComponent
       helpers.check_id_system_users_path
     end
 
+    def excel_template_url
+      helpers.excel_template_system_users_path
+    end
+
+    def excel_export_url
+      helpers.excel_export_system_users_path
+    end
+
+    def excel_import_url
+      helpers.excel_import_system_users_path
+    end
+
+    def import_history_url
+      helpers.system_excel_import_tasks_path(q: { resource_key: "users" })
+    end
+
     def search_fields
       [
         { field: "dept_nm", type: "input", label: "부서명", placeholder: "부서명 검색..." },

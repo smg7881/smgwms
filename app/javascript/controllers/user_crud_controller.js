@@ -20,7 +20,10 @@ export default class extends BaseCrudController {
     createUrl: String,
     updateUrl: String,
     deleteUrl: String,
-    checkIdUrl: String
+    checkIdUrl: String,
+    excelExportUrl: String,
+    excelTemplateUrl: String,
+    importHistoryUrl: String
   }
 
   connect() {

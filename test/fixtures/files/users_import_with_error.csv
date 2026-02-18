@@ -1,0 +1,3 @@
+﻿user_id_code,user_nm,email_address,dept_cd,dept_nm,role_cd,position_cd,job_title_cd,work_status,hire_date,resign_date,phone,address,detail_address
+import03,Import User 3,import03@example.com,D001,Dept A,USER,STAFF,MEMBER,ACTIVE,2026-01-01,,010-1111-4444,Seoul,Detail
+import04,Import User 4,,D001,Dept A,USER,STAFF,MEMBER,ACTIVE,2026-01-01,,010-1111-5555,Seoul,Detail

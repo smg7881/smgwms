@@ -70,3 +70,7 @@ gem "fiddle"
 gem "view_component", "~> 4.4"
 
 gem "tailwindcss-rails", "~> 4.2"
+
+gem "caxlsx", "~> 4.4"
+gem "caxlsx_rails", "~> 0.6.4"
+gem "roo", "~> 3.0"

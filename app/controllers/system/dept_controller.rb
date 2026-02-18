@@ -1,4 +1,6 @@
 class System::DeptController < System::BaseController
+  include System::ExcelTransferable
+
   def index
     respond_to do |format|
       format.html do
@@ -53,6 +55,14 @@ class System::DeptController < System::BaseController
   end
 
   private
+    def excel_resource_key
+      :dept
+    end
+
+    def excel_export_scope
+      AdmDept.tree_ordered
+    end
+
     def search_params
       params.fetch(:q, {}).permit(:dept_code, :dept_nm, :use_yn)
     end

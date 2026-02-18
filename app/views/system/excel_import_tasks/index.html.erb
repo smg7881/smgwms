@@ -1,0 +1,74 @@
+<%= turbo_frame_tag "main-content" do %>
+  <div class="mb-4">
+    <h2 class="text-lg font-semibold text-text-primary">엑셀 업로드 이력</h2>
+    <p class="mt-1 text-sm text-text-secondary">최근 200건 기준으로 표시됩니다.</p>
+  </div>
+
+  <form method="get" action="<%= system_excel_import_tasks_path %>" class="mb-4 flex flex-wrap gap-2 items-end">
+    <label class="text-sm text-text-secondary">
+      리소스
+      <select name="q[resource_key]" class="form-grid-select">
+        <option value="">전체</option>
+        <option value="users" <%= "selected" if params.dig(:q, :resource_key) == "users" %>>users</option>
+        <option value="dept" <%= "selected" if params.dig(:q, :resource_key) == "dept" %>>dept</option>
+      </select>
+    </label>
+
+    <label class="text-sm text-text-secondary">
+      상태
+      <select name="q[status]" class="form-grid-select">
+        <option value="">전체</option>
+        <% ExcelImportTask::STATUSES.each do |status| %>
+          <option value="<%= status %>" <%= "selected" if params.dig(:q, :status) == status %>><%= status %></option>
+        <% end %>
+      </select>
+    </label>
+
+    <button type="submit" class="btn btn-sm btn-secondary">조회</button>
+  </form>
+
+  <div class="overflow-x-auto border border-border rounded-md">
+    <table class="w-full text-sm">
+      <thead class="bg-bg-tertiary text-text-primary">
+        <tr>
+          <th class="px-3 py-2 text-left">ID</th>
+          <th class="px-3 py-2 text-left">리소스</th>
+          <th class="px-3 py-2 text-left">상태</th>
+          <th class="px-3 py-2 text-left">총건수</th>
+          <th class="px-3 py-2 text-left">성공</th>
+          <th class="px-3 py-2 text-left">실패</th>
+          <th class="px-3 py-2 text-left">요청자</th>
+          <th class="px-3 py-2 text-left">요청시각</th>
+          <th class="px-3 py-2 text-left">오류리포트</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @tasks.any? %>
+          <% @tasks.each do |task| %>
+            <tr class="border-t border-border text-text-secondary">
+              <td class="px-3 py-2"><%= task.id %></td>
+              <td class="px-3 py-2"><%= task.resource_key %></td>
+              <td class="px-3 py-2"><%= task.status %></td>
+              <td class="px-3 py-2"><%= number_with_delimiter(task.total_rows) %></td>
+              <td class="px-3 py-2"><%= number_with_delimiter(task.success_rows) %></td>
+              <td class="px-3 py-2"><%= number_with_delimiter(task.failed_rows) %></td>
+              <td class="px-3 py-2"><%= task.requested_by&.user_id_code || "-" %></td>
+              <td class="px-3 py-2"><%= task.created_at.strftime("%Y-%m-%d %H:%M:%S") %></td>
+              <td class="px-3 py-2">
+                <% if task.error_report.attached? %>
+                  <%= link_to "다운로드", error_report_system_excel_import_task_path(task), class: "text-accent" %>
+                <% else %>
+                  -
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        <% else %>
+          <tr>
+            <td colspan="9" class="px-3 py-6 text-center text-text-muted">조회 결과가 없습니다.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>

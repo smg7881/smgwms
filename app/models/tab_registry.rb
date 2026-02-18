@@ -1,4 +1,4 @@
-class TabRegistry
+﻿class TabRegistry
   Entry = Data.define(:id, :label, :icon, :url, :color_group)
 
   ENTRIES = [
@@ -8,7 +8,8 @@ class TabRegistry
     Entry.new(id: "reports", label: "통계", icon: "line-chart", url: "/reports", color_group: :amber),
     Entry.new(id: "system-menus", label: "메뉴관리", icon: "settings", url: "/system/menus", color_group: :rose),
     Entry.new(id: "system-users", label: "사용자관리", icon: "user", url: "/system/users", color_group: :rose),
-    Entry.new(id: "system-dept", label: "부서관리", icon: "building-2", url: "/system/dept", color_group: :rose)
+    Entry.new(id: "system-dept", label: "부서관리", icon: "building-2", url: "/system/dept", color_group: :rose),
+    Entry.new(id: "system-excel-import-tasks", label: "엑셀업로드이력", icon: "file-text", url: "/system/excel_import_tasks", color_group: :rose)
   ].freeze
 
   INDEX = ENTRIES.index_by(&:id).freeze

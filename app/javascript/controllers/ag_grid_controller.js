@@ -1,4 +1,4 @@
-import { Controller } from "@hotwired/stimulus"
+﻿import { Controller } from "@hotwired/stimulus"
 import {
   createGrid,
   themeQuartz,
@@ -16,41 +16,41 @@ const FORMATTER_REGISTRY = {
 }
 
 const AG_GRID_LOCALE_KO = {
-  page: "페이지",
+  page: "Page",
   of: "/",
   to: "~",
-  nextPage: "다음 페이지",
-  lastPage: "마지막 페이지",
-  firstPage: "첫 페이지",
-  previousPage: "이전 페이지",
-  pageSizeSelectorLabel: "페이지 크기:",
-  loadingOoo: "로딩 중...",
-  noRowsToShow: "데이터가 없습니다",
-  filterOoo: "필터...",
-  equals: "같음",
-  notEqual: "같지 않음",
-  contains: "포함",
-  notContains: "미포함",
-  startsWith: "시작 문자",
-  endsWith: "끝 문자",
-  lessThan: "미만",
-  greaterThan: "초과",
-  lessThanOrEqual: "이하",
-  greaterThanOrEqual: "이상",
-  andCondition: "그리고",
-  orCondition: "또는",
-  applyFilter: "적용",
-  resetFilter: "초기화",
-  clearFilter: "지우기",
-  cancelFilter: "취소",
-  columns: "컬럼",
-  copy: "복사",
+  nextPage: "Next Page",
+  lastPage: "Last Page",
+  firstPage: "First Page",
+  previousPage: "Previous Page",
+  pageSizeSelectorLabel: "Page Size:",
+  loadingOoo: "Loading...",
+  noRowsToShow: "No rows to show",
+  filterOoo: "Filter...",
+  equals: "Equals",
+  notEqual: "Not equal",
+  contains: "Contains",
+  notContains: "Does not contain",
+  startsWith: "Starts with",
+  endsWith: "Ends with",
+  lessThan: "Less than",
+  greaterThan: "Greater than",
+  lessThanOrEqual: "Less than or equal",
+  greaterThanOrEqual: "Greater than or equal",
+  andCondition: "AND",
+  orCondition: "OR",
+  applyFilter: "Apply",
+  resetFilter: "Reset",
+  clearFilter: "Clear",
+  cancelFilter: "Cancel",
+  columns: "Columns",
+  copy: "Copy",
   ctrlC: "Ctrl+C",
-  csvExport: "CSV 내보내기",
-  export: "내보내기",
-  sortAscending: "오름차순 정렬",
-  sortDescending: "내림차순 정렬",
-  sortUnSort: "정렬 해제"
+  csvExport: "CSV Export",
+  export: "Export",
+  sortAscending: "Sort Ascending",
+  sortDescending: "Sort Descending",
+  sortUnSort: "Clear Sort"
 }
 
 const darkTheme = themeQuartz.withParams({
@@ -101,7 +101,7 @@ export default class extends Controller {
   }
 
   refresh() {
-    if (this.hasUrlValue && this.urlValue) this.fetchData()
+    if (this.hasUrlValue && this.urlValue && this.isApiAlive(this.gridApi)) this.fetchData()
   }
 
   get api() {
@@ -109,7 +109,8 @@ export default class extends Controller {
   }
 
   exportCsv() {
-    this.gridApi?.exportDataAsCsv()
+    if (!this.isApiAlive(this.gridApi)) return
+    this.gridApi.exportDataAsCsv()
   }
 
   initGrid() {
@@ -152,7 +153,7 @@ export default class extends Controller {
 
     if (this.hasUrlValue && this.urlValue) {
       this.fetchData()
-    } else if (this.rowDataValue.length > 0) {
+    } else if (this.rowDataValue.length > 0 && this.isApiAlive(this.gridApi)) {
       this.focusedRowNode = null
       this.gridApi.setGridOption("rowData", this.rowDataValue)
     }
@@ -160,7 +161,7 @@ export default class extends Controller {
 
   teardown() {
     if (!this.gridApi) return
-    this.gridApi.destroy()
+    if (this.isApiAlive(this.gridApi)) this.gridApi.destroy()
     this.gridApi = null
     this.gridTarget.innerHTML = ""
   }
@@ -197,7 +198,10 @@ export default class extends Controller {
   }
 
   fetchData() {
-    this.gridApi.setGridOption("loading", true)
+    const api = this.gridApi
+    if (!this.isApiAlive(api)) return
+
+    api.setGridOption("loading", true)
 
     fetch(this.urlValue, { headers: { Accept: "application/json" } })
       .then((response) => {
@@ -205,30 +209,35 @@ export default class extends Controller {
         return response.json()
       })
       .then((data) => {
-        this.gridApi.setGridOption("loading", false)
-        this.gridApi.setGridOption("overlayNoRowsTemplate", this.defaultNoRowsTemplate)
+        if (!this.isApiAlive(api) || api !== this.gridApi) return
+
+        api.setGridOption("loading", false)
+        api.setGridOption("overlayNoRowsTemplate", this.defaultNoRowsTemplate)
         this.focusedRowNode = null
-        this.gridApi.setGridOption("rowData", data)
-        if (data.length === 0) this.gridApi.showNoRowsOverlay()
-        else this.gridApi.hideOverlay()
+        api.setGridOption("rowData", data)
+        if (data.length === 0) api.showNoRowsOverlay()
+        else api.hideOverlay()
       })
       .catch((error) => {
         console.error("[ag-grid] data load failed:", error)
-        this.gridApi.setGridOption("loading", false)
-        this.gridApi.setGridOption(
+        if (!this.isApiAlive(api) || api !== this.gridApi) return
+
+        api.setGridOption("loading", false)
+        api.setGridOption(
           "overlayNoRowsTemplate",
           '<div style="padding:20px;text-align:center;">' +
-            '<div style="color:#f85149;font-weight:600;margin-bottom:4px;">데이터 로딩 실패</div>' +
-            '<div style="color:#8b949e;font-size:12px;">네트워크 상태를 확인해주세요</div>' +
+            '<div style="color:#f85149;font-weight:600;margin-bottom:4px;">?곗씠??濡쒕뵫 ?ㅽ뙣</div>' +
+            '<div style="color:#8b949e;font-size:12px;">?ㅽ듃?뚰겕 ?곹깭瑜??뺤씤?댁＜?몄슂</div>' +
           "</div>"
         )
-        this.gridApi.showNoRowsOverlay()
+        api.showNoRowsOverlay()
       })
   }
 
   handleCellFocused(event) {
     if (typeof event?.rowIndex !== "number") return
     if (this.isSelectionCheckboxColumn(event)) return
+    if (!this.isApiAlive(this.gridApi)) return
 
     const nextFocusedNode = this.gridApi.getDisplayedRowAtIndex(event.rowIndex)
     if (!nextFocusedNode) return
@@ -241,7 +250,7 @@ export default class extends Controller {
     if (prevFocusedNode) rowNodes.push(prevFocusedNode)
     rowNodes.push(nextFocusedNode)
 
-    if (rowNodes.length > 0) {
+    if (rowNodes.length > 0 && this.isApiAlive(this.gridApi)) {
       this.gridApi.redrawRows({ rowNodes })
     }
   }
@@ -268,6 +277,7 @@ export default class extends Controller {
 
   ensureStatusColumnOrder() {
     const reposition = () => {
+      if (!this.isApiAlive(this.gridApi)) return
       if (!this.gridApi?.moveColumns || !this.gridApi?.getAllGridColumns) return
 
       const columns = this.gridApi.getAllGridColumns()
@@ -288,5 +298,9 @@ export default class extends Controller {
 
     queueMicrotask(reposition)
     setTimeout(reposition, 0)
+  }
+
+  isApiAlive(api) {
+    return Boolean(api) && !(typeof api.isDestroyed === "function" && api.isDestroyed())
   }
 }

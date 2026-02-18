@@ -3,7 +3,7 @@ pin "@hotwired/turbo-rails", to: "turbo.min.js"
 pin "@hotwired/stimulus", to: "stimulus.min.js"
 pin "@hotwired/stimulus-loading", to: "stimulus-loading.js"
 pin_all_from "app/javascript/controllers", under: "controllers"
-pin "lucide", to: "https://cdn.jsdelivr.net/npm/lucide@latest/dist/esm/lucide.js"
+pin "lucide", to: "https://esm.sh/lucide@0.468.0?bundle"
 
 # AG Grid Community (ESM 엔트리로 pin)
 pin "ag-grid-community",
