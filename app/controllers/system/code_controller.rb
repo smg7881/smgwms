@@ -46,6 +46,8 @@
 
     ActiveRecord::Base.transaction do
       Array(operations[:rowsToInsert]).each do |attrs|
+        next if attrs[:code].to_s.strip.blank? && attrs[:code_name].to_s.strip.blank?
+
         header = AdmCodeHeader.new(attrs.permit(:code, :code_name, :use_yn))
         if header.save
           result[:inserted] += 1
@@ -73,6 +75,8 @@
       Array(operations[:rowsToDelete]).each do |code|
         header = AdmCodeHeader.find_by(code: code.to_s)
         next if header.nil?
+
+        AdmCodeDetail.where(code: header.code).delete_all
 
         if header.destroy
           result[:deleted] += 1

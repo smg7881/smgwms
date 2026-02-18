@@ -40,6 +40,21 @@ class System::CodeControllerTest < ActionDispatch::IntegrationTest
     assert_not AdmCodeHeader.exists?(code: "DEL01")
   end
 
+  test "batch_save deletes header with details" do
+    header = AdmCodeHeader.create!(code: "DEL02", code_name: "Delete With Details", use_yn: "Y")
+    AdmCodeDetail.create!(code: header.code, detail_code: "D001", detail_code_name: "Detail", sort_order: 1, use_yn: "Y")
+
+    post batch_save_system_code_index_url, params: {
+      rowsToInsert: [],
+      rowsToUpdate: [],
+      rowsToDelete: [ header.code ]
+    }, as: :json
+
+    assert_response :success
+    assert_not AdmCodeHeader.exists?(code: header.code)
+    assert_not AdmCodeDetail.exists?(code: header.code, detail_code: "D001")
+  end
+
   test "non-admin cannot access code endpoints" do
     delete session_path
     post session_path, params: { email_address: "user@example.com", password: "password" }

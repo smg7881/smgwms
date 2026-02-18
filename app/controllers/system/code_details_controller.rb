@@ -45,6 +45,8 @@
 
     ActiveRecord::Base.transaction do
       Array(operations[:rowsToInsert]).each do |attrs|
+        next if attrs[:detail_code].to_s.strip.blank? && attrs[:detail_code_name].to_s.strip.blank?
+
         detail = code_header!.details.new(attrs.permit(:detail_code, :detail_code_name, :short_name, :ref_code, :sort_order, :use_yn))
         detail.code = code_header!.code
         if detail.save

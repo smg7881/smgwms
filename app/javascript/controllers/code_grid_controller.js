@@ -109,6 +109,7 @@ export default class extends Controller {
       ],
       addIndex: 0
     })
+    this.hideNoRowsOverlay(this.masterApi)
 
     const addedNode = txResult?.add?.[0]
     if (addedNode?.data) {
@@ -166,6 +167,8 @@ export default class extends Controller {
   }
 
   addDetailRow() {
+    if (this.blockDetailActionIfMasterChanged()) return
+
     if (!this.selectedCodeValue) {
       alert("코드를 먼저 선택하세요.")
       return
@@ -187,11 +190,14 @@ export default class extends Controller {
       ],
       addIndex: 0
     })
+    this.hideNoRowsOverlay(this.detailApi)
 
     this.detailApi.startEditingCell({ rowIndex: 0, colKey: "detail_code" })
   }
 
   deleteDetailRows() {
+    if (this.blockDetailActionIfMasterChanged()) return
+
     const selectedNodes = this.detailApi.getSelectedNodes()
     if (!selectedNodes.length) {
       alert("삭제할 행을 선택하세요.")
@@ -225,6 +231,8 @@ export default class extends Controller {
   }
 
   async saveDetailRows() {
+    if (this.blockDetailActionIfMasterChanged()) return
+
     if (!this.selectedCodeValue) {
       alert("코드를 먼저 선택하세요.")
       return
@@ -248,7 +256,7 @@ export default class extends Controller {
     const rows = this.collectRows(this.masterApi)
 
     const rowsToInsert = rows
-      .filter((row) => row.__is_new && !row.__is_deleted)
+      .filter((row) => row.__is_new && !row.__is_deleted && !this.isBlankMasterRow(row))
       .map((row) => this.pickMasterFields(row))
 
     const rowsToUpdate = rows
@@ -271,7 +279,7 @@ export default class extends Controller {
     const rows = this.collectRows(this.detailApi)
 
     const rowsToInsert = rows
-      .filter((row) => row.__is_new && !row.__is_deleted)
+      .filter((row) => row.__is_new && !row.__is_deleted && !this.isBlankDetailRow(row))
       .map((row) => this.pickDetailFields(row))
 
     const rowsToUpdate = rows
@@ -454,10 +462,12 @@ export default class extends Controller {
   }
 
   handleMasterCellValueChanged = (event) => {
+    if (this.preventInvalidMasterCodeEdit(event)) return
     this.markRowUpdated(this.masterApi, event)
   }
 
   handleDetailCellValueChanged = (event) => {
+    if (this.preventInvalidDetailCodeEdit(event)) return
     this.markRowUpdated(this.detailApi, event)
   }
 
@@ -499,11 +509,75 @@ export default class extends Controller {
     )
   }
 
+  hasMasterPendingChanges() {
+    if (!this.masterApi) return false
+    const masterOperations = this.buildMasterOperations()
+    return this.hasChanges(masterOperations)
+  }
+
+  blockDetailActionIfMasterChanged() {
+    if (!this.hasMasterPendingChanges()) return false
+
+    alert("마스터 코드가 변경이 있습니다.")
+    return true
+  }
+
   get csrfToken() {
     return document.querySelector("[name='csrf-token']")?.content || ""
   }
 
   uuid() {
     return `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+  }
+
+  isBlankMasterRow(row) {
+    return (row.code || "").trim() === "" && (row.code_name || "").trim() === ""
+  }
+
+  isBlankDetailRow(row) {
+    return (row.detail_code || "").trim() === "" && (row.detail_code_name || "").trim() === ""
+  }
+
+  preventInvalidMasterCodeEdit(event) {
+    if (event?.colDef?.field !== "code") return false
+    if (!event?.node?.data) return false
+
+    const row = event.node.data
+    if (row.__is_new) return false
+
+    row.code = event.oldValue || ""
+    this.masterApi.refreshCells({
+      rowNodes: [event.node],
+      columns: ["code"],
+      force: true
+    })
+    alert("기존 코드는 수정할 수 없습니다.")
+    return true
+  }
+
+  preventInvalidDetailCodeEdit(event) {
+    if (event?.colDef?.field !== "detail_code") return false
+    if (!event?.node?.data) return false
+
+    const row = event.node.data
+    if (row.__is_new) return false
+
+    row.detail_code = event.oldValue || ""
+    this.detailApi.refreshCells({
+      rowNodes: [event.node],
+      columns: ["detail_code"],
+      force: true
+    })
+    alert("기존 상세코드는 수정할 수 없습니다.")
+    return true
+  }
+
+  hideNoRowsOverlay(api) {
+    if (!api) return
+
+    const rowCount = api.getDisplayedRowCount?.() || 0
+    if (rowCount > 0) {
+      api.hideOverlay?.()
+    }
   }
 }

@@ -210,6 +210,7 @@ export default class extends Controller {
         this.focusedRowNode = null
         this.gridApi.setGridOption("rowData", data)
         if (data.length === 0) this.gridApi.showNoRowsOverlay()
+        else this.gridApi.hideOverlay()
       })
       .catch((error) => {
         console.error("[ag-grid] data load failed:", error)
