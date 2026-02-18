@@ -1,7 +1,7 @@
 <%= turbo_frame_tag "main-content" do %>
-  <div class="page-header">
-    <h2>게시물 목록</h2>
-    <div class="page-actions">
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-xl font-bold text-text-primary">게시물 목록</h2>
+    <div class="flex gap-2">
       <%= link_to "새 게시물", new_post_path, class: "btn btn-primary" %>
     </div>
   </div>
@@ -16,7 +16,7 @@
           { label: "게시됨", value: "published" },
           { label: "임시저장", value: "draft" }
         ],
-        include_blank: false # "전체" 옵션이 있으므로 자동 blank 제외
+        include_blank: false
       },
       { field: "created_at", type: "date_range", label: "작성일" }
     ],

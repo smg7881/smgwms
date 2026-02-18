@@ -1,10 +1,10 @@
 <%# app/components/ui/resource_form_component.html.erb %>
 <div <%= tag.attributes(**wrapper_attrs) %>>
   <% if model.errors.any? %>
-    <div class="rf-errors" data-resource-form-target="errorSummary">
-      <ul>
+    <div class="bg-accent-rose/10 border border-accent-rose rounded-md px-4 py-3 mb-4" data-resource-form-target="errorSummary">
+      <ul class="m-0 pl-5 list-disc">
         <% model.errors.full_messages.each do |message| %>
-          <li><%= message %></li>
+          <li class="text-accent-rose text-sm leading-normal"><%= message %></li>
         <% end %>
       </ul>
     </div>
@@ -12,7 +12,7 @@
 
   <%= helpers.form_with(model: model, url: url, data: merged_form_data, html: merged_form_html) do |f| %>
 
-    <div class="form-grid-grid">
+    <div class="grid grid-cols-24 gap-4 items-end min-w-0">
       <% safe_fields.each do |field| %>
         <%= render partial: "shared/resource_form/fields/#{field[:type]}",
                    locals: { f: f, model: model, field: field, cols: cols,

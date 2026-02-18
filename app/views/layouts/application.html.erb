@@ -7,33 +7,29 @@
   <link rel="icon" href="/icon.png" type="image/png">
   <%= csrf_meta_tags %>
   <%= csp_meta_tag %>
-  <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
-  <%= stylesheet_link_tag "form_grid", "data-turbo-track": "reload" %>
-  <%= stylesheet_link_tag "search_form", "data-turbo-track": "reload" %>
-  <%= stylesheet_link_tag "resource_form", "data-turbo-track": "reload" %>
-  <%= stylesheet_link_tag "menu_modal", "data-turbo-track": "reload" %>
+  <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
   <%= javascript_importmap_tags %>
 </head>
-<body data-controller="lucide">
+<body class="font-sans bg-bg-primary text-text-primary text-sm leading-normal h-screen overflow-hidden" data-controller="lucide">
   <%# data-controller="tabs" 는 반드시 app-layout 최상위에 (Stimulus 스코프: 탭바/사이드바 모두 접근 가능) %>
-  <div class="app-layout" data-controller="tabs">
+  <div class="grid grid-cols-[var(--spacing-sidebar)_1fr] h-screen overflow-hidden transition-[grid-template-columns] duration-250 ease-in-out"
+       data-controller="tabs">
 
     <%= render "shared/sidebar" %>
 
-    <main class="main-area">
+    <main class="flex flex-col h-screen overflow-hidden">
       <%= render "shared/header" %>
 
-      <turbo-frame id="tab-bar">
+      <turbo-frame id="tab-bar" class="block bg-bg-secondary border-b border-border shrink-0 min-h-[var(--spacing-tab-bar)]">
         <%= render "shared/tab_bar",
               tabs: session[:open_tabs] || [],
               active: session[:active_tab] || "overview" %>
       </turbo-frame>
 
-      <div class="content-area">
+      <div class="flex-1 overflow-y-auto p-6 bg-bg-primary">
         <%= yield %>
       </div>
     </main>
   </div>
 </body>
 </html>
-

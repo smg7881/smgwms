@@ -14,32 +14,32 @@
     layout_styles << "grid-row: span #{logical_row_span};"
   end
 %>
-<div class="form-grid-field form-grid-field--photo <%= span_classes_for(field, cols: cols) %>"
+<div class="flex flex-col gap-1 col-span-24 min-w-0 <%= span_classes_for(field, cols: cols) %>"
      data-resource-form-target="fieldGroup"
      data-field-name="<%= field[:field] %>"
      style="<%= layout_styles.join(' ') %>">
-  <label class="form-grid-label">
+  <label class="text-sm font-medium text-text-secondary">
     <%= resolve_label(field) %>
-    <% if field[:required] %><span class="rf-required">*</span><% end %>
+    <% if field[:required] %><span class="text-accent-rose ml-0.5 font-semibold">*</span><% end %>
   </label>
-  <div class="form-grid-control">
-    <div class="photo-upload-area">
-      <img class="photo-preview"
+  <div class="flex justify-center w-full">
+    <div class="flex flex-col items-center justify-center gap-1.5">
+      <img class="w-20 h-20 object-cover rounded-lg border border-border bg-bg-tertiary"
            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Crect width='80' height='80' rx='8' fill='%23d0d7de'/%3E%3Cpath d='M30 50h20l-4-5-3 4-3-2-6 8zm-5-20v24a2 2 0 002 2h26a2 2 0 002-2V30a2 2 0 00-2-2h-5l-2-3H34l-2 3h-5a2 2 0 00-2 2zm15 4a6 6 0 110 12 6 6 0 010-12z' fill='%23fff'/%3E%3C/svg%3E"
            alt="Photo preview"
            data-<%= target_controller&.tr("_", "-") %>-target="photoPreview" />
-      <div class="photo-actions">
+      <div class="flex items-center justify-center gap-1">
         <input type="file"
                accept="image/*"
                class="rf-photo-file-input"
                data-<%= target_controller&.tr("_", "-") %>-target="photoInput"
                data-action="change-><%= target_controller&.tr("_", "-") %>#previewPhoto" />
         <button type="button"
-                class="photo-icon-btn"
+                class="bg-transparent border-none cursor-pointer text-lg w-7 h-7 inline-flex items-center justify-center p-0 leading-none rounded text-text-secondary hover:bg-bg-tertiary transition-colors duration-150"
                 data-action="click-><%= target_controller&.tr("_", "-") %>#triggerPhotoSelect"
                 title="Select photo"><%= lucide_icon("camera") %></button>
         <button type="button"
-                class="photo-icon-btn photo-icon-btn--danger"
+                class="bg-transparent border-none cursor-pointer text-lg w-7 h-7 inline-flex items-center justify-center p-0 leading-none rounded text-text-secondary hover:bg-accent-rose/15 transition-colors duration-150"
                 data-<%= target_controller&.tr("_", "-") %>-target="photoRemoveBtn"
                 data-action="click-><%= target_controller&.tr("_", "-") %>#removePhoto"
                 title="Remove photo"

@@ -10,8 +10,8 @@ class Ui::SearchFormComponentTest < ViewComponent::TestCase
     ))
 
     assert_selector '[data-controller="search-form"]'
-    assert_selector ".form-grid-wrapper"
-    assert_selector ".form-grid-grid"
+    assert_selector ".bg-bg-secondary"
+    assert_selector ".grid.grid-cols-24"
   end
 
   test "applies stimulus data attributes" do

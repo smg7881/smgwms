@@ -1,5 +1,5 @@
-<div class="grid-toolbar">
-  <div class="grid-toolbar-buttons">
+<div class="flex justify-end my-3">
+  <div class="flex gap-2">
     <% buttons.each do |button| %>
       <button type="<%= button[:type] || "button" %>"
               class="<%= button[:class] || "btn btn-sm btn-primary" %>"

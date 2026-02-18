@@ -2,14 +2,14 @@
 <%
   current_value = model.send(field[:field].to_sym) rescue nil
 %>
-<div class="form-grid-field <%= span_classes_for(field, cols: cols) %>"
+<div class="flex flex-col gap-1 col-span-24 min-w-0 <%= span_classes_for(field, cols: cols) %>"
      data-resource-form-target="fieldGroup"
      data-field-name="<%= field[:field] %>">
-  <label class="form-grid-label">
+  <label class="text-sm font-medium text-text-secondary">
     <%= resolve_label(field) %>
-    <% if field[:required] %><span class="rf-required">*</span><% end %>
+    <% if field[:required] %><span class="text-accent-rose ml-0.5 font-semibold">*</span><% end %>
   </label>
-  <div class="form-grid-control rf-radio-group">
+  <div class="flex flex-wrap gap-4 py-2">
     <% (field[:options] || []).each do |opt| %>
       <%
         label, value = if opt.is_a?(Hash)
@@ -20,11 +20,12 @@
           [opt, opt]
         end
       %>
-      <label class="rf-radio-label">
+      <label class="flex items-center gap-1.5 cursor-pointer text-[0.95rem] text-text-primary">
         <%= f.radio_button field[:field].to_sym, value,
               checked: current_value.to_s == value.to_s,
               required: field[:required],
               disabled: field[:disabled],
+              class: "w-4 h-4 accent-accent cursor-pointer",
               data: {
                 resource_form_target: "input"
               } %>
@@ -36,9 +37,6 @@
     <span class="rf-error-msg"><%= model.errors[field[:field].to_sym].first %></span>
   <% end %>
   <% if field[:help].present? %>
-    <span class="rf-help"><%= field[:help] %></span>
+    <span class="text-xs text-text-muted mt-0.5"><%= field[:help] %></span>
   <% end %>
 </div>
-
-
-

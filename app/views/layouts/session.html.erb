@@ -6,10 +6,10 @@
   <title>WMS Pro — 로그인</title>
   <%= csrf_meta_tags %>
   <%= csp_meta_tag %>
-  <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+  <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
   <%= javascript_importmap_tags %>
 </head>
-<body data-controller="lucide">
+<body class="font-sans bg-bg-primary text-text-primary text-sm leading-normal" data-controller="lucide">
   <%= yield %>
 </body>
 </html>

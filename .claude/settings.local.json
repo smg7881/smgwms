@@ -30,7 +30,10 @@
       "Bash(bin/rubocop:*)",
       "Bash(grep:*)",
       "Bash(bin/rails db:migrate:*)",
-      "Bash(bin/rails active_storage:install:*)"
+      "Bash(bin/rails active_storage:install:*)",
+      "Bash(bundle show:*)",
+      "Bash(bin/rails tailwindcss:install:*)",
+      "Bash(bin/rails tailwindcss:build:*)"
     ]
   }
 }

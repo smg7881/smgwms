@@ -1,7 +1,7 @@
 <%= turbo_frame_tag "main-content" do %>
-  <div class="page-header">
-    <h2><%= @post.title %></h2>
-    <div class="page-actions">
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-xl font-bold text-text-primary"><%= @post.title %></h2>
+    <div class="flex gap-2">
       <%= link_to "수정", edit_post_path(@post), class: "btn btn-secondary" %>
       <%= button_to "삭제", post_path(@post), method: :delete,
             class: "btn btn-danger",
@@ -10,14 +10,14 @@
     </div>
   </div>
 
-  <div class="post-content-card">
-    <div class="post-meta">
-      <span class="mono">작성일: <%= @post.created_at.strftime("%Y-%m-%d %H:%M") %></span>
+  <div class="bg-bg-secondary border border-border rounded-lg p-6">
+    <div class="flex gap-4 mb-4 pb-4 border-b border-border text-xs text-text-muted font-mono">
+      <span>작성일: <%= @post.created_at.strftime("%Y-%m-%d %H:%M") %></span>
       <% if @post.updated_at != @post.created_at %>
-        <span class="mono">수정일: <%= @post.updated_at.strftime("%Y-%m-%d %H:%M") %></span>
+        <span>수정일: <%= @post.updated_at.strftime("%Y-%m-%d %H:%M") %></span>
       <% end %>
     </div>
-    <div class="post-body">
+    <div class="text-text-primary leading-[1.8]">
       <%= simple_format(@post.content) %>
     </div>
   </div>

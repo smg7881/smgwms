@@ -1,41 +1,27 @@
 <%# app/views/shared/resource_form/fields/_checkbox.html.erb %>
-<%# 체크박스 필드 래퍼: 그리드 컬럼 스팬(span_classes_for) 및 Stimulus 타겟 설정 %>
-<div class="form-grid-field <%= span_classes_for(field, cols: cols) %>"
+<div class="flex flex-col gap-1 col-span-24 min-w-0 <%= span_classes_for(field, cols: cols) %>"
      data-resource-form-target="fieldGroup"
      data-field-name="<%= field[:field] %>">
-  
-  <%# 필드 레이블 영역 %>
-  <label class="form-grid-label">
+  <label class="text-sm font-medium text-text-secondary">
     <%= resolve_label(field) %>
-    <%# 필수 항목인 경우 별표(*) 표시 %>
-    <% if field[:required] %><span class="rf-required">*</span><% end %>
+    <% if field[:required] %><span class="text-accent-rose ml-0.5 font-semibold">*</span><% end %>
   </label>
-
-  <div class="form-grid-control">
-    <label class="rf-checkbox-label">
-      <%# Rails 체크박스 헬퍼: 클래스, 필수 여부, 비활성화 여부, Stimulus 타겟 지정 %>
+  <div class="flex relative">
+    <label class="flex items-center gap-2 cursor-pointer text-[0.95rem] text-text-primary py-2">
       <%= f.check_box field[:field].to_sym,
-            class: "rf-checkbox",
+            class: "w-4 h-4 accent-accent cursor-pointer",
             required: field[:required],
             disabled: field[:disabled],
             data: {
               resource_form_target: "input"
             } %>
-      <%# 체크박스 옆 텍스트: placeholder가 있으면 우선 사용, 없으면 레이블 사용 %>
       <span><%= field[:placeholder] || resolve_label(field) %></span>
     </label>
   </div>
-
-  <%# 유효성 검사 에러 메시지 표시 (해당 필드에 에러가 있는 경우) %>
   <% if model.errors[field[:field].to_sym].any? %>
     <span class="rf-error-msg"><%= model.errors[field[:field].to_sym].first %></span>
   <% end %>
-
-  <%# 도움말 텍스트가 있는 경우 표시 %>
   <% if field[:help].present? %>
-    <span class="rf-help"><%= field[:help] %></span>
+    <span class="text-xs text-text-muted mt-0.5"><%= field[:help] %></span>
   <% end %>
 </div>
-
-
-

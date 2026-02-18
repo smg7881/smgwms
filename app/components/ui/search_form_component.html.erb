@@ -4,7 +4,7 @@
         data: { search_form_target: "form", turbo_frame: turbo_frame, action: "submit->search-form#search" },
         html: { novalidate: true } do |f| %>
 
-    <div class="form-grid-grid">
+    <div class="grid grid-cols-24 gap-4 items-end min-w-0">
       <% safe_fields.each do |field| %>
         <%= render partial: "shared/search_form/fields/#{field[:type]}", locals: { field: field, cols: cols } %>
       <% end %>

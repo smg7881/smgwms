@@ -1,10 +1,10 @@
-<aside class="sidebar" data-controller="sidebar">
-  <div class="sidebar-logo">
-    <div class="logo-icon">W</div>
+<aside class="sidebar bg-bg-secondary border-r border-border flex flex-col h-screen overflow-y-auto overflow-x-hidden transition-[width] duration-250 ease-in-out" data-controller="sidebar">
+  <div class="flex items-center gap-2.5 p-4 border-b border-border font-bold text-base text-text-primary">
+    <div class="w-8 h-8 bg-accent text-white rounded-md flex items-center justify-center font-black text-lg shrink-0">W</div>
     <span>WMS Pro</span>
   </div>
 
-  <nav class="sidebar-nav">
+  <nav class="flex-1 py-2 overflow-y-auto">
     <% if dynamic_sidebar_available? %>
       <% grouped = AdmMenu.sidebar_tree %>
       <% (grouped[nil] || []).each do |menu| %>
@@ -24,11 +24,11 @@
     <% end %>
   </nav>
 
-  <div class="sidebar-footer">
-    <div class="avatar">WM</div>
-    <div class="user-info">
-      <div class="user-name">관리자</div>
-      <div class="user-email"><%= Current.user&.email_address %></div>
+  <div class="flex items-center gap-2.5 px-4 py-3 border-t border-border bg-bg-secondary">
+    <div class="w-8 h-8 bg-bg-tertiary border border-border rounded-full flex items-center justify-center text-xs font-bold text-accent shrink-0">WM</div>
+    <div class="overflow-hidden">
+      <div class="text-[13px] font-semibold text-text-primary">관리자</div>
+      <div class="text-[11px] text-text-muted whitespace-nowrap overflow-hidden text-ellipsis"><%= Current.user&.email_address %></div>
     </div>
     <%= button_to session_path, method: :delete, class: "btn btn-sm btn-secondary" do %>
       로그아웃

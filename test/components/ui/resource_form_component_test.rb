@@ -10,8 +10,8 @@ class Ui::ResourceFormComponentTest < ViewComponent::TestCase
     ))
 
     assert_selector '[data-controller~="resource-form"]'
-    assert_selector ".form-grid-wrapper.rf-wrapper"
-    assert_selector ".form-grid-grid"
+    assert_selector ".bg-bg-secondary"
+    assert_selector ".grid.grid-cols-24"
   end
 
   test "sanitizes disallowed field keys" do
@@ -118,7 +118,7 @@ class Ui::ResourceFormComponentTest < ViewComponent::TestCase
       fields: [ { field: "title", type: "input" } ]
     ))
 
-    assert_selector ".rf-errors"
+    assert_selector ".bg-accent-rose\\/10"
     assert_text "을(를) 입력해주세요"
   end
 

@@ -1,5 +1,5 @@
 <%# app/views/shared/resource_form/_buttons.html.erb %>
-<div class="form-grid-buttons rf-buttons" data-resource-form-target="buttonGroup">
+<div class="flex justify-end gap-2 mt-2 col-[1/-1] min-w-0" data-resource-form-target="buttonGroup">
   <%# 취소 URL이 있으면 취소 버튼(링크) 표시 %>
   <% if cancel_url.present? %>
     <%= link_to "취소", cancel_url, class: "btn btn-secondary" %>
@@ -17,7 +17,7 @@
           data-resource-form-target="submitBtn">
     <span data-resource-form-target="submitText"><%= submit_label %></span>
     <%# 로딩 스피너 (기본 숨김) %>
-    <span class="rf-spinner" data-resource-form-target="submitSpinner" hidden>
+    <span class="inline-flex items-center ml-1 hidden" data-resource-form-target="submitSpinner" hidden>
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
         <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="8">
           <animateTransform attributeName="transform" type="rotate" from="0 8 8" to="360 8 8" dur="0.8s" repeatCount="indefinite"/>
@@ -26,6 +26,3 @@
     </span>
   </button>
 </div>
-
-
-

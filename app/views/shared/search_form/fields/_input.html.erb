@@ -1,8 +1,8 @@
 <%# app/views/shared/search_form/fields/_input.html.erb %>
 <% field_id = "q_#{field[:field]}" %>
-<div class="form-grid-field <%= span_classes_for(field, cols: cols) %>" data-search-form-target="fieldGroup">
-  <label class="form-grid-label" for="<%= field_id %>"><%= resolve_label(field) %></label>
-  <div class="form-grid-control">
+<div class="flex flex-col gap-1 col-span-24 min-w-0 <%= span_classes_for(field, cols: cols) %>" data-search-form-target="fieldGroup">
+  <label class="text-sm font-medium text-text-secondary" for="<%= field_id %>"><%= resolve_label(field) %></label>
+  <div class="flex relative">
     <input type="text"
            id="<%= field_id %>"
            name="q[<%= field[:field] %>]"
@@ -16,4 +16,3 @@
            <%= "maxlength=\"#{field[:maxlength]}\"".html_safe if field[:maxlength] %>>
   </div>
 </div>
-

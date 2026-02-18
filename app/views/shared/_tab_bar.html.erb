@@ -1,4 +1,4 @@
-<div class="tab-bar-inner">
+<div class="tab-bar-inner flex items-stretch h-[var(--spacing-tab-bar)] overflow-x-auto px-1">
   <% (tabs || []).each do |tab| %>
     <% tab_id = tab["id"] %>
     <% is_active = (tab_id == active) %>
@@ -7,14 +7,14 @@
             type="button"
             data-action="click->tabs#activateTab"
             data-tab-id="<%= tab_id %>">
-      <span class="tab-dot"></span>
+      <span class="w-[7px] h-[7px] rounded-full shrink-0 bg-text-muted transition-colors duration-150 <%= 'bg-accent!' if is_active %>"></span>
       <%= tab["label"] %>
 
       <% if tab_id != "overview" %>
-        <span class="tab-close"
+        <span class="ml-1 text-text-muted w-4 h-4 inline-flex items-center justify-center p-0 rounded-sm cursor-pointer hover:bg-accent-rose hover:text-white transition-[background,color] duration-150"
               data-action="click->tabs#closeTab:stop"
               data-tab-id="<%= tab_id %>">
-          <%= lucide_icon("x", css_class: "tab-close-icon") %>
+          <%= lucide_icon("x", css_class: "w-3 h-3") %>
         </span>
       <% end %>
     </button>

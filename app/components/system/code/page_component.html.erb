@@ -1,5 +1,4 @@
-﻿<div class="code-page"
-     data-controller="code-grid"
+<div data-controller="code-grid"
      data-code-grid-master-batch-url-value="<%= master_batch_save_url %>"
      data-code-grid-detail-batch-url-template-value="<%= detail_batch_save_url_template %>"
      data-code-grid-detail-list-url-template-value="/system/code/:code/details.json"
@@ -11,10 +10,10 @@
     enable_collapse: true
   ) %>
 
-  <div class="code-page-panels">
-    <section class="code-page-panel">
-      <div class="code-page-panel-title">
-        <h3>코드 목록</h3>
+  <div class="grid grid-cols-2 gap-3 max-[1200px]:grid-cols-1">
+    <section class="min-w-0">
+      <div class="flex items-end justify-between gap-3">
+        <h3 class="text-[15px] font-semibold text-text-primary">코드 목록</h3>
         <%= render Ui::GridToolbarComponent.new(
           buttons: [
             { label: "행추가", class: "btn btn-sm btn-primary", action: "click->code-grid#addMasterRow" },
@@ -34,11 +33,11 @@
       ) %>
     </section>
 
-    <section class="code-page-panel">
-      <div class="code-page-panel-title">
+    <section class="min-w-0">
+      <div class="flex items-end justify-between gap-3">
         <div>
-          <h3>상세코드 목록</h3>
-          <p class="code-page-selected-code" data-code-grid-target="selectedCodeLabel"><%= selected_code_label %></p>
+          <h3 class="text-[15px] font-semibold text-text-primary">상세코드 목록</h3>
+          <p class="text-text-secondary text-xs mt-1" data-code-grid-target="selectedCodeLabel"><%= selected_code_label %></p>
         </div>
         <%= render Ui::GridToolbarComponent.new(
           buttons: [

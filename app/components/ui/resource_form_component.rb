@@ -52,7 +52,7 @@ class Ui::ResourceFormComponent < ApplicationComponent
       data[:resource_form_dependencies_value] = dependencies.to_json
       data[:resource_form_loading_value] = false
 
-      opts[:class] = [ "form-grid-wrapper", "rf-wrapper", opts[:class] ].compact.join(" ")
+      opts[:class] = [ "max-w-full overflow-x-hidden bg-bg-secondary border border-border rounded-lg p-5 mb-4", opts[:class] ].compact.join(" ")
       opts[:data] = data
       opts
     end

@@ -44,7 +44,7 @@ class Ui::SearchFormComponent < ApplicationComponent
         "search-form-cols-value" => cols
       }
 
-      opts.merge(class: "form-grid-wrapper", data: custom_data.merge(stimulus_data))
+      opts.merge(class: "max-w-full overflow-x-hidden bg-bg-secondary border border-border rounded-lg p-4 mb-4", data: custom_data.merge(stimulus_data))
     end
 
     def sanitize_field_defs(fields)

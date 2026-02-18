@@ -1,21 +1,21 @@
-<div class="modal-overlay"
+<div class="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]"
      data-<%= controller %>-target="overlay"
      <%= overlay_action_attr&.html_safe %>
      hidden>
-  <div class="modal-content"
+  <div class="bg-bg-primary border border-border rounded-lg w-[480px] max-w-[calc(100vw-32px)] max-h-[90vh] flex flex-col overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.15)]"
        data-<%= controller %>-target="modal"
        data-action="click-><%= controller %>#stopPropagation">
-    <div class="modal-header" data-action="mousedown-><%= controller %>#startDrag">
-      <h3 data-<%= controller %>-target="modalTitle"><%= title %></h3>
-      <button type="button" class="modal-close"
+    <div class="flex justify-between items-center px-5 py-4 border-b border-border sticky top-0 z-[2] bg-bg-primary cursor-move" data-action="mousedown-><%= controller %>#startDrag">
+      <h3 class="m-0 text-base" data-<%= controller %>-target="modalTitle"><%= title %></h3>
+      <button type="button" class="bg-transparent border-none text-xl cursor-pointer text-text-secondary"
               data-action="click-><%= controller %>#closeModal">&times;</button>
     </div>
 
-    <div class="modal-body">
+    <div class="modal-body px-5 py-5 overflow-y-auto flex-1 min-h-0">
       <%= body %>
     </div>
 
-    <div class="modal-footer form-grid-buttons rf-buttons">
+    <div class="flex justify-end gap-2 px-5 py-3 border-t border-border sticky bottom-0 z-[2] bg-bg-primary">
       <button type="button" class="btn btn-sm btn-secondary"
               <%= cancel_role_attr&.html_safe %>
               data-action="click-><%= controller %>#closeModal"><%= cancel_text %></button>

@@ -1,32 +1,33 @@
-<header class="main-header">
-  <button class="sidebar-toggle-btn" type="button"
+<header class="h-[var(--spacing-header)] bg-bg-secondary border-b border-border flex items-center px-5 shrink-0">
+  <button class="inline-flex items-center justify-center bg-transparent border-none text-text-secondary cursor-pointer py-1 px-2 rounded-md leading-none shrink-0 mr-2 hover:bg-bg-hover hover:text-text-primary transition-[background,color] duration-150" type="button"
           data-action="click->tabs#toggleSidebar"
           aria-label="사이드바 열기/닫기">
     <%= lucide_icon("chevrons-left", css_class: "toggle-icon-collapse") %>
     <%= lucide_icon("chevrons-right", css_class: "toggle-icon-expand") %>
   </button>
-  <div class="breadcrumb">
-    <%= lucide_icon("house", css_class: "breadcrumb-home") %>
-    <span class="sep">/</span>
-    <span class="current" id="breadcrumb-current">
+  <div class="flex items-center gap-1.5 text-sm text-text-secondary">
+    <%= lucide_icon("house", css_class: "w-4 h-4 text-text-secondary") %>
+    <span class="text-text-muted">/</span>
+    <span class="text-text-primary font-semibold" id="breadcrumb-current">
       <% active_id = session[:active_tab] || "overview" %>
       <% active_tab = (session[:open_tabs] || []).find { |t| t["id"] == active_id } %>
       <%= active_tab&.dig("label") || TabRegistry.find(active_id)&.label || "개요" %>
     </span>
   </div>
-  <div class="header-actions">
-    <div class="search-box">
-      <%= lucide_icon("search", css_class: "search-icon") %>
-      <input type="text" placeholder="검색... (⌘K)">
+  <div class="flex items-center gap-2 ml-auto">
+    <div class="flex items-center gap-1.5 bg-bg-primary border border-border rounded-md px-2.5 py-1.5 text-[13px] text-text-secondary">
+      <%= lucide_icon("search") %>
+      <input type="text" placeholder="검색... (⌘K)"
+             class="bg-transparent border-none outline-none text-text-primary text-[13px] w-40 placeholder:text-text-muted">
     </div>
-    <button class="icon-btn" type="button" aria-label="알림">
-      <%= lucide_icon("bell") %>
+    <button class="inline-flex items-center justify-center bg-transparent border border-border rounded-md px-2 py-1.5 cursor-pointer text-text-secondary leading-none hover:bg-bg-hover transition-colors duration-150" type="button" aria-label="알림">
+      <%= lucide_icon("bell", css_class: "w-4 h-4") %>
     </button>
-    <button class="icon-btn" type="button" aria-label="설정">
-      <%= lucide_icon("settings") %>
+    <button class="inline-flex items-center justify-center bg-transparent border border-border rounded-md px-2 py-1.5 cursor-pointer text-text-secondary leading-none hover:bg-bg-hover transition-colors duration-150" type="button" aria-label="설정">
+      <%= lucide_icon("settings", css_class: "w-4 h-4") %>
     </button>
-    <%= button_to session_path, method: :delete, class: "icon-btn", form: { style: "display: contents" } do %>
-      <%= lucide_icon("log-out") %>
+    <%= button_to session_path, method: :delete, class: "inline-flex items-center justify-center bg-transparent border border-border rounded-md px-2 py-1.5 cursor-pointer text-text-secondary leading-none hover:bg-bg-hover transition-colors duration-150", form: { style: "display: contents" } do %>
+      <%= lucide_icon("log-out", css_class: "w-4 h-4") %>
     <% end %>
   </div>
 </header>
