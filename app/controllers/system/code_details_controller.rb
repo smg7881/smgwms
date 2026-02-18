@@ -1,4 +1,4 @@
-﻿class System::CodeDetailsController < ApplicationController
+﻿class System::CodeDetailsController < System::BaseController
   def index
     if code_header.nil?
       render json: []

@@ -1,4 +1,4 @@
-class System::MenusController < ApplicationController
+class System::MenusController < System::BaseController
   def index
     @menus = if search_params.values.any?(&:present?)
       scope = AdmMenu.ordered

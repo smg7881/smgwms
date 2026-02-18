@@ -2,7 +2,7 @@ require "test_helper"
 
 class System::MenusControllerTest < ActionDispatch::IntegrationTest
   setup do
-    post session_path, params: { email_address: "user@example.com", password: "password" }
+    post session_path, params: { email_address: "admin@example.com", password: "password" }
   end
 
   test "index responds to html" do
@@ -65,5 +65,13 @@ class System::MenusControllerTest < ActionDispatch::IntegrationTest
 
     delete system_menu_url(parent), as: :json
     assert_response :unprocessable_entity
+  end
+
+  test "non-admin cannot access menus endpoints" do
+    delete session_path
+    post session_path, params: { email_address: "user@example.com", password: "password" }
+
+    get system_menus_url(format: :json)
+    assert_response :forbidden
   end
 end

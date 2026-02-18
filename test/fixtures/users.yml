@@ -1,3 +1,13 @@
 one:
   email_address: user@example.com
+  role_cd: USER
+  user_id_code: user01
+  user_nm: 일반사용자
+  password_digest: <%= BCrypt::Password.create("password") %>
+
+admin:
+  email_address: admin@example.com
+  role_cd: ADMIN
+  user_id_code: admin01
+  user_nm: 관리자
   password_digest: <%= BCrypt::Password.create("password") %>

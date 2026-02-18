@@ -1,4 +1,4 @@
-﻿class System::CodeController < ApplicationController
+﻿class System::CodeController < System::BaseController
   def index
     @selected_code = params[:selected_code].presence
 

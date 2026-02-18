@@ -1,4 +1,4 @@
-class System::UsersController < ApplicationController
+class System::UsersController < System::BaseController
   def index
     @users = if search_params.values.any?(&:present?)
       scope = User.ordered
@@ -71,7 +71,11 @@ class System::UsersController < ApplicationController
     end
 
     def user_json(user)
-      json = user.as_json
+      json = user.as_json(only: [
+        :id, :user_id_code, :user_nm, :email_address, :dept_cd, :dept_nm,
+        :role_cd, :position_cd, :job_title_cd, :work_status, :hire_date,
+        :resign_date, :phone, :address, :detail_address, :created_at, :updated_at
+      ])
       if user.photo.attached?
         json["photo_url"] = Rails.application.routes.url_helpers.rails_blob_path(user.photo, only_path: true)
       end

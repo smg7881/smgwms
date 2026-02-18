@@ -5,6 +5,18 @@
 User.find_or_create_by!(email_address: "admin@example.com") do |user|
   user.password = "password"
   user.password_confirmation = "password"
+  user.role_cd = "ADMIN"
+  user.user_id_code = "admin01"
+  user.user_nm = "관리자"
+end
+
+admin_user = User.find_by(email_address: "admin@example.com")
+if admin_user
+  admin_user.update!(
+    role_cd: "ADMIN",
+    user_id_code: admin_user.user_id_code.presence || "admin01",
+    user_nm: admin_user.user_nm.presence || "관리자"
+  )
 end
 
 if defined?(AdmMenu) && ActiveRecord::Base.connection.data_source_exists?(:adm_menus)

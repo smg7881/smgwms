@@ -2,7 +2,7 @@ require "test_helper"
 
 class System::DeptControllerTest < ActionDispatch::IntegrationTest
   setup do
-    post session_path, params: { email_address: "user@example.com", password: "password" }
+    post session_path, params: { email_address: "admin@example.com", password: "password" }
   end
 
   test "index responds to html" do
@@ -40,5 +40,13 @@ class System::DeptControllerTest < ActionDispatch::IntegrationTest
   test "rejects delete when children exist" do
     delete system_dept_url("HQ"), as: :json
     assert_response :unprocessable_entity
+  end
+
+  test "non-admin cannot access dept endpoints" do
+    delete session_path
+    post session_path, params: { email_address: "user@example.com", password: "password" }
+
+    get system_dept_index_url(format: :json)
+    assert_response :forbidden
   end
 end

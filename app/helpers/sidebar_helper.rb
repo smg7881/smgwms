@@ -48,12 +48,13 @@ module SidebarHelper
 
   def render_sidebar_folder_tree(folder, grouped)
     children = grouped[folder.menu_cd] || []
+    expanded_by_default = folder.menu_cd == "SYSTEM"
 
     button = content_tag(
       :button,
       type: "button",
-      class: "nav-item has-children",
-      aria: { expanded: false },
+      class: "nav-item has-children#{expanded_by_default ? " expanded" : ""}",
+      aria: { expanded: expanded_by_default },
       data: { action: "click->sidebar#toggleTree" }
     ) do
       safe_join([
@@ -63,7 +64,7 @@ module SidebarHelper
       ])
     end
 
-    body = content_tag(:div, class: "nav-tree-children") do
+    body = content_tag(:div, class: "nav-tree-children#{expanded_by_default ? " open" : ""}") do
       safe_join(children.filter_map do |child|
         if child.menu_type == "FOLDER"
           render_sidebar_folder_tree(child, grouped)
