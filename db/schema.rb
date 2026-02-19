@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_18_093000) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_19_125500) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -87,6 +87,41 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_18_093000) do
     t.index ["use_yn"], name: "index_adm_depts_on_use_yn"
   end
 
+  create_table "adm_login_histories", force: :cascade do |t|
+    t.string "browser", limit: 100
+    t.string "failure_reason", limit: 200
+    t.string "ip_address", limit: 45
+    t.boolean "login_success", null: false
+    t.datetime "login_time", null: false
+    t.string "os", limit: 100
+    t.string "user_agent", limit: 500
+    t.string "user_id_code", limit: 16
+    t.string "user_nm", limit: 20
+    t.index ["login_success"], name: "index_adm_login_histories_on_login_success"
+    t.index ["login_time"], name: "index_adm_login_histories_on_login_time"
+    t.index ["user_id_code", "login_time"], name: "index_adm_login_histories_on_user_id_code_and_login_time"
+    t.index ["user_id_code"], name: "index_adm_login_histories_on_user_id_code"
+  end
+
+  create_table "adm_menu_logs", force: :cascade do |t|
+    t.datetime "access_time", null: false
+    t.datetime "created_at", null: false
+    t.string "ip_address"
+    t.string "menu_id"
+    t.string "menu_name"
+    t.string "menu_path"
+    t.string "referrer"
+    t.string "session_id"
+    t.datetime "updated_at", null: false
+    t.text "user_agent"
+    t.string "user_id"
+    t.string "user_name"
+    t.index ["access_time"], name: "index_adm_menu_logs_on_access_time"
+    t.index ["menu_id"], name: "index_adm_menu_logs_on_menu_id"
+    t.index ["session_id"], name: "index_adm_menu_logs_on_session_id"
+    t.index ["user_id"], name: "index_adm_menu_logs_on_user_id"
+  end
+
   create_table "adm_menus", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "menu_cd", limit: 20, null: false
@@ -103,6 +138,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_18_093000) do
     t.index ["menu_cd"], name: "index_adm_menus_on_menu_cd", unique: true
     t.index ["parent_cd", "sort_order", "menu_cd"], name: "index_adm_menus_on_parent_cd_and_sort_order_and_menu_cd"
     t.index ["parent_cd"], name: "index_adm_menus_on_parent_cd"
+  end
+
+  create_table "adm_roles", id: false, force: :cascade do |t|
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.text "description"
+    t.string "role_cd", limit: 50, null: false
+    t.string "role_nm", limit: 100, null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn", limit: 1, default: "Y", null: false
+    t.index ["role_cd"], name: "index_adm_roles_on_role_cd", unique: true
+    t.index ["use_yn"], name: "index_adm_roles_on_use_yn"
   end
 
   create_table "adm_users", force: :cascade do |t|

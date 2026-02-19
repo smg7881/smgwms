@@ -60,6 +60,8 @@ module Authentication
           secure: Rails.env.production?
         }
       end
+
+      AdmLoginHistory.record_success(user: user, request: request)
     end
 
     def terminate_session

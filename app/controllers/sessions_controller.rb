@@ -12,6 +12,11 @@ class SessionsController < ApplicationController
       start_new_session_for(user)
       redirect_to after_authentication_url
     else
+      AdmLoginHistory.record_failure(
+        email_input: params[:email_address],
+        request: request,
+        reason: "이메일 또는 비밀번호가 올바르지 않습니다"
+      )
       flash.now[:alert] = "이메일 또는 비밀번호가 올바르지 않습니다"
       render :new, status: :unprocessable_entity
     end

@@ -1,0 +1,22 @@
+<div>
+  <%= render Ui::SearchFormComponent.new(
+    url: create_url,
+    fields: search_fields,
+    cols: 4,
+    enable_collapse: true
+  ) %>
+
+  <div class="mb-2">
+    <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
+      <%= helpers.lucide_icon("history", css_class: "w-4 h-4 text-text-secondary") %>
+      메뉴 접속 로그
+    </h3>
+  </div>
+
+  <%= render Ui::AgGridComponent.new(
+    columns: columns,
+    url: grid_url,
+    height: "calc(100vh - 360px)",
+    page_size: 50
+  ) %>
+</div>

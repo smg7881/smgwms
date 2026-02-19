@@ -3,7 +3,7 @@ class Ui::AgGridComponent < ApplicationComponent
     field headerName
     flex minWidth maxWidth width
     filter sortable resizable editable
-    pinned hide cellStyle
+    pinned hide cellStyle cellClass
     type cellEditor cellEditorParams
     formatter
     cellRenderer cellRendererParams
@@ -11,7 +11,7 @@ class Ui::AgGridComponent < ApplicationComponent
 
   def initialize(columns:, url: nil, row_data: nil, pagination: true,
                  page_size: 20, height: "500px", row_selection: nil,
-                 **html_options)
+                 server_pagination: false, **html_options)
     @columns = columns
     @url = url
     @row_data = row_data
@@ -19,12 +19,14 @@ class Ui::AgGridComponent < ApplicationComponent
     @page_size = page_size
     @height = height
     @row_selection = row_selection
+    @server_pagination = server_pagination
     @html_options = html_options
   end
 
   private
     attr_reader :columns, :url, :row_data, :pagination,
-                :page_size, :height, :row_selection, :html_options
+                :page_size, :height, :row_selection, :server_pagination,
+                :html_options
 
     def safe_columns
       @safe_columns ||= sanitize_column_defs(columns)
@@ -41,6 +43,7 @@ class Ui::AgGridComponent < ApplicationComponent
       data["ag-grid-url-value"] = url if url.present?
       data["ag-grid-row-data-value"] = row_data.to_json if row_data.present?
       data["ag-grid-row-selection-value"] = row_selection if row_selection.present?
+      data["ag-grid-server-pagination-value"] = server_pagination if server_pagination
       data
     end
 

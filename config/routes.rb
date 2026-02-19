@@ -26,10 +26,29 @@ Rails.application.routes.draw do
       end
     end
     resources :menus, only: [ :index, :create, :update, :destroy ]
+    resources :menu_logs, only: [ :index ]
+    resources :login_histories, only: [ :index ]
     resources :code, controller: :code, only: [ :index, :create, :update, :destroy ], param: :id do
       post :batch_save, on: :collection
       resources :details, controller: :code_details, only: [ :index, :create, :update, :destroy ], param: :detail_code do
         post :batch_save, on: :collection
+      end
+    end
+    resources :roles, only: [ :index, :create, :update, :destroy ], param: :id do
+      post :batch_save, on: :collection
+    end
+    resources :role_user, controller: :role_user, path: "roleUser", only: [ :index ] do
+      collection do
+        get :available_users
+        get :assigned_users
+        post :save_assignments
+      end
+    end
+    resources :user_menu_role, controller: :user_menu_role, path: "userMenuRole", only: [ :index ] do
+      collection do
+        get :users
+        get :roles_by_user
+        get :menus_by_user_role
       end
     end
     resources :users do

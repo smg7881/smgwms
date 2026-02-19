@@ -88,6 +88,19 @@ export const RENDERER_REGISTRY = {
     return span
   },
 
+  loginSuccessCellRenderer: (params) => {
+    const span = document.createElement("span")
+    span.style.fontWeight = "bold"
+    if (params.value === true) {
+      span.style.color = "#18a058"
+      span.textContent = "성공"
+    } else {
+      span.style.color = "#d03050"
+      span.textContent = "실패"
+    }
+    return span
+  },
+
   deptUseYnCellRenderer: (params) => {
     const span = document.createElement("span")
     span.style.fontWeight = "bold"

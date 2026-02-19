@@ -1,0 +1,26 @@
+<div data-controller="role-grid"
+     data-role-grid-batch-url-value="<%= batch_save_url %>">
+  <%= render Ui::SearchFormComponent.new(
+    url: create_url,
+    fields: search_fields,
+    cols: 3,
+    enable_collapse: true
+  ) %>
+
+  <%= render Ui::GridToolbarComponent.new(
+    buttons: [
+      { label: "행추가", class: "btn btn-sm btn-primary", action: "click->role-grid#addRow" },
+      { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->role-grid#deleteRows" },
+      { label: "저장", class: "btn btn-sm btn-success", action: "click->role-grid#saveRows" }
+    ]
+  ) %>
+
+  <%= render Ui::AgGridComponent.new(
+    columns: columns,
+    url: grid_url,
+    height: "calc(100vh - 370px)",
+    page_size: 20,
+    row_selection: "multiple",
+    data: { role_grid_target: "grid" }
+  ) %>
+</div>

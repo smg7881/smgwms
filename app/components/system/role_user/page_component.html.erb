@@ -1,0 +1,85 @@
+﻿<div data-controller="role-user-grid"
+     data-role-user-grid-available-url-value="<%= helpers.available_users_system_role_user_index_path %>"
+     data-role-user-grid-assigned-url-value="<%= helpers.assigned_users_system_role_user_index_path %>"
+     data-role-user-grid-save-url-value="<%= helpers.save_assignments_system_role_user_index_path %>">
+  <%= render Ui::SearchFormComponent.new(
+    url: collection_path,
+    fields: [
+      {
+        field: "role_cd",
+        type: "select",
+        label: "역할 선택",
+        options: role_options,
+        include_blank: false
+      }
+    ],
+    cols: 3,
+    enable_collapse: false,
+    show_buttons: false,
+    data: {
+      action: "change->role-user-grid#changeRole"
+    }
+  ) %>
+
+  <div class="grid grid-cols-[minmax(0,1fr)_92px_minmax(0,1fr)] gap-2 max-[980px]:grid-cols-1">
+    <section class="min-w-0">
+      <div class="flex items-start justify-between gap-3">
+        <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
+          <%= helpers.lucide_icon("users", css_class: "w-4 h-4 text-text-secondary") %>
+          미할당 사용자
+        </h3>
+        <div class="flex items-center gap-2">
+          <input type="text"
+                 class="form-grid-input h-8 w-40"
+                 placeholder="부서명, 사용자명 검색"
+                 data-role-user-grid-target="leftSearchInput"
+                 data-action="keydown.enter->role-user-grid#searchLeft" />
+          <button type="button" class="btn btn-sm btn-secondary" data-action="click->role-user-grid#searchLeft">검색</button>
+        </div>
+      </div>
+
+      <%= render Ui::AgGridComponent.new(
+        columns: user_columns,
+        row_data: [],
+        page_size: 20,
+        row_selection: "multiple",
+        height: "calc(100vh - 420px)",
+        data: { role_user_grid_target: "leftGrid" }
+      ) %>
+    </section>
+
+    <section class="flex flex-col justify-center items-center gap-3">
+      <button type="button" class="btn btn-sm btn-primary" data-action="click->role-user-grid#moveToRight">할당 &gt;&gt;</button>
+      <button type="button" class="btn btn-sm btn-danger" data-action="click->role-user-grid#moveToLeft">&lt;&lt; 해제</button>
+    </section>
+
+    <section class="min-w-0">
+      <div class="flex items-start justify-between gap-3">
+        <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
+          <%= helpers.lucide_icon("user-check", css_class: "w-4 h-4 text-text-secondary") %>
+          할당 사용자
+        </h3>
+        <div class="flex items-center gap-2">
+          <input type="text"
+                 class="form-grid-input h-8 w-40"
+                 placeholder="부서명, 사용자명 검색"
+                 data-role-user-grid-target="rightSearchInput"
+                 data-action="keydown.enter->role-user-grid#searchRight" />
+          <button type="button" class="btn btn-sm btn-secondary" data-action="click->role-user-grid#searchRight">검색</button>
+          <button type="button" class="btn btn-sm btn-success" data-action="click->role-user-grid#save">저장</button>
+        </div>
+      </div>
+
+      <%= render Ui::AgGridComponent.new(
+        columns: user_columns,
+        row_data: [],
+        page_size: 20,
+        row_selection: "multiple",
+        height: "calc(100vh - 420px)",
+        data: { role_user_grid_target: "rightGrid" }
+      ) %>
+    </section>
+  </div>
+
+  <input type="hidden" data-role-user-grid-target="selectedRoleCode" value="<%= selected_role_cd %>" />
+</div>

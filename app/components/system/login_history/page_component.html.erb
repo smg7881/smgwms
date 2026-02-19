@@ -1,0 +1,23 @@
+<div>
+  <%= render Ui::SearchFormComponent.new(
+    url: create_url,
+    fields: search_fields,
+    cols: 4,
+    enable_collapse: true
+  ) %>
+
+  <div class="mb-2">
+    <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
+      <%= helpers.lucide_icon("log-in", css_class: "w-4 h-4 text-text-secondary") %>
+      로그인 이력
+    </h3>
+  </div>
+
+  <%= render Ui::AgGridComponent.new(
+    columns: columns,
+    url: grid_url,
+    height: "calc(100vh - 360px)",
+    page_size: 50,
+    server_pagination: true
+  ) %>
+</div>

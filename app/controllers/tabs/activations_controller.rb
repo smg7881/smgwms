@@ -8,6 +8,8 @@ class Tabs::ActivationsController < ApplicationController
     end
 
     session[:active_tab] = tab_id
+    active_tab = open_tabs.find { |t| t["id"] == tab_id }
+    record_menu_access(tab_id: tab_id, tab: active_tab)
 
     respond_to do |format|
       format.turbo_stream { render_tab_update }
@@ -41,5 +43,20 @@ class Tabs::ActivationsController < ApplicationController
           }
         )
       ]
+    end
+
+    def record_menu_access(tab_id:, tab:)
+      if tab_id == "overview" || tab.blank?
+        return
+      end
+
+      AdmMenuLog.record_access(
+        user: Current.user,
+        request: request,
+        menu_id: tab_id,
+        menu_name: tab["label"],
+        menu_path: tab["url"],
+        session_token: Current.session&.token
+      )
     end
 end

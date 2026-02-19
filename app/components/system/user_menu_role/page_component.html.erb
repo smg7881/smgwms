@@ -1,0 +1,60 @@
+<div data-controller="user-menu-role-grid"
+     data-user-menu-role-grid-roles-url-value="<%= roles_by_user_url %>"
+     data-user-menu-role-grid-menus-url-value="<%= menus_by_user_role_url %>">
+  <%= render Ui::SearchFormComponent.new(
+    url: collection_path,
+    fields: search_fields,
+    cols: 3,
+    enable_collapse: true
+  ) %>
+
+  <section class="min-w-0 mb-4">
+    <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary mb-2">
+      <%= helpers.lucide_icon("users", css_class: "w-4 h-4 text-text-secondary") %>
+      사용자 목록
+    </h3>
+
+    <%= render Ui::AgGridComponent.new(
+      columns: user_columns,
+      url: users_grid_url,
+      page_size: 20,
+      row_selection: "single",
+      height: "calc(100vh - 470px)",
+      data: { user_menu_role_grid_target: "userGrid" }
+    ) %>
+  </section>
+
+  <div class="grid grid-cols-2 gap-2 max-[980px]:grid-cols-1">
+    <section class="min-w-0">
+      <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary mb-2">
+        <%= helpers.lucide_icon("shield", css_class: "w-4 h-4 text-text-secondary") %>
+        사용자 역할
+      </h3>
+
+      <%= render Ui::AgGridComponent.new(
+        columns: role_columns,
+        row_data: [],
+        page_size: 20,
+        row_selection: "single",
+        height: "calc(100vh - 540px)",
+        data: { user_menu_role_grid_target: "roleGrid" }
+      ) %>
+    </section>
+
+    <section class="min-w-0">
+      <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary mb-2">
+        <%= helpers.lucide_icon("menu", css_class: "w-4 h-4 text-text-secondary") %>
+        메뉴 권한
+      </h3>
+
+      <%= render Ui::AgGridComponent.new(
+        columns: menu_columns,
+        row_data: [],
+        page_size: 20,
+        row_selection: "single",
+        height: "calc(100vh - 540px)",
+        data: { user_menu_role_grid_target: "menuGrid" }
+      ) %>
+    </section>
+  </div>
+</div>

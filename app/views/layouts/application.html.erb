@@ -7,7 +7,7 @@
   <link rel="icon" href="/icon.png" type="image/png">
   <%= csrf_meta_tags %>
   <%= csp_meta_tag %>
-  <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
+  <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload", preload_links_header: false %>
   <%= javascript_importmap_tags %>
 </head>
 <body class="font-sans bg-bg-primary text-text-primary text-sm leading-normal h-screen overflow-hidden" data-controller="lucide">

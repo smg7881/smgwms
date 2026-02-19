@@ -16,6 +16,7 @@ class TabsController < ApplicationController
       open_tabs << { "id" => tab_id, "label" => effective_label, "url" => effective_url }
     end
     session[:active_tab] = tab_id
+    record_menu_access(tab_id: tab_id, label: effective_label, url: effective_url)
 
     respond_to do |format|
       format.turbo_stream { render_tab_update }
@@ -73,5 +74,20 @@ class TabsController < ApplicationController
           }
         )
       ]
+    end
+
+    def record_menu_access(tab_id:, label:, url:)
+      if tab_id == "overview"
+        return
+      end
+
+      AdmMenuLog.record_access(
+        user: Current.user,
+        request: request,
+        menu_id: tab_id,
+        menu_name: label,
+        menu_path: url,
+        session_token: Current.session&.token
+      )
     end
 end

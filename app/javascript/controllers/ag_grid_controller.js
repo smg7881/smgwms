@@ -78,6 +78,10 @@ if (!modulesRegistered) {
 export default class extends Controller {
   static targets = ["grid"]
 
+  #serverPage = 1
+  #serverTotal = 0
+  #suppressPaginationEvent = false
+
   static values = {
     columns: { type: Array, default: [] },
     url: String,
@@ -85,11 +89,14 @@ export default class extends Controller {
     pagination: { type: Boolean, default: true },
     pageSize: { type: Number, default: 20 },
     height: { type: String, default: "500px" },
-    rowSelection: { type: String, default: "" }
+    rowSelection: { type: String, default: "" },
+    serverPagination: { type: Boolean, default: false }
   }
 
   connect() {
     this.focusedRowNode = null
+    this.#serverPage = 1
+    this.#serverTotal = 0
     this.initGrid()
     this._beforeCache = () => this.teardown()
     document.addEventListener("turbo:before-cache", this._beforeCache)
@@ -101,7 +108,13 @@ export default class extends Controller {
   }
 
   refresh() {
-    if (this.hasUrlValue && this.urlValue && this.isApiAlive(this.gridApi)) this.fetchData()
+    if (!this.isApiAlive(this.gridApi)) return
+    if (this.serverPaginationValue) {
+      this.#serverPage = 1
+      this.fetchServerPage()
+    } else if (this.hasUrlValue && this.urlValue) {
+      this.fetchData()
+    }
   }
 
   get api() {
@@ -131,6 +144,10 @@ export default class extends Controller {
 
     this.defaultNoRowsTemplate = gridOptions.overlayNoRowsTemplate
 
+    if (this.serverPaginationValue) {
+      gridOptions.onPaginationChanged = (event) => this.#handleServerPaginationChanged(event)
+    }
+
     if (this.rowSelectionValue) {
       gridOptions.rowSelection = {
         mode: this.rowSelectionValue === "single" ? "singleRow" : "multiRow"
@@ -151,7 +168,10 @@ export default class extends Controller {
     this.gridApi = createGrid(this.gridTarget, gridOptions)
     this.ensureStatusColumnOrder()
 
-    if (this.hasUrlValue && this.urlValue) {
+    if (this.serverPaginationValue) {
+      this.#serverPage = 1
+      this.fetchServerPage()
+    } else if (this.hasUrlValue && this.urlValue) {
       this.fetchData()
     } else if (this.rowDataValue.length > 0 && this.isApiAlive(this.gridApi)) {
       this.focusedRowNode = null
@@ -228,6 +248,62 @@ export default class extends Controller {
           '<div style="padding:20px;text-align:center;">' +
             '<div style="color:#f85149;font-weight:600;margin-bottom:4px;">?곗씠??濡쒕뵫 ?ㅽ뙣</div>' +
             '<div style="color:#8b949e;font-size:12px;">?ㅽ듃?뚰겕 ?곹깭瑜??뺤씤?댁＜?몄슂</div>' +
+          "</div>"
+        )
+        api.showNoRowsOverlay()
+      })
+  }
+
+  #handleServerPaginationChanged(event) {
+    if (this.#suppressPaginationEvent) return
+    if (!this.isApiAlive(this.gridApi)) return
+
+    const newPage = this.gridApi.paginationGetCurrentPage() + 1
+    if (newPage !== this.#serverPage) {
+      this.#serverPage = newPage
+      this.fetchServerPage()
+    }
+  }
+
+  fetchServerPage() {
+    const api = this.gridApi
+    if (!this.isApiAlive(api)) return
+
+    api.setGridOption("loading", true)
+
+    const url = new URL(this.urlValue, window.location.origin)
+    url.searchParams.set("page", this.#serverPage)
+    url.searchParams.set("per_page", this.pageSizeValue)
+
+    fetch(url.toString(), { headers: { Accept: "application/json" } })
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`)
+        return response.json()
+      })
+      .then((data) => {
+        if (!this.isApiAlive(api) || api !== this.gridApi) return
+
+        api.setGridOption("loading", false)
+        api.setGridOption("overlayNoRowsTemplate", this.defaultNoRowsTemplate)
+        this.focusedRowNode = null
+        this.#serverTotal = data.total || 0
+
+        api.setGridOption("rowData", data.rows || [])
+        api.setGridOption("paginationPageSize", this.pageSizeValue)
+
+        if ((data.rows || []).length === 0) api.showNoRowsOverlay()
+        else api.hideOverlay()
+      })
+      .catch((error) => {
+        console.error("[ag-grid] server page load failed:", error)
+        if (!this.isApiAlive(api) || api !== this.gridApi) return
+
+        api.setGridOption("loading", false)
+        api.setGridOption(
+          "overlayNoRowsTemplate",
+          '<div style="padding:20px;text-align:center;">' +
+            '<div style="color:#f85149;font-weight:600;margin-bottom:4px;">데이터 로딩 실패</div>' +
+            '<div style="color:#8b949e;font-size:12px;">네트워크 상태를 확인해주세요</div>' +
           "</div>"
         )
         api.showNoRowsOverlay()
