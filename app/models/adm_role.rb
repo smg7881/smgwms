@@ -1,6 +1,5 @@
 class AdmRole < ApplicationRecord
   self.table_name = "adm_roles"
-  self.primary_key = "role_cd"
 
   validates :role_cd, presence: true, uniqueness: true, length: { maximum: 50 }
   validates :role_nm, presence: true, length: { maximum: 100 }

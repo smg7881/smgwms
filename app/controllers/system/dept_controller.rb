@@ -14,7 +14,7 @@ class System::DeptController < System::BaseController
   end
 
   def show
-    dept = AdmDept.find(params[:id])
+    dept = find_dept
     render json: dept_json(dept)
   end
 
@@ -32,7 +32,7 @@ class System::DeptController < System::BaseController
   end
 
   def update
-    dept = AdmDept.find(params[:id])
+    dept = find_dept
     attrs = dept_params.to_h
     attrs.delete("dept_code")
 
@@ -44,7 +44,7 @@ class System::DeptController < System::BaseController
   end
 
   def destroy
-    dept = AdmDept.find(params[:id])
+    dept = find_dept
     if dept.children.exists?
       render json: { success: false, errors: [ "하위 부서가 존재하여 삭제할 수 없습니다." ] }, status: :unprocessable_entity
       return
@@ -94,6 +94,10 @@ class System::DeptController < System::BaseController
         :dept_code, :dept_nm, :dept_type, :parent_dept_code,
         :description, :dept_order, :use_yn
       )
+    end
+
+    def find_dept
+      AdmDept.find_by!(dept_code: params[:id].to_s.strip.upcase)
     end
 
     def dept_json(dept)

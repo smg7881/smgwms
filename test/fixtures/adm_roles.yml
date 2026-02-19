@@ -1,0 +1,9 @@
+admin:
+  role_cd: ADMIN
+  role_nm: 관리자
+  use_yn: Y
+
+user:
+  role_cd: USER
+  role_nm: 일반사용자
+  use_yn: Y

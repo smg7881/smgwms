@@ -5,8 +5,9 @@ class System::RoleUserController < System::BaseController
 
   def available_users
     role_cd = params[:role_cd].to_s.strip.upcase
-    users = if role_cd.present?
-      User.ordered.where("COALESCE(role_cd, '') <> ?", role_cd)
+    role = AdmRole.find_by(role_cd: role_cd)
+    users = if role.present?
+      User.ordered.where(role_id: nil).or(User.ordered.where.not(role_id: role.id))
     else
       User.none
     end
@@ -16,8 +17,9 @@ class System::RoleUserController < System::BaseController
 
   def assigned_users
     role_cd = params[:role_cd].to_s.strip.upcase
-    users = if role_cd.present?
-      User.ordered.where(role_cd: role_cd)
+    role = AdmRole.find_by(role_cd: role_cd)
+    users = if role.present?
+      User.ordered.where(role_id: role.id)
     else
       User.none
     end
@@ -41,8 +43,8 @@ class System::RoleUserController < System::BaseController
     end
 
     ActiveRecord::Base.transaction do
-      User.where(role_cd: role_cd).where.not(user_id_code: user_ids).update_all(role_cd: nil, updated_at: Time.current)
-      User.where(user_id_code: user_ids).update_all(role_cd: role_cd, updated_at: Time.current)
+      User.where(role_id: role.id).where.not(user_id_code: user_ids).update_all(role_id: nil, updated_at: Time.current)
+      User.where(user_id_code: user_ids).update_all(role_id: role.id, updated_at: Time.current)
     end
 
     render json: { success: true, message: "역할 사용자 저장이 완료되었습니다." }

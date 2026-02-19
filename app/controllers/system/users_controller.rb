@@ -78,7 +78,7 @@ class System::UsersController < System::BaseController
     def user_params
       params.require(:user).permit(
         :user_id_code, :user_nm, :email_address, :password,
-        :dept_cd, :dept_nm, :role_cd, :position_cd, :job_title_cd,
+        :dept_id, :dept_cd, :dept_nm, :role_id, :role_cd, :position_cd, :job_title_cd,
         :work_status, :hire_date, :resign_date,
         :phone, :address, :detail_address, :photo
       )
@@ -86,10 +86,12 @@ class System::UsersController < System::BaseController
 
     def user_json(user)
       json = user.as_json(only: [
-        :id, :user_id_code, :user_nm, :email_address, :dept_cd, :dept_nm,
-        :role_cd, :position_cd, :job_title_cd, :work_status, :hire_date,
+        :id, :user_id_code, :user_nm, :email_address, :dept_id, :dept_nm,
+        :role_id, :position_cd, :job_title_cd, :work_status, :hire_date,
         :resign_date, :phone, :address, :detail_address, :created_at, :updated_at
       ])
+      json["dept_cd"] = user.dept_cd
+      json["role_cd"] = user.role_cd
       if user.photo.attached?
         json["photo_url"] = Rails.application.routes.url_helpers.rails_blob_path(user.photo, only_path: true)
       end

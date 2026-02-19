@@ -9,8 +9,8 @@ class System::UserMenuRoleController < System::BaseController
   def roles_by_user
     user = User.find_by(user_id_code: params[:user_id_code].to_s.strip)
 
-    roles = if user&.role_cd.present?
-      AdmRole.where(role_cd: user.role_cd.to_s.strip.upcase).ordered
+    roles = if user&.role_id.present?
+      AdmRole.where(id: user.role_id).ordered
     else
       AdmRole.none
     end

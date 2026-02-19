@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_19_125500) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_19_150000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -69,7 +69,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_19_125500) do
     t.index ["use_yn"], name: "index_adm_code_headers_on_use_yn"
   end
 
-  create_table "adm_depts", id: false, force: :cascade do |t|
+  create_table "adm_depts", force: :cascade do |t|
     t.string "create_by", limit: 50
     t.datetime "create_time"
     t.string "dept_code", limit: 50, null: false
@@ -140,7 +140,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_19_125500) do
     t.index ["parent_cd"], name: "index_adm_menus_on_parent_cd"
   end
 
-  create_table "adm_roles", id: false, force: :cascade do |t|
+  create_table "adm_roles", force: :cascade do |t|
     t.string "create_by", limit: 50
     t.datetime "create_time"
     t.text "description"
@@ -156,7 +156,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_19_125500) do
   create_table "adm_users", force: :cascade do |t|
     t.string "address"
     t.datetime "created_at", null: false
-    t.string "dept_cd"
+    t.integer "dept_id"
     t.string "dept_nm"
     t.string "detail_address"
     t.string "email_address"
@@ -166,11 +166,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_19_125500) do
     t.string "phone"
     t.string "position_cd"
     t.date "resign_date"
-    t.string "role_cd"
+    t.integer "role_id"
     t.datetime "updated_at", null: false
     t.string "user_id_code"
     t.string "user_nm"
     t.string "work_status", default: "ACTIVE"
+    t.index ["dept_id"], name: "index_adm_users_on_dept_id"
+    t.index ["role_id"], name: "index_adm_users_on_role_id"
     t.index ["user_id_code"], name: "index_adm_users_on_user_id_code", unique: true
     t.index ["work_status"], name: "index_adm_users_on_work_status"
   end
@@ -214,6 +216,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_19_125500) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "adm_users", "adm_depts", column: "dept_id"
+  add_foreign_key "adm_users", "adm_roles", column: "role_id"
   add_foreign_key "excel_import_tasks", "adm_users", column: "requested_by_id"
   add_foreign_key "sessions", "adm_users", column: "user_id"
 end

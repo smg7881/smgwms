@@ -1,8 +1,6 @@
 require "set"
 
 class AdmDept < ApplicationRecord
-  self.primary_key = "dept_code"
-
   attr_accessor :dept_level
 
   validates :dept_code, presence: true, uniqueness: true, length: { maximum: 50 }
