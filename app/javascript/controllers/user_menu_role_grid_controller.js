@@ -16,6 +16,10 @@ export default class extends Controller {
     this.userGridController = null
     this.roleGridController = null
     this.menuGridController = null
+    this.rolesRequestId = 0
+    this.menusRequestId = 0
+    this.rolesAbortController = null
+    this.menusAbortController = null
   }
 
   registerGrid(event) {
@@ -43,6 +47,7 @@ export default class extends Controller {
 
   disconnect() {
     this.unbindGridEvents()
+    this.cancelPendingRequests()
     this.userApi = null
     this.roleApi = null
     this.menuApi = null
@@ -95,23 +100,39 @@ export default class extends Controller {
   }
 
   async loadRolesByUser(userIdCode) {
+    if (!this.isApiAlive(this.roleApi) || !this.isApiAlive(this.menuApi)) return
+
     this.selectedUserIdCode = userIdCode || ""
     this.roleApi.setGridOption("rowData", [])
     this.menuApi.setGridOption("rowData", [])
 
     if (!this.selectedUserIdCode) return
 
+    const requestId = ++this.rolesRequestId
+    this.cancelRolesRequest()
+    this.rolesAbortController = new AbortController()
+
     try {
       const url = `${this.rolesUrlValue}?user_id_code=${encodeURIComponent(this.selectedUserIdCode)}`
-      const roles = await this.fetchJson(url)
+      const roles = await this.fetchJson(url, { signal: this.rolesAbortController.signal })
+
+      if (!this.isLatestRolesRequest(requestId) || !this.isApiAlive(this.roleApi) || !this.isApiAlive(this.menuApi)) {
+        return
+      }
+
       this.roleApi.setGridOption("rowData", roles)
 
       const selectedRole = this.selectFirstRow(this.roleApi, "role_cd")
       if (selectedRole) {
         this.loadMenusByUserAndRole(this.selectedUserIdCode, selectedRole.role_cd)
       }
-    } catch {
+    } catch (error) {
+      if (this.isAbortError(error) || !this.isLatestRolesRequest(requestId)) return
       alert("사용자 역할 조회에 실패했습니다.")
+    } finally {
+      if (this.isLatestRolesRequest(requestId)) {
+        this.rolesAbortController = null
+      }
     }
   }
 
@@ -126,26 +147,49 @@ export default class extends Controller {
   }
 
   async loadMenusByUserAndRole(userIdCode, roleCd) {
+    if (!this.isApiAlive(this.menuApi)) return
+
     this.menuApi.setGridOption("rowData", [])
 
     if (!userIdCode || !roleCd) return
+
+    const requestId = ++this.menusRequestId
+    this.cancelMenusRequest()
+    this.menusAbortController = new AbortController()
 
     try {
       const query = new URLSearchParams({
         user_id_code: userIdCode,
         role_cd: roleCd
       })
-      const menus = await this.fetchJson(`${this.menusUrlValue}?${query.toString()}`)
+      const menus = await this.fetchJson(`${this.menusUrlValue}?${query.toString()}`, {
+        signal: this.menusAbortController.signal
+      })
+
+      if (!this.isLatestMenusRequest(requestId) || !this.isApiAlive(this.menuApi)) {
+        return
+      }
+
       this.menuApi.setGridOption("rowData", menus)
-    } catch {
+    } catch (error) {
+      if (this.isAbortError(error) || !this.isLatestMenusRequest(requestId)) return
       alert("메뉴 조회에 실패했습니다.")
+    } finally {
+      if (this.isLatestMenusRequest(requestId)) {
+        this.menusAbortController = null
+      }
     }
   }
 
   clearRoleAndMenu() {
+    this.cancelPendingRequests()
     this.selectedUserIdCode = ""
-    this.roleApi.setGridOption("rowData", [])
-    this.menuApi.setGridOption("rowData", [])
+    if (this.isApiAlive(this.roleApi)) {
+      this.roleApi.setGridOption("rowData", [])
+    }
+    if (this.isApiAlive(this.menuApi)) {
+      this.menuApi.setGridOption("rowData", [])
+    }
   }
 
   selectFirstRow(api, focusField) {
@@ -160,12 +204,46 @@ export default class extends Controller {
     return firstRowNode.data
   }
 
-  async fetchJson(url) {
-    const response = await fetch(url, { headers: { Accept: "application/json" } })
+  async fetchJson(url, options = {}) {
+    const response = await fetch(url, {
+      headers: { Accept: "application/json" },
+      signal: options.signal
+    })
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`)
     }
     return response.json()
+  }
+
+  cancelPendingRequests() {
+    this.rolesRequestId += 1
+    this.menusRequestId += 1
+    this.cancelRolesRequest()
+    this.cancelMenusRequest()
+  }
+
+  cancelRolesRequest() {
+    if (!this.rolesAbortController) return
+    this.rolesAbortController.abort()
+    this.rolesAbortController = null
+  }
+
+  cancelMenusRequest() {
+    if (!this.menusAbortController) return
+    this.menusAbortController.abort()
+    this.menusAbortController = null
+  }
+
+  isLatestRolesRequest(requestId) {
+    return requestId === this.rolesRequestId
+  }
+
+  isLatestMenusRequest(requestId) {
+    return requestId === this.menusRequestId
+  }
+
+  isAbortError(error) {
+    return error && error.name === "AbortError"
   }
 
   isApiAlive(api) {
