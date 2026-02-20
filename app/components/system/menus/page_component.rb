@@ -11,11 +11,7 @@ class System::Menus::PageComponent < System::BasePageComponent
           field: "use_yn",
           type: "select",
           label: "사용여부",
-          options: [
-            { label: "전체", value: "" },
-            { label: "사용", value: "Y" },
-            { label: "미사용", value: "N" }
-          ],
+          options: common_code_options("CMM_USE_YN", include_all: true),
           include_blank: false
         }
       ]
@@ -48,7 +44,7 @@ class System::Menus::PageComponent < System::BasePageComponent
           type: "select",
           label: "타입",
           include_blank: false,
-          options: [ { label: "FOLDER", value: "FOLDER" }, { label: "MENU", value: "MENU" } ],
+          options: common_code_options("MENU_TYPE"),
           target: "fieldMenuType"
         },
         {
@@ -56,7 +52,7 @@ class System::Menus::PageComponent < System::BasePageComponent
           type: "select",
           label: "사용여부",
           include_blank: false,
-          options: [ { label: "Y", value: "Y" }, { label: "N", value: "N" } ],
+          options: common_code_options("CMM_USE_YN"),
           target: "fieldUseYn"
         },
         { field: "tab_id", type: "input", label: "탭 ID", maxlength: 50, target: "fieldTabId" }

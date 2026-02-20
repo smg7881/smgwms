@@ -18,46 +18,49 @@ module Excel
     end
 
     def call
-      spreadsheet = Roo::Spreadsheet.open(file_path, extension: extension.to_sym)
-      header_row = normalized_row(spreadsheet.row(1))
-      expected_headers = handler.headers
-      if header_row != expected_headers
-        raise HeaderMismatchError.new(expected_headers:, actual_headers: header_row)
-      end
+      with_prepared_file_path do |prepared_file_path|
+        spreadsheet = Roo::Spreadsheet.open(prepared_file_path, extension: extension.to_sym)
+        header_row = normalized_row(spreadsheet.row(1))
+        expected_headers = handler.headers
+        acceptable_headers = handler.acceptable_headers
+        unless acceptable_headers.include?(header_row)
+          raise HeaderMismatchError.new(expected_headers:, actual_headers: header_row)
+        end
 
-      total_rows = 0
-      success_rows = 0
-      error_rows = []
+        total_rows = 0
+        success_rows = 0
+        error_rows = []
 
-      if spreadsheet.last_row.to_i >= 2
-        (2..spreadsheet.last_row).each do |row_number|
-          row = spreadsheet.row(row_number)
-          next if blank_row?(row)
+        if spreadsheet.last_row.to_i >= 2
+          (2..spreadsheet.last_row).each do |row_number|
+            row = spreadsheet.row(row_number)
+            next if blank_row?(row)
 
-          total_rows += 1
-          row_hash = Hash[expected_headers.zip(row)]
+            total_rows += 1
+            row_hash = Hash[expected_headers.zip(row)]
 
-          begin
-            handler.import_row!(row_hash)
-            success_rows += 1
-          rescue StandardError => e
-            error_rows << build_error_row(row_number, e.message, row_hash)
+            begin
+              handler.import_row!(row_hash)
+              success_rows += 1
+            rescue StandardError => e
+              error_rows << build_error_row(row_number, e.message, row_hash)
+            end
           end
         end
+
+        failed_rows = error_rows.size
+        attach_error_report(error_rows) if failed_rows.positive?
+
+        Result.new(
+          total_rows: total_rows,
+          success_rows: success_rows,
+          failed_rows: failed_rows,
+          error_messages: error_rows.map { |row| row[:error_message] }
+        )
       end
-
-      failed_rows = error_rows.size
-      attach_error_report(error_rows) if failed_rows.positive?
-
-      Result.new(
-        total_rows: total_rows,
-        success_rows: success_rows,
-        failed_rows: failed_rows,
-        error_messages: error_rows.map { |row| row[:error_message] }
-      )
     end
 
-    private
+  private
       attr_reader :handler, :file_path, :extension, :task
 
       def normalized_row(row)
@@ -81,6 +84,27 @@ module Excel
           error_message: message,
           row_data: row_hash.to_json
         }
+      end
+
+      def with_prepared_file_path
+        if csv_extension?
+          Tempfile.create([ "excel-import-normalized", ".csv" ]) do |tempfile|
+            tempfile.binmode
+            tempfile.write(normalized_csv_content)
+            tempfile.flush
+            yield tempfile.path
+          end
+        else
+          yield file_path
+        end
+      end
+
+      def csv_extension?
+        extension.to_s.delete(".").downcase == "csv"
+      end
+
+      def normalized_csv_content
+        File.binread(file_path).gsub(/\r\n?/, "\n")
       end
 
       def attach_error_report(error_rows)

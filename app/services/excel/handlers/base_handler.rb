@@ -17,6 +17,10 @@ module Excel
         raise NotImplementedError, "Subclasses must implement import_row!"
       end
 
+      def acceptable_headers
+        [ headers ]
+      end
+
       def sheet_name
         filename_prefix
       end

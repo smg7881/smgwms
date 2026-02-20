@@ -31,11 +31,7 @@ class System::Users::PageComponent < System::BasePageComponent
           field: "work_status",
           type: "select",
           label: "재직상태",
-          options: [
-            { label: "전체", value: "" },
-            { label: "재직", value: "ACTIVE" },
-            { label: "퇴사", value: "RESIGNED" }
-          ],
+          options: common_code_options("USER_WORK_STATUS", include_all: true),
           include_blank: false
         }
       ]
@@ -70,11 +66,7 @@ class System::Users::PageComponent < System::BasePageComponent
           type: "select",
           label: "권한",
           include_blank: true,
-          options: [
-            { label: "관리자", value: "ADMIN" },
-            { label: "일반사용자", value: "USER" },
-            { label: "뷰어", value: "VIEWER" }
-          ],
+          options: role_options,
           target: "fieldRoleCd"
         },
         {
@@ -82,14 +74,7 @@ class System::Users::PageComponent < System::BasePageComponent
           type: "select",
           label: "직급",
           include_blank: true,
-          options: [
-            { label: "사원", value: "STAFF" },
-            { label: "주임", value: "SENIOR" },
-            { label: "대리", value: "ASSISTANT_MGR" },
-            { label: "과장", value: "MANAGER" },
-            { label: "차장", value: "DEPUTY_GM" },
-            { label: "부장", value: "GENERAL_MGR" }
-          ],
+          options: common_code_options("USER_POSITION"),
           target: "fieldPositionCd"
         },
         {
@@ -97,11 +82,7 @@ class System::Users::PageComponent < System::BasePageComponent
           type: "select",
           label: "직책",
           include_blank: true,
-          options: [
-            { label: "담당", value: "MEMBER" },
-            { label: "팀장", value: "TEAM_LEAD" },
-            { label: "파트장", value: "PART_LEAD" }
-          ],
+          options: common_code_options("USER_JOB_TITLE"),
           target: "fieldJobTitleCd"
         },
         {
@@ -109,10 +90,7 @@ class System::Users::PageComponent < System::BasePageComponent
           type: "select",
           label: "재직상태",
           include_blank: false,
-          options: [
-            { label: "재직", value: "ACTIVE" },
-            { label: "퇴사", value: "RESIGNED" }
-          ],
+          options: common_code_options("USER_WORK_STATUS"),
           target: "fieldWorkStatus"
         },
         { field: "hire_date", type: "date_picker", label: "입사일", required: true, target: "fieldHireDate" },
@@ -121,5 +99,14 @@ class System::Users::PageComponent < System::BasePageComponent
         { field: "address", type: "input", label: "주소", maxlength: 200, target: "fieldAddress" },
         { field: "detail_address", type: "input", label: "상세주소", maxlength: 200, target: "fieldDetailAddress" }
       ]
+    end
+
+    def role_options
+      AdmRole.where(use_yn: "Y").ordered.map do |role|
+        {
+          label: "#{role.role_nm} (#{role.role_cd})",
+          value: role.role_cd
+        }
+      end
     end
 end

@@ -8,8 +8,12 @@ class System::LoginHistory::PageComponent < System::BasePageComponent
         { field: "user_id_code", type: "input", label: "사번", placeholder: "사번 검색.." },
         { field: "start_date", type: "date_picker", label: "시작일시", date_type: "datetime" },
         { field: "end_date", type: "date_picker", label: "종료일시", date_type: "datetime" },
-        { field: "login_success", type: "select", label: "결과",
-          options: [ { value: "", label: "전체" }, { value: "true", label: "성공" }, { value: "false", label: "실패" } ] }
+        {
+          field: "login_success",
+          type: "select",
+          label: "결과",
+          options: common_code_options("LOGIN_SUCCESS", include_all: true, value_transform: :downcase)
+        }
       ]
     end
 

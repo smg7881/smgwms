@@ -4,6 +4,16 @@ Rails.application.routes.draw do
   root "dashboard#show"
 
   resources :tabs, only: [ :create, :destroy ] do
+    collection do
+      delete :close_all
+      delete :close_others
+    end
+
+    member do
+      patch :move_left
+      patch :move_right
+    end
+
     scope module: :tabs do
       resource :activation, only: [ :create ]
     end

@@ -1,4 +1,5 @@
 <div data-controller="user-menu-role-grid"
+     data-action="ag-grid:ready->user-menu-role-grid#registerGrid"
      data-user-menu-role-grid-roles-url-value="<%= roles_by_user_url %>"
      data-user-menu-role-grid-menus-url-value="<%= menus_by_user_role_url %>">
   <%= render Ui::SearchFormComponent.new(

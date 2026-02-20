@@ -10,35 +10,45 @@ export default class extends Controller {
 
   connect() {
     this.selectedUserIdCode = ""
-    this.bindRetryTimer = null
-    this.bindGridControllers()
+    this.userApi = null
+    this.roleApi = null
+    this.menuApi = null
+    this.userGridController = null
+    this.roleGridController = null
+    this.menuGridController = null
+  }
+
+  registerGrid(event) {
+    const gridElement = event.target.closest("[data-controller='ag-grid']")
+    if (!gridElement) return
+
+    const { api, controller } = event.detail
+
+    if (gridElement === this.userGridTarget) {
+      this.userGridController = controller
+      this.userApi = api
+    } else if (gridElement === this.roleGridTarget) {
+      this.roleGridController = controller
+      this.roleApi = api
+    } else if (gridElement === this.menuGridTarget) {
+      this.menuGridController = controller
+      this.menuApi = api
+    }
+
+    if (this.userApi && this.roleApi && this.menuApi) {
+      this.bindGridEvents()
+      this.handleUserGridDataLoaded()
+    }
   }
 
   disconnect() {
     this.unbindGridEvents()
-    if (this.bindRetryTimer) clearTimeout(this.bindRetryTimer)
-
     this.userApi = null
     this.roleApi = null
     this.menuApi = null
-  }
-
-  bindGridControllers() {
-    this.userGridController = this.application.getControllerForElementAndIdentifier(this.userGridTarget, "ag-grid")
-    this.roleGridController = this.application.getControllerForElementAndIdentifier(this.roleGridTarget, "ag-grid")
-    this.menuGridController = this.application.getControllerForElementAndIdentifier(this.menuGridTarget, "ag-grid")
-
-    this.userApi = this.userGridController?.api
-    this.roleApi = this.roleGridController?.api
-    this.menuApi = this.menuGridController?.api
-
-    if (!this.isApiAlive(this.userApi) || !this.isApiAlive(this.roleApi) || !this.isApiAlive(this.menuApi)) {
-      this.bindRetryTimer = setTimeout(() => this.bindGridControllers(), 60)
-      return
-    }
-
-    this.bindGridEvents()
-    this.handleUserGridDataLoaded()
+    this.userGridController = null
+    this.roleGridController = null
+    this.menuGridController = null
   }
 
   bindGridEvents() {

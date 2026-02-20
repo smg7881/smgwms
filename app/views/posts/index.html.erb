@@ -11,11 +11,7 @@
     fields: [
       { field: "title", type: "input", label: "제목", placeholder: "제목 검색..." },
       { field: "status", type: "select", label: "상태",
-        options: [
-          { label: "전체", value: "" },
-          { label: "게시됨", value: "published" },
-          { label: "임시저장", value: "draft" }
-        ],
+        options: AdmCodeDetail.select_options_for("POST_STATUS", include_all: true, value_transform: :downcase),
         include_blank: false
       },
       { field: "created_at", type: "date_range", label: "작성일" }

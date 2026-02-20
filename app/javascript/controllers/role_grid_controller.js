@@ -9,31 +9,26 @@ export default class extends Controller {
 
   connect() {
     this.deletedRoleCodes = []
-    this.bindRetryTimer = null
-    this.bindGridController()
+    this.gridApi = null
+    this.gridController = null
+  }
+
+  registerGrid(event) {
+    const { api, controller } = event.detail
+    this.gridController = controller
+    this.gridApi = api
+    this.gridApi.addEventListener("cellValueChanged", this.handleCellValueChanged)
+    this.gridApi.addEventListener("rowDataUpdated", this.handleRowDataUpdated)
   }
 
   disconnect() {
-    if (this.bindRetryTimer) clearTimeout(this.bindRetryTimer)
     if (this.isApiAlive(this.gridApi)) {
       this.gridApi.removeEventListener("cellValueChanged", this.handleCellValueChanged)
+      this.gridApi.removeEventListener("rowDataUpdated", this.handleRowDataUpdated)
     }
     this.gridApi = null
     this.gridController = null
     this.originalMap = null
-  }
-
-  bindGridController() {
-    this.gridController = this.application.getControllerForElementAndIdentifier(this.gridTarget, "ag-grid")
-    this.gridApi = this.gridController?.api
-
-    if (!this.isApiAlive(this.gridApi)) {
-      this.bindRetryTimer = setTimeout(() => this.bindGridController(), 60)
-      return
-    }
-
-    this.gridApi.addEventListener("cellValueChanged", this.handleCellValueChanged)
-    this.resetTracking()
   }
 
   addRow() {
@@ -92,6 +87,7 @@ export default class extends Controller {
   }
 
   async saveRows() {
+    this.gridApi.stopEditing()
     const operations = this.buildOperations()
     if (!this.hasChanges(operations)) {
       alert("변경된 데이터가 없습니다.")
@@ -108,7 +104,6 @@ export default class extends Controller {
   reloadRows() {
     if (this.gridController?.refresh) {
       this.gridController.refresh()
-      setTimeout(() => this.resetTracking(), 120)
     }
   }
 
@@ -176,6 +171,10 @@ export default class extends Controller {
       delete row.__is_deleted
       delete row.__temp_id
     })
+  }
+
+  handleRowDataUpdated = () => {
+    this.resetTracking()
   }
 
   handleCellValueChanged = (event) => {

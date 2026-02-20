@@ -1,8 +1,8 @@
 <aside class="sidebar bg-bg-secondary border-r border-border flex flex-col h-screen overflow-y-auto overflow-x-hidden transition-[width] duration-250 ease-in-out" data-controller="sidebar">
-  <div class="flex items-center gap-2.5 p-4 border-b border-border font-bold text-base text-text-primary">
+  <%= link_to root_path, class: "flex items-center gap-2.5 p-4 border-b border-border font-bold text-base text-text-primary hover:bg-bg-tertiary transition-colors no-underline", data: { turbo: false } do %>
     <div class="w-8 h-8 bg-accent text-white rounded-md flex items-center justify-center font-black text-lg shrink-0">W</div>
     <span>WMS Pro</span>
-  </div>
+  <% end %>
 
   <nav class="flex-1 py-2 overflow-y-auto">
     <% if dynamic_sidebar_available? %>

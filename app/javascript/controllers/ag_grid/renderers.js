@@ -37,7 +37,7 @@ export const RENDERER_REGISTRY = {
     const level = Number(params.data?.menu_level || 1)
     const indent = Math.max(level - 1, 0) * 20
     const isFolder = params.data?.menu_type === "FOLDER"
-    const icon = isFolder ? "[D]" : "[M]"
+    const icon = isFolder ? "[+]" : "[-]"
 
     const span = document.createElement("span")
     span.style.paddingLeft = `${indent}px`

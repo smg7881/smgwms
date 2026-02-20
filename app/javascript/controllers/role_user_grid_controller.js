@@ -20,28 +20,36 @@ export default class extends Controller {
     this.rightAllUsers = []
     this.leftSearchTerm = ""
     this.rightSearchTerm = ""
-    this.bindRetryTimer = null
-    this.bindGridControllers()
+    this.leftApi = null
+    this.rightApi = null
+    this.leftGridController = null
+    this.rightGridController = null
+  }
+
+  registerGrid(event) {
+    const gridElement = event.target.closest("[data-controller='ag-grid']")
+    if (!gridElement) return
+
+    const { api, controller } = event.detail
+
+    if (gridElement === this.leftGridTarget) {
+      this.leftGridController = controller
+      this.leftApi = api
+    } else if (gridElement === this.rightGridTarget) {
+      this.rightGridController = controller
+      this.rightApi = api
+    }
+
+    if (this.leftApi && this.rightApi) {
+      this.loadUsers()
+    }
   }
 
   disconnect() {
-    if (this.bindRetryTimer) clearTimeout(this.bindRetryTimer)
     this.leftApi = null
     this.rightApi = null
-  }
-
-  bindGridControllers() {
-    this.leftGridController = this.application.getControllerForElementAndIdentifier(this.leftGridTarget, "ag-grid")
-    this.rightGridController = this.application.getControllerForElementAndIdentifier(this.rightGridTarget, "ag-grid")
-    this.leftApi = this.leftGridController?.api
-    this.rightApi = this.rightGridController?.api
-
-    if (!this.isApiAlive(this.leftApi) || !this.isApiAlive(this.rightApi)) {
-      this.bindRetryTimer = setTimeout(() => this.bindGridControllers(), 60)
-      return
-    }
-
-    this.loadUsers()
+    this.leftGridController = null
+    this.rightGridController = null
   }
 
   changeRole() {

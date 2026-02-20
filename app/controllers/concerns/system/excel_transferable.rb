@@ -47,7 +47,8 @@
       inspected = inspector.call
 
       expected_headers = excel_handler.headers
-      if inspected.headers != expected_headers
+      acceptable_headers = excel_handler.acceptable_headers
+      unless acceptable_headers.include?(inspected.headers)
         task.update!(
           status: "failed",
           completed_at: Time.current,

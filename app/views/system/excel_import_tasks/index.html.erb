@@ -1,4 +1,5 @@
 <%= turbo_frame_tag "main-content" do %>
+  <% resource_options = AdmCodeDetail.select_options_for("EXCEL_RESOURCE", include_all: true, value_transform: :downcase) %>
   <div class="mb-4">
     <h2 class="text-lg font-semibold text-text-primary">엑셀 업로드 이력</h2>
     <p class="mt-1 text-sm text-text-secondary">최근 200건 기준으로 표시됩니다.</p>
@@ -8,9 +9,9 @@
     <label class="text-sm text-text-secondary">
       리소스
       <select name="q[resource_key]" class="form-grid-select">
-        <option value="">전체</option>
-        <option value="users" <%= "selected" if params.dig(:q, :resource_key) == "users" %>>users</option>
-        <option value="dept" <%= "selected" if params.dig(:q, :resource_key) == "dept" %>>dept</option>
+        <% resource_options.each do |option| %>
+          <option value="<%= option[:value] %>" <%= "selected" if params.dig(:q, :resource_key).to_s == option[:value].to_s %>><%= option[:label] %></option>
+        <% end %>
       </select>
     </label>
 

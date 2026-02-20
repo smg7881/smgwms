@@ -24,8 +24,8 @@ const AG_GRID_LOCALE_KO = {
   firstPage: "First Page",
   previousPage: "Previous Page",
   pageSizeSelectorLabel: "Page Size:",
-  loadingOoo: "Loading...",
-  noRowsToShow: "No rows to show",
+  loadingOoo: "조회중",
+  noRowsToShow: "데이터 미존재",
   filterOoo: "Filter...",
   equals: "Equals",
   notEqual: "Not equal",
@@ -139,7 +139,8 @@ export default class extends Controller {
       getRowClass: (params) => this.buildRowClass(params),
       onCellFocused: (event) => this.handleCellFocused(event),
       rowData: [],
-      overlayNoRowsTemplate: `<span class="ag-overlay-no-rows-center">${AG_GRID_LOCALE_KO.noRowsToShow}</span>`
+      overlayNoRowsTemplate: `<span class="ag-overlay-no-rows-center">${AG_GRID_LOCALE_KO.noRowsToShow}</span>`,
+      stopEditingWhenCellsLoseFocus: true
     }
 
     this.defaultNoRowsTemplate = gridOptions.overlayNoRowsTemplate
@@ -177,6 +178,11 @@ export default class extends Controller {
       this.focusedRowNode = null
       this.gridApi.setGridOption("rowData", this.rowDataValue)
     }
+
+    this.element.dispatchEvent(new CustomEvent("ag-grid:ready", {
+      bubbles: true,
+      detail: { api: this.gridApi, controller: this }
+    }))
   }
 
   teardown() {
@@ -246,8 +252,8 @@ export default class extends Controller {
         api.setGridOption(
           "overlayNoRowsTemplate",
           '<div style="padding:20px;text-align:center;">' +
-            '<div style="color:#f85149;font-weight:600;margin-bottom:4px;">?곗씠??濡쒕뵫 ?ㅽ뙣</div>' +
-            '<div style="color:#8b949e;font-size:12px;">?ㅽ듃?뚰겕 ?곹깭瑜??뺤씤?댁＜?몄슂</div>' +
+          '<div style="color:#f85149;font-weight:600;margin-bottom:4px;">?곗씠??濡쒕뵫 ?ㅽ뙣</div>' +
+          '<div style="color:#8b949e;font-size:12px;">?ㅽ듃?뚰겕 ?곹깭瑜??뺤씤?댁＜?몄슂</div>' +
           "</div>"
         )
         api.showNoRowsOverlay()
@@ -302,8 +308,8 @@ export default class extends Controller {
         api.setGridOption(
           "overlayNoRowsTemplate",
           '<div style="padding:20px;text-align:center;">' +
-            '<div style="color:#f85149;font-weight:600;margin-bottom:4px;">데이터 로딩 실패</div>' +
-            '<div style="color:#8b949e;font-size:12px;">네트워크 상태를 확인해주세요</div>' +
+          '<div style="color:#f85149;font-weight:600;margin-bottom:4px;">데이터 로딩 실패</div>' +
+          '<div style="color:#8b949e;font-size:12px;">네트워크 상태를 확인해주세요</div>' +
           "</div>"
         )
         api.showNoRowsOverlay()

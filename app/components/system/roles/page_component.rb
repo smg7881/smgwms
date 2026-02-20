@@ -15,11 +15,7 @@ class System::Roles::PageComponent < System::BasePageComponent
           field: "use_yn",
           type: "select",
           label: "사용여부",
-          options: [
-            { label: "전체", value: "" },
-            { label: "사용", value: "Y" },
-            { label: "미사용", value: "N" }
-          ],
+          options: common_code_options("CMM_USE_YN", include_all: true),
           include_blank: false
         }
       ]
@@ -49,7 +45,7 @@ class System::Roles::PageComponent < System::BasePageComponent
           maxWidth: 110,
           editable: true,
           cellEditor: "agSelectCellEditor",
-          cellEditorParams: { values: %w[Y N] },
+          cellEditorParams: { values: common_code_values("CMM_USE_YN") },
           cellRenderer: "codeUseYnCellRenderer"
         },
         { field: "update_by", headerName: "수정자", minWidth: 100, editable: false },

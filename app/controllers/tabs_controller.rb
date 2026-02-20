@@ -14,6 +14,7 @@ class TabsController < ApplicationController
 
     unless open_tabs.any? { |t| t["id"] == tab_id }
       open_tabs << { "id" => tab_id, "label" => effective_label, "url" => effective_url }
+      session[:open_tabs] = open_tabs
     end
     session[:active_tab] = tab_id
     record_menu_access(tab_id: tab_id, label: effective_label, url: effective_url)
@@ -33,6 +34,7 @@ class TabsController < ApplicationController
     end
 
     open_tabs.reject! { |t| t["id"] == tab_id }
+    session[:open_tabs] = open_tabs
 
     if session[:active_tab] == tab_id
       session[:active_tab] = open_tabs.last&.dig("id") || "overview"
@@ -44,9 +46,46 @@ class TabsController < ApplicationController
     end
   end
 
+  def close_all
+    open_tabs.select! { |tab| tab["id"] == "overview" }
+    session[:open_tabs] = open_tabs
+    session[:active_tab] = "overview"
+
+    respond_to do |format|
+      format.turbo_stream { render_tab_update }
+      format.html { redirect_to root_path }
+    end
+  end
+
+  def close_others
+    tab_id = params[:id].presence || session[:active_tab].to_s
+
+    unless open_tabs.any? { |tab| tab["id"] == tab_id }
+      head :unprocessable_entity
+      return
+    end
+
+    open_tabs.select! { |tab| tab["id"] == "overview" || tab["id"] == tab_id }
+    session[:open_tabs] = open_tabs
+    session[:active_tab] = tab_id
+
+    respond_to do |format|
+      format.turbo_stream { render_tab_update }
+      format.html { redirect_to TabRegistry.url_for(tab_id) || root_path }
+    end
+  end
+
+  def move_left
+    move_tab!(:left)
+  end
+
+  def move_right
+    move_tab!(:right)
+  end
+
   private
     def open_tabs
-      session[:open_tabs]
+      session[:open_tabs] ||= []
     end
 
     def tab_params
@@ -89,5 +128,38 @@ class TabsController < ApplicationController
         menu_path: url,
         session_token: Current.session&.token
       )
+    end
+
+    def move_tab!(direction)
+      tab_id = params[:id].to_s
+      if tab_id == "overview"
+        head :unprocessable_entity
+        return
+      end
+
+      index = open_tabs.find_index { |tab| tab["id"] == tab_id }
+      if index.nil?
+        head :not_found
+        return
+      end
+
+      if direction == :left && index <= 1
+        head :unprocessable_entity
+        return
+      end
+
+      target_index = direction == :left ? index - 1 : index + 1
+      if direction == :right && target_index >= open_tabs.size
+        head :unprocessable_entity
+        return
+      end
+
+      open_tabs[index], open_tabs[target_index] = open_tabs[target_index], open_tabs[index]
+      session[:open_tabs] = open_tabs
+
+      respond_to do |format|
+        format.turbo_stream { render_tab_update }
+        format.html { redirect_to TabRegistry.url_for(session[:active_tab]) || root_path }
+      end
     end
 end

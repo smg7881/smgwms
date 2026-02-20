@@ -27,6 +27,19 @@ class System::BasePageComponent < ApplicationComponent
     # JSON 형식을 요청하며, 현재 검색 조건(q)을 포함시킵니다.
     def grid_url   = collection_path(format: :json, q: query_params["q"])
 
+    def common_code_options(code, include_all: false, all_label: "전체", value_transform: nil)
+      AdmCodeDetail.select_options_for(
+        code,
+        include_all: include_all,
+        all_label: all_label,
+        value_transform: value_transform
+      )
+    end
+
+    def common_code_values(code, value_transform: nil)
+      AdmCodeDetail.select_values_for(code, value_transform: value_transform)
+    end
+
     # 하위 클래스에서 반드시 구현해야 하는 메서드들입니다. (Template Method Pattern)
 
     # 목록(Collection) 경로를 반환해야 합니다. (예: users_path)

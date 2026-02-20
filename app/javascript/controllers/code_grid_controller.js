@@ -14,49 +14,45 @@ export default class extends Controller {
     this.masterDeletedCodes = []
     this.detailDeletedCodes = []
     this.initialMasterSyncDone = false
-    this.bindRetryTimer = null
-    this.initialSyncTimer = null
-
-    this.bindGridControllers()
+    this.masterApi = null
+    this.detailApi = null
+    this.masterGridController = null
+    this.detailGridController = null
   }
 
-  bindGridControllers() {
-    this.masterGridController = this.application.getControllerForElementAndIdentifier(this.masterGridTarget, "ag-grid")
-    this.detailGridController = this.application.getControllerForElementAndIdentifier(this.detailGridTarget, "ag-grid")
+  registerGrid(event) {
+    const gridElement = event.target.closest("[data-controller='ag-grid']")
+    if (!gridElement) return
 
-    if (!this.masterGridController || !this.detailGridController) {
-      this.bindRetryTimer = setTimeout(() => this.bindGridControllers(), 60)
-      return
+    const { api, controller } = event.detail
+
+    if (gridElement === this.masterGridTarget) {
+      this.masterGridController = controller
+      this.masterApi = api
+    } else if (gridElement === this.detailGridTarget) {
+      this.detailGridController = controller
+      this.detailApi = api
     }
 
-    this.masterApi = this.masterGridController.api
-    this.detailApi = this.detailGridController.api
-
-    if (!this.masterApi || !this.detailApi) {
-      this.bindRetryTimer = setTimeout(() => this.bindGridControllers(), 60)
-      return
+    if (this.masterApi && this.detailApi) {
+      this.bindGridEvents()
     }
+  }
 
+  bindGridEvents() {
     this.masterApi.addEventListener("rowClicked", this.handleMasterRowClicked)
     this.masterApi.addEventListener("cellFocused", this.handleMasterCellFocused)
     this.masterApi.addEventListener("cellValueChanged", this.handleMasterCellValueChanged)
+    this.masterApi.addEventListener("rowDataUpdated", this.handleMasterRowDataUpdated)
     this.detailApi.addEventListener("cellValueChanged", this.handleDetailCellValueChanged)
-
-    this.initialSyncTimer = setTimeout(() => {
-      this.resetMasterTracking()
-      this.resetDetailTracking()
-      this.syncInitialMasterSelection()
-    }, 120)
   }
 
   disconnect() {
-    if (this.bindRetryTimer) clearTimeout(this.bindRetryTimer)
-    if (this.initialSyncTimer) clearTimeout(this.initialSyncTimer)
-
     if (this.masterApi) {
       this.masterApi.removeEventListener("rowClicked", this.handleMasterRowClicked)
       this.masterApi.removeEventListener("cellFocused", this.handleMasterCellFocused)
       this.masterApi.removeEventListener("cellValueChanged", this.handleMasterCellValueChanged)
+      this.masterApi.removeEventListener("rowDataUpdated", this.handleMasterRowDataUpdated)
     }
     if (this.detailApi) {
       this.detailApi.removeEventListener("cellValueChanged", this.handleDetailCellValueChanged)
@@ -66,6 +62,16 @@ export default class extends Controller {
     this.detailApi = null
     this.masterGridController = null
     this.detailGridController = null
+  }
+
+  handleMasterRowDataUpdated = () => {
+    this.resetMasterTracking()
+    this.resetDetailTracking()
+
+    if (!this.initialMasterSyncDone) {
+      this.initialMasterSyncDone = true
+      this.syncMasterSelectionAfterLoad()
+    }
   }
 
   handleMasterRowClicked = async (event) => {
@@ -170,6 +176,7 @@ export default class extends Controller {
   }
 
   async saveMasterRows() {
+    this.masterApi.stopEditing()
     const operations = this.buildMasterOperations()
     if (!this.hasChanges(operations)) {
       alert("변경된 데이터가 없습니다.")
@@ -259,6 +266,7 @@ export default class extends Controller {
       return
     }
 
+    this.detailApi.stopEditing()
     const operations = this.buildDetailOperations()
     if (!this.hasChanges(operations)) {
       alert("변경된 데이터가 없습니다.")
@@ -379,26 +387,6 @@ export default class extends Controller {
     this.masterApi.setGridOption("rowData", data)
     this.resetMasterTracking()
     await this.syncMasterSelectionAfterLoad()
-  }
-
-  syncInitialMasterSelection(retryCount = 40) {
-    if (this.initialMasterSyncDone) return
-    if (!this.isApiAlive(this.masterApi) || !this.isApiAlive(this.detailApi)) return
-
-    const firstRowNode = this.masterApi.getDisplayedRowAtIndex(0)
-    if (firstRowNode?.data) {
-      this.initialMasterSyncDone = true
-      this.syncMasterSelectionAfterLoad()
-      return
-    }
-
-    if (retryCount <= 0) {
-      this.initialMasterSyncDone = true
-      this.syncMasterSelectionAfterLoad()
-      return
-    }
-
-    this.initialSyncTimer = setTimeout(() => this.syncInitialMasterSelection(retryCount - 1), 100)
   }
 
   async syncMasterSelectionAfterLoad() {

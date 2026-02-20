@@ -13,15 +13,21 @@
     enable_collapse: true
   ) %>
 
-  <%= render Ui::GridToolbarComponent.new(
-    buttons: [
-      { label: "엑셀양식", class: "btn btn-sm btn-secondary", action: "click->user-crud#downloadExcelTemplate" },
-      { label: "엑셀다운로드", class: "btn btn-sm btn-secondary", action: "click->user-crud#downloadExcel" },
-      { label: "엑셀업로드", class: "btn btn-sm btn-secondary", action: "click->user-crud#openExcelImport" },
-      { label: "업로드이력", class: "btn btn-sm btn-secondary", action: "click->user-crud#openImportHistory" },
-      { label: "사용자추가", class: "btn btn-sm btn-primary", action: "click->user-crud#openCreate" }
-    ]
-  ) %>
+  <div class="flex items-end justify-between gap-3 mb-3">
+    <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
+      <%= helpers.lucide_icon("users", css_class: "w-4 h-4 text-text-secondary") %>
+      사용자 목록
+    </h3>
+    <%= render Ui::GridToolbarComponent.new(
+      buttons: [
+        { label: "엑셀양식", class: "btn btn-sm btn-secondary", action: "click->user-crud#downloadExcelTemplate" },
+        { label: "엑셀다운로드", class: "btn btn-sm btn-secondary", action: "click->user-crud#downloadExcel" },
+        { label: "엑셀업로드", class: "btn btn-sm btn-secondary", action: "click->user-crud#openExcelImport" },
+        { label: "업로드이력", class: "btn btn-sm btn-secondary", action: "click->user-crud#openImportHistory" },
+        { label: "사용자추가", class: "btn btn-sm btn-primary", action: "click->user-crud#openCreate" }
+      ]
+    ) %>
+  </div>
 
   <%= render Ui::AgGridComponent.new(
     columns: columns,

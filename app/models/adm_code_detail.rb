@@ -20,8 +20,44 @@ class AdmCodeDetail < ApplicationRecord
   before_create :assign_create_fields
 
   scope :ordered, -> { order(:sort_order, :detail_code) }
+  scope :active, -> { where(use_yn: "Y") }
+
+  def self.select_options_for(code, include_all: false, all_label: "전체", value_transform: nil)
+    normalized_code = code.to_s.strip.upcase
+    options = []
+
+    if normalized_code.present?
+      options = active.where(code: normalized_code).ordered.pluck(:detail_code_name, :detail_code).map do |name, value|
+        {
+          label: name,
+          value: normalize_option_value(value, value_transform)
+        }
+      end
+    end
+
+    if include_all
+      [ { label: all_label, value: "" } ] + options
+    else
+      options
+    end
+  end
+
+  def self.select_values_for(code, value_transform: nil)
+    select_options_for(code, value_transform: value_transform).map { |option| option[:value] }
+  end
 
   private
+    def self.normalize_option_value(value, value_transform)
+      converted = value.to_s
+
+      if value_transform.present?
+        converted.public_send(value_transform)
+      else
+        converted
+      end
+    end
+    private_class_method :normalize_option_value
+
     def normalize_fields
       self.code = code.to_s.strip.upcase
       self.detail_code = detail_code.to_s.strip.upcase

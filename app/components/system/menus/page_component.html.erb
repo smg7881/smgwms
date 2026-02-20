@@ -9,11 +9,17 @@
     enable_collapse: true
   ) %>
 
-  <%= render Ui::GridToolbarComponent.new(
-    buttons: [
-      { label: "최상위메뉴추가", class: "btn btn-sm btn-primary", action: "click->menu-crud#openCreate" }
-    ]
-  ) %>
+  <div class="flex items-end justify-between gap-3 mb-3">
+    <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
+      <%= helpers.lucide_icon("list", css_class: "w-4 h-4 text-text-secondary") %>
+      메뉴 목록
+    </h3>
+    <%= render Ui::GridToolbarComponent.new(
+      buttons: [
+        { label: "최상위메뉴추가", class: "btn btn-sm btn-primary", action: "click->menu-crud#openCreate" }
+      ]
+    ) %>
+  </div>
 
   <%= render Ui::AgGridComponent.new(
     columns: columns,

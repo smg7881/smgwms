@@ -1,4 +1,5 @@
 <div data-controller="code-grid"
+     data-action="ag-grid:ready->code-grid#registerGrid"
      data-code-grid-master-batch-url-value="<%= master_batch_save_url %>"
      data-code-grid-detail-batch-url-template-value="<%= detail_batch_save_url_template %>"
      data-code-grid-detail-list-url-template-value="/system/code/:code/details.json"
