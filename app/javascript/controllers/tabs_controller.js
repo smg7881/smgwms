@@ -187,7 +187,21 @@ export default class extends Controller {
 
   updateSidebarActive(tabId) {
     document.querySelectorAll("[data-role='sidebar-menu-item']").forEach((button) => {
-      button.classList.toggle("active", button.dataset.tabId === tabId)
+      const isActive = button.dataset.tabId === tabId
+      button.classList.toggle("active", isActive)
+
+      if (isActive) {
+        let parentTree = button.closest(".nav-tree-children")
+        while (parentTree) {
+          parentTree.classList.add("open")
+          const folderButton = parentTree.previousElementSibling
+          if (folderButton && folderButton.classList.contains("has-children")) {
+            folderButton.classList.add("expanded")
+            folderButton.setAttribute("aria-expanded", "true")
+          }
+          parentTree = folderButton ? folderButton.closest(".nav-tree-children") : null
+        }
+      }
     })
   }
 

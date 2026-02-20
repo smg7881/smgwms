@@ -12,7 +12,7 @@ class Ui::ResourceFormComponent < ApplicationComponent
   ].freeze
 
   VALID_FIELD_NAME = /\A[a-zA-Z0-9_]+\z/
-  FIELD_TYPES = %w[input number select date_picker textarea checkbox radio switch photo].freeze
+  FIELD_TYPES = %w[input number select date_picker textarea rich_textarea checkbox radio switch photo].freeze
 
   def initialize(model:, fields:, url: nil, cols: 3,
                  show_buttons: true, submit_label: "저장",

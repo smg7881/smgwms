@@ -74,7 +74,7 @@ class System::Notice::PageComponent < System::BasePageComponent
         },
         { field: "start_date", type: "date_picker", label: "게시 시작일", target: "fieldStartDate" },
         { field: "end_date", type: "date_picker", label: "게시 종료일", target: "fieldEndDate" },
-        { field: "content", type: "textarea", label: "내용", required: true, rows: 10, colspan: 2, target: "fieldContent" }
+        { field: "content", type: "rich_textarea", label: "내용", required: true, rows: 10, colspan: 2, target: "fieldContent" }
       ]
     end
 end

@@ -71,7 +71,7 @@ export default class extends BaseCrudController {
     this.fieldTitleTarget.value = data.title || ""
     this.fieldStartDateTarget.value = data.start_date || ""
     this.fieldEndDateTarget.value = data.end_date || ""
-    this.fieldContentTarget.value = data.content || ""
+    this.setContentValue(data.content || "")
     this.setRadioValue("is_top_fixed", data.is_top_fixed || "N")
     this.setRadioValue("is_published", data.is_published || "Y")
     this.renderExistingFiles(data.attachments || [])
@@ -220,9 +220,48 @@ export default class extends BaseCrudController {
     this.setRadioValue("is_top_fixed", "N")
     this.setRadioValue("is_published", "Y")
     this.renderExistingFiles([])
+    this.setContentValue("")
 
     if (this.hasFieldAttachmentsTarget) {
       this.fieldAttachmentsTarget.value = ""
+    }
+  }
+
+  setContentValue(value) {
+    if (!this.hasFieldContentTarget) return
+
+    const content = value || ""
+    const field = this.fieldContentTarget
+
+    // Plain textarea fallback
+    if (field.tagName === "TEXTAREA") {
+      field.value = content
+      return
+    }
+
+    // rich_textarea (trix-editor target)
+    if (field.tagName === "TRIX-EDITOR") {
+      if (field.editor && typeof field.editor.loadHTML === "function") {
+        field.editor.loadHTML(content)
+      }
+
+      const inputId = field.getAttribute("input")
+      if (inputId) {
+        const hiddenInput = this.formTarget.querySelector(`#${inputId}`)
+        if (hiddenInput) {
+          hiddenInput.value = content
+        }
+      }
+      return
+    }
+
+    // hidden input fallback
+    field.value = content
+    if (!field.id) return
+
+    const editor = this.formTarget.querySelector(`trix-editor[input="${field.id}"]`)
+    if (editor && editor.editor && typeof editor.editor.loadHTML === "function") {
+      editor.editor.loadHTML(content)
     }
   }
 }

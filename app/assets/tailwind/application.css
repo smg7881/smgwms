@@ -607,3 +607,27 @@ a:hover {
 .tab-item.pinned.active .tab-pin {
   @apply text-accent;
 }
+
+/* Trix / ActionText */
+trix-toolbar .trix-button-group,
+trix-toolbar .trix-dialog {
+  @apply border-border bg-bg-secondary;
+}
+
+trix-toolbar .trix-button {
+  @apply text-text-secondary;
+}
+
+trix-toolbar .trix-button.trix-active,
+trix-toolbar .trix-button:hover {
+  @apply bg-bg-hover text-text-primary;
+}
+
+trix-editor {
+  @apply w-full min-h-[220px] py-2 px-3 border border-border rounded-md bg-bg-primary text-text-primary;
+}
+
+trix-editor:focus {
+  @apply outline-none border-accent;
+  box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.2);
+}
