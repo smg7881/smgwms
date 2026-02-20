@@ -15,24 +15,24 @@
         <% end %>
       <% end %>
     <% else %>
-      <button class="nav-item has-children" type="button"
-              aria-expanded="false"
+      <button class="nav-item has-children expanded" type="button"
+              aria-expanded="true"
               data-action="click->sidebar#toggleTree">
         <%= lucide_icon("folder", css_class: "icon") %> 메인
         <%= lucide_icon("chevron-right", css_class: "chevron") %>
       </button>
-      <div class="nav-tree-children">
+      <div class="nav-tree-children open">
         <%= sidebar_menu_button "대시보드", tab_id: "overview", icon: "bar-chart-3", url: "/" %>
       </div>
 
       <% if admin? %>
-        <button class="nav-item has-children expanded" type="button"
-                aria-expanded="true"
+        <button class="nav-item has-children" type="button"
+                aria-expanded="false"
                 data-action="click->sidebar#toggleTree">
           <%= lucide_icon("settings", css_class: "icon") %> 시스템
           <%= lucide_icon("chevron-right", css_class: "chevron") %>
         </button>
-        <div class="nav-tree-children open">
+        <div class="nav-tree-children">
           <%= sidebar_menu_button "메뉴관리", tab_id: "system-menus", icon: "settings", url: "/system/menus" %>
           <%= sidebar_menu_button "부서관리", tab_id: "system-dept", icon: "building-2", url: "/system/dept" %>
           <%= sidebar_menu_button "사용자관리", tab_id: "system-users", icon: "user", url: "/system/users" %>

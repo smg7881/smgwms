@@ -75,7 +75,28 @@ class System::Notice::PageComponent < System::BasePageComponent
         },
         { field: "start_date", type: "date_picker", label: "게시 시작일", target: "fieldStartDate" },
         { field: "end_date", type: "date_picker", label: "게시 종료일", target: "fieldEndDate" },
-        { field: "content", type: "rich_textarea", label: "내용", required: true, rows: 10, colspan: 2, target: "fieldContent" }
+        {
+          field: "content",
+          type: "rich_textarea",
+          label: "내용",
+          required: true,
+          rows: 10,
+          colspan: 2,
+          target: "fieldContent",
+          disable_file_attachments: true
+        },
+        {
+          field: "attachments",
+          type: "multi_file",
+          span: "24",
+          label: "첨부파일",
+          multiple: true,
+          max_files: 5,
+          max_size_mb: 50,
+          target: "fieldAttachments",
+          existing_target: "existingFiles",
+          selected_target: "selectedFiles"
+        }
       ]
     end
 end

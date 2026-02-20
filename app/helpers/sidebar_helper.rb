@@ -59,7 +59,7 @@ module SidebarHelper
 
   def render_sidebar_folder_tree(folder, grouped)
     children = grouped[folder.menu_cd] || []
-    expanded_by_default = folder.menu_cd == "SYSTEM"
+    expanded_by_default = folder.menu_cd == "MAIN"
 
     button = content_tag(
       :button,

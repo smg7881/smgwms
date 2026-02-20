@@ -62,18 +62,6 @@
           autocomplete: "off"
         }
       ) %>
-
-      <div class="rounded-lg border border-border bg-bg-secondary p-4">
-        <label class="mb-2 block text-sm font-medium text-text-secondary" for="notice-attachments">첨부파일</label>
-        <input id="notice-attachments"
-               type="file"
-               multiple
-               class="form-grid-input"
-               data-notice-crud-target="fieldAttachments"
-               data-action="change->notice-crud#handleFileInputChange">
-        <p class="mt-2 text-xs text-text-muted">수정 시 파일을 선택하면 기존 첨부에 추가됩니다.</p>
-        <ul class="mt-2 list-disc pl-5 text-sm text-text-primary" data-notice-crud-target="existingFiles"></ul>
-      </div>
     <% end %>
   <% end %>
 </div>

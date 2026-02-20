@@ -1,0 +1,64 @@
+<%# app/views/shared/resource_form/fields/_multi_file.html.erb %>
+<%
+  field_id = "#{model.model_name.param_key}_#{field[:field]}"
+  controller_identifier = local_assigns[:target_controller].to_s.dasherize
+  has_target_controller = controller_identifier.present?
+  max_files = field[:max_files].presence || 5
+  max_size_mb = field[:max_size_mb].presence || 50
+  allow_multiple = field[:multiple].nil? ? true : field[:multiple]
+  existing_target_name = field[:existing_target].presence || "existingFiles"
+  selected_target_name = field[:selected_target].presence || "selectedFiles"
+  input_action = has_target_controller ? "change->#{controller_identifier}#handleFileInputChange" : nil
+  dropzone_action = if has_target_controller
+    [
+      "click->#{controller_identifier}#triggerAttachmentSelect",
+      "dragenter->#{controller_identifier}#handleAttachmentDragEnter",
+      "dragover->#{controller_identifier}#handleAttachmentDragOver",
+      "dragleave->#{controller_identifier}#handleAttachmentDragLeave",
+      "drop->#{controller_identifier}#handleAttachmentDrop"
+    ].join(" ")
+  end
+%>
+<div class="flex flex-col gap-1 col-span-24 min-w-0 <%= span_classes_for(field, cols: cols) %>"
+     data-resource-form-target="fieldGroup"
+     data-field-name="<%= field[:field] %>">
+  <div class="rf-multi-file">
+    <div class="rf-multi-file-header">
+      <label class="rf-multi-file-label" for="<%= field_id %>">
+        <%= resolve_label(field) %>
+        <% if field[:required] %><span class="text-accent-rose ml-0.5 font-semibold">*</span><% end %>
+      </label>
+      <span class="rf-multi-file-limit">최대 <%= max_files %>개, <%= max_size_mb %>MB</span>
+    </div>
+
+    <%= f.file_field field[:field].to_sym,
+          id: field_id,
+          class: "rf-multi-file-input",
+          required: field[:required],
+          disabled: field[:disabled],
+          multiple: allow_multiple,
+          accept: field[:accept],
+          data: {
+            max_files: max_files,
+            max_size_mb: max_size_mb,
+            action: input_action
+          }.merge(field[:target].present? && local_assigns[:target_controller].present? ? { "#{local_assigns[:target_controller]}_target" => field[:target] } : {}) %>
+
+    <button type="button"
+            class="rf-multi-file-dropzone"
+            <% if dropzone_action.present? %>data-action="<%= dropzone_action %>"<% end %>
+            <% if field[:disabled] %>disabled<% end %>>
+      <span class="rf-multi-file-plus"><%= lucide_icon("plus") %></span>
+      <span class="rf-multi-file-droptext">파일 추가</span>
+    </button>
+
+    <% if field[:help].present? %>
+      <p class="rf-multi-file-help"><%= field[:help] %></p>
+    <% end %>
+
+    <ul class="rf-multi-file-list"
+        <% if has_target_controller %>data-<%= controller_identifier %>-target="<%= existing_target_name %>"<% end %>></ul>
+    <ul class="rf-multi-file-list"
+        <% if has_target_controller %>data-<%= controller_identifier %>-target="<%= selected_target_name %>"<% end %>></ul>
+  </div>
+</div>

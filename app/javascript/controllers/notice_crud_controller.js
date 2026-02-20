@@ -9,7 +9,7 @@ export default class extends BaseCrudController {
     "overlay", "modal", "modalTitle", "form",
     "fieldId", "fieldCategoryCode", "fieldTitle",
     "fieldStartDate", "fieldEndDate", "fieldContent",
-    "fieldAttachments", "existingFiles"
+    "fieldAttachments", "existingFiles", "selectedFiles"
   ]
 
   static values = {
@@ -21,6 +21,7 @@ export default class extends BaseCrudController {
 
   connect() {
     this.removedAttachmentIds = new Set()
+    this.selectedFilesBuffer = []
 
     this.connectBase({
       events: [
@@ -75,12 +76,136 @@ export default class extends BaseCrudController {
     this.setRadioValue("is_top_fixed", data.is_top_fixed || "N")
     this.setRadioValue("is_published", data.is_published || "Y")
     this.renderExistingFiles(data.attachments || [])
+    this.renderSelectedFiles()
   }
 
   setRadioValue(field, value) {
-    this.formTarget.querySelectorAll(`input[type='radio'][name='notice[${field}]']`).forEach((radio) => {
+    const scope = this.formScopeKey()
+    this.formTarget.querySelectorAll(`input[type='radio'][name='${scope}[${field}]']`).forEach((radio) => {
       radio.checked = radio.value === value
     })
+  }
+
+  formScopeKey() {
+    const candidateName = this.hasFieldCategoryCodeTarget
+      ? this.fieldCategoryCodeTarget.name
+      : this.formTarget.querySelector("[name*='[']")?.name
+
+    const match = String(candidateName || "").match(/^([^\[]+)\[/)
+    return match ? match[1] : this.constructor.resourceName
+  }
+
+  triggerAttachmentSelect() {
+    if (!this.hasFieldAttachmentsTarget) return
+
+    this.fieldAttachmentsTarget.click()
+  }
+
+  handleFileInputChange() {
+    if (!this.hasFieldAttachmentsTarget) return
+
+    const incomingFiles = Array.from(this.fieldAttachmentsTarget.files || [])
+    this.addIncomingFiles(incomingFiles)
+  }
+
+  handleAttachmentDragEnter(event) {
+    event.preventDefault()
+    this.setDropzoneState(event.currentTarget, true)
+  }
+
+  handleAttachmentDragOver(event) {
+    event.preventDefault()
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = "copy"
+    }
+    this.setDropzoneState(event.currentTarget, true)
+  }
+
+  handleAttachmentDragLeave(event) {
+    event.preventDefault()
+
+    if (event.currentTarget.contains(event.relatedTarget)) {
+      return
+    }
+
+    this.setDropzoneState(event.currentTarget, false)
+  }
+
+  handleAttachmentDrop(event) {
+    event.preventDefault()
+    this.setDropzoneState(event.currentTarget, false)
+
+    const incomingFiles = Array.from(event.dataTransfer?.files || [])
+    this.addIncomingFiles(incomingFiles)
+  }
+
+  setDropzoneState(dropzoneElement, isActive) {
+    if (!dropzoneElement) return
+
+    dropzoneElement.classList.toggle("is-dragover", isActive)
+  }
+
+  addIncomingFiles(incomingFiles) {
+    if (!Array.isArray(incomingFiles) || incomingFiles.length === 0) return
+
+    let files = this.mergeSelectedFiles(incomingFiles)
+    const maxFiles = Number.parseInt(this.fieldAttachmentsTarget.dataset.maxFiles || "0", 10)
+    const maxSizeMb = Number.parseInt(this.fieldAttachmentsTarget.dataset.maxSizeMb || "0", 10)
+
+    if (Number.isFinite(maxFiles) && maxFiles > 0 && files.length > maxFiles) {
+      alert(`첨부파일은 최대 ${maxFiles}개까지 업로드할 수 있습니다.`)
+      files = files.slice(0, maxFiles)
+    }
+
+    if (Number.isFinite(maxSizeMb) && maxSizeMb > 0) {
+      const maxBytes = maxSizeMb * 1024 * 1024
+      const oversizedFiles = files.filter((file) => file.size > maxBytes)
+
+      if (oversizedFiles.length > 0) {
+        alert(`파일당 최대 용량은 ${maxSizeMb}MB입니다.`)
+        files = files.filter((file) => file.size <= maxBytes)
+      }
+    }
+
+    this.selectedFilesBuffer = files
+    this.syncSelectedFiles()
+    this.renderSelectedFiles()
+  }
+
+  mergeSelectedFiles(incomingFiles) {
+    const fileMap = new Map()
+    ;[...this.selectedFilesBuffer, ...incomingFiles].forEach((file) => {
+      const key = `${file.name}:${file.size}:${file.lastModified}:${file.type}`
+      if (!fileMap.has(key)) {
+        fileMap.set(key, file)
+      }
+    })
+    return Array.from(fileMap.values())
+  }
+
+  syncSelectedFiles() {
+    if (!this.hasFieldAttachmentsTarget) return
+
+    if (typeof DataTransfer === "undefined") {
+      if (this.selectedFilesBuffer.length === 0) {
+        this.fieldAttachmentsTarget.value = ""
+      }
+      return
+    }
+
+    const dataTransfer = new DataTransfer()
+    this.selectedFilesBuffer.forEach((file) => dataTransfer.items.add(file))
+    this.fieldAttachmentsTarget.files = dataTransfer.files
+  }
+
+  removeSelectedFile(index) {
+    if (!this.hasFieldAttachmentsTarget) return
+
+    if (index < 0 || index >= this.selectedFilesBuffer.length) return
+
+    this.selectedFilesBuffer.splice(index, 1)
+    this.syncSelectedFiles()
+    this.renderSelectedFiles()
   }
 
   renderExistingFiles(files) {
@@ -92,25 +217,46 @@ export default class extends BaseCrudController {
     }
 
     files.forEach((file) => {
-      const li = document.createElement("li")
-      const link = document.createElement("a")
-      link.href = file.url
-      link.dataset.turboFrame = "_top"
-      link.target = "_blank"
-      link.rel = "noopener noreferrer"
-      link.textContent = file.filename
-
-      const removeButton = document.createElement("button")
-      removeButton.type = "button"
-      removeButton.classList.add("btn", "btn-sm", "btn-secondary", "ml-2")
-      removeButton.textContent = "삭제"
-      removeButton.addEventListener("click", () => {
-        this.markAttachmentForRemoval(file.id, li)
+      const rowElement = this.buildFileRow({
+        name: file.filename,
+        sizeLabel: this.formatFileSize(file.byte_size),
+        tone: this.fileTone(file.filename, file.content_type),
+        url: file.url
       })
 
-      li.appendChild(link)
-      li.appendChild(removeButton)
-      this.existingFilesTarget.appendChild(li)
+      const removeButton = rowElement.querySelector("[data-role='remove']")
+      removeButton.addEventListener("click", () => {
+        this.markAttachmentForRemoval(file.id, rowElement)
+      })
+
+      this.existingFilesTarget.appendChild(rowElement)
+    })
+  }
+
+  renderSelectedFiles() {
+    if (!this.hasSelectedFilesTarget) return
+
+    this.selectedFilesTarget.innerHTML = ""
+    if (!this.hasFieldAttachmentsTarget) return
+
+    const files = this.selectedFilesBuffer
+    if (files.length === 0) {
+      return
+    }
+
+    files.forEach((file, index) => {
+      const rowElement = this.buildFileRow({
+        name: file.name,
+        sizeLabel: this.formatFileSize(file.size),
+        tone: this.fileTone(file.name, file.type)
+      })
+
+      const removeButton = rowElement.querySelector("[data-role='remove']")
+      removeButton.addEventListener("click", () => {
+        this.removeSelectedFile(index)
+      })
+
+      this.selectedFilesTarget.appendChild(rowElement)
     })
   }
 
@@ -121,21 +267,12 @@ export default class extends BaseCrudController {
     rowElement.remove()
   }
 
-  handleFileInputChange() {
-    // no-op: target only used for progressive enhancement and future validation
-  }
-
   async save() {
     const formData = new FormData(this.formTarget)
-
-    if (this.hasFieldAttachmentsTarget && this.fieldAttachmentsTarget.files.length > 0) {
-      Array.from(this.fieldAttachmentsTarget.files).forEach((file) => {
-        formData.append("notice[attachments][]", file)
-      })
-    }
+    const scope = this.formScopeKey()
 
     this.removedAttachmentIds.forEach((attachmentId) => {
-      formData.append("notice[remove_attachment_ids][]", attachmentId)
+      formData.append(`${scope}[remove_attachment_ids][]`, attachmentId)
     })
 
     const id = this.hasFieldIdTarget && this.fieldIdTarget.value ? this.fieldIdTarget.value : null
@@ -225,6 +362,10 @@ export default class extends BaseCrudController {
     if (this.hasFieldAttachmentsTarget) {
       this.fieldAttachmentsTarget.value = ""
     }
+    this.selectedFilesBuffer = []
+    this.syncSelectedFiles()
+
+    this.renderSelectedFiles()
   }
 
   setContentValue(value) {
@@ -263,5 +404,122 @@ export default class extends BaseCrudController {
     if (editor && editor.editor && typeof editor.editor.loadHTML === "function") {
       editor.editor.loadHTML(content)
     }
+  }
+
+  configureContentEditor(event) {
+    const editor = event.target
+    if (!(editor instanceof HTMLElement)) return
+    if (editor.dataset.disableFileAttachments !== "true") return
+
+    const toolbarId = editor.getAttribute("toolbar")
+    if (!toolbarId) return
+
+    const toolbar = this.formTarget.querySelector(`#${toolbarId}`) || document.getElementById(toolbarId)
+    if (!toolbar) return
+
+    toolbar.querySelectorAll(".trix-button-group--file-tools, .trix-button--icon-attach").forEach((element) => {
+      element.setAttribute("hidden", "hidden")
+    })
+  }
+
+  preventTrixFileAttach(event) {
+    event.preventDefault()
+    alert("본문에는 파일을 첨부할 수 없습니다. 하단 첨부파일 영역을 사용해주세요.")
+  }
+
+  buildFileRow({ name, sizeLabel, tone, url = null }) {
+    const rowElement = document.createElement("li")
+    rowElement.classList.add("rf-multi-file-item")
+
+    const iconElement = document.createElement("div")
+    iconElement.classList.add("rf-multi-file-item-icon", `rf-multi-file-item-icon--${tone}`)
+
+    const extElement = document.createElement("span")
+    extElement.classList.add("rf-multi-file-item-ext")
+    extElement.textContent = this.fileExtension(name)
+    iconElement.appendChild(extElement)
+
+    const contentElement = document.createElement("div")
+    contentElement.classList.add("rf-multi-file-item-body")
+
+    const nameElement = url ? document.createElement("a") : document.createElement("span")
+    nameElement.classList.add("rf-multi-file-item-name")
+    nameElement.textContent = name
+
+    if (url) {
+      nameElement.href = url
+      nameElement.dataset.turboFrame = "_top"
+      nameElement.target = "_blank"
+      nameElement.rel = "noopener noreferrer"
+    }
+
+    const sizeElement = document.createElement("span")
+    sizeElement.classList.add("rf-multi-file-item-size")
+    sizeElement.textContent = sizeLabel
+
+    contentElement.appendChild(nameElement)
+    contentElement.appendChild(sizeElement)
+
+    const removeButton = document.createElement("button")
+    removeButton.type = "button"
+    removeButton.classList.add("rf-multi-file-remove")
+    removeButton.textContent = "×"
+    removeButton.setAttribute("aria-label", `${name} 삭제`)
+    removeButton.setAttribute("data-role", "remove")
+
+    rowElement.appendChild(iconElement)
+    rowElement.appendChild(contentElement)
+    rowElement.appendChild(removeButton)
+
+    return rowElement
+  }
+
+  fileTone(filename, contentType) {
+    const extension = this.fileExtension(filename).toLowerCase()
+    const normalizedType = String(contentType || "").toLowerCase()
+
+    if (["xlsx", "xls", "csv"].includes(extension) || normalizedType.includes("sheet")) {
+      return "green"
+    }
+
+    if (extension === "pdf" || normalizedType.includes("pdf")) {
+      return "blue"
+    }
+
+    if (["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(extension) || normalizedType.startsWith("image/")) {
+      return "amber"
+    }
+
+    return "slate"
+  }
+
+  fileExtension(filename) {
+    const fileName = String(filename || "")
+    const parts = fileName.split(".")
+
+    if (parts.length < 2) {
+      return "FILE"
+    }
+
+    return parts.at(-1).toUpperCase().slice(0, 4)
+  }
+
+  formatFileSize(bytes) {
+    const size = Number(bytes)
+    if (!Number.isFinite(size) || size <= 0) {
+      return "0 B"
+    }
+
+    const units = ["B", "KB", "MB", "GB"]
+    let value = size
+    let unitIndex = 0
+
+    while (value >= 1024 && unitIndex < units.length - 1) {
+      value /= 1024
+      unitIndex += 1
+    }
+
+    const rounded = value >= 10 || unitIndex === 0 ? Math.round(value) : value.toFixed(1)
+    return `${rounded} ${units[unitIndex]}`
   }
 }
