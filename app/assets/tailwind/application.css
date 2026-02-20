@@ -611,23 +611,52 @@ a:hover {
 /* Trix / ActionText */
 trix-toolbar .trix-button-group,
 trix-toolbar .trix-dialog {
-  @apply border-border bg-bg-secondary;
+  border-color: var(--color-border);
+  background-color: var(--color-bg-secondary);
 }
 
 trix-toolbar .trix-button {
-  @apply text-text-secondary;
+  color: var(--color-text-secondary);
+  border-bottom: none;
+}
+
+trix-toolbar .trix-button:not(:first-child) {
+  border-left-color: var(--color-border);
+}
+
+trix-toolbar .trix-button--icon::before {
+  filter: invert(84%);
 }
 
 trix-toolbar .trix-button.trix-active,
 trix-toolbar .trix-button:hover {
-  @apply bg-bg-hover text-text-primary;
+  background-color: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+trix-toolbar .trix-dialog {
+  border-top-color: var(--color-border);
+  box-shadow: 0 0.3em 1em rgba(0, 0, 0, 0.3);
+}
+
+trix-toolbar .trix-input--dialog {
+  border-color: var(--color-border);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
 }
 
 trix-editor {
-  @apply w-full min-h-[220px] py-2 px-3 border border-border rounded-md bg-bg-primary text-text-primary;
+  width: 100%;
+  min-height: 220px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.375rem;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
 }
 
 trix-editor:focus {
-  @apply outline-none border-accent;
+  outline: none;
+  border-color: var(--color-accent);
   box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.2);
 }

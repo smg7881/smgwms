@@ -31,7 +31,7 @@
     <%= resolve_label(field) %>
     <% if field[:required] %><span class="text-accent-rose ml-0.5 font-semibold">*</span><% end %>
   </label>
-  <div class="flex relative">
+  <div class="relative">
     <%= f.rich_textarea field[:field].to_sym,
           id: "#{model.model_name.param_key}_#{field[:field]}",
           class: "form-grid-input min-h-[220px] #{'rf-field-error' if error_message.present?}",
