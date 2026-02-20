@@ -1,4 +1,6 @@
 class TabsController < ApplicationController
+  MAX_OPEN_TABS = 10
+
   def create
     tab_id = tab_params[:id].to_s
     label = tab_params[:label].to_s
@@ -13,6 +15,11 @@ class TabsController < ApplicationController
     effective_url = entry&.url || url
 
     unless open_tabs.any? { |t| t["id"] == tab_id }
+      if tab_limit_reached?
+        head :unprocessable_entity
+        return
+      end
+
       open_tabs << { "id" => tab_id, "label" => effective_label, "url" => effective_url }
       session[:open_tabs] = open_tabs
     end
@@ -161,5 +168,9 @@ class TabsController < ApplicationController
         format.turbo_stream { render_tab_update }
         format.html { redirect_to TabRegistry.url_for(session[:active_tab]) || root_path }
       end
+    end
+
+    def tab_limit_reached?
+      open_tabs.size >= MAX_OPEN_TABS
     end
 end

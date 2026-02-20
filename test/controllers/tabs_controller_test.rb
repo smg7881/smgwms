@@ -31,6 +31,20 @@ class TabsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "admin01", log.user_id
   end
 
+  test "POST /tabs returns unprocessable entity when opening more than 10 tabs" do
+    9.times do |index|
+      open_tab("extra-#{index}", "/extra/#{index}")
+    end
+
+    assert_no_difference("AdmMenuLog.count") do
+      post tabs_url,
+        params: { tab: { id: "extra-over-limit", label: "Extra Over Limit", url: "/extra/over-limit" } },
+        headers: turbo_stream_headers
+    end
+
+    assert_response :unprocessable_entity
+  end
+
   test "DELETE /tabs/close_all keeps overview tab only" do
     open_tab("system-users", "/system/users")
     open_tab("system-menus", "/system/menus")

@@ -187,6 +187,12 @@ export default class extends Controller {
     this.originalMap = new Map()
 
     this.collectRows().forEach((row) => {
+      if (row.__is_new) {
+        delete row.__is_updated
+        delete row.__is_deleted
+        return
+      }
+
       if (row.workpl_cd) this.originalMap.set(row.workpl_cd, { ...row })
       delete row.__is_new
       delete row.__is_updated

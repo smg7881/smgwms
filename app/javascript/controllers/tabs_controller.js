@@ -4,7 +4,8 @@ import { Turbo } from "@hotwired/turbo-rails"
 export default class extends Controller {
   static targets = ["contextMenu", "menuToggle"]
   static values = {
-    tabsEndpoint: { type: String, default: "/tabs" }
+    tabsEndpoint: { type: String, default: "/tabs" },
+    maxOpenTabs: { type: Number, default: 10 }
   }
 
   connect() {
@@ -23,6 +24,12 @@ export default class extends Controller {
   openTab(event) {
     event.preventDefault()
     const { tabId, label, url } = event.currentTarget.dataset
+    const isAlreadyOpen = this.tabIds.includes(tabId)
+
+    if (!isAlreadyOpen && this.tabIds.length >= this.maxOpenTabsValue) {
+      console.warn(`[tabs] maximum open tabs (${this.maxOpenTabsValue}) reached`)
+      return
+    }
 
     this.requestTurboStream("POST", this.tabsEndpointValue, {
       tab: { id: tabId, label, url }
