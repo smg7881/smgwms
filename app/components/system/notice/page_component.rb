@@ -45,13 +45,14 @@ class System::Notice::PageComponent < System::BasePageComponent
         {
           field: "category_code",
           type: "select",
+          span: "24",
           label: "분류",
           required: true,
           include_blank: true,
           options: common_code_options("NOTICE_CATEGORY"),
           target: "fieldCategoryCode"
         },
-        { field: "title", type: "input", label: "제목", required: true, maxlength: 200, target: "fieldTitle" },
+        { field: "title", type: "input", span: "24", label: "제목", required: true, maxlength: 200, target: "fieldTitle" },
         {
           field: "is_top_fixed",
           type: "radio",
