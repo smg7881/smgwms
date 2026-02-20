@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_20_104000) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_20_106000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -266,6 +266,23 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_20_104000) do
     t.index ["workpl_cd"], name: "index_wm_workplaces_on_workpl_cd", unique: true
     t.index ["workpl_nm"], name: "index_wm_workplaces_on_workpl_nm"
     t.index ["workpl_type"], name: "index_wm_workplaces_on_workpl_type"
+  end
+
+  create_table "wm_zones", force: :cascade do |t|
+    t.string "area_cd", limit: 50, null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn", limit: 1, default: "Y", null: false
+    t.string "workpl_cd", limit: 50, null: false
+    t.string "zone_cd", limit: 50, null: false
+    t.string "zone_desc", limit: 500
+    t.string "zone_nm", limit: 100, null: false
+    t.index ["use_yn"], name: "index_wm_zones_on_use_yn"
+    t.index ["workpl_cd", "area_cd", "zone_cd"], name: "index_wm_zones_on_workpl_cd_and_area_cd_and_zone_cd", unique: true
+    t.index ["workpl_cd", "area_cd"], name: "index_wm_zones_on_workpl_cd_and_area_cd"
+    t.index ["zone_nm"], name: "index_wm_zones_on_zone_nm"
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
