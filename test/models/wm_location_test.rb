@@ -2,9 +2,20 @@ require "test_helper"
 
 class WmLocationTest < ActiveSupport::TestCase
   setup do
-    WmWorkplace.create!(workpl_cd: "WPA", workpl_nm: "Workplace A", use_yn: "Y")
-    WmArea.create!(workpl_cd: "WPA", area_cd: "A01", area_nm: "Area A", use_yn: "Y")
-    WmZone.create!(workpl_cd: "WPA", area_cd: "A01", zone_cd: "Z01", zone_nm: "Zone A", use_yn: "Y")
+    WmWorkplace.find_or_create_by!(workpl_cd: "WPA") do |workplace|
+      workplace.workpl_nm = "Workplace A"
+      workplace.use_yn = "Y"
+    end
+
+    WmArea.find_or_create_by!(workpl_cd: "WPA", area_cd: "A01") do |area|
+      area.area_nm = "Area A"
+      area.use_yn = "Y"
+    end
+
+    WmZone.find_or_create_by!(workpl_cd: "WPA", area_cd: "A01", zone_cd: "Z01") do |zone|
+      zone.zone_nm = "Zone A"
+      zone.use_yn = "Y"
+    end
   end
 
   test "valid with required fields" do

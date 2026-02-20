@@ -44,6 +44,9 @@ Rails.application.routes.draw do
         post :batch_save, on: :collection
       end
     end
+    resources :notice, controller: :notice, only: [ :index, :show, :create, :update, :destroy ] do
+      delete :bulk_destroy, on: :collection
+    end
     resources :roles, only: [ :index, :create, :update, :destroy ], param: :id do
       post :batch_save, on: :collection
     end

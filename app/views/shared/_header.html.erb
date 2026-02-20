@@ -8,10 +8,27 @@
   <div class="flex items-center gap-1.5 text-sm text-text-secondary">
     <%= lucide_icon("house", css_class: "w-4 h-4 text-text-secondary") %>
     <span class="text-text-muted">/</span>
-    <span class="text-text-primary font-semibold" id="breadcrumb-current">
+    <span id="breadcrumb-current" class="flex items-center gap-0">
       <% active_id = session[:active_tab] || "overview" %>
       <% active_tab = (session[:open_tabs] || []).find { |t| t["id"] == active_id } %>
-      <%= active_tab&.dig("label") || TabRegistry.find(active_id)&.label || "대시보드" %>
+      <% base_label = active_tab&.dig("label") || TabRegistry.find(active_id)&.label || "대시보드" %>
+      <% breadcrumbs = [] %>
+      <% if defined?(AdmMenu) && AdmMenu.table_exists? %>
+        <% current_menu = AdmMenu.find_by(tab_id: active_id) %>
+        <% while current_menu %>
+          <% breadcrumbs.unshift(current_menu.menu_nm) %>
+          <% current_menu = current_menu.parent %>
+        <% end %>
+      <% end %>
+      <% breadcrumbs = [base_label] if breadcrumbs.empty? %>
+      
+      <% breadcrumbs.each_with_index do |crumb, index| %>
+        <% if index == breadcrumbs.length - 1 %>
+          <span class="text-text-primary font-semibold"><%= crumb %></span>
+        <% else %>
+          <span class="text-text-secondary"><%= crumb %></span><span class="text-text-muted ml-0.5 mr-0.5">/</span>
+        <% end %>
+      <% end %>
     </span>
   </div>
   <div class="flex items-center gap-2 ml-auto">

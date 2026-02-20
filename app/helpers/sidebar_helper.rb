@@ -1,18 +1,21 @@
 module SidebarHelper
-  def sidebar_menu_button(label, tab_id:, icon:, url:, badge: nil)
+  def sidebar_menu_button(label, tab_id:, icon:, url:, badge: nil, breadcrumbs: nil)
     is_active = (session[:active_tab] == tab_id)
+
+    data_attrs = {
+      action: "click->tabs#openTab",
+      role: "sidebar-menu-item",
+      "tab-id": tab_id,
+      label: label,
+      url: url
+    }
+    data_attrs[:breadcrumbs] = breadcrumbs.to_json if breadcrumbs.present?
 
     content_tag(
       :button,
       type: "button",
       class: "nav-item #{"active" if is_active}".strip,
-      data: {
-        action: "click->tabs#openTab",
-        role: "sidebar-menu-item",
-        "tab-id": tab_id,
-        label: label,
-        url: url
-      }
+      data: data_attrs
     ) do
       parts = []
       parts << lucide_icon(icon, css_class: "icon", fallback: "file")
@@ -26,8 +29,16 @@ module SidebarHelper
 
   def sidebar_menu_button_from_record(menu, default_icon: "file")
     icon = menu.menu_icon.presence || default_icon
+
+    crumbs = []
+    current = menu
+    while current
+      crumbs.unshift(current.menu_nm)
+      current = current.parent
+    end
+
     if menu.tab_id.present?
-      sidebar_menu_button(menu.menu_nm, tab_id: menu.tab_id, icon: icon, url: menu.menu_url)
+      sidebar_menu_button(menu.menu_nm, tab_id: menu.tab_id, icon: icon, url: menu.menu_url, breadcrumbs: crumbs)
     elsif menu.menu_url.present?
       content_tag(
         :a,

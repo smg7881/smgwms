@@ -2,14 +2,19 @@ require "test_helper"
 
 class WmAreaTest < ActiveSupport::TestCase
   setup do
-    WmWorkplace.create!(workpl_cd: "WPA", workpl_nm: "작업장A", use_yn: "Y")
+    WmLocation.where(workpl_cd: "WPA").delete_all
+    WmZone.where(workpl_cd: "WPA").delete_all
+    WmArea.where(workpl_cd: "WPA").delete_all
+    WmWorkplace.where(workpl_cd: "WPA").delete_all
+
+    WmWorkplace.create!(workpl_cd: "WPA", workpl_nm: "Workplace A", use_yn: "Y")
   end
 
   test "valid with required fields" do
     area = WmArea.new(
       workpl_cd: "WPA",
       area_cd: "A01",
-      area_nm: "입고구역",
+      area_nm: "Inbound",
       use_yn: "Y"
     )
 
@@ -20,15 +25,15 @@ class WmAreaTest < ActiveSupport::TestCase
     area = WmArea.create!(
       workpl_cd: " wpa ",
       area_cd: " a01 ",
-      area_nm: " 입고구역 ",
-      area_desc: " 설명 ",
+      area_nm: " Inbound ",
+      area_desc: " desc ",
       use_yn: " y "
     )
 
     assert_equal "WPA", area.workpl_cd
     assert_equal "A01", area.area_cd
-    assert_equal "입고구역", area.area_nm
-    assert_equal "설명", area.area_desc
+    assert_equal "Inbound", area.area_nm
+    assert_equal "desc", area.area_desc
     assert_equal "Y", area.use_yn
   end
 
@@ -45,7 +50,7 @@ class WmAreaTest < ActiveSupport::TestCase
     area = WmArea.new(
       workpl_cd: "WPA",
       area_cd: "A99",
-      area_nm: "테스트",
+      area_nm: "Test",
       use_yn: "X"
     )
 
@@ -57,7 +62,7 @@ class WmAreaTest < ActiveSupport::TestCase
     area = WmArea.new(
       workpl_cd: "UNKNOWN",
       area_cd: "A01",
-      area_nm: "미지정",
+      area_nm: "Missing",
       use_yn: "Y"
     )
 

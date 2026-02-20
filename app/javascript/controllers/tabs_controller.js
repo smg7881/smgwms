@@ -152,7 +152,17 @@ export default class extends Controller {
   syncUI(tabId) {
     this.updateSidebarActive(tabId)
     const button = document.querySelector(`[data-role='sidebar-menu-item'][data-tab-id='${tabId}']`)
-    this.updateBreadcrumb(button?.dataset?.label)
+    if (button) {
+      if (button.dataset.breadcrumbs) {
+        try {
+          this.updateBreadcrumb(JSON.parse(button.dataset.breadcrumbs))
+          return
+        } catch (e) {
+          console.error("Failed to parse breadcrumbs", e)
+        }
+      }
+      this.updateBreadcrumb([button.dataset.label])
+    }
   }
 
   syncUIFromActiveTab() {
@@ -161,7 +171,16 @@ export default class extends Controller {
       const tabId = activeTab?.dataset?.tabId
       if (tabId) {
         this.updateSidebarActive(tabId)
-        this.updateBreadcrumb(activeTab?.dataset?.tabLabel)
+        const button = document.querySelector(`[data-role='sidebar-menu-item'][data-tab-id='${tabId}']`)
+        if (button && button.dataset.breadcrumbs) {
+          try {
+            this.updateBreadcrumb(JSON.parse(button.dataset.breadcrumbs))
+            return
+          } catch (e) {
+            console.error("Failed to parse breadcrumbs", e)
+          }
+        }
+        this.updateBreadcrumb([activeTab?.dataset?.tabLabel])
       }
     })
   }
@@ -172,9 +191,20 @@ export default class extends Controller {
     })
   }
 
-  updateBreadcrumb(label) {
+  updateBreadcrumb(labels) {
     const element = document.getElementById("breadcrumb-current")
-    if (element && label) element.textContent = label
+    if (!element || !labels) return
+
+    if (!Array.isArray(labels)) {
+      labels = [labels]
+    }
+
+    element.innerHTML = labels.map((label, index) => {
+      if (index === labels.length - 1) {
+        return `<span class="text-text-primary font-semibold">${label}</span>`
+      }
+      return `<span class="text-text-secondary">${label}</span><span class="text-text-muted ml-0.5 mr-0.5">/</span>`
+    }).join("")
   }
 
   get activeTabId() {

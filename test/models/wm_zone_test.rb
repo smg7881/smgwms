@@ -2,8 +2,13 @@ require "test_helper"
 
 class WmZoneTest < ActiveSupport::TestCase
   setup do
-    WmWorkplace.create!(workpl_cd: "WPA", workpl_nm: "작업장A", use_yn: "Y")
-    WmArea.create!(workpl_cd: "WPA", area_cd: "A01", area_nm: "구역A", use_yn: "Y")
+    WmLocation.where(workpl_cd: "WPA").delete_all
+    WmZone.where(workpl_cd: "WPA").delete_all
+    WmArea.where(workpl_cd: "WPA").delete_all
+    WmWorkplace.where(workpl_cd: "WPA").delete_all
+
+    WmWorkplace.create!(workpl_cd: "WPA", workpl_nm: "Workplace A", use_yn: "Y")
+    WmArea.create!(workpl_cd: "WPA", area_cd: "A01", area_nm: "Area A", use_yn: "Y")
   end
 
   test "valid with required fields" do
@@ -11,7 +16,7 @@ class WmZoneTest < ActiveSupport::TestCase
       workpl_cd: "WPA",
       area_cd: "A01",
       zone_cd: "Z01",
-      zone_nm: "ZoneA",
+      zone_nm: "Zone A",
       use_yn: "Y"
     )
 
@@ -23,16 +28,16 @@ class WmZoneTest < ActiveSupport::TestCase
       workpl_cd: " wpa ",
       area_cd: " a01 ",
       zone_cd: " z01 ",
-      zone_nm: " ZoneA ",
-      zone_desc: " 설명 ",
+      zone_nm: " Zone A ",
+      zone_desc: " desc ",
       use_yn: " y "
     )
 
     assert_equal "WPA", zone.workpl_cd
     assert_equal "A01", zone.area_cd
     assert_equal "Z01", zone.zone_cd
-    assert_equal "ZoneA", zone.zone_nm
-    assert_equal "설명", zone.zone_desc
+    assert_equal "Zone A", zone.zone_nm
+    assert_equal "desc", zone.zone_desc
     assert_equal "Y", zone.use_yn
   end
 
@@ -51,7 +56,7 @@ class WmZoneTest < ActiveSupport::TestCase
       workpl_cd: "WPA",
       area_cd: "A01",
       zone_cd: "Z99",
-      zone_nm: "테스트",
+      zone_nm: "Test",
       use_yn: "X"
     )
 
@@ -64,7 +69,7 @@ class WmZoneTest < ActiveSupport::TestCase
       workpl_cd: "WPA",
       area_cd: "UNKNOWN",
       zone_cd: "Z01",
-      zone_nm: "미지정",
+      zone_nm: "Missing",
       use_yn: "Y"
     )
 

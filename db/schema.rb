@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_21_011000) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_21_014000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -138,6 +138,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_21_011000) do
     t.index ["menu_cd"], name: "index_adm_menus_on_menu_cd", unique: true
     t.index ["parent_cd", "sort_order", "menu_cd"], name: "index_adm_menus_on_parent_cd_and_sort_order_and_menu_cd"
     t.index ["parent_cd"], name: "index_adm_menus_on_parent_cd"
+  end
+
+  create_table "adm_notices", force: :cascade do |t|
+    t.string "category_code", limit: 50, null: false
+    t.text "content", null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.date "end_date"
+    t.string "is_published", limit: 1, default: "Y", null: false
+    t.string "is_top_fixed", limit: 1, default: "N", null: false
+    t.date "start_date"
+    t.string "title", limit: 200, null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.integer "view_count", default: 0, null: false
+    t.index ["category_code"], name: "index_adm_notices_on_category_code"
+    t.index ["create_time"], name: "index_adm_notices_on_create_time"
+    t.index ["is_published"], name: "index_adm_notices_on_is_published"
+    t.index ["is_top_fixed"], name: "index_adm_notices_on_is_top_fixed"
   end
 
   create_table "adm_roles", force: :cascade do |t|

@@ -197,6 +197,65 @@ export const RENDERER_REGISTRY = {
     return container
   },
 
+  noticeTopFixedCellRenderer: (params) => {
+    const span = document.createElement("span")
+    span.style.fontWeight = "bold"
+    span.style.fontSize = "12px"
+    if (params.value === "Y") {
+      span.style.color = "#d03050"
+      span.textContent = "공지"
+    } else {
+      span.style.color = "#8b949e"
+      span.textContent = "일반"
+    }
+    return span
+  },
+
+  noticePublishedCellRenderer: (params) => {
+    const span = document.createElement("span")
+    span.style.fontWeight = "bold"
+    if (params.value === "Y") {
+      span.style.color = "#18a058"
+      span.textContent = "게시"
+    } else {
+      span.style.color = "#d08700"
+      span.textContent = "미게시"
+    }
+    return span
+  },
+
+  noticeTitleCellRenderer: (params) => {
+    const button = document.createElement("button")
+    button.type = "button"
+    button.classList.add("ag-grid-link")
+    button.textContent = params.value ?? ""
+    button.style.cursor = "pointer"
+    button.style.background = "transparent"
+    button.style.border = "0"
+    button.style.padding = "0"
+    button.style.textAlign = "left"
+    button.addEventListener("click", () => emit(button, "notice-crud:edit", { id: params.data.id }))
+    return button
+  },
+
+  noticeActionCellRenderer: (params) => {
+    const container = document.createElement("div")
+    container.classList.add("grid-action-buttons")
+
+    container.appendChild(createActionButton({
+      text: "✎",
+      title: "수정",
+      onClick: () => emit(container, "notice-crud:edit", { id: params.data.id })
+    }))
+    container.appendChild(createActionButton({
+      text: "X",
+      title: "삭제",
+      classes: ["grid-action-btn--danger"],
+      onClick: () => emit(container, "notice-crud:delete", { id: params.data.id, title: params.data.title })
+    }))
+    return container
+  },
+
   actionCellRenderer: (params) => {
     const container = document.createElement("div")
     container.classList.add("grid-action-buttons")

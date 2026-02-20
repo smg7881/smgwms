@@ -9,6 +9,7 @@
     Entry.new(id: "system-menus", label: "메뉴관리", icon: "settings", url: "/system/menus", color_group: :rose),
     Entry.new(id: "system-users", label: "사용자관리", icon: "user", url: "/system/users", color_group: :rose),
     Entry.new(id: "system-dept", label: "부서관리", icon: "building-2", url: "/system/dept", color_group: :rose),
+    Entry.new(id: "system-notice", label: "공지사항", icon: "bell", url: "/system/notice", color_group: :rose),
     Entry.new(id: "system-menu-log", label: "메뉴로그", icon: "history", url: "/system/menu_logs", color_group: :rose),
     Entry.new(id: "system-excel-import-tasks", label: "엑셀업로드이력", icon: "file-text", url: "/system/excel_import_tasks", color_group: :rose),
     Entry.new(id: "system-login-history", label: "로그인이력", icon: "log-in", url: "/system/login_histories", color_group: :rose),

@@ -103,14 +103,12 @@ class TabsController < ApplicationController
       active_id    = session[:active_tab]
       active_tab = open_tabs.find { |t| t["id"] == active_id }
       active_url = active_tab&.dig("url") || TabRegistry.url_for(active_id) || "/"
-      active_label = active_tab&.dig("label") || TabRegistry.find(active_id)&.label || "대시보드"
 
       render turbo_stream: [
         turbo_stream.update("tab-bar",
           partial: "shared/tab_bar",
           locals: { tabs: open_tabs, active: active_id }
         ),
-        turbo_stream.update("breadcrumb-current", active_label),
         turbo_stream.replace("main-content",
           helpers.turbo_frame_tag("main-content", src: active_url, loading: :eager) {
             helpers.content_tag(:div, class: "loading-state") {
