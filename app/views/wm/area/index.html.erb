@@ -1,0 +1,3 @@
+<%= turbo_frame_tag "main-content" do %>
+  <%= render Wm::Area::PageComponent.new(query_params: request.query_parameters) %>
+<% end %>

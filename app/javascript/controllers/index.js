@@ -33,6 +33,9 @@ application.register("role-grid", RoleGridController)
 import WorkplaceGridController from "controllers/workplace_grid_controller"
 application.register("workplace-grid", WorkplaceGridController)
 
+import AreaGridController from "controllers/area_grid_controller"
+application.register("area-grid", AreaGridController)
+
 import RoleUserGridController from "controllers/role_user_grid_controller"
 application.register("role-user-grid", RoleUserGridController)
 

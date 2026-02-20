@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_20_102000) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_20_104000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -226,6 +226,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_20_102000) do
     t.integer "user_id", null: false
     t.index ["token"], name: "index_sessions_on_token", unique: true
     t.index ["user_id"], name: "index_sessions_on_user_id"
+  end
+
+  create_table "wm_areas", force: :cascade do |t|
+    t.string "area_cd", limit: 50, null: false
+    t.string "area_desc", limit: 500
+    t.string "area_nm", limit: 100, null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn", limit: 1, default: "Y", null: false
+    t.string "workpl_cd", limit: 50, null: false
+    t.index ["area_nm"], name: "index_wm_areas_on_area_nm"
+    t.index ["use_yn"], name: "index_wm_areas_on_use_yn"
+    t.index ["workpl_cd", "area_cd"], name: "index_wm_areas_on_workpl_cd_and_area_cd", unique: true
+    t.index ["workpl_cd"], name: "index_wm_areas_on_workpl_cd"
   end
 
   create_table "wm_workplaces", force: :cascade do |t|
