@@ -186,9 +186,7 @@ export default class extends Controller {
 
     this.contextTabId = tabId
     this.syncContextMenuState(tabId)
-    this.contextMenuTarget.removeAttribute("hidden")
     this.contextMenuTarget.classList.add("is-open")
-    this.contextMenuTarget.style.display = "flex"
 
     if (options.anchor) {
       this.positionContextMenuAsAnchor()
@@ -202,10 +200,8 @@ export default class extends Controller {
   hideContextMenu() {
     if (!this.hasContextMenuTarget) return
 
-    this.contextMenuTarget.setAttribute("hidden", "")
     this.contextMenuTarget.classList.remove("is-open")
     this.contextMenuTarget.classList.remove("is-anchor")
-    this.contextMenuTarget.style.display = ""
     this.contextMenuTarget.style.left = ""
     this.contextMenuTarget.style.top = ""
     this.contextTabId = null

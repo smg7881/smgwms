@@ -30,7 +30,7 @@ class ApplicationController < ActionController::Base
       session[:open_tabs] ||= []
 
       unless session[:open_tabs].any? { |t| t["id"] == "overview" }
-        session[:open_tabs].unshift({ "id" => "overview", "label" => "개요", "url" => "/" })
+        session[:open_tabs].unshift({ "id" => "overview", "label" => "대시보드", "url" => "/" })
       end
 
       session[:active_tab] ||= "overview"

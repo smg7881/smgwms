@@ -2,7 +2,7 @@
   Entry = Data.define(:id, :label, :icon, :url, :color_group)
 
   ENTRIES = [
-    Entry.new(id: "overview", label: "개요", icon: "bar-chart-3", url: "/", color_group: :primary),
+    Entry.new(id: "overview", label: "대시보드", icon: "bar-chart-3", url: "/", color_group: :primary),
     Entry.new(id: "posts-list", label: "게시물 목록", icon: "clipboard-list", url: "/posts", color_group: :green),
     Entry.new(id: "posts-new", label: "게시물 작성", icon: "square-pen", url: "/posts/new", color_group: :cyan),
     Entry.new(id: "reports", label: "통계", icon: "line-chart", url: "/reports", color_group: :amber),

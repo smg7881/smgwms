@@ -11,7 +11,7 @@
     <span class="text-text-primary font-semibold" id="breadcrumb-current">
       <% active_id = session[:active_tab] || "overview" %>
       <% active_tab = (session[:open_tabs] || []).find { |t| t["id"] == active_id } %>
-      <%= active_tab&.dig("label") || TabRegistry.find(active_id)&.label || "개요" %>
+      <%= active_tab&.dig("label") || TabRegistry.find(active_id)&.label || "대시보드" %>
     </span>
   </div>
   <div class="flex items-center gap-2 ml-auto">

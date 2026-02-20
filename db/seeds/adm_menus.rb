@@ -1,6 +1,6 @@
 menus = [
   { menu_cd: "MAIN", menu_nm: "메인", parent_cd: nil, menu_url: nil, menu_icon: "layout-dashboard", sort_order: 1, menu_level: 1, menu_type: "FOLDER", tab_id: nil },
-  { menu_cd: "OVERVIEW", menu_nm: "개요", parent_cd: "MAIN", menu_url: "/", menu_icon: "bar-chart-3", sort_order: 1, menu_level: 2, menu_type: "MENU", tab_id: "overview" },
+  { menu_cd: "OVERVIEW", menu_nm: "대시보드", parent_cd: "MAIN", menu_url: "/", menu_icon: "bar-chart-3", sort_order: 1, menu_level: 2, menu_type: "MENU", tab_id: "overview" },
 
   { menu_cd: "POST", menu_nm: "게시물", parent_cd: nil, menu_url: nil, menu_icon: "clipboard-list", sort_order: 2, menu_level: 1, menu_type: "FOLDER", tab_id: nil },
   { menu_cd: "POST_LIST", menu_nm: "게시물 목록", parent_cd: "POST", menu_url: "/posts", menu_icon: "clipboard-list", sort_order: 1, menu_level: 2, menu_type: "MENU", tab_id: "posts-list" },

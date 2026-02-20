@@ -26,7 +26,7 @@ class Tabs::ActivationsController < ApplicationController
       active_id    = session[:active_tab]
       active_tab = open_tabs.find { |t| t["id"] == active_id }
       active_url = active_tab&.dig("url") || TabRegistry.url_for(active_id) || "/"
-      active_label = active_tab&.dig("label") || TabRegistry.find(active_id)&.label || "개요"
+      active_label = active_tab&.dig("label") || TabRegistry.find(active_id)&.label || "대시보드"
 
       render turbo_stream: [
         turbo_stream.update("tab-bar",
