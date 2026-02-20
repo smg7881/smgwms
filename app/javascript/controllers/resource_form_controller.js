@@ -196,7 +196,8 @@ export default class extends Controller {
       el.classList.remove("rf-field-error")
     })
     this.element.querySelectorAll(".rf-error-msg").forEach(el => {
-      el.remove()
+      el.textContent = " "
+      el.classList.add("invisible")
     })
 
     // 상단 에러 요약 제거
@@ -214,6 +215,7 @@ export default class extends Controller {
       fieldGroup.appendChild(errorEl)
     }
     errorEl.textContent = message
+    errorEl.classList.remove("invisible")
   }
 
   // 필드 에러 메시지 숨김 (서버 사이드 에러는 유지할지 여부 결정 필요)
@@ -221,9 +223,9 @@ export default class extends Controller {
     const errorEl = fieldGroup.querySelector(".rf-error-msg")
     // data-server-error 속성이 없는 클라이언트 에러만 제거
     if (errorEl && !errorEl.dataset.serverError) {
-      errorEl.remove()
+      errorEl.textContent = " "
+      errorEl.classList.add("invisible")
     }
   }
 }
-
 

@@ -1,4 +1,7 @@
 <%# app/views/shared/resource_form/fields/_input.html.erb %>
+<%
+  error_message = model.errors[field[:field].to_sym].first
+%>
 <div class="flex flex-col gap-1 col-span-24 min-w-0 <%= span_classes_for(field, cols: cols) %>"
      data-resource-form-target="fieldGroup"
      data-field-name="<%= field[:field] %>">
@@ -9,7 +12,7 @@
   <div class="flex relative">
     <%= f.text_field field[:field].to_sym,
           id: "#{model.model_name.param_key}_#{field[:field]}",
-          class: "form-grid-input #{'rf-field-error' if model.errors[field[:field].to_sym].any?}",
+          class: "form-grid-input #{'rf-field-error' if error_message.present?}",
           value: field[:value],
           placeholder: resolve_placeholder(field),
           required: field[:required],
@@ -26,9 +29,7 @@
             action: "blur->resource-form#validateField"
           }.merge(field[:target].present? && local_assigns[:target_controller].present? ? { "#{local_assigns[:target_controller]}_target" => field[:target] } : {}) %>
   </div>
-  <% if model.errors[field[:field].to_sym].any? %>
-    <span class="rf-error-msg"><%= model.errors[field[:field].to_sym].first %></span>
-  <% end %>
+  <span class="rf-error-msg <%= 'invisible' if error_message.blank? %>"><%= error_message.presence || " " %></span>
   <% if field[:help].present? %>
     <span class="text-xs text-text-muted mt-0.5"><%= field[:help] %></span>
   <% end %>

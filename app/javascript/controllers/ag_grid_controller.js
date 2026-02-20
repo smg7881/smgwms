@@ -313,6 +313,7 @@ export default class extends Controller {
   handleCellFocused(event) {
     if (typeof event?.rowIndex !== "number") return
     if (this.isSelectionCheckboxColumn(event)) return
+    if (this.isActionColumn(event)) return
     if (!this.isApiAlive(this.gridApi)) return
 
     const nextFocusedNode = this.gridApi.getDisplayedRowAtIndex(event.rowIndex)
@@ -349,6 +350,23 @@ export default class extends Controller {
     if (!colId) return false
 
     return colId === "ag-Grid-SelectionColumn" || colId.includes("SelectionColumn")
+  }
+
+  isActionColumn(event) {
+    const colDef = event?.column?.getColDef?.()
+    if (!colDef) return false
+
+    if (colDef.field === "actions") return true
+
+    const { cellClass } = colDef
+    if (typeof cellClass === "string") {
+      return cellClass.includes("ag-cell-actions")
+    }
+    if (Array.isArray(cellClass)) {
+      return cellClass.some((klass) => String(klass).includes("ag-cell-actions"))
+    }
+
+    return false
   }
 
   ensureStatusColumnOrder() {

@@ -3,6 +3,7 @@
   field_id = "#{model.model_name.param_key}_#{field[:field]}"
   has_dependency = field[:depends_on].present?
   current_value = model.send(field[:field].to_sym) rescue nil
+  error_message = model.errors[field[:field].to_sym].first
 %>
 <div class="flex flex-col gap-1 col-span-24 min-w-0 <%= span_classes_for(field, cols: cols) %>"
      data-resource-form-target="fieldGroup <%= 'dependentField' if has_dependency %>"
@@ -14,7 +15,7 @@
   <div class="flex relative">
     <select id="<%= field_id %>"
             name="<%= "#{model.model_name.param_key}[#{field[:field]}]" %>"
-            class="form-grid-select <%= 'rf-field-error' if model.errors[field[:field].to_sym].any? %>"
+            class="form-grid-select <%= 'rf-field-error' if error_message.present? %>"
             <%= "required" if field[:required] %>
             <%= "disabled" if field[:disabled] %>
             <% if has_dependency %>
@@ -44,9 +45,7 @@
       <% end %>
     </select>
   </div>
-  <% if model.errors[field[:field].to_sym].any? %>
-    <span class="rf-error-msg"><%= model.errors[field[:field].to_sym].first %></span>
-  <% end %>
+  <span class="rf-error-msg <%= 'invisible' if error_message.blank? %>"><%= error_message.presence || " " %></span>
   <% if field[:help].present? %>
     <span class="text-xs text-text-muted mt-0.5"><%= field[:help] %></span>
   <% end %>

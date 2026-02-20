@@ -128,6 +128,15 @@ a:hover { text-decoration: underline; }
   @apply text-text-muted;
 }
 
+/* Number input dark scheme */
+.form-grid-input[type="number"] {
+  color-scheme: dark;
+}
+.form-grid-input[type="number"]::-webkit-inner-spin-button,
+.form-grid-input[type="number"]::-webkit-outer-spin-button {
+  filter: invert(1) brightness(0.72);
+}
+
 /* Date input dark scheme */
 .form-grid-input[type="date"],
 .form-grid-input[type="datetime-local"] {
@@ -220,7 +229,11 @@ a:hover { text-decoration: underline; }
   box-shadow: 0 0 0 2px rgba(248, 81, 73, 0.2) !important;
 }
 .rf-error-msg {
-  @apply text-xs mt-0.5;
+  display: block;
+  margin-top: 2px;
+  min-height: 12px;
+  font-size: 11px;
+  line-height: 1.2;
   color: var(--color-accent-rose);
 }
 
