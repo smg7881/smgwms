@@ -82,6 +82,11 @@ Rails.application.routes.draw do
       get :zones, on: :collection
       post :batch_save, on: :collection
     end
+    resources :location, controller: :location, only: [ :index ] do
+      get :areas, on: :collection
+      get :zones, on: :collection
+      post :batch_save, on: :collection
+    end
   end
 
   get "up" => "rails/health#show", as: :rails_health_check

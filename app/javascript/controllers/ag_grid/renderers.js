@@ -127,6 +127,22 @@ export const RENDERER_REGISTRY = {
     return span
   },
 
+  stockYnCellRenderer: (params) => {
+    const span = document.createElement("span")
+    const value = (params.value || "").toString().toUpperCase()
+    span.style.fontWeight = "bold"
+
+    if (value === "Y") {
+      span.style.color = "#d03050"
+      span.textContent = "Y"
+    } else {
+      span.style.color = "#18a058"
+      span.textContent = "N"
+    }
+
+    return span
+  },
+
   rowStatusCellRenderer: (params) => {
     const row = params.data || {}
     const span = document.createElement("span")

@@ -27,6 +27,12 @@
     <%= helpers.lucide_icon("rotate-ccw", css_class: "w-4 h-4") %>
   </button>
   <button type="button"
+          class="grid-action-btn p-1.5 rounded hover:bg-[#30363d] transition-colors"
+          title="필터 초기화"
+          data-action="click->grid-actions#clearFilter">
+    <%= helpers.lucide_icon("filter-x", css_class: "w-4 h-4") %>
+  </button>
+  <button type="button"
           class="grid-action-btn grid-action-excel p-1.5 rounded hover:bg-[#30363d] transition-colors"
           title="엑셀 다운로드"
           data-action="<%= resolved_excel_action %>">

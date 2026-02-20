@@ -39,6 +39,9 @@ application.register("area-grid", AreaGridController)
 import ZoneGridController from "controllers/zone_grid_controller"
 application.register("zone-grid", ZoneGridController)
 
+import LocationGridController from "controllers/location_grid_controller"
+application.register("location-grid", LocationGridController)
+
 import RoleUserGridController from "controllers/role_user_grid_controller"
 application.register("role-user-grid", RoleUserGridController)
 

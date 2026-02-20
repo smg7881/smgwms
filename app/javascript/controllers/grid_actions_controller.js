@@ -26,6 +26,13 @@ export default class extends Controller {
     agGridController.exportCsv()
   }
 
+  clearFilter() {
+    const agGridController = this.#findAgGridController()
+    if (!agGridController) return
+
+    agGridController.clearFilter()
+  }
+
   #findAgGridController() {
     const gridId = this.gridIdValue
     const selector = `[data-ag-grid-grid-id-value="${gridId}"]`

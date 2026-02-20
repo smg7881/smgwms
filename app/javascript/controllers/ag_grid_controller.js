@@ -26,23 +26,26 @@ const AG_GRID_LOCALE_KO = {
   pageSizeSelectorLabel: "Page Size:",
   loadingOoo: "조회중",
   noRowsToShow: "데이터 미존재",
-  filterOoo: "Filter...",
-  equals: "Equals",
-  notEqual: "Not equal",
-  contains: "Contains",
-  notContains: "Does not contain",
-  startsWith: "Starts with",
-  endsWith: "Ends with",
-  lessThan: "Less than",
-  greaterThan: "Greater than",
-  lessThanOrEqual: "Less than or equal",
-  greaterThanOrEqual: "Greater than or equal",
-  andCondition: "AND",
-  orCondition: "OR",
-  applyFilter: "Apply",
-  resetFilter: "Reset",
-  clearFilter: "Clear",
-  cancelFilter: "Cancel",
+  filterOoo: "필터 검색...",
+  blank: "비어 있음",
+  notBlank: "비어 있지 않음",
+  empty: "값 선택",
+  equals: "같음",
+  notEqual: "같지 않음",
+  contains: "포함",
+  notContains: "포함하지 않음",
+  startsWith: "시작하는 단어",
+  endsWith: "끝나는 단어",
+  lessThan: "미만",
+  greaterThan: "초과",
+  lessThanOrEqual: "이하",
+  greaterThanOrEqual: "이상",
+  andCondition: "그리고",
+  orCondition: "또는",
+  applyFilter: "적용",
+  resetFilter: "초기화",
+  clearFilter: "지우기",
+  cancelFilter: "취소",
   columns: "Columns",
   copy: "Copy",
   ctrlC: "Ctrl+C",
@@ -59,6 +62,12 @@ const darkTheme = themeQuartz.withParams({
   headerBackgroundColor: "#1c2333",
   headerTextColor: "#8b949e",
   borderColor: "#30363d",
+  inputBorder: "solid 1px #30363d",
+  inputFocusBorder: "solid 1px #58a6ff",
+  inputBorderRadius: 4,
+  inputFocusBoxShadow: "0 0 0 2px rgba(88, 166, 255, 0.3)",
+  menuBackgroundColor: "#1c2333",
+  menuBorder: "solid 1px #30363d",
   rowHoverColor: "#21262d",
   accentColor: "#58a6ff",
   oddRowBackgroundColor: "#0f1117",
@@ -136,6 +145,9 @@ export default class extends Controller {
       paginationPageSize: this.pageSizeValue,
       paginationPageSizeSelector: [10, 20, 50, 100],
       localeText: AG_GRID_LOCALE_KO,
+      icons: {
+        filter: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #8b949e;"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>'
+      },
       animateRows: true,
       getRowClass: (params) => this.buildRowClass(params),
       onCellFocused: (event) => this.handleCellFocused(event),
@@ -239,8 +251,11 @@ export default class extends Controller {
       flex: 1,
       minWidth: 100,
       filter: true,
+      floatingFilter: false,
       sortable: true,
-      resizable: true
+      resizable: true,
+      suppressHeaderMenuButton: false,
+      suppressMenuHide: true
     }
   }
 
@@ -279,6 +294,33 @@ export default class extends Controller {
         )
         api.showNoRowsOverlay()
       })
+  }
+
+  clearFilter() {
+    if (!this.isApiAlive(this.gridApi)) return
+
+    // 모든 컬럼의 필터 인스턴스를 초기화
+    this.gridApi.setFilterModel(null)
+
+    // 명시적으로 필터 파괴 (DOM에 남아있는 상태값 완전 제거)
+    const columns = this.gridApi.getColumns ? this.gridApi.getColumns() : []
+    if (columns && columns.length > 0) {
+      columns.forEach(col => {
+        this.gridApi.destroyFilter(col)
+      })
+    }
+
+    // 퀵 필터도 초기화 (있는 경우)
+    if (this.gridApi.setGridOption) {
+      this.gridApi.setGridOption('quickFilterText', '')
+    }
+
+    // 변경사항 적용
+    if (typeof this.gridApi.onFilterChanged === 'function') {
+      this.gridApi.onFilterChanged()
+    }
+
+    this.#showToast("필터가 초기화되었습니다")
   }
 
   #handleServerPaginationChanged(event) {

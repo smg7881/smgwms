@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_20_106000) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_21_011000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -242,6 +242,32 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_20_106000) do
     t.index ["use_yn"], name: "index_wm_areas_on_use_yn"
     t.index ["workpl_cd", "area_cd"], name: "index_wm_areas_on_workpl_cd_and_area_cd", unique: true
     t.index ["workpl_cd"], name: "index_wm_areas_on_workpl_cd"
+  end
+
+  create_table "wm_locations", force: :cascade do |t|
+    t.string "area_cd", limit: 50, null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "has_stock", limit: 1, default: "N", null: false
+    t.decimal "height_len", precision: 12, scale: 3
+    t.string "loc_cd", limit: 50, null: false
+    t.string "loc_class_cd", limit: 30
+    t.string "loc_nm", limit: 100, null: false
+    t.string "loc_type_cd", limit: 30
+    t.decimal "max_cbm", precision: 14, scale: 3
+    t.decimal "max_weight", precision: 14, scale: 3
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn", limit: 1, default: "Y", null: false
+    t.decimal "vert_len", precision: 12, scale: 3
+    t.decimal "width_len", precision: 12, scale: 3
+    t.string "workpl_cd", limit: 50, null: false
+    t.string "zone_cd", limit: 50, null: false
+    t.index ["has_stock"], name: "index_wm_locations_on_has_stock"
+    t.index ["loc_nm"], name: "index_wm_locations_on_loc_nm"
+    t.index ["use_yn"], name: "index_wm_locations_on_use_yn"
+    t.index ["workpl_cd", "area_cd", "zone_cd", "loc_cd"], name: "idx_on_workpl_cd_area_cd_zone_cd_loc_cd_56a16d1b88", unique: true
+    t.index ["workpl_cd", "area_cd", "zone_cd"], name: "index_wm_locations_on_workpl_cd_and_area_cd_and_zone_cd"
   end
 
   create_table "wm_workplaces", force: :cascade do |t|
