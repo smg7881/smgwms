@@ -56,6 +56,8 @@ class System::UserMenuRoleControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "menus_by_user_role returns active menus" do
+    user = User.find_by!(user_id_code: "admin01")
+
     AdmMenu.create!(
       menu_cd: "UMR_MENU_Y",
       menu_nm: "활성메뉴",
@@ -80,6 +82,9 @@ class System::UserMenuRoleControllerTest < ActionDispatch::IntegrationTest
       use_yn: "N",
       tab_id: nil
     )
+
+    AdmUserMenuPermission.create!(user: user, menu_cd: "UMR_MENU_Y", use_yn: "Y")
+    AdmUserMenuPermission.create!(user: user, menu_cd: "UMR_MENU_N", use_yn: "N")
 
     get menus_by_user_role_system_user_menu_role_index_url, params: { user_id_code: "admin01", role_cd: "MANAGER" }, as: :json
     assert_response :success

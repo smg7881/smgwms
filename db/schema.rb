@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_20_090000) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_20_102000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -153,6 +153,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_20_090000) do
     t.index ["use_yn"], name: "index_adm_roles_on_use_yn"
   end
 
+  create_table "adm_user_menu_permissions", force: :cascade do |t|
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "menu_cd", limit: 20, null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn", limit: 1, default: "Y", null: false
+    t.integer "user_id", null: false
+    t.index ["menu_cd"], name: "index_adm_user_menu_permissions_on_menu_cd"
+    t.index ["use_yn"], name: "index_adm_user_menu_permissions_on_use_yn"
+    t.index ["user_id", "menu_cd"], name: "index_user_menu_permissions_on_user_and_menu", unique: true
+    t.index ["user_id"], name: "index_adm_user_menu_permissions_on_user_id"
+  end
+
   create_table "adm_users", force: :cascade do |t|
     t.string "address"
     t.datetime "created_at", null: false
@@ -214,8 +228,33 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_20_090000) do
     t.index ["user_id"], name: "index_sessions_on_user_id"
   end
 
+  create_table "wm_workplaces", force: :cascade do |t|
+    t.string "addr", limit: 300
+    t.string "addr_dtl", limit: 300
+    t.string "client_cd", limit: 50
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "fax_no", limit: 30
+    t.string "nation_cd", limit: 20
+    t.string "prop_cd", limit: 50
+    t.text "remk"
+    t.string "tel_no", limit: 30
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn", limit: 1, default: "Y", null: false
+    t.string "workpl_cd", limit: 50, null: false
+    t.string "workpl_nm", limit: 100, null: false
+    t.string "workpl_type", limit: 50
+    t.string "zip_cd", limit: 20
+    t.index ["use_yn"], name: "index_wm_workplaces_on_use_yn"
+    t.index ["workpl_cd"], name: "index_wm_workplaces_on_workpl_cd", unique: true
+    t.index ["workpl_nm"], name: "index_wm_workplaces_on_workpl_nm"
+    t.index ["workpl_type"], name: "index_wm_workplaces_on_workpl_type"
+  end
+
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "adm_user_menu_permissions", "adm_users", column: "user_id"
   add_foreign_key "adm_users", "adm_depts", column: "dept_id"
   add_foreign_key "adm_users", "adm_roles", column: "role_id"
   add_foreign_key "excel_import_tasks", "adm_users", column: "requested_by_id"

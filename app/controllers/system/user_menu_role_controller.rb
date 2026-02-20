@@ -19,15 +19,17 @@ class System::UserMenuRoleController < System::BaseController
   end
 
   def menus_by_user_role
+    user_id_code = params[:user_id_code].to_s.strip
     role_cd = params[:role_cd].to_s.strip.upcase
+    user = User.find_by(user_id_code: user_id_code)
     role = AdmRole.find_by(role_cd: role_cd)
 
-    if role.nil?
+    if role.nil? || user.nil?
       render json: []
       return
     end
 
-    menus = AdmMenu.active.ordered
+    menus = menus_by_permission(user)
     render json: menus.map { |menu| menu_json(menu) }
   end
 
@@ -75,5 +77,20 @@ class System::UserMenuRoleController < System::BaseController
         menu_level: menu.menu_level,
         sort_order: menu.sort_order
       }
+    end
+
+    def menus_by_permission(user)
+      if !defined?(AdmUserMenuPermission) || !AdmUserMenuPermission.table_exists?
+        return AdmMenu.active.ordered
+      end
+
+      menu_codes = AdmUserMenuPermission.active.where(user_id: user.id).pluck(:menu_cd)
+      if menu_codes.empty?
+        AdmMenu.none
+      else
+        AdmMenu.active.where(menu_cd: menu_codes).ordered
+      end
+    rescue ActiveRecord::NoDatabaseError, ActiveRecord::StatementInvalid
+      AdmMenu.active.ordered
     end
 end

@@ -3,6 +3,7 @@ class User < ApplicationRecord
 
   has_secure_password
   has_many :sessions, dependent: :destroy
+  has_many :menu_permissions, class_name: "AdmUserMenuPermission", dependent: :destroy
   has_one_attached :photo
   belongs_to :dept, class_name: "AdmDept", optional: true
   belongs_to :role, class_name: "AdmRole", optional: true

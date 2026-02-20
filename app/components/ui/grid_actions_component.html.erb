@@ -1,0 +1,35 @@
+<style>
+  .grid-action-btn svg {
+    color: #c9d1d9;
+    transition: color 0.15s ease;
+  }
+  .grid-action-btn:hover svg {
+    color: #58a6ff;
+  }
+  .grid-action-btn.grid-action-excel:hover svg {
+    color: #217346;
+  }
+</style>
+
+<div class="inline-flex items-center gap-0.5 ml-3"
+     data-controller="grid-actions"
+     data-grid-actions-grid-id-value="<%= grid_id %>">
+  <button type="button"
+          class="grid-action-btn p-1.5 rounded hover:bg-[#30363d] transition-colors"
+          title="컬럼 상태 저장"
+          data-action="click->grid-actions#saveColumnState">
+    <%= helpers.lucide_icon("save", css_class: "w-4 h-4") %>
+  </button>
+  <button type="button"
+          class="grid-action-btn p-1.5 rounded hover:bg-[#30363d] transition-colors"
+          title="컬럼 상태 초기화"
+          data-action="click->grid-actions#resetColumnState">
+    <%= helpers.lucide_icon("rotate-ccw", css_class: "w-4 h-4") %>
+  </button>
+  <button type="button"
+          class="grid-action-btn grid-action-excel p-1.5 rounded hover:bg-[#30363d] transition-colors"
+          title="엑셀 다운로드"
+          data-action="<%= resolved_excel_action %>">
+    <%= helpers.lucide_icon("file-down", css_class: "w-4 h-4") %>
+  </button>
+</div>

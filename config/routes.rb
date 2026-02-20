@@ -71,5 +71,11 @@ Rails.application.routes.draw do
     end
   end
 
+  namespace :wm do
+    resources :workplace, controller: :workplace, only: [ :index ] do
+      post :batch_save, on: :collection
+    end
+  end
+
   get "up" => "rails/health#show", as: :rails_health_check
 end

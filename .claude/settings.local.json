@@ -33,7 +33,8 @@
       "Bash(bin/rails active_storage:install:*)",
       "Bash(bundle show:*)",
       "Bash(bin/rails tailwindcss:install:*)",
-      "Bash(bin/rails tailwindcss:build:*)"
+      "Bash(bin/rails tailwindcss:build:*)",
+      "Bash(find:*)"
     ]
   }
 }

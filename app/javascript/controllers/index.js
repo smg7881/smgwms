@@ -9,6 +9,9 @@ application.register("tabs", TabsController)
 import AgGridController from "controllers/ag_grid_controller"
 application.register("ag-grid", AgGridController)
 
+import GridActionsController from "controllers/grid_actions_controller"
+application.register("grid-actions", GridActionsController)
+
 import MenuCrudController from "controllers/menu_crud_controller"
 application.register("menu-crud", MenuCrudController)
 
@@ -26,6 +29,9 @@ application.register("code-grid", CodeGridController)
 
 import RoleGridController from "controllers/role_grid_controller"
 application.register("role-grid", RoleGridController)
+
+import WorkplaceGridController from "controllers/workplace_grid_controller"
+application.register("workplace-grid", WorkplaceGridController)
 
 import RoleUserGridController from "controllers/role_user_grid_controller"
 application.register("role-user-grid", RoleUserGridController)

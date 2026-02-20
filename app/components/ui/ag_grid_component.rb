@@ -11,7 +11,7 @@ class Ui::AgGridComponent < ApplicationComponent
 
   def initialize(columns:, url: nil, row_data: nil, pagination: true,
                  page_size: 20, height: "500px", row_selection: nil,
-                 server_pagination: false, **html_options)
+                 server_pagination: false, grid_id: nil, **html_options)
     @columns = columns
     @url = url
     @row_data = row_data
@@ -20,13 +20,14 @@ class Ui::AgGridComponent < ApplicationComponent
     @height = height
     @row_selection = row_selection
     @server_pagination = server_pagination
+    @grid_id = grid_id
     @html_options = html_options
   end
 
   private
     attr_reader :columns, :url, :row_data, :pagination,
                 :page_size, :height, :row_selection, :server_pagination,
-                :html_options
+                :grid_id, :html_options
 
     def safe_columns
       @safe_columns ||= sanitize_column_defs(columns)
@@ -44,6 +45,7 @@ class Ui::AgGridComponent < ApplicationComponent
       data["ag-grid-row-data-value"] = row_data.to_json if row_data.present?
       data["ag-grid-row-selection-value"] = row_selection if row_selection.present?
       data["ag-grid-server-pagination-value"] = server_pagination if server_pagination
+      data["ag-grid-grid-id-value"] = grid_id if grid_id.present?
       data
     end
 

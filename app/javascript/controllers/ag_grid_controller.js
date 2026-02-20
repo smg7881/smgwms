@@ -90,7 +90,8 @@ export default class extends Controller {
     pageSize: { type: Number, default: 20 },
     height: { type: String, default: "500px" },
     rowSelection: { type: String, default: "" },
-    serverPagination: { type: Boolean, default: false }
+    serverPagination: { type: Boolean, default: false },
+    gridId: { type: String, default: "" }
   }
 
   connect() {
@@ -179,10 +180,30 @@ export default class extends Controller {
       this.gridApi.setGridOption("rowData", this.rowDataValue)
     }
 
+    this.#restoreColumnState()
+
     this.element.dispatchEvent(new CustomEvent("ag-grid:ready", {
       bubbles: true,
       detail: { api: this.gridApi, controller: this }
     }))
+  }
+
+  saveColumnState(gridId) {
+    const id = gridId || this.gridIdValue
+    if (!id || !this.isApiAlive(this.gridApi)) return
+
+    const state = this.gridApi.getColumnState()
+    localStorage.setItem(this.#storageKey(id), JSON.stringify(state))
+    this.#showToast("컬럼 상태가 저장되었습니다")
+  }
+
+  resetColumnState(gridId) {
+    const id = gridId || this.gridIdValue
+    if (!id || !this.isApiAlive(this.gridApi)) return
+
+    localStorage.removeItem(this.#storageKey(id))
+    this.gridApi.resetColumnState()
+    this.#showToast("컬럼 상태가 초기화되었습니다")
   }
 
   teardown() {
@@ -402,5 +423,45 @@ export default class extends Controller {
 
   isApiAlive(api) {
     return Boolean(api) && !(typeof api.isDestroyed === "function" && api.isDestroyed())
+  }
+
+  #restoreColumnState() {
+    const id = this.gridIdValue
+    if (!id || !this.isApiAlive(this.gridApi)) return
+
+    const saved = localStorage.getItem(this.#storageKey(id))
+    if (!saved) return
+
+    try {
+      const state = JSON.parse(saved)
+      this.gridApi.applyColumnState({ state, applyOrder: true })
+    } catch (e) {
+      console.warn("[ag-grid] failed to restore column state:", e)
+      localStorage.removeItem(this.#storageKey(id))
+    }
+  }
+
+  #storageKey(gridId) {
+    return `ag-grid-state:${gridId}`
+  }
+
+  #showToast(message) {
+    const toast = document.createElement("div")
+    toast.textContent = message
+    toast.style.cssText = [
+      "position:fixed", "bottom:24px", "right:24px", "z-index:9999",
+      "padding:10px 20px", "border-radius:8px",
+      "background:#1c2333", "color:#e6edf3", "border:1px solid #30363d",
+      "font-size:13px", "box-shadow:0 4px 12px rgba(0,0,0,0.4)",
+      "opacity:0", "transition:opacity 0.3s ease"
+    ].join(";")
+
+    document.body.appendChild(toast)
+    requestAnimationFrame(() => { toast.style.opacity = "1" })
+
+    setTimeout(() => {
+      toast.style.opacity = "0"
+      toast.addEventListener("transitionend", () => toast.remove())
+    }, 2000)
   }
 }

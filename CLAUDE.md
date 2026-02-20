@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 언어 규칙
+
+모든 답변은 반드시 한국어로 작성합니다.
+
 ## 프로젝트 개요
 
 Ruby 4.0.1 / Rails 8.1 기반 WMS(창고관리시스템) 관리자 애플리케이션입니다. SQLite3 데이터베이스, Propshaft + Importmap + Hotwire(Turbo/Stimulus) 프론트엔드 스택을 사용합니다. UI는 한국어입니다.
