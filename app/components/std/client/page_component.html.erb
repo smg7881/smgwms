@@ -1,0 +1,145 @@
+<div class="std-client-screen"
+     data-controller="client-grid"
+     data-action="ag-grid:ready->client-grid#registerGrid"
+     data-client-grid-master-batch-url-value="<%= master_batch_save_url %>"
+     data-client-grid-contact-batch-url-template-value="<%= contact_batch_url_template %>"
+     data-client-grid-contact-list-url-template-value="<%= contact_list_url_template %>"
+     data-client-grid-workplace-batch-url-template-value="<%= workplace_batch_url_template %>"
+     data-client-grid-workplace-list-url-template-value="<%= workplace_list_url_template %>"
+     data-client-grid-sections-url-value="<%= section_list_url %>"
+     data-client-grid-section-map-value="<%= section_map_json %>"
+     data-client-grid-selected-client-value="<%= selected_client.to_s %>">
+  <%= render Ui::SearchFormComponent.new(
+    url: create_url,
+    fields: search_fields,
+    cols: 4,
+    enable_collapse: true,
+    class: "std-client-search"
+  ) %>
+
+  <section class="std-client-master">
+    <div class="std-client-section-head">
+      <h3 class="std-client-section-title">
+        <%= helpers.lucide_icon("building-2", css_class: "w-4 h-4") %>
+        거래처 목록
+        <%= render Ui::GridActionsComponent.new(grid_id: "std-client-master") %>
+      </h3>
+      <%= render Ui::GridToolbarComponent.new(
+        buttons: [
+          { label: "행추가", class: "btn btn-sm btn-primary", action: "click->client-grid#addMasterRow" },
+          { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->client-grid#deleteMasterRows" },
+          { label: "저장", class: "btn btn-sm btn-success", action: "click->client-grid#saveMasterRows" }
+        ]
+      ) %>
+    </div>
+
+    <%= render Ui::AgGridComponent.new(
+      columns: master_columns,
+      url: grid_url,
+      height: "250px",
+      page_size: 20,
+      row_selection: "multiple",
+      grid_id: "std-client-master",
+      data: { client_grid_target: "masterGrid" }
+    ) %>
+  </section>
+
+  <section class="std-client-detail">
+    <div class="std-client-selected" data-client-grid-target="selectedClientLabel"><%= selected_client_label %></div>
+
+    <div class="std-client-tabs">
+      <button type="button" class="std-client-tab is-active" aria-selected="true" data-client-grid-target="tabButton" data-tab="basic" data-action="click->client-grid#switchTab">거래처기본정보</button>
+      <button type="button" class="std-client-tab" aria-selected="false" data-client-grid-target="tabButton" data-tab="additional" data-action="click->client-grid#switchTab">거래처추가정보</button>
+      <button type="button" class="std-client-tab" aria-selected="false" data-client-grid-target="tabButton" data-tab="contacts" data-action="click->client-grid#switchTab">거래처담당자</button>
+      <button type="button" class="std-client-tab" aria-selected="false" data-client-grid-target="tabButton" data-tab="workplaces" data-action="click->client-grid#switchTab">거래처작업장</button>
+    </div>
+
+    <div class="std-client-panel is-active" data-client-grid-target="tabPanel" data-tab-panel="basic">
+      <%= render Ui::ResourceFormComponent.new(
+        model: detail_form_model,
+        url: "#",
+        cols: 2,
+        show_buttons: false,
+        target_controller: "client_grid",
+        fields: basic_form_fields,
+        form_data: detail_form_data,
+        form_html: {
+          id: "std-client-basic-form",
+          autocomplete: "off",
+          novalidate: true
+        },
+        class: "std-client-resource-form"
+      ) %>
+    </div>
+
+    <div class="std-client-panel" data-client-grid-target="tabPanel" data-tab-panel="additional" hidden>
+      <%= render Ui::ResourceFormComponent.new(
+        model: detail_form_model,
+        url: "#",
+        cols: 2,
+        show_buttons: false,
+        target_controller: "client_grid",
+        fields: additional_form_fields,
+        form_data: detail_form_data,
+        form_html: {
+          id: "std-client-additional-form",
+          autocomplete: "off",
+          novalidate: true
+        },
+        class: "std-client-resource-form"
+      ) %>
+    </div>
+
+    <div class="std-client-panel" data-client-grid-target="tabPanel" data-tab-panel="contacts" hidden>
+      <div class="std-client-section-head">
+        <h3 class="std-client-section-title">
+          <%= helpers.lucide_icon("users", css_class: "w-4 h-4") %>
+          거래처담당자
+          <%= render Ui::GridActionsComponent.new(grid_id: "std-client-contact") %>
+        </h3>
+        <%= render Ui::GridToolbarComponent.new(
+          buttons: [
+            { label: "행추가", class: "btn btn-sm btn-primary", action: "click->client-grid#addContactRow" },
+            { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->client-grid#deleteContactRows" }
+          ]
+        ) %>
+      </div>
+
+      <%= render Ui::AgGridComponent.new(
+        columns: contact_columns,
+        row_data: [],
+        height: "230px",
+        page_size: 20,
+        row_selection: "multiple",
+        grid_id: "std-client-contact",
+        data: { client_grid_target: "contactsGrid" }
+      ) %>
+    </div>
+
+    <div class="std-client-panel" data-client-grid-target="tabPanel" data-tab-panel="workplaces" hidden>
+      <div class="std-client-section-head">
+        <h3 class="std-client-section-title">
+          <%= helpers.lucide_icon("map-pinned", css_class: "w-4 h-4") %>
+          거래처작업장
+          <%= render Ui::GridActionsComponent.new(grid_id: "std-client-workplace") %>
+        </h3>
+        <%= render Ui::GridToolbarComponent.new(
+          buttons: [
+            { label: "행추가", class: "btn btn-sm btn-primary", action: "click->client-grid#addWorkplaceRow" },
+            { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->client-grid#deleteWorkplaceRows" }
+          ]
+        ) %>
+      </div>
+
+      <%= render Ui::AgGridComponent.new(
+        columns: workplace_columns,
+        row_data: [],
+        height: "230px",
+        page_size: 20,
+        row_selection: "multiple",
+        grid_id: "std-client-workplace",
+        data: { client_grid_target: "workplacesGrid" }
+      ) %>
+    </div>
+  </section>
+</div>

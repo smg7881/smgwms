@@ -1,0 +1,53 @@
+ko:
+  errors:
+    format: "%{attribute} %{message}"
+    messages:
+      blank: "필수 입력 항목입니다."
+      taken: "이미 사용 중입니다."
+      too_long: "최대 %{count}자까지 입력할 수 있습니다."
+      inclusion: "허용되지 않은 값입니다."
+      invalid: "형식이 올바르지 않습니다."
+      not_a_number: "숫자만 입력할 수 있습니다."
+      required: "필수 입력 항목입니다."
+
+  activerecord:
+    models:
+      std_bzac_mst: "거래처"
+      std_bzac_ofcr: "거래처 담당자"
+      std_bzac_workpl: "거래처 작업장"
+    attributes:
+      std_bzac_mst:
+        bzac_cd: "거래처코드"
+        bzac_nm: "거래처명"
+        mngt_corp_cd: "관리법인"
+        bizman_no: "사업자번호"
+        bzac_sctn_grp_cd: "거래처구분그룹"
+        bzac_sctn_cd: "거래처구분"
+        bzac_kind_cd: "거래처종류"
+        ctry_cd: "국가"
+        rpt_sales_emp_cd: "대표영업사원"
+        aply_strt_day_cd: "적용시작일"
+        use_yn_cd: "사용여부"
+      std_bzac_ofcr:
+        bzac_cd: "거래처코드"
+        seq_cd: "순번"
+        nm_cd: "담당자명"
+        ofic_telno_cd: "전화번호"
+        mbp_no_cd: "휴대전화"
+        email_cd: "이메일"
+        rpt_yn_cd: "대표여부"
+        use_yn_cd: "사용여부"
+      std_bzac_workpl:
+        bzac_cd: "거래처코드"
+        seq_cd: "순번"
+        workpl_nm_cd: "작업장명"
+        workpl_sctn_cd: "작업장구분"
+        ofcr_cd: "담당자코드"
+        use_yn_cd: "사용여부"
+    errors:
+      models:
+        std_bzac_mst:
+          attributes:
+            bizman_no:
+              invalid_10_digits: "10자리 숫자여야 합니다."
+              not_unique_without_representative: "대표거래처가 비어 있을 때는 중복될 수 없습니다."

@@ -1,0 +1,3 @@
+<%= turbo_frame_tag "main-content" do %>
+  <%= render Std::Client::PageComponent.new(query_params: request.query_parameters, selected_client: @selected_client) %>
+<% end %>

@@ -92,5 +92,21 @@ Rails.application.routes.draw do
     end
   end
 
+  namespace :std do
+    resources :clients, controller: :clients, only: [ :index ] do
+      collection do
+        get :sections
+        post :batch_save
+      end
+
+      member do
+        get :contacts
+        get :workplaces
+        post :batch_save_contacts
+        post :batch_save_workplaces
+      end
+    end
+  end
+
   get "up" => "rails/health#show", as: :rails_health_check
 end

@@ -791,3 +791,147 @@ trix-editor:focus {
   border-color: var(--color-accent);
   box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.2);
 }
+
+/* STD Client screen (dark mode) */
+.std-client-screen {
+  background: linear-gradient(180deg, rgba(13, 17, 26, 0.98) 0%, rgba(11, 16, 23, 0.98) 100%);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.std-client-screen .std-client-search {
+  background: rgba(22, 27, 34, 0.72);
+  border-color: var(--color-border);
+}
+
+.std-client-screen .std-client-search label {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.std-client-master,
+.std-client-detail {
+  background: rgba(22, 27, 34, 0.72);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.std-client-detail {
+  margin-top: 10px;
+}
+
+.std-client-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.std-client-section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.std-client-selected {
+  margin-bottom: 8px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.std-client-tabs {
+  display: flex !important;
+  visibility: visible;
+  opacity: 1;
+  gap: 6px;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  overflow-x: auto;
+  min-height: 36px;
+}
+
+.std-client-tab {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  visibility: visible;
+  opacity: 1;
+  border: 1px solid var(--color-border);
+  border-radius: 7px 7px 0 0;
+  background: rgba(28, 35, 51, 0.9);
+  color: var(--color-text-secondary);
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.std-client-tab:hover {
+  background: rgba(36, 46, 66, 0.95);
+  color: var(--color-text-primary);
+}
+
+.std-client-tab.is-active {
+  border-color: var(--color-accent);
+  background: rgba(88, 166, 255, 0.16);
+  color: #d5e8ff;
+}
+
+.std-client-panel {
+  display: none;
+}
+
+.std-client-panel.is-active {
+  display: block;
+}
+
+.std-client-resource-form {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.std-client-resource-form .grid {
+  gap: 8px 10px;
+}
+
+.std-client-resource-form [data-resource-form-target="fieldGroup"] label {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.std-client-resource-form .form-grid-input,
+.std-client-resource-form .form-grid-select {
+  min-height: 34px;
+  background: rgba(15, 19, 28, 0.95);
+  border-color: #3a4658;
+  color: var(--color-text-primary);
+}
+
+.std-client-resource-form .form-grid-input:disabled,
+.std-client-resource-form .form-grid-select:disabled {
+  background: rgba(10, 13, 20, 0.9);
+  color: #6f7b89;
+  border-color: #2d3644;
+}
+
+.std-client-resource-form .rf-error-msg {
+  min-height: 10px;
+  margin-top: 1px;
+}
+
+.std-client-save-wrap {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}

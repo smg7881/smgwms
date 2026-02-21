@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_21_014000) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_21_102000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -245,6 +245,99 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_21_014000) do
     t.integer "user_id", null: false
     t.index ["token"], name: "index_sessions_on_token", unique: true
     t.index ["user_id"], name: "index_sessions_on_user_id"
+  end
+
+  create_table "std_bzac_mst", force: :cascade do |t|
+    t.string "acnt_no_cd", limit: 50
+    t.string "addr_cd", limit: 300
+    t.string "addr_dtl_cd", limit: 300
+    t.date "aply_end_day_cd"
+    t.date "aply_strt_day_cd", null: false
+    t.string "bilg_bzac_cd", limit: 20
+    t.string "bizman_no", limit: 20, null: false
+    t.string "branch_yn_cd", limit: 1, default: "N", null: false
+    t.string "bzac_cd", limit: 20, null: false
+    t.string "bzac_kind_cd", limit: 50, null: false
+    t.string "bzac_nm", limit: 200, null: false
+    t.string "bzac_sctn_cd", limit: 50, null: false
+    t.string "bzac_sctn_grp_cd", limit: 50, null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "ctry_cd", limit: 10, default: "KR", null: false
+    t.string "elec_taxbill_yn_cd", limit: 1, default: "N", null: false
+    t.string "fnc_or_cd", limit: 50
+    t.string "if_yn_cd", limit: 1, default: "N", null: false
+    t.string "mngt_corp_cd", limit: 50, null: false
+    t.string "mngt_corp_nm", limit: 100
+    t.string "pur_bzac_yn_cd", limit: 1, default: "Y", null: false
+    t.text "remk"
+    t.string "rpt_bzac_cd", limit: 20
+    t.string "rpt_sales_emp_cd", limit: 50, null: false
+    t.string "rpt_sales_emp_nm", limit: 100
+    t.string "sell_bzac_yn_cd", limit: 1, default: "Y", null: false
+    t.string "tpl_logis_yn_cd", limit: 1, default: "N", null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "upper_bzac_cd", limit: 20
+    t.string "use_yn_cd", limit: 1, default: "Y", null: false
+    t.string "zip_cd", limit: 20
+    t.index ["bizman_no"], name: "index_std_bzac_mst_on_bizman_no"
+    t.index ["bzac_cd"], name: "index_std_bzac_mst_on_bzac_cd", unique: true
+    t.index ["bzac_nm"], name: "index_std_bzac_mst_on_bzac_nm"
+    t.index ["bzac_sctn_cd"], name: "index_std_bzac_mst_on_bzac_sctn_cd"
+    t.index ["bzac_sctn_grp_cd"], name: "index_std_bzac_mst_on_bzac_sctn_grp_cd"
+    t.index ["mngt_corp_cd"], name: "index_std_bzac_mst_on_mngt_corp_cd"
+    t.index ["use_yn_cd"], name: "index_std_bzac_mst_on_use_yn_cd"
+  end
+
+  create_table "std_bzac_ofcr", force: :cascade do |t|
+    t.string "bzac_cd", limit: 20, null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "email_cd", limit: 120
+    t.string "mbp_no_cd", limit: 30
+    t.string "nm_cd", limit: 100, null: false
+    t.string "ofic_telno_cd", limit: 30
+    t.string "rpt_yn_cd", limit: 1, default: "N", null: false
+    t.integer "seq_cd", null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn_cd", limit: 1, default: "Y", null: false
+    t.index ["bzac_cd", "seq_cd"], name: "index_std_bzac_ofcr_on_bzac_cd_and_seq_cd", unique: true
+    t.index ["bzac_cd"], name: "index_std_bzac_ofcr_on_bzac_cd"
+    t.index ["use_yn_cd"], name: "index_std_bzac_ofcr_on_use_yn_cd"
+  end
+
+  create_table "std_bzac_workpl", force: :cascade do |t|
+    t.string "bzac_cd", limit: 20, null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "ofcr_cd", limit: 50
+    t.integer "seq_cd", null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn_cd", limit: 1, default: "Y", null: false
+    t.string "workpl_nm_cd", limit: 120, null: false
+    t.string "workpl_sctn_cd", limit: 50
+    t.index ["bzac_cd", "seq_cd"], name: "index_std_bzac_workpl_on_bzac_cd_and_seq_cd", unique: true
+    t.index ["bzac_cd"], name: "index_std_bzac_workpl_on_bzac_cd"
+    t.index ["use_yn_cd"], name: "index_std_bzac_workpl_on_use_yn_cd"
+  end
+
+  create_table "std_cm04004", force: :cascade do |t|
+    t.text "after_value"
+    t.text "before_value"
+    t.string "bzac_cd", limit: 20, null: false
+    t.datetime "changed_at"
+    t.string "changed_by", limit: 50
+    t.string "changed_col_nm", limit: 100, null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.integer "hist_seq", null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.index ["bzac_cd", "changed_at"], name: "index_std_cm04004_on_bzac_cd_and_changed_at"
+    t.index ["bzac_cd", "hist_seq"], name: "index_std_cm04004_on_bzac_cd_and_hist_seq", unique: true
   end
 
   create_table "wm_areas", force: :cascade do |t|

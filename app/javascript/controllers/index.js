@@ -78,3 +78,7 @@ application.register("user-menu-role-grid", UserMenuRoleGridController)
 // Lucide ì•„ì´ì½˜ ë Œë”ë§/ì—…ë°ì´íŠ¸ ê´€ë¦¬ ì»¨íŠ¸ë¡¤ëŸ¬
 import LucideController from "controllers/lucide_controller"
 application.register("lucide", LucideController)
+
+// °Å·¡Ã³ °ü¸®¿ë ¸¶½ºÅÍ/ÇÏÀ§±×¸®µå ÅëÇÕ ÄÁÆ®·Ñ·¯
+import ClientGridController from "controllers/client_grid_controller"
+application.register("client-grid", ClientGridController)

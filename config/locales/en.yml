@@ -29,3 +29,11 @@
 
 en:
   hello: "Hello world"
+  activerecord:
+    errors:
+      models:
+        std_bzac_mst:
+          attributes:
+            bizman_no:
+              invalid_10_digits: "must be 10 digits"
+              not_unique_without_representative: "must be unique when representative client is blank"
