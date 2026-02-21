@@ -1,27 +1,35 @@
-﻿import BaseGridController from "controllers/base_grid_controller"
+﻿/**
+ * code_grid_controller.js
+ * 
+ * [공통] BaseGridController를 상속하는 마스터-디테일(1:N) 구조의 투인원(2 in 1) 컨트롤러입니다.
+ * - 좌측(혹은 위)엔 그룹코드(Master) 그리드, 우측엔 상세코드(Detail) 그리드가 공존합니다.
+ * - 마스터 행을 클릭하면 하위 디테일 그리드가 Ajax로 재로딩됩니다.
+ * - Master, Detail 각각 독립적인 C/U/D 행위를 할 수 있으며 저장 API도 각각 나뉩니다.
+ */
+import BaseGridController from "controllers/base_grid_controller"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
 import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
 import { isApiAlive, postJson, hasChanges, fetchJson, setManagerRowData } from "controllers/grid/grid_utils"
 
-// BaseGridController override: 마스터-디테일 2중 그리드 CRUD와 선택 연동을 확장합니다.
-
 export default class extends BaseGridController {
+  // 타겟 확정 (2개의 거대한 그리드 컨테이너 및 텍스트 라벨)
   static targets = [...BaseGridController.targets, "masterGrid", "detailGrid", "selectedCodeLabel"]
 
+  // 백엔드 엔드포인트 세팅
   static values = {
     ...BaseGridController.values,
-    masterBatchUrl: String,
-    detailBatchUrlTemplate: String,
-    detailListUrlTemplate: String,
-    selectedCode: String
+    masterBatchUrl: String,             // 거시적인 1단계 그룹코드 저장 URL
+    detailBatchUrlTemplate: String,     // 하위 상세코드 배열 저장 URL 템플릿 (':code' 가 치환됨)
+    detailListUrlTemplate: String,      // 특정 부모를 선택했을때 긁어올 상세코드 조회 URL 템플릿
+    selectedCode: String                // 현재 클릭되어 활성화중인 마스터 PK
   }
 
   connect() {
     super.connect()
-    this.initialMasterSyncDone = false
-    this.masterGridEvents = new GridEventManager()
-    this.detailGridController = null
-    this.detailManager = null
+    this.initialMasterSyncDone = false  // 화면 최초 진입 시, 맨 첫째 행을 강제로 포커싱하기 위한 락 
+    this.masterGridEvents = new GridEventManager() // AG Grid의 각종 이벤트리스너 안전 해제 관리용
+    this.detailGridController = null    // 디테일 쪽 네이티브 컨트롤러 캐싱용
+    this.detailManager = null           // 디테일 쪽 독립 CRUD 매니저 캐싱용
   }
 
   disconnect() {
@@ -36,6 +44,7 @@ export default class extends BaseGridController {
     super.disconnect()
   }
 
+  // (오버라이드) 좌측 '그룹코드(Master)' 쪽의 CRUD 명세.
   configureManager() {
     return {
       pkFields: ["code"],
@@ -49,17 +58,19 @@ export default class extends BaseGridController {
       comparableFields: ["code_name", "use_yn"],
       firstEditCol: "code",
       pkLabels: { code: "코드" },
+      // 마스터 그리드가 Ajax로 확 새로 그려졌을 때 진입되는 콜백
       onRowDataUpdated: () => {
         this.detailManager?.resetTracking()
 
         if (!this.initialMasterSyncDone && isApiAlive(this.detailManager?.api)) {
           this.initialMasterSyncDone = true
-          this.syncMasterSelectionAfterLoad()
+          this.syncMasterSelectionAfterLoad() // 최상단 행 오토 포커스 호출
         }
       }
     }
   }
 
+  // (자체추가) 우측 '상세코드(Detail)' 쪽의 CRUD 명세.
   configureDetailManager() {
     return {
       pkFields: ["detail_code"],
@@ -72,7 +83,7 @@ export default class extends BaseGridController {
         use_yn: "trimUpperDefault:Y"
       },
       defaultRow: {
-        code: "",
+        code: "", // 외래키로 마스터 코드 주입 필요
         detail_code: "",
         detail_code_name: "",
         short_name: "",
@@ -87,6 +98,7 @@ export default class extends BaseGridController {
     }
   }
 
+  // Base의 DOM 연결 이벤트를 가로채서, 마스터냐 디테일이냐에 따라 관리자를 2가닥으로 물 물려줌
   registerGrid(event) {
     const registration = resolveAgGridRegistration(event)
     if (!registration) return
@@ -94,8 +106,10 @@ export default class extends BaseGridController {
     const { gridElement, api, controller } = registration
 
     if (gridElement === this.masterGridTarget) {
+      // 마스터 영역은 부모단에서 this.manager 로 자동 등록시키도록 위임
       super.registerGrid(event)
     } else if (gridElement === this.detailGridTarget) {
+      // 디테일 영역은 자체적으로 독자적인 Manager를 생성하여 부착시킴
       if (this.detailManager) {
         this.detailManager.detach()
       }
@@ -104,6 +118,7 @@ export default class extends BaseGridController {
       this.detailManager.attach(api)
     }
 
+    // 마스터/디테일 렌더링이 양쪽 다 끝나서 두 API가 갖추어졌다면, 연관성 및 이벤트를 바인딩함
     if (this.manager?.api && this.detailManager?.api) {
       this.bindMasterGridEvents()
       if (!this.initialMasterSyncDone) {
@@ -113,6 +128,7 @@ export default class extends BaseGridController {
     }
   }
 
+  // 마스터 행 쪼기(클릭)나 방향키 기반 셀 이동 시 항상 감지 
   bindMasterGridEvents() {
     this.masterGridEvents.unbindAll()
     this.masterGridEvents.bind(this.manager?.api, "rowClicked", this.handleMasterRowClicked)
@@ -131,10 +147,13 @@ export default class extends BaseGridController {
     await this.handleMasterRowChange(rowData)
   }
 
+  // 마스터 포커스가 바뀔 때 연쇄동작의 심볼
   async handleMasterRowChange(rowData) {
     if (!isApiAlive(this.detailManager?.api)) return
 
     const code = rowData?.code
+    // 아직 작성중인 새 그룹이거나 삭제대기, 값이 없는 상태라면 
+    // 하위조회가 불가능하므로 빈 디테일 그리드로 비워둠
     if (!code || rowData?.__is_deleted || rowData?.__is_new) {
       this.selectedCodeValue = code || ""
       this.refreshSelectedCodeLabel()
@@ -142,10 +161,13 @@ export default class extends BaseGridController {
       return
     }
 
+    // 정상적으로 DB기존재하는 코드를 짚었다면 디테일 비동기 조회
     this.selectedCodeValue = code
     this.refreshSelectedCodeLabel()
     await this.loadDetailRows(code)
   }
+
+  // --- HTML 버튼 바인딩 파트 --- 
 
   addMasterRow() {
     if (!this.manager) return
@@ -153,6 +175,7 @@ export default class extends BaseGridController {
     const txResult = this.manager.addRow()
     const addedNode = txResult?.add?.[0]
     if (addedNode?.data) {
+      // 행 추가되자마자 포커스를 그쪽으로 옮기고, 내부적으로 디테일은 백지화 됨
       this.handleMasterRowChange(addedNode.data)
     }
   }
@@ -179,6 +202,7 @@ export default class extends BaseGridController {
     await this.reloadMasterRows()
   }
 
+  // 마스터 저장 성공시 화면 리셋 후 첫줄 오토포커스
   async reloadMasterRows() {
     if (!isApiAlive(this.manager?.api)) return
     if (!this.gridController?.urlValue) return
@@ -192,6 +216,7 @@ export default class extends BaseGridController {
     }
   }
 
+  // 0번째 행 강제 포커스
   async syncMasterSelectionAfterLoad() {
     if (!isApiAlive(this.manager?.api) || !isApiAlive(this.detailManager?.api)) return
 
@@ -211,15 +236,18 @@ export default class extends BaseGridController {
     await this.handleMasterRowChange(firstRowNode.data)
   }
 
+  // ===================== [Detail Area] =========================
+
   addDetailRow() {
     if (!this.detailManager) return
-    if (this.blockDetailActionIfMasterChanged()) return
+    if (this.blockDetailActionIfMasterChanged()) return // 마스터가 저장되어 결함없는 상태인지 확인
 
     if (!this.selectedCodeValue) {
       alert("코드를 먼저 선택해주세요.")
       return
     }
 
+    // 그룹코드를 강제할당하여 추가
     this.detailManager.addRow({ code: this.selectedCodeValue })
   }
 
@@ -246,6 +274,7 @@ export default class extends BaseGridController {
       return
     }
 
+    // /codes/:code/details 형식 치환
     const batchUrl = this.detailBatchUrlTemplateValue.replace(":code", encodeURIComponent(this.selectedCodeValue))
     const ok = await postJson(batchUrl, operations)
     if (!ok) return
@@ -275,6 +304,7 @@ export default class extends BaseGridController {
     setManagerRowData(this.detailManager, [])
   }
 
+  // 상단 부제목 영역에 가시화용
   refreshSelectedCodeLabel() {
     if (!this.hasSelectedCodeLabelTarget) return
 
@@ -285,6 +315,7 @@ export default class extends BaseGridController {
     }
   }
 
+  // 마스터쪽에 C/U/D가 발생한 상태인지 체크 (종속성 무결성 보호장치용)
   hasMasterPendingChanges() {
     if (!this.manager) return false
     return hasChanges(this.manager.buildOperations())
@@ -297,5 +328,3 @@ export default class extends BaseGridController {
     return true
   }
 }
-
-

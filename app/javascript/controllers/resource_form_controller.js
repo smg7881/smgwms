@@ -1,128 +1,141 @@
 import { Controller } from "@hotwired/stimulus"
 
-// 리소스 폼을 제어하는 Stimulus 컨트롤러
-// 폼 유효성 검사, 의존성 필드 처리, 로딩 상태 관리 등을 담당합니다.
+/**
+ * resource_form_controller.js
+ * 
+ * CRUD 모달 창 내부 또는 개별 작성/수정 화면 등의 메인 '입력 폼(Form)' 요소를 제어하는 컨트롤러입니다.
+ * - [핵심기능 1] 브라우저 기본 유효성(required, regexp 등) 통과 여부를 검사하고 시각적인 에러 메시지를 통제
+ * - [핵심기능 2] 'A를 선택하면 B목록이 바뀐다'와 같은 Select 필드 간 계층형 종속(의존성) 로직 제어
+ * - [핵심기능 3] 통신 중 중복 클릭을 막기 위한 버튼 스피너/락(Lock) 처리
+ */
 export default class extends Controller {
+  // 타겟 바인딩 - 폼 내 각 구성요소 추적 가능
   static targets = [
-    "form",             // 폼 엘리먼트
-    "fieldGroup",       // 각 필드를 감싸는 그룹 (레이블 + 입력)
-    "input",            // 입력 필드 (input, select, textarea 등)
-    "dependentField",   // 다른 필드 값에 의존하는 필드
-    "submitBtn",        // 제출 버튼
-    "submitText",       // 제출 버튼 텍스트
-    "submitSpinner",    // 로딩 스피너
-    "resetBtn",         // 초기화 버튼
-    "errorSummary",     // 상단 에러 메시지 영역
-    "buttonGroup"       // 버튼 그룹 컨테이너
+    "form",             // 모달/페이지 내 실제 <form> 엘리먼트
+    "fieldGroup",       // 각 입력단(Label + Input + Error Span 구조)을 감싸는 div 래퍼 그룹
+    "input",            // 입력 가능한 모든 타겟 필드 (input, select, textarea 모두 포괄)
+    "dependentField",   // 다른 select 조건에 따라 바뀔 "의존받는 자식 필드"
+    "submitBtn",        // 전송(저장) 버튼
+    "submitText",       // 전송 버튼 안의 글씨
+    "submitSpinner",    // 전송 버튼 안의 빙글빙글 도는 스피너 로딩 HTML
+    "resetBtn",         // 초기화/취소 버튼
+    "errorSummary",     // 상단에 위치하여 전역 에러를 크게 보여줄 박스 영역
+    "buttonGroup"       // 하단 버튼들 묶음 랩퍼
   ]
 
+  // 설정용 상태 변수
   static values = {
-    loading: { type: Boolean, default: false }, // 로딩 상태 (true/false)
-    dependencies: { type: Object, default: {} } // 필드 간 의존성 설정 객체
+    loading: { type: Boolean, default: false }, // 통신 진행 혹은 대기 상태 여부 기록 (버튼 잠금 제어용)
+    // dependencies 포맷: { "child_field_name": { parent: "parent_field_name", filter_key: "비교키값" } }
+    dependencies: { type: Object, default: {} }
   }
 
   connect() {
-    // 컨트롤러 연결 시 의존성 필드 초기화
+    // 컨트롤러 DOM 부착 완료 직후 의존성 필드 초기 렌더링 검사 실시
     this.#initializeDependencies()
   }
 
   // ── Actions ──
 
-  // 폼 제출 처리
+  // 사용자가 "저장" 버튼 클릭이나 엔터로 폼 제출(onsubmit)을 시도할 경우 중간에서 가로채는 로직
   submit(event) {
-    // 로딩 중이면 중복 제출 방지
+    // 로딩 중(처리 중)이면 백엔드로 중복 요청 발사되는 것을 막음(이중 결제/저장 방지)
     if (this.loadingValue) {
       event.preventDefault()
       return
     }
 
-    // 브라우저 기본 유효성 검사 실행
+    // HTML5 네이티브 속성에 따른 규격(required, max length 등)에 들어맞는지 1차 검증
     if (!this.formTarget.checkValidity()) {
-      event.preventDefault()
-      this.formTarget.reportValidity() // 브라우저 에러 메시지 표시
-      this.#highlightInvalidFields()   // 유효하지 않은 필드 강조
+      event.preventDefault()           // 폼 전송 일단 정지
+      this.formTarget.reportValidity() // 브라우저 제공 경고풍선 노출
+      this.#highlightInvalidFields()   // 자체 구현한 빨간색 테두리 등을 위해 강제 스타일 부착
       return
     }
 
-    // 유효성 검사 통과 시 로딩 상태로 변경
+    // 유효성에 문제 없으면 스피너 돌리고 버튼 비활성화를 위해 값을 True로 바꿈 (자동으로 loadingValueChanged 발생)
     this.loadingValue = true
   }
 
-  // 폼 초기화
+  // 사용자가 폼 내용을 비우기(초기화) 버튼을 클릭할 때 작동
   reset(event) {
     event.preventDefault()
 
-    this.formTarget.reset()       // 폼 리셋
-    this.loadingValue = false     // 로딩 상태 해제
-    this.#clearErrors()           // 에러 메시지 제거
-    this.#initializeDependencies()// 의존성 필드 상태 재설정
+    this.formTarget.reset()       // 브라우저 네이티브 리셋 명령 (value 싹 비우기)
+    this.loadingValue = false     // 로딩 락 풀기
+    this.#clearErrors()           // 빨갛게 물든 에러 메시지 스타일 초기화
+    this.#initializeDependencies()// Select 콤보박스 연결 필드들 옵션 목록도 초기상태로 되돌림
   }
 
-  // 개별 필드 유효성 검사 (input 이벤트 등에서 호출)
+  // 필드 개별 변경 이벤트(oninput, onchange 등) 발생 시마다 개별 유효성 즉각 반응 UI
   validateField(event) {
     const input = event.target
+    // 필드를 감싼 wrapper. 에러 말풍선을 여기 안에 부착함
     const fieldGroup = input.closest("[data-field-name]")
     if (!fieldGroup) return
 
     if (input.checkValidity()) {
-      // 유효하면 에러 클래스 및 메시지 제거
+      // 값이 올바르게 채워지면 에러 클래스와 말풍선 해제
       input.classList.remove("rf-field-error")
       this.#hideFieldError(fieldGroup)
     } else {
-      // 유효하지 않으면 에러 클래스 추가 및 메시지 표시
+      // 아직 안 맞을 시 다시 빨간 띄 칠하고 이유를 브라우저 Native 메시지로 따옴
       input.classList.add("rf-field-error")
       this.#showFieldError(fieldGroup, input.validationMessage)
     }
   }
 
-  // Select 필드 변경 시 호출 (의존성 처리)
+  // 부모 Select 필드 값 변경을 캐치하여, 연계된 자식 필드 목록을 동적으로 재설정하는 핸들러
   onSelectChange(event) {
     const parentField = event.target.closest("[data-field-name]")
     if (!parentField) return
 
+    // 자신(부모)의 이름을 알고 변경된 밸류를 전달함
     const parentName = parentField.dataset.fieldName
-    // 변경된 부모 필드에 의존하는 자식 필드 업데이트
     this.#updateDependentFields(parentName, event.target.value)
   }
 
   // ── Value Callbacks ──
 
-  // loading 값 변경 시 UI 업데이트
+  // loadingValue 값이 변동될 때 자동 호출 (Stimulus 기본 컨벤션)
   loadingValueChanged() {
+    // 저장 버튼 클릭 방지 상태 토글
     if (this.hasSubmitBtnTarget) {
-      this.submitBtnTarget.disabled = this.loadingValue // 버튼 비활성화
+      this.submitBtnTarget.disabled = this.loadingValue
     }
+    // "저장중..." 스피너 표시 토글
     if (this.hasSubmitTextTarget && this.hasSubmitSpinnerTarget) {
-      this.submitSpinnerTarget.hidden = !this.loadingValue // 스피너 표시/숨김
+      this.submitSpinnerTarget.hidden = !this.loadingValue
     }
   }
 
   // ── Private ──
 
-  // 의존성 설정 초기화
+  // HTML Data 속성으로부터 넘겨받은 {자식: 부모} 종속성 객체를 순회하면서
+  // 부모 셀렉트의 '변경(change)' 이벤트를 가로챌 Stimulus Action을 강제로 주입
   #initializeDependencies() {
     if (!this.hasDependenciesValue || Object.keys(this.dependenciesValue).length === 0) return
 
-    // 설정된 각 의존성에 대해 부모 필드 찾기 및 이벤트 리스너 설정
     for (const [childField, config] of Object.entries(this.dependenciesValue)) {
+      // 1. 부모 DOM 탐색
       const parentEl = this.element.querySelector(`[data-field-name="${config.parent}"] select`)
       if (parentEl) {
-        // 부모 필드에 change 이벤트 액션 추가 (이미 있으면 추가하지 않도록 주의 필요하나 여기서는 단순 연결)
-        // 실제로는 data-action 속성을 동적으로 수정하는 방식
+        // 이미 액션 바인딩이 안돼있다면 data-action 문자열에 "change->resource-form#onSelectChange" 추가
         if (!parentEl.dataset.action?.includes("resource-form#onSelectChange")) {
           parentEl.dataset.action = (parentEl.dataset.action || "") + " change->resource-form#onSelectChange"
         }
 
-        // 초기 로드 시 상태 업데이트
+        // 초기 시작 상태 조정을 위해 최초 1회 즉시 실행 (예: "과일"이 기본으로 떠있으면 "사과/바나나" 세팅)
         this.#updateDependentFields(config.parent, parentEl.value)
       }
     }
   }
 
-  // 부모 필드 변경에 따라 자식 필드 업데이트
+  // 특정 부모 컨트롤이 바뀌었음을 통보받았을 때, 이에 영향받아 갱신되어야 할 "자식"들을 전부 찾아서 필터링 수행
   #updateDependentFields(parentName, parentValue) {
     const deps = this.dependenciesValue
 
+    // deps 구조 예: { "city_code": { parent: "country_code", filter_key: "국가아이디" } }
     for (const [childField, config] of Object.entries(deps)) {
       if (config.parent !== parentName) continue
 
@@ -132,43 +145,42 @@ export default class extends Controller {
       const childSelect = childGroup.querySelector("select")
       if (!childSelect) continue
 
-      // 자식 필드 옵션 필터링
+      // 부모의 현재 값(parentValue)과 비교 속성(filter_key) 정보를 넘기며 자식 옵션 재구축 오더
       this.#filterDependentOptions(childSelect, parentValue, config.filter_key)
     }
   }
 
-  // 자식 Select 옵션 필터링 로직
+  // 자식 select 박스의 <option> 목록을 '조건'에 따라 넣었다 뺐다 하는 핵심 메서드
   #filterDependentOptions(selectEl, parentValue, filterKey) {
-    // 모든 옵션 데이터는 data-all-options 속성에 JSON으로 저장되어 있어야 함
+    // 팁: 서버에서 <option>을 숨기는 것이 아니라, 부모에서 미리 모든 연관 옵션을 JSON String으로 data-all-options 에 담아뒀음
     const allOptionsJson = selectEl.dataset.allOptions
     if (!allOptionsJson) return
 
     let allOptions
     try {
-      allOptions = JSON.parse(allOptionsJson)
+      allOptions = JSON.parse(allOptionsJson) // 캐싱된 완전체 옵션 배열 복원
     } catch {
       return
     }
 
-    // 빈 옵션(선택해주세요 등) 보존
+    // "선택해주세요(빈칸)" 옵션은 필터링에서 제외하고 무조건 1개는 띄우기 위해 백업해둠
     const blankOption = selectEl.querySelector('option[value=""]')
-    selectEl.innerHTML = "" // 기존 옵션 초기화
+    selectEl.innerHTML = "" // 모든 옵션 청소 (비우기)
 
     if (blankOption) {
       selectEl.appendChild(blankOption)
     }
 
-    // 부모 값이 있으면 필터링, 없으면 전체 표시 (또는 정책에 따라 다름)
-    // 여기서는 parentValue가 있을 때만 해당 key로 필터링
+    // 부모 값이 있으면 필터 돌리고, 빈칸이면 조건이 없는 것으로 간주해 모든 자식을 다 띄울지 논의 필요. 
+    // 본 소스는 부모값이 있어야만 자식이 노출되는 방향으로 짜여짐.
     const filtered = parentValue
       ? allOptions.filter(opt => {
-        // 필터 키에 해당하는 값이 부모 값과 일치하는지 확인
-        const filterVal = opt[filterKey] || opt[`${filterKey}`]
-        return String(filterVal) === String(parentValue)
+        const filterVal = opt[filterKey] || opt[`${filterKey}`] // 옵션 JSON안에 박힌 외래키
+        return String(filterVal) === String(parentValue) // 부모 PK 값과 대조 일치 분기
       })
-      : allOptions // 부모 선택이 없으면 전체 옵션 노출 (또는 빈 상태로 둘 수도 있음)
+      : allOptions
 
-    // 필터링된 옵션 추가
+    // 필터링 통과한 목록만 DOM에 렌더링 부착
     for (const opt of filtered) {
       const option = document.createElement("option")
       option.value = opt.value || opt["value"]
@@ -176,11 +188,11 @@ export default class extends Controller {
       selectEl.appendChild(option)
     }
 
-    // 자식 필드 값 변경 이벤트 트리거 (연쇄 의존성 처리를 위해)
+    // 자식의 항목도 변경된 것이므로 자식에게 연쇄 의존성이 걸려있는 "손자" 요소를 위해 change 이벤트 버블링 발생시킴
     selectEl.dispatchEvent(new Event("change", { bubbles: true }))
   }
 
-  // 유효하지 않은 모든 필드 강조 표시
+  // 유효성에 어긋난 필드들을 모조리 찾아서 빨간 외곽선 클래스를 씌워주는 일괄 연산 유틸리티
   #highlightInvalidFields() {
     this.inputTargets.forEach(input => {
       if (!input.checkValidity()) {
@@ -189,24 +201,24 @@ export default class extends Controller {
     })
   }
 
-  // 에러 메시지 및 스타일 초기화
+  // 클라 오류 통제용으로 씌웠던 클래스 등 전부 백지화
   #clearErrors() {
-    // 필드 레벨 에러 제거
+    // 하위 랩퍼 순회
     this.element.querySelectorAll(".rf-field-error").forEach(el => {
       el.classList.remove("rf-field-error")
     })
     this.element.querySelectorAll(".rf-error-msg").forEach(el => {
-      el.textContent = " "
+      el.textContent = " " // 스크린리더를 위한 공백문자 
       el.classList.add("invisible")
     })
 
-    // 상단 에러 요약 제거
+    // Rails Form Builder에 의해 생성된 전역 Summary 컴포넌트 강제 삭제
     if (this.hasErrorSummaryTarget) {
       this.errorSummaryTarget.remove()
     }
   }
 
-  // 필드 에러 메시지 표시
+  // 개별 필드 오류 메시지 UI 삽입 컴포넌트
   #showFieldError(fieldGroup, message) {
     let errorEl = fieldGroup.querySelector(".rf-error-msg")
     if (!errorEl) {
@@ -218,14 +230,13 @@ export default class extends Controller {
     errorEl.classList.remove("invisible")
   }
 
-  // 필드 에러 메시지 숨김 (서버 사이드 에러는 유지할지 여부 결정 필요)
   #hideFieldError(fieldGroup) {
     const errorEl = fieldGroup.querySelector(".rf-error-msg")
-    // data-server-error 속성이 없는 클라이언트 에러만 제거
+    // 만약 서버에서 준 백엔드 비즈니스단위의 100% 필수오류(dataset.serverError)라면
+    // JS 클라이언트단 수치 맞춤통과 만으로는 메시지를 끄지 못하도록 보호 조건문.
     if (errorEl && !errorEl.dataset.serverError) {
       errorEl.textContent = " "
       errorEl.classList.add("invisible")
     }
   }
 }
-
