@@ -1,4 +1,6 @@
-import BaseGridController from "controllers/base_grid_controller"
+﻿import BaseGridController from "controllers/base_grid_controller"
+
+// BaseGridController override: workplace 코드-이름 동기화와 신규 행 기본값을 커스터마이즈합니다.
 
 export default class extends BaseGridController {
   static values = {
@@ -53,7 +55,7 @@ export default class extends BaseGridController {
     if (row.__is_new && row.workpl_cd && !row.workpl_nm) {
       row.workpl_cd = ""
       row.workpl_nm = ""
-      alert("유효한 작업장코드를 선택하세요.")
+      alert("유효한 작업장코드를 선택해주세요.")
     }
 
     this.manager.api.refreshCells({
@@ -78,3 +80,4 @@ export default class extends BaseGridController {
     return "구역 데이터가 저장되었습니다."
   }
 }
+

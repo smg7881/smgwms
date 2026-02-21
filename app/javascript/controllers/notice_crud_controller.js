@@ -1,4 +1,6 @@
-import BaseCrudController from "controllers/base_crud_controller"
+﻿import BaseCrudController from "controllers/base_crud_controller"
+
+// BaseCrudController override: 공지 첨부파일/일괄삭제/상세조회가 포함된 저장 흐름을 확장합니다.
 
 export default class extends BaseCrudController {
   static resourceName = "notice"
@@ -153,7 +155,7 @@ export default class extends BaseCrudController {
     const maxSizeMb = Number.parseInt(this.fieldAttachmentsTarget.dataset.maxSizeMb || "0", 10)
 
     if (Number.isFinite(maxFiles) && maxFiles > 0 && files.length > maxFiles) {
-      alert(`첨부파일은 최대 ${maxFiles}개까지 업로드할 수 있습니다.`)
+      alert(`첨부 파일은 최대 ${maxFiles}개까지 업로드할 수 있습니다.`)
       files = files.slice(0, maxFiles)
     }
 
@@ -162,7 +164,7 @@ export default class extends BaseCrudController {
       const oversizedFiles = files.filter((file) => file.size > maxBytes)
 
       if (oversizedFiles.length > 0) {
-        alert(`파일당 최대 용량은 ${maxSizeMb}MB입니다.`)
+        alert(`파일 최대 용량은 ${maxSizeMb}MB입니다.`)
         files = files.filter((file) => file.size <= maxBytes)
       }
     }
@@ -336,13 +338,7 @@ export default class extends BaseCrudController {
   }
 
   selectedRows() {
-    const agGridEl = this.element.querySelector("[data-controller='ag-grid']")
-    if (!agGridEl) {
-      return []
-    }
-
-    const agGridController = this.application.getControllerForElementAndIdentifier(agGridEl, "ag-grid")
-    const api = agGridController?.api
+    const api = this.getAgGridController()?.api
     if (!api || typeof api.getSelectedRows !== "function") {
       return []
     }
@@ -461,7 +457,7 @@ export default class extends BaseCrudController {
     const removeButton = document.createElement("button")
     removeButton.type = "button"
     removeButton.classList.add("rf-multi-file-remove")
-    removeButton.textContent = "×"
+    removeButton.textContent = "횞"
     removeButton.setAttribute("aria-label", `${name} 삭제`)
     removeButton.setAttribute("data-role", "remove")
 
@@ -521,3 +517,4 @@ export default class extends BaseCrudController {
     return `${rounded} ${units[unitIndex]}`
   }
 }
+

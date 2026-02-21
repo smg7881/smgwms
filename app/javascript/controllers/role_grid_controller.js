@@ -1,4 +1,6 @@
-import BaseGridController from "controllers/base_grid_controller"
+﻿import BaseGridController from "controllers/base_grid_controller"
+
+// BaseGridController override: 역할(role) 단일 그리드 CRUD 설정만 제공합니다.
 
 export default class extends BaseGridController {
   configureManager() {
@@ -19,6 +21,7 @@ export default class extends BaseGridController {
   }
 
   get saveMessage() {
-    return "역할 저장이 완료되었습니다."
+    return "역할 데이터가 저장되었습니다."
   }
 }
+

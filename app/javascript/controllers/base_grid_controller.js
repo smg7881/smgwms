@@ -1,17 +1,23 @@
-/**
+﻿/**
  * BaseGridController
  *
- * 단일 그리드 CRUD 패턴용 Stimulus 베이스 컨트롤러.
- * GridCrudManager 인스턴스를 자동 생성/관리하며,
- * 서브클래스는 configureManager()로 설정만 반환하면 된다.
+ * 단일 AG Grid CRUD 화면에서 공통으로 쓰는 Stimulus 베이스 컨트롤러입니다.
  *
- * 서브클래스 훅:
- *   configureManager()          — GridCrudManager config 반환 (필수)
- *   buildNewRowOverrides()      — 새 행 기본값 오버라이드
- *   beforeDeleteRows(nodes)     — 삭제 전 검증 (true 반환 시 차단)
- *   onCellValueChanged(event)   — 셀 값 변경 후 커스텀 처리
- *   afterSaveSuccess()          — 저장 성공 후 커스텀 처리
- *   get saveMessage()           — 저장 완료 메시지
+ * 사용 시점:
+ * - 하나의 그리드에서 행 추가/삭제/저장(배치 API) 흐름이 필요한 화면
+ * - 화면별로 PK/필드 정규화/변경 비교 규칙만 다르고 흐름은 동일한 경우
+ *
+ * 사용 방법:
+ * 1) 화면 컨트롤러가 BaseGridController를 상속합니다.
+ * 2) configureManager()를 구현해 GridCrudManager 설정을 반환합니다.
+ * 3) 뷰의 ag-grid가 ag-grid:ready 이벤트를 발생시키면 registerGrid가 자동 결합합니다.
+ *
+ * 서브 클래스 오버라이드 포인트:
+ * - configureManager() [필수]
+ * - buildNewRowOverrides() [선택]
+ * - beforeDeleteRows(nodes) [선택]
+ * - afterSaveSuccess() [선택]
+ * - saveMessage getter [선택]
  */
 import { Controller } from "@hotwired/stimulus"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
@@ -24,11 +30,13 @@ export default class BaseGridController extends Controller {
     batchUrl: String
   }
 
+  // connect 시점에는 참조만 초기화하고, 실제 AG Grid API 연결은 registerGrid에서 수행합니다.
   connect() {
     this.manager = null
     this.gridController = null
   }
 
+  // ag-grid:ready(detail: { api, controller }) 이벤트를 받아 GridCrudManager를 연결합니다.
   registerGrid(event) {
     const { api, controller } = event.detail
     this.gridController = controller
@@ -38,6 +46,7 @@ export default class BaseGridController extends Controller {
     this.manager.attach(api)
   }
 
+  // 페이지 이탈(Turbo 포함) 시 이벤트/상태를 정리해 메모리 누수를 방지합니다.
   disconnect() {
     if (this.manager) {
       this.manager.detach()
@@ -46,12 +55,14 @@ export default class BaseGridController extends Controller {
     this.gridController = null
   }
 
+  // 공통 행 추가 액션. 필요 시 buildNewRowOverrides()로 초기값을 주입합니다.
   addRow() {
     if (!this.manager) return
     const overrides = this.buildNewRowOverrides?.() || {}
     this.manager.addRow(overrides)
   }
 
+  // 공통 행 삭제 액션. 필요 시 beforeDeleteRows()로 삭제 차단 검증을 넣을 수 있습니다.
   deleteRows() {
     if (!this.manager) return
     this.manager.deleteRows({
@@ -59,6 +70,8 @@ export default class BaseGridController extends Controller {
     })
   }
 
+  // 공통 저장 액션:
+  // 1) 편집 종료 2) 변경분 계산 3) 배치 저장 4) 성공 후 후처리
   async saveRows() {
     if (!this.manager) return
 
@@ -80,18 +93,21 @@ export default class BaseGridController extends Controller {
     }
   }
 
+  // 기본 후처리: ag-grid 컨트롤러의 refresh를 호출해 목록을 다시 조회합니다.
   reloadRows() {
     if (this.gridController?.refresh) {
       this.gridController.refresh()
     }
   }
 
-  // --- 서브클래스 훅 (오버라이드 가능) ---
+  // --- 서브 클래스 계약 ---
 
+  // 필수 구현: GridCrudManager 설정 객체를 반환해야 합니다.
   configureManager() {
     throw new Error("서브클래스에서 configureManager()를 구현해야 합니다.")
   }
 
+  // 선택 구현: 저장 완료 메시지 커스터마이즈
   get saveMessage() {
     return "저장이 완료되었습니다."
   }

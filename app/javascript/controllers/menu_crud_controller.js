@@ -1,4 +1,6 @@
-import BaseCrudController from "controllers/base_crud_controller"
+﻿import BaseCrudController from "controllers/base_crud_controller"
+
+// BaseCrudController override: 메뉴 트리 add-child/edit 모달 동작을 정의합니다.
 
 export default class extends BaseCrudController {
   static resourceName = "menu"
@@ -86,3 +88,4 @@ export default class extends BaseCrudController {
     this.fieldUseYnTarget.value = "Y"
   }
 }
+

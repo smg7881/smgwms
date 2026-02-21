@@ -1,6 +1,9 @@
-import BaseGridController from "controllers/base_grid_controller"
+﻿import BaseGridController from "controllers/base_grid_controller"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
-import { isApiAlive, postJson, hasChanges } from "controllers/grid/grid_utils"
+import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
+import { isApiAlive, postJson, hasChanges, fetchJson, setManagerRowData } from "controllers/grid/grid_utils"
+
+// BaseGridController override: 마스터-디테일 2중 그리드 CRUD와 선택 연동을 확장합니다.
 
 export default class extends BaseGridController {
   static targets = [...BaseGridController.targets, "masterGrid", "detailGrid", "selectedCodeLabel"]
@@ -16,8 +19,21 @@ export default class extends BaseGridController {
   connect() {
     super.connect()
     this.initialMasterSyncDone = false
+    this.masterGridEvents = new GridEventManager()
     this.detailGridController = null
     this.detailManager = null
+  }
+
+  disconnect() {
+    this.masterGridEvents.unbindAll()
+
+    if (this.detailManager) {
+      this.detailManager.detach()
+      this.detailManager = null
+    }
+
+    this.detailGridController = null
+    super.disconnect()
   }
 
   configureManager() {
@@ -35,7 +51,8 @@ export default class extends BaseGridController {
       pkLabels: { code: "코드" },
       onRowDataUpdated: () => {
         this.detailManager?.resetTracking()
-        if (!this.initialMasterSyncDone) {
+
+        if (!this.initialMasterSyncDone && isApiAlive(this.detailManager?.api)) {
           this.initialMasterSyncDone = true
           this.syncMasterSelectionAfterLoad()
         }
@@ -54,7 +71,15 @@ export default class extends BaseGridController {
         sort_order: "number",
         use_yn: "trimUpperDefault:Y"
       },
-      defaultRow: { code: "", detail_code: "", detail_code_name: "", short_name: "", ref_code: "", sort_order: 0, use_yn: "Y" },
+      defaultRow: {
+        code: "",
+        detail_code: "",
+        detail_code_name: "",
+        short_name: "",
+        ref_code: "",
+        sort_order: 0,
+        use_yn: "Y"
+      },
       blankCheckFields: ["detail_code", "detail_code_name"],
       comparableFields: ["detail_code_name", "short_name", "ref_code", "sort_order", "use_yn"],
       firstEditCol: "detail_code",
@@ -63,13 +88,17 @@ export default class extends BaseGridController {
   }
 
   registerGrid(event) {
-    const gridElement = event.target.closest("[data-controller='ag-grid']")
-    if (!gridElement) return
+    const registration = resolveAgGridRegistration(event)
+    if (!registration) return
+
+    const { gridElement, api, controller } = registration
 
     if (gridElement === this.masterGridTarget) {
       super.registerGrid(event)
     } else if (gridElement === this.detailGridTarget) {
-      const { api, controller } = event.detail
+      if (this.detailManager) {
+        this.detailManager.detach()
+      }
       this.detailGridController = controller
       this.detailManager = new GridCrudManager(this.configureDetailManager())
       this.detailManager.attach(api)
@@ -77,64 +106,39 @@ export default class extends BaseGridController {
 
     if (this.manager?.api && this.detailManager?.api) {
       this.bindMasterGridEvents()
+      if (!this.initialMasterSyncDone) {
+        this.initialMasterSyncDone = true
+        this.syncMasterSelectionAfterLoad()
+      }
     }
   }
-
-  disconnect() {
-    this.unbindMasterGridEvents()
-    if (this.detailManager) {
-      this.detailManager.detach()
-      this.detailManager = null
-    }
-    this.detailGridController = null
-    super.disconnect()
-  }
-
-  // --- 마스터 그리드 이벤트 ---
 
   bindMasterGridEvents() {
-    this.manager.api.addEventListener("rowClicked", this.handleMasterRowClicked)
-    this.manager.api.addEventListener("cellFocused", this.handleMasterCellFocused)
-  }
-
-  unbindMasterGridEvents() {
-    if (isApiAlive(this.manager?.api)) {
-      this.manager.api.removeEventListener("rowClicked", this.handleMasterRowClicked)
-      this.manager.api.removeEventListener("cellFocused", this.handleMasterCellFocused)
-    }
+    this.masterGridEvents.unbindAll()
+    this.masterGridEvents.bind(this.manager?.api, "rowClicked", this.handleMasterRowClicked)
+    this.masterGridEvents.bind(this.manager?.api, "cellFocused", this.handleMasterCellFocused)
   }
 
   handleMasterRowClicked = async (event) => {
-    await this.handleMasterRowChange(event.data)
+    const rowData = rowDataFromGridEvent(this.manager?.api, event)
+    await this.handleMasterRowChange(rowData)
   }
 
   handleMasterCellFocused = async (event) => {
-    if (event.rowIndex == null || event.rowIndex < 0) return
-    if (!isApiAlive(this.manager?.api)) return
+    const rowData = rowDataFromGridEvent(this.manager?.api, event)
+    if (!rowData) return
 
-    const rowNode = this.manager.api.getDisplayedRowAtIndex(event.rowIndex)
-    if (!rowNode?.data) return
-
-    await this.handleMasterRowChange(rowNode.data)
+    await this.handleMasterRowChange(rowData)
   }
 
   async handleMasterRowChange(rowData) {
     if (!isApiAlive(this.detailManager?.api)) return
 
     const code = rowData?.code
-    if (!code || rowData?.__is_deleted) {
-      this.selectedCodeValue = ""
+    if (!code || rowData?.__is_deleted || rowData?.__is_new) {
+      this.selectedCodeValue = code || ""
       this.refreshSelectedCodeLabel()
-      this.detailManager.api.setGridOption("rowData", [])
-      this.detailManager.resetTracking()
-      return
-    }
-
-    if (rowData?.__is_new) {
-      this.selectedCodeValue = code
-      this.refreshSelectedCodeLabel()
-      this.detailManager.api.setGridOption("rowData", [])
-      this.detailManager.resetTracking()
+      this.clearDetailRows()
       return
     }
 
@@ -142,8 +146,6 @@ export default class extends BaseGridController {
     this.refreshSelectedCodeLabel()
     await this.loadDetailRows(code)
   }
-
-  // --- 마스터 CRUD ---
 
   addMasterRow() {
     if (!this.manager) return
@@ -173,30 +175,31 @@ export default class extends BaseGridController {
     const ok = await postJson(this.masterBatchUrlValue, operations)
     if (!ok) return
 
-    alert("코드 저장이 완료되었습니다.")
+    alert("코드 데이터가 저장되었습니다.")
     await this.reloadMasterRows()
   }
 
   async reloadMasterRows() {
     if (!isApiAlive(this.manager?.api)) return
+    if (!this.gridController?.urlValue) return
 
-    const response = await fetch(this.gridController.urlValue, { headers: { Accept: "application/json" } })
-    const data = await response.json()
-    this.manager.api.setGridOption("rowData", data)
-    this.manager.resetTracking()
-    await this.syncMasterSelectionAfterLoad()
+    try {
+      const rows = await fetchJson(this.gridController.urlValue)
+      setManagerRowData(this.manager, rows)
+      await this.syncMasterSelectionAfterLoad()
+    } catch {
+      alert("코드 목록 조회에 실패했습니다.")
+    }
   }
 
   async syncMasterSelectionAfterLoad() {
     if (!isApiAlive(this.manager?.api) || !isApiAlive(this.detailManager?.api)) return
 
     const firstRowNode = this.manager.api.getDisplayedRowAtIndex(0)
-
     if (!firstRowNode?.data) {
       this.selectedCodeValue = ""
       this.refreshSelectedCodeLabel()
-      this.detailManager.api.setGridOption("rowData", [])
-      this.detailManager.resetTracking()
+      this.clearDetailRows()
       return
     }
 
@@ -208,14 +211,12 @@ export default class extends BaseGridController {
     await this.handleMasterRowChange(firstRowNode.data)
   }
 
-  // --- 디테일 CRUD ---
-
   addDetailRow() {
     if (!this.detailManager) return
     if (this.blockDetailActionIfMasterChanged()) return
 
     if (!this.selectedCodeValue) {
-      alert("코드를 먼저 선택하세요.")
+      alert("코드를 먼저 선택해주세요.")
       return
     }
 
@@ -225,6 +226,7 @@ export default class extends BaseGridController {
   deleteDetailRows() {
     if (!this.detailManager) return
     if (this.blockDetailActionIfMasterChanged()) return
+
     this.detailManager.deleteRows()
   }
 
@@ -233,7 +235,7 @@ export default class extends BaseGridController {
     if (this.blockDetailActionIfMasterChanged()) return
 
     if (!this.selectedCodeValue) {
-      alert("코드를 먼저 선택하세요.")
+      alert("코드를 먼저 선택해주세요.")
       return
     }
 
@@ -248,7 +250,7 @@ export default class extends BaseGridController {
     const ok = await postJson(batchUrl, operations)
     if (!ok) return
 
-    alert("상세코드 저장이 완료되었습니다.")
+    alert("상세코드 데이터가 저장되었습니다.")
     await this.loadDetailRows(this.selectedCodeValue)
   }
 
@@ -256,24 +258,22 @@ export default class extends BaseGridController {
     if (!isApiAlive(this.detailManager?.api)) return
 
     if (!code) {
-      this.detailManager.api.setGridOption("rowData", [])
-      this.detailManager.resetTracking()
+      this.clearDetailRows()
       return
     }
 
-    const url = this.detailListUrlTemplateValue.replace(":code", encodeURIComponent(code))
-    const response = await fetch(url, { headers: { Accept: "application/json" } })
-    if (!response.ok) {
-      alert("상세코드 조회에 실패했습니다.")
-      return
+    try {
+      const url = this.detailListUrlTemplateValue.replace(":code", encodeURIComponent(code))
+      const rows = await fetchJson(url)
+      setManagerRowData(this.detailManager, rows)
+    } catch {
+      alert("상세코드 목록 조회에 실패했습니다.")
     }
-
-    const data = await response.json()
-    this.detailManager.api.setGridOption("rowData", data)
-    this.detailManager.resetTracking()
   }
 
-  // --- UI ---
+  clearDetailRows() {
+    setManagerRowData(this.detailManager, [])
+  }
 
   refreshSelectedCodeLabel() {
     if (!this.hasSelectedCodeLabelTarget) return
@@ -281,7 +281,7 @@ export default class extends BaseGridController {
     if (this.selectedCodeValue) {
       this.selectedCodeLabelTarget.textContent = `선택 코드: ${this.selectedCodeValue}`
     } else {
-      this.selectedCodeLabelTarget.textContent = "코드를 먼저 선택하세요."
+      this.selectedCodeLabelTarget.textContent = "코드를 먼저 선택해주세요."
     }
   }
 
@@ -292,7 +292,10 @@ export default class extends BaseGridController {
 
   blockDetailActionIfMasterChanged() {
     if (!this.hasMasterPendingChanges()) return false
-    alert("마스터 코드가 변경이 있습니다.")
+
+    alert("마스터 코드에 저장되지 않은 변경이 있습니다.")
     return true
   }
 }
+
+

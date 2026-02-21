@@ -1,4 +1,6 @@
-import BaseCrudController from "controllers/base_crud_controller"
+﻿import BaseCrudController from "controllers/base_crud_controller"
+
+// BaseCrudController override: 부서 모달 폼 필드 바인딩과 add-child/edit 흐름을 정의합니다.
 
 export default class extends BaseCrudController {
   static resourceName = "dept"
@@ -91,3 +93,4 @@ export default class extends BaseCrudController {
     })
   }
 }
+

@@ -1,4 +1,6 @@
-import BaseGridController from "controllers/base_grid_controller"
+﻿import BaseGridController from "controllers/base_grid_controller"
+
+// BaseGridController override: 작업장(workplace) 단일 그리드 CRUD 설정만 제공합니다.
 
 export default class extends BaseGridController {
   configureManager() {
@@ -30,3 +32,4 @@ export default class extends BaseGridController {
     return "작업장 데이터가 저장되었습니다."
   }
 }
+

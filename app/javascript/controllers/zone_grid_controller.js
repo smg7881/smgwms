@@ -1,8 +1,11 @@
-import { Controller } from "@hotwired/stimulus"
+﻿import BaseGridController from "controllers/base_grid_controller"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
-import { isApiAlive, postJson, hasChanges, hideNoRowsOverlay } from "controllers/grid/grid_utils"
+import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
+import { isApiAlive, postJson, hasChanges, hideNoRowsOverlay, fetchJson, setManagerRowData, setGridRowData } from "controllers/grid/grid_utils"
 
-export default class extends Controller {
+// BaseGridController 상속: area 선택에 종속된 zone 그리드 CRUD(마스터-디테일)를 처리합니다.
+
+export default class extends BaseGridController {
   static targets = ["areaGrid", "zoneGrid", "selectedAreaLabel"]
 
   static values = {
@@ -11,24 +14,45 @@ export default class extends Controller {
   }
 
   connect() {
+    super.connect()
     this.selectedArea = null
     this.areaApi = null
     this.zoneApi = null
     this.areaGridController = null
     this.zoneGridController = null
     this.zoneManager = null
+    this.areaGridEvents = new GridEventManager()
+  }
+
+  disconnect() {
+    this.areaGridEvents.unbindAll()
+
+    if (this.zoneManager) {
+      this.zoneManager.detach()
+      this.zoneManager = null
+    }
+
+    this.selectedArea = null
+    this.areaApi = null
+    this.zoneApi = null
+    this.areaGridController = null
+    this.zoneGridController = null
+    super.disconnect()
   }
 
   registerGrid(event) {
-    const gridElement = event.target.closest("[data-controller='ag-grid']")
-    if (!gridElement) return
+    const registration = resolveAgGridRegistration(event)
+    if (!registration) return
 
-    const { api, controller } = event.detail
+    const { gridElement, api, controller } = registration
 
     if (gridElement === this.areaGridTarget) {
       this.areaApi = api
       this.areaGridController = controller
     } else if (gridElement === this.zoneGridTarget) {
+      if (this.zoneManager) {
+        this.zoneManager.detach()
+      }
       this.zoneApi = api
       this.zoneGridController = controller
       this.zoneManager = new GridCrudManager({
@@ -45,7 +69,7 @@ export default class extends Controller {
         blankCheckFields: ["zone_cd", "zone_nm"],
         comparableFields: ["zone_nm", "zone_desc", "use_yn"],
         firstEditCol: "zone_cd",
-        pkLabels: { zone_cd: "Zone코드" }
+        pkLabels: { zone_cd: "Zone 코드" }
       })
       this.zoneManager.attach(api)
     }
@@ -57,57 +81,21 @@ export default class extends Controller {
   }
 
   bindGridEvents() {
-    this.unbindGridEvents()
-
-    this._onAreaRowClicked = (event) => this.handleAreaRowClicked(event)
-    this._onAreaCellFocused = (event) => this.handleAreaCellFocused(event)
-    this._onAreaRowDataUpdated = () => this.handleAreaRowDataUpdated()
-
-    this.areaApi.addEventListener("rowClicked", this._onAreaRowClicked)
-    this.areaApi.addEventListener("cellFocused", this._onAreaCellFocused)
-    this.areaApi.addEventListener("rowDataUpdated", this._onAreaRowDataUpdated)
+    this.areaGridEvents.unbindAll()
+    this.areaGridEvents.bind(this.areaApi, "rowClicked", this.handleAreaRowClicked)
+    this.areaGridEvents.bind(this.areaApi, "cellFocused", this.handleAreaCellFocused)
+    this.areaGridEvents.bind(this.areaApi, "rowDataUpdated", this.handleAreaRowDataUpdated)
   }
 
-  unbindGridEvents() {
-    if (isApiAlive(this.areaApi) && this._onAreaRowClicked) {
-      this.areaApi.removeEventListener("rowClicked", this._onAreaRowClicked)
-    }
-    if (isApiAlive(this.areaApi) && this._onAreaCellFocused) {
-      this.areaApi.removeEventListener("cellFocused", this._onAreaCellFocused)
-    }
-    if (isApiAlive(this.areaApi) && this._onAreaRowDataUpdated) {
-      this.areaApi.removeEventListener("rowDataUpdated", this._onAreaRowDataUpdated)
-    }
+  handleAreaRowClicked = (event) => {
+    this.selectArea(rowDataFromGridEvent(this.areaApi, event))
   }
 
-  disconnect() {
-    this.unbindGridEvents()
-    if (this.zoneManager) {
-      this.zoneManager.detach()
-      this.zoneManager = null
-    }
-    this.selectedArea = null
-    this.areaApi = null
-    this.zoneApi = null
-    this.areaGridController = null
-    this.zoneGridController = null
+  handleAreaCellFocused = (event) => {
+    this.selectArea(rowDataFromGridEvent(this.areaApi, event))
   }
 
-  handleAreaRowClicked(event) {
-    this.selectArea(event?.data)
-  }
-
-  handleAreaCellFocused(event) {
-    if (event.rowIndex == null || event.rowIndex < 0) return
-    if (!isApiAlive(this.areaApi)) return
-
-    const rowNode = this.areaApi.getDisplayedRowAtIndex(event.rowIndex)
-    if (!rowNode?.data) return
-
-    this.selectArea(rowNode.data)
-  }
-
-  handleAreaRowDataUpdated() {
+  handleAreaRowDataUpdated = () => {
     this.selectedArea = null
     this.refreshSelectedAreaLabel()
     this.clearZoneGrid()
@@ -116,6 +104,7 @@ export default class extends Controller {
   selectArea(areaRow) {
     const workplCd = areaRow?.workpl_cd
     const areaCd = areaRow?.area_cd
+
     if (!workplCd || !areaCd) {
       this.selectedArea = null
       this.refreshSelectedAreaLabel()
@@ -127,13 +116,19 @@ export default class extends Controller {
     const currentKey = this.selectedArea ? `${this.selectedArea.workpl_cd}::${this.selectedArea.area_cd}` : ""
     if (nextKey === currentKey) return
 
-    this.selectedArea = { workpl_cd: workplCd, area_cd: areaCd, area_nm: areaRow.area_nm }
+    this.selectedArea = {
+      workpl_cd: workplCd,
+      area_cd: areaCd,
+      area_nm: areaRow.area_nm
+    }
+
     this.refreshSelectedAreaLabel()
     this.loadZoneRows()
   }
 
   async loadZoneRows() {
     if (!isApiAlive(this.zoneApi)) return
+
     if (!this.selectedArea) {
       this.clearZoneGrid()
       return
@@ -151,14 +146,8 @@ export default class extends Controller {
     if (useYn) query.set("use_yn", useYn)
 
     try {
-      const response = await fetch(`${this.zonesUrlValue}?${query.toString()}`, { headers: { Accept: "application/json" } })
-      if (!response.ok) throw new Error(`HTTP ${response.status}`)
-
-      const rows = await response.json()
-      if (!isApiAlive(this.zoneApi)) return
-
-      this.zoneApi.setGridOption("rowData", rows)
-      this.zoneManager.resetTracking()
+      const rows = await fetchJson(`${this.zonesUrlValue}?${query.toString()}`)
+      setManagerRowData(this.zoneManager, rows)
       hideNoRowsOverlay(this.zoneApi)
     } catch {
       alert("보관 Zone 조회에 실패했습니다.")
@@ -167,10 +156,7 @@ export default class extends Controller {
 
   addZoneRow() {
     if (!this.zoneManager) return
-    if (!this.selectedArea) {
-      alert("좌측 목록에서 구역을 먼저 선택하세요.")
-      return
-    }
+    if (!this.ensureSelectedArea()) return
 
     this.zoneManager.addRow({
       workpl_cd: this.selectedArea.workpl_cd,
@@ -180,20 +166,14 @@ export default class extends Controller {
 
   deleteZoneRows() {
     if (!this.zoneManager) return
-    if (!this.selectedArea) {
-      alert("좌측 목록에서 구역을 먼저 선택하세요.")
-      return
-    }
+    if (!this.ensureSelectedArea()) return
 
     this.zoneManager.deleteRows()
   }
 
   async saveZoneRows() {
     if (!this.zoneManager) return
-    if (!this.selectedArea) {
-      alert("좌측 목록에서 구역을 먼저 선택하세요.")
-      return
-    }
+    if (!this.ensureSelectedArea()) return
 
     this.zoneManager.stopEditing()
     const operations = this.zoneManager.buildOperations()
@@ -205,21 +185,28 @@ export default class extends Controller {
     const ok = await postJson(this.batchUrlValue, operations)
     if (!ok) return
 
-    alert("보관존 데이터가 저장되었습니다.")
-    this.loadZoneRows()
+    alert("보관 Zone 데이터가 저장되었습니다.")
+    await this.loadZoneRows()
   }
 
   clearZoneGrid() {
-    if (!isApiAlive(this.zoneApi)) return
-    this.zoneApi.setGridOption("rowData", [])
-    if (this.zoneManager) this.zoneManager.resetTracking()
+    if (!setManagerRowData(this.zoneManager, [])) {
+      setGridRowData(this.zoneApi, [])
+    }
+  }
+
+  ensureSelectedArea() {
+    if (this.selectedArea) return true
+
+    alert("좌측 목록에서 구역을 먼저 선택해주세요")
+    return false
   }
 
   refreshSelectedAreaLabel() {
     if (!this.hasSelectedAreaLabelTarget) return
 
     if (!this.selectedArea) {
-      this.selectedAreaLabelTarget.textContent = "구역을 먼저 선택하세요."
+      this.selectedAreaLabelTarget.textContent = "구역을 먼저 선택해주세요"
       return
     }
 

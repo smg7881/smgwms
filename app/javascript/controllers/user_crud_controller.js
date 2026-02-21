@@ -1,4 +1,6 @@
-import BaseCrudController from "controllers/base_crud_controller"
+﻿import BaseCrudController from "controllers/base_crud_controller"
+
+// BaseCrudController override: 사용자 사진 업로드/미리보기와 사용자 전용 폼 저장 로직을 확장합니다.
 
 export default class extends BaseCrudController {
   static resourceName = "user"
@@ -139,3 +141,4 @@ export default class extends BaseCrudController {
     this.removePhoto()
   }
 }
+

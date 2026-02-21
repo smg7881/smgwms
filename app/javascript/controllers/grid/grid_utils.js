@@ -41,6 +41,17 @@ export async function postJson(url, body) {
   }
 }
 
+export async function fetchJson(url, { signal } = {}) {
+  const response = await fetch(url, {
+    headers: { Accept: "application/json" },
+    signal
+  })
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`)
+  }
+  return response.json()
+}
+
 export function hideNoRowsOverlay(api) {
   if (!isApiAlive(api)) return
 
@@ -58,6 +69,22 @@ export function collectRows(api) {
     if (node.data) rows.push(node.data)
   })
   return rows
+}
+
+export function setGridRowData(api, rows = []) {
+  if (!isApiAlive(api)) return false
+  api.setGridOption("rowData", rows)
+  return true
+}
+
+export function setManagerRowData(manager, rows = []) {
+  if (!manager || !isApiAlive(manager.api)) return false
+
+  manager.api.setGridOption("rowData", rows)
+  if (typeof manager.resetTracking === "function") {
+    manager.resetTracking()
+  }
+  return true
 }
 
 export function refreshStatusCells(api, rowNodes) {

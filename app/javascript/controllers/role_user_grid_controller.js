@@ -1,7 +1,10 @@
-import { Controller } from "@hotwired/stimulus"
-import { isApiAlive, getCsrfToken } from "controllers/grid/grid_utils"
+﻿import BaseGridController from "controllers/base_grid_controller"
+import { resolveAgGridRegistration } from "controllers/grid/grid_event_manager"
+import { isApiAlive, getCsrfToken, fetchJson, setGridRowData } from "controllers/grid/grid_utils"
 
-export default class extends Controller {
+// BaseGridController 상속: 좌우 2개 그리드 간 사용자 할당 이동/검색/저장 흐름을 담당합니다.
+
+export default class extends BaseGridController {
   static targets = [
     "leftGrid",
     "rightGrid",
@@ -17,6 +20,7 @@ export default class extends Controller {
   }
 
   connect() {
+    super.connect()
     this.leftAllUsers = []
     this.rightAllUsers = []
     this.leftSearchTerm = ""
@@ -27,11 +31,19 @@ export default class extends Controller {
     this.rightGridController = null
   }
 
-  registerGrid(event) {
-    const gridElement = event.target.closest("[data-controller='ag-grid']")
-    if (!gridElement) return
+  disconnect() {
+    this.leftApi = null
+    this.rightApi = null
+    this.leftGridController = null
+    this.rightGridController = null
+    super.disconnect()
+  }
 
-    const { api, controller } = event.detail
+  registerGrid(event) {
+    const registration = resolveAgGridRegistration(event)
+    if (!registration) return
+
+    const { gridElement, api, controller } = registration
 
     if (gridElement === this.leftGridTarget) {
       this.leftGridController = controller
@@ -46,20 +58,9 @@ export default class extends Controller {
     }
   }
 
-  disconnect() {
-    this.leftApi = null
-    this.rightApi = null
-    this.leftGridController = null
-    this.rightGridController = null
-  }
-
   changeRole() {
-    const roleCd = this.currentRoleCode
-    this.selectedRoleCodeTarget.value = roleCd
-    this.leftSearchInputTarget.value = ""
-    this.rightSearchInputTarget.value = ""
-    this.leftSearchTerm = ""
-    this.rightSearchTerm = ""
+    this.selectedRoleCodeTarget.value = this.currentRoleCode
+    this.resetSearch()
     this.loadUsers()
   }
 
@@ -75,17 +76,13 @@ export default class extends Controller {
     }
 
     try {
-      const [availableResponse, assignedResponse] = await Promise.all([
-        fetch(`${this.availableUrlValue}?role_cd=${encodeURIComponent(roleCd)}`, { headers: { Accept: "application/json" } }),
-        fetch(`${this.assignedUrlValue}?role_cd=${encodeURIComponent(roleCd)}`, { headers: { Accept: "application/json" } })
+      const [availableUsers, assignedUsers] = await Promise.all([
+        fetchJson(`${this.availableUrlValue}?role_cd=${encodeURIComponent(roleCd)}`),
+        fetchJson(`${this.assignedUrlValue}?role_cd=${encodeURIComponent(roleCd)}`)
       ])
 
-      if (!availableResponse.ok || !assignedResponse.ok) {
-        throw new Error("load failed")
-      }
-
-      this.leftAllUsers = await availableResponse.json()
-      this.rightAllUsers = await assignedResponse.json()
+      this.leftAllUsers = availableUsers
+      this.rightAllUsers = assignedUsers
       this.renderFilteredRows()
     } catch {
       alert("역할 사용자 조회에 실패했습니다.")
@@ -129,7 +126,7 @@ export default class extends Controller {
   async save() {
     const roleCd = this.currentRoleCode
     if (!roleCd) {
-      alert("역할을 먼저 선택하세요.")
+      alert("역할을 먼저 선택해주세요")
       return
     }
 
@@ -167,8 +164,8 @@ export default class extends Controller {
     const leftRows = this.filterRows(this.leftAllUsers, this.leftSearchTerm)
     const rightRows = this.filterRows(this.rightAllUsers, this.rightSearchTerm)
 
-    this.leftApi.setGridOption("rowData", leftRows)
-    this.rightApi.setGridOption("rowData", rightRows)
+    setGridRowData(this.leftApi, leftRows)
+    setGridRowData(this.rightApi, rightRows)
   }
 
   filterRows(rows, term) {
@@ -179,6 +176,13 @@ export default class extends Controller {
       const deptNm = (row.dept_nm || "").toLowerCase()
       return userNm.includes(term) || deptNm.includes(term)
     })
+  }
+
+  resetSearch() {
+    this.leftSearchInputTarget.value = ""
+    this.rightSearchInputTarget.value = ""
+    this.leftSearchTerm = ""
+    this.rightSearchTerm = ""
   }
 
   get currentRoleCode() {
