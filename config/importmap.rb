@@ -5,6 +5,7 @@ pin "@hotwired/stimulus-loading", to: "stimulus-loading.js"
 pin "trix", to: "https://cdn.jsdelivr.net/npm/trix@2.1.15/dist/trix.esm.min.js"
 pin "@rails/actiontext", to: "actiontext.esm.js"
 pin_all_from "app/javascript/controllers", under: "controllers"
+pin_all_from "app/javascript/controllers/grid", under: "controllers/grid"
 pin "lucide", to: "https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/esm/lucide.js"
 
 # AG Grid Community (ESM 엔트리로 pin)

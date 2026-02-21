@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { isApiAlive } from "controllers/grid/grid_utils"
 
 export default class extends Controller {
   static targets = ["userGrid", "roleGrid", "menuGrid"]
@@ -69,13 +70,13 @@ export default class extends Controller {
   }
 
   unbindGridEvents() {
-    if (this.isApiAlive(this.userApi) && this._onUserSelectionChanged) {
+    if (isApiAlive(this.userApi) && this._onUserSelectionChanged) {
       this.userApi.removeEventListener("selectionChanged", this._onUserSelectionChanged)
     }
-    if (this.isApiAlive(this.userApi) && this._onUserRowDataUpdated) {
+    if (isApiAlive(this.userApi) && this._onUserRowDataUpdated) {
       this.userApi.removeEventListener("rowDataUpdated", this._onUserRowDataUpdated)
     }
-    if (this.isApiAlive(this.roleApi) && this._onRoleSelectionChanged) {
+    if (isApiAlive(this.roleApi) && this._onRoleSelectionChanged) {
       this.roleApi.removeEventListener("selectionChanged", this._onRoleSelectionChanged)
     }
   }
@@ -100,7 +101,7 @@ export default class extends Controller {
   }
 
   async loadRolesByUser(userIdCode) {
-    if (!this.isApiAlive(this.roleApi) || !this.isApiAlive(this.menuApi)) return
+    if (!isApiAlive(this.roleApi) || !isApiAlive(this.menuApi)) return
 
     this.selectedUserIdCode = userIdCode || ""
     this.roleApi.setGridOption("rowData", [])
@@ -116,7 +117,7 @@ export default class extends Controller {
       const url = `${this.rolesUrlValue}?user_id_code=${encodeURIComponent(this.selectedUserIdCode)}`
       const roles = await this.fetchJson(url, { signal: this.rolesAbortController.signal })
 
-      if (!this.isLatestRolesRequest(requestId) || !this.isApiAlive(this.roleApi) || !this.isApiAlive(this.menuApi)) {
+      if (!this.isLatestRolesRequest(requestId) || !isApiAlive(this.roleApi) || !isApiAlive(this.menuApi)) {
         return
       }
 
@@ -147,7 +148,7 @@ export default class extends Controller {
   }
 
   async loadMenusByUserAndRole(userIdCode, roleCd) {
-    if (!this.isApiAlive(this.menuApi)) return
+    if (!isApiAlive(this.menuApi)) return
 
     this.menuApi.setGridOption("rowData", [])
 
@@ -166,7 +167,7 @@ export default class extends Controller {
         signal: this.menusAbortController.signal
       })
 
-      if (!this.isLatestMenusRequest(requestId) || !this.isApiAlive(this.menuApi)) {
+      if (!this.isLatestMenusRequest(requestId) || !isApiAlive(this.menuApi)) {
         return
       }
 
@@ -184,16 +185,16 @@ export default class extends Controller {
   clearRoleAndMenu() {
     this.cancelPendingRequests()
     this.selectedUserIdCode = ""
-    if (this.isApiAlive(this.roleApi)) {
+    if (isApiAlive(this.roleApi)) {
       this.roleApi.setGridOption("rowData", [])
     }
-    if (this.isApiAlive(this.menuApi)) {
+    if (isApiAlive(this.menuApi)) {
       this.menuApi.setGridOption("rowData", [])
     }
   }
 
   selectFirstRow(api, focusField) {
-    if (!this.isApiAlive(api) || api.getDisplayedRowCount() === 0) return null
+    if (!isApiAlive(api) || api.getDisplayedRowCount() === 0) return null
 
     const firstRowNode = api.getDisplayedRowAtIndex(0)
     if (!firstRowNode) return null
@@ -244,9 +245,5 @@ export default class extends Controller {
 
   isAbortError(error) {
     return error && error.name === "AbortError"
-  }
-
-  isApiAlive(api) {
-    return Boolean(api) && !(typeof api.isDestroyed === "function" && api.isDestroyed())
   }
 }

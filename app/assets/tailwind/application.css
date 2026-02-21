@@ -528,7 +528,8 @@ a:hover {
 }
 
 .rf-multi-file-dropzone {
-  @apply w-full rounded-xl border-2 border-dashed border-border bg-bg-primary py-3 px-4 flex flex-col items-center justify-center gap-1 text-text-secondary cursor-pointer;
+  @apply w-full rounded-xl border-2 border-dashed border-border bg-bg-primary py-2 px-4 flex flex-col items-center justify-center gap-1 text-text-secondary cursor-pointer;
+  min-height: 82px;
   transition: border-color 0.2s, background-color 0.2s, color 0.2s;
 }
 
@@ -555,16 +556,16 @@ a:hover {
 }
 
 .rf-multi-file-plus {
-  @apply inline-flex items-center justify-center w-8 h-8 rounded-full text-accent;
+  @apply inline-flex items-center justify-center w-7 h-7 rounded-full text-accent;
   background: rgba(88, 166, 255, 0.14);
 }
 
 .rf-multi-file-plus .lucide-icon {
-  @apply w-4 h-4;
+  @apply w-3.5 h-3.5;
 }
 
 .rf-multi-file-droptext {
-  @apply text-sm font-semibold text-text-primary;
+  @apply text-[13px] font-semibold text-text-primary;
 }
 
 .rf-multi-file-help {
@@ -572,15 +573,15 @@ a:hover {
 }
 
 .rf-multi-file-list {
-  @apply mt-3 flex flex-col gap-2;
+  @apply mt-1.5 flex flex-col gap-0.5;
 }
 
 .rf-multi-file-item {
-  @apply w-full rounded-xl border border-border bg-bg-primary px-3 py-2.5 flex items-center gap-3;
+  @apply w-full rounded-xl border border-border bg-bg-primary px-2 py-0.5 flex items-center gap-1.5;
 }
 
 .rf-multi-file-item-icon {
-  @apply shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-lg border;
+  @apply shrink-0 inline-flex items-center justify-center min-w-[26px] h-4 px-1 rounded-md border;
 }
 
 .rf-multi-file-item-icon--blue {
@@ -609,27 +610,24 @@ a:hover {
 
 .rf-multi-file-item-ext {
   @apply font-bold tracking-wide;
-  font-size: 11px;
+  font-size: 8px;
+  line-height: 1;
 }
 
 .rf-multi-file-item-body {
-  @apply min-w-0 flex-1 flex flex-col;
+  @apply min-w-0 flex-1;
 }
 
 .rf-multi-file-item-name {
-  @apply text-text-primary text-sm font-semibold truncate no-underline;
+  @apply block text-text-primary text-[11px] font-semibold truncate no-underline;
 }
 
 .rf-multi-file-item-name:hover {
   @apply text-accent no-underline;
 }
 
-.rf-multi-file-item-size {
-  @apply text-sm text-text-secondary;
-}
-
 .rf-multi-file-remove {
-  @apply ml-2 shrink-0 w-7 h-7 rounded-full border border-transparent bg-transparent text-text-secondary text-xl leading-none inline-flex items-center justify-center cursor-pointer;
+  @apply ml-1 shrink-0 w-[18px] h-[18px] rounded-full border border-transparent bg-transparent text-text-secondary text-[12px] leading-none inline-flex items-center justify-center cursor-pointer;
   transition: color 0.15s, background-color 0.15s, border-color 0.15s;
 }
 

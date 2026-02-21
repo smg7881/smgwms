@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { isApiAlive, getCsrfToken } from "controllers/grid/grid_utils"
 
 export default class extends Controller {
   static targets = [
@@ -63,7 +64,7 @@ export default class extends Controller {
   }
 
   async loadUsers() {
-    if (!this.isApiAlive(this.leftApi) || !this.isApiAlive(this.rightApi)) return
+    if (!isApiAlive(this.leftApi) || !isApiAlive(this.rightApi)) return
 
     const roleCd = this.currentRoleCode
     if (!roleCd) {
@@ -102,7 +103,7 @@ export default class extends Controller {
   }
 
   moveToRight() {
-    if (!this.isApiAlive(this.leftApi)) return
+    if (!isApiAlive(this.leftApi)) return
 
     const selectedRows = this.leftApi.getSelectedRows()
     if (!selectedRows.length) return
@@ -114,7 +115,7 @@ export default class extends Controller {
   }
 
   moveToLeft() {
-    if (!this.isApiAlive(this.rightApi)) return
+    if (!isApiAlive(this.rightApi)) return
 
     const selectedRows = this.rightApi.getSelectedRows()
     if (!selectedRows.length) return
@@ -139,7 +140,7 @@ export default class extends Controller {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-CSRF-Token": this.csrfToken
+          "X-CSRF-Token": getCsrfToken()
         },
         body: JSON.stringify({
           role_cd: roleCd,
@@ -161,7 +162,7 @@ export default class extends Controller {
   }
 
   renderFilteredRows() {
-    if (!this.isApiAlive(this.leftApi) || !this.isApiAlive(this.rightApi)) return
+    if (!isApiAlive(this.leftApi) || !isApiAlive(this.rightApi)) return
 
     const leftRows = this.filterRows(this.leftAllUsers, this.leftSearchTerm)
     const rightRows = this.filterRows(this.rightAllUsers, this.rightSearchTerm)
@@ -183,13 +184,5 @@ export default class extends Controller {
   get currentRoleCode() {
     const select = this.element.querySelector("#q_role_cd")
     return select?.value?.toString().trim().toUpperCase() || this.selectedRoleCodeTarget.value
-  }
-
-  get csrfToken() {
-    return document.querySelector("[name='csrf-token']")?.content || ""
-  }
-
-  isApiAlive(api) {
-    return Boolean(api) && !(typeof api.isDestroyed === "function" && api.isDestroyed())
   }
 }

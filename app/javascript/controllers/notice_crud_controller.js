@@ -453,12 +453,10 @@ export default class extends BaseCrudController {
       nameElement.rel = "noopener noreferrer"
     }
 
-    const sizeElement = document.createElement("span")
-    sizeElement.classList.add("rf-multi-file-item-size")
-    sizeElement.textContent = sizeLabel
+    const fileLabel = sizeLabel ? `${name} (${sizeLabel})` : name
+    nameElement.textContent = fileLabel
 
     contentElement.appendChild(nameElement)
-    contentElement.appendChild(sizeElement)
 
     const removeButton = document.createElement("button")
     removeButton.type = "button"
