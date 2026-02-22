@@ -29,6 +29,8 @@ class SearchPopupsController < ApplicationController
         region_rows
       when "country", "ctry"
         country_rows
+      when "client", "bzac"
+        client_rows
       when "menu"
         menu_rows
       when "user"
@@ -50,7 +52,23 @@ class SearchPopupsController < ApplicationController
     end
 
     def corp_rows
+      rows = []
       code_set = Set.new
+
+      if defined?(StdCorporation) && StdCorporation.table_exists?
+        StdCorporation.ordered.each do |corp|
+          normalized = corp.corp_cd.to_s.strip.upcase
+          if normalized.blank?
+            next
+          end
+
+          code_set << normalized
+          rows << {
+            code: normalized,
+            display: "#{corp.corp_nm} (#{normalized})"
+          }
+        end
+      end
 
       if defined?(StdWorkplace) && StdWorkplace.table_exists?
         StdWorkplace.distinct.pluck(:corp_cd).each do |code|
@@ -70,16 +88,30 @@ class SearchPopupsController < ApplicationController
         end
       end
 
+      if defined?(StdCorporation) && StdCorporation.table_exists?
+        StdCorporation.distinct.pluck(:corp_cd).each do |code|
+          normalized = code.to_s.strip.upcase
+          if normalized.present?
+            code_set << normalized
+          end
+        end
+      end
+
       if code_set.empty?
         code_set << "DEFAULT"
       end
 
-      code_set.to_a.sort.map do |code|
+      extra_rows = code_set.to_a.sort.filter_map do |code|
+        if rows.any? { |row| row[:code] == code }
+          next
+        end
+
         {
           code: code,
           display: code
         }
       end
+      rows + extra_rows
     rescue ActiveRecord::StatementInvalid
       []
     end
@@ -105,6 +137,21 @@ class SearchPopupsController < ApplicationController
           {
             code: row.ctry_cd,
             display: "#{row.ctry_nm} (#{row.ctry_cd})"
+          }
+        end
+      else
+        []
+      end
+    rescue ActiveRecord::StatementInvalid
+      []
+    end
+
+    def client_rows
+      if defined?(StdBzacMst) && StdBzacMst.table_exists?
+        StdBzacMst.where(use_yn_cd: "Y").ordered.map do |row|
+          {
+            code: row.bzac_cd,
+            display: "#{row.bzac_nm} (#{row.bzac_cd})"
           }
         end
       else

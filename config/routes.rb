@@ -144,6 +144,38 @@ Rails.application.routes.draw do
         post :batch_save_workplaces
       end
     end
+    resources :corporations, controller: :corporations, only: [ :index ] do
+      collection do
+        post :batch_save
+      end
+
+      member do
+        get :country_infos
+        post :batch_save_country_infos
+      end
+    end
+    resources :business_certificates, controller: :business_certificates, only: [ :index ] do
+      post :batch_save, on: :collection
+    end
+    resources :goods, controller: :goods, only: [ :index ] do
+      post :batch_save, on: :collection
+    end
+    resources :favorites, controller: :favorites, only: [ :index ] do
+      collection do
+        get :groups
+        post :batch_save
+        post :batch_save_groups
+      end
+    end
+    resources :interface_infos, controller: :interface_infos, only: [ :index ] do
+      post :batch_save, on: :collection
+    end
+    resources :reserved_jobs, controller: :reserved_jobs, only: [ :index ] do
+      post :batch_save, on: :collection
+    end
+    resources :exchange_rates, controller: :exchange_rates, only: [ :index ] do
+      post :batch_save, on: :collection
+    end
   end
 
   get "search_popups/:type", to: "search_popups#show", as: :search_popup

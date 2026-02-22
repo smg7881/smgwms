@@ -1,0 +1,35 @@
+<div data-controller="std-good-grid"
+     data-action="ag-grid:ready->std-good-grid#registerGrid"
+     data-std-good-grid-batch-url-value="<%= batch_save_url %>">
+  <%= render Ui::SearchFormComponent.new(
+    url: create_url,
+    fields: search_fields,
+    cols: 3,
+    enable_collapse: true
+  ) %>
+
+  <div class="flex items-center justify-between gap-3 mb-3 mt-2">
+    <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
+      <%= helpers.lucide_icon("package", css_class: "w-4 h-4 text-text-secondary") %>
+      Goods List
+      <%= render Ui::GridActionsComponent.new(grid_id: "std-goods") %>
+    </h3>
+    <%= render Ui::GridToolbarComponent.new(
+      buttons: [
+        { label: "Add", class: "btn btn-sm btn-primary", action: "click->std-good-grid#addRow" },
+        { label: "Delete", class: "btn btn-sm btn-danger", action: "click->std-good-grid#deleteRows" },
+        { label: "Save", class: "btn btn-sm btn-success", action: "click->std-good-grid#saveRows" }
+      ]
+    ) %>
+  </div>
+
+  <%= render Ui::AgGridComponent.new(
+    columns: columns,
+    url: grid_url,
+    height: "calc(100vh - 360px)",
+    page_size: 20,
+    row_selection: "multiple",
+    grid_id: "std-goods",
+    data: { std_good_grid_target: "grid" }
+  ) %>
+</div>

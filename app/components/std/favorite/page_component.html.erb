@@ -1,0 +1,66 @@
+<div data-controller="std-favorite-grid"
+     data-action="ag-grid:ready->std-favorite-grid#registerGrid"
+     data-std-favorite-grid-batch-url-value="<%= batch_save_url %>"
+     data-std-favorite-grid-group-list-url-value="<%= group_list_url %>"
+     data-std-favorite-grid-group-batch-url-value="<%= group_batch_save_url %>">
+  <%= render Ui::SearchFormComponent.new(
+    url: create_url,
+    fields: search_fields,
+    cols: 3,
+    enable_collapse: true
+  ) %>
+
+  <section class="mb-5">
+    <div class="flex items-center justify-between gap-3 mb-3 mt-2">
+      <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
+        <%= helpers.lucide_icon("star", css_class: "w-4 h-4 text-text-secondary") %>
+        Favorite Menus
+        <%= render Ui::GridActionsComponent.new(grid_id: "std-favorite") %>
+      </h3>
+      <%= render Ui::GridToolbarComponent.new(
+        buttons: [
+          { label: "Add", class: "btn btn-sm btn-primary", action: "click->std-favorite-grid#addRow" },
+          { label: "Delete", class: "btn btn-sm btn-danger", action: "click->std-favorite-grid#deleteRows" },
+          { label: "Save", class: "btn btn-sm btn-success", action: "click->std-favorite-grid#saveRows" }
+        ]
+      ) %>
+    </div>
+
+    <%= render Ui::AgGridComponent.new(
+      columns: favorite_columns,
+      url: grid_url,
+      height: "260px",
+      page_size: 20,
+      row_selection: "multiple",
+      grid_id: "std-favorite",
+      data: { std_favorite_grid_target: "grid" }
+    ) %>
+  </section>
+
+  <section>
+    <div class="flex items-center justify-between gap-3 mb-3 mt-2">
+      <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
+        <%= helpers.lucide_icon("folders", css_class: "w-4 h-4 text-text-secondary") %>
+        Favorite Groups
+        <%= render Ui::GridActionsComponent.new(grid_id: "std-favorite-group") %>
+      </h3>
+      <%= render Ui::GridToolbarComponent.new(
+        buttons: [
+          { label: "Add", class: "btn btn-sm btn-primary", action: "click->std-favorite-grid#addGroupRow" },
+          { label: "Delete", class: "btn btn-sm btn-danger", action: "click->std-favorite-grid#deleteGroupRows" },
+          { label: "Save", class: "btn btn-sm btn-success", action: "click->std-favorite-grid#saveGroupRows" }
+        ]
+      ) %>
+    </div>
+
+    <%= render Ui::AgGridComponent.new(
+      columns: group_columns,
+      row_data: [],
+      height: "220px",
+      page_size: 20,
+      row_selection: "multiple",
+      grid_id: "std-favorite-group",
+      data: { std_favorite_grid_target: "groupGrid" }
+    ) %>
+  </section>
+</div>

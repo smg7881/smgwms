@@ -1,0 +1,35 @@
+<div data-controller="std-exchange-rate-grid"
+     data-action="ag-grid:ready->std-exchange-rate-grid#registerGrid"
+     data-std-exchange-rate-grid-batch-url-value="<%= batch_save_url %>">
+  <%= render Ui::SearchFormComponent.new(
+    url: create_url,
+    fields: search_fields,
+    cols: 5,
+    enable_collapse: true
+  ) %>
+
+  <div class="flex items-center justify-between gap-3 mb-3 mt-2">
+    <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
+      <%= helpers.lucide_icon("coins", css_class: "w-4 h-4 text-text-secondary") %>
+      Exchange Rate List
+      <%= render Ui::GridActionsComponent.new(grid_id: "std-exchange-rate") %>
+    </h3>
+    <%= render Ui::GridToolbarComponent.new(
+      buttons: [
+        { label: "Add", class: "btn btn-sm btn-primary", action: "click->std-exchange-rate-grid#addRow" },
+        { label: "Delete", class: "btn btn-sm btn-danger", action: "click->std-exchange-rate-grid#deleteRows" },
+        { label: "Save", class: "btn btn-sm btn-success", action: "click->std-exchange-rate-grid#saveRows" }
+      ]
+    ) %>
+  </div>
+
+  <%= render Ui::AgGridComponent.new(
+    columns: columns,
+    url: grid_url,
+    height: "calc(100vh - 360px)",
+    page_size: 20,
+    row_selection: "multiple",
+    grid_id: "std-exchange-rate",
+    data: { std_exchange_rate_grid_target: "grid" }
+  ) %>
+</div>

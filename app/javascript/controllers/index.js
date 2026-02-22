@@ -83,3 +83,24 @@ application.register("std-approval-request-grid", StdApprovalRequestGridControll
 
 import StdApprovalHistoryGridController from "controllers/std_approval_history_grid_controller"
 application.register("std-approval-history-grid", StdApprovalHistoryGridController)
+
+import StdCorporationGridController from "controllers/std_corporation_grid_controller"
+application.register("std-corporation-grid", StdCorporationGridController)
+
+import StdBusinessCertificateGridController from "controllers/std_business_certificate_grid_controller"
+application.register("std-business-certificate-grid", StdBusinessCertificateGridController)
+
+import StdGoodGridController from "controllers/std_good_grid_controller"
+application.register("std-good-grid", StdGoodGridController)
+
+import StdFavoriteGridController from "controllers/std_favorite_grid_controller"
+application.register("std-favorite-grid", StdFavoriteGridController)
+
+import StdInterfaceInfoGridController from "controllers/std_interface_info_grid_controller"
+application.register("std-interface-info-grid", StdInterfaceInfoGridController)
+
+import StdReservedJobGridController from "controllers/std_reserved_job_grid_controller"
+application.register("std-reserved-job-grid", StdReservedJobGridController)
+
+import StdExchangeRateGridController from "controllers/std_exchange_rate_grid_controller"
+application.register("std-exchange-rate-grid", StdExchangeRateGridController)

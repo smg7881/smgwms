@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_22_102000) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_22_122000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -302,6 +302,33 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_22_102000) do
     t.index ["use_yn"], name: "index_std_approvals_on_use_yn"
   end
 
+  create_table "std_business_certificates", force: :cascade do |t|
+    t.string "attached_file_nm", limit: 255
+    t.string "bizcond_cd", limit: 120
+    t.string "bizman_yn_cd", limit: 20, null: false
+    t.string "bzac_cd", limit: 20, null: false
+    t.string "bzac_nm", limit: 200
+    t.date "clbiz_ymd"
+    t.string "compreg_slip", limit: 30, null: false
+    t.string "corp_reg_no_cd", limit: 50
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "dtl_addr_cd", limit: 300
+    t.string "dup_bzac_yn_cd", limit: 1, default: "N", null: false
+    t.string "indstype_cd", limit: 120
+    t.text "rmk"
+    t.string "rptr_nm_cd", limit: 120, null: false
+    t.string "store_nm_cd", limit: 200, null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn_cd", limit: 1, default: "Y", null: false
+    t.string "zip_cd", limit: 20
+    t.string "zipaddr_cd", limit: 300
+    t.index ["bzac_cd"], name: "index_std_business_certificates_on_bzac_cd", unique: true
+    t.index ["compreg_slip"], name: "index_std_business_certificates_on_compreg_slip"
+    t.index ["use_yn_cd"], name: "index_std_business_certificates_on_use_yn_cd"
+  end
+
   create_table "std_bzac_mst", force: :cascade do |t|
     t.string "acnt_no_cd", limit: 50
     t.string "addr_cd", limit: 300
@@ -395,6 +422,67 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_22_102000) do
     t.index ["bzac_cd", "hist_seq"], name: "index_std_cm04004_on_bzac_cd_and_hist_seq", unique: true
   end
 
+  create_table "std_corporation_countries", force: :cascade do |t|
+    t.string "aply_mon_unit_cd", limit: 20
+    t.string "corp_cd", limit: 20, null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "ctry_cd", limit: 10, null: false
+    t.string "rpt_yn_cd", limit: 1, default: "N", null: false
+    t.integer "seq", null: false
+    t.string "std_time", limit: 40
+    t.string "summer_time", limit: 40
+    t.string "sys_lang_slc", limit: 20
+    t.string "timezone_cd", limit: 60
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn_cd", limit: 1, default: "Y", null: false
+    t.decimal "vat_rt", precision: 10, scale: 3
+    t.index ["corp_cd", "ctry_cd"], name: "index_std_corporation_countries_on_corp_cd_and_ctry_cd"
+    t.index ["corp_cd", "seq"], name: "index_std_corporation_countries_on_corp_cd_and_seq", unique: true
+    t.index ["use_yn_cd"], name: "index_std_corporation_countries_on_use_yn_cd"
+  end
+
+  create_table "std_corporation_histories", force: :cascade do |t|
+    t.text "after_value"
+    t.text "before_value"
+    t.datetime "changed_at"
+    t.string "changed_by", limit: 50
+    t.string "changed_col_nm", limit: 120, null: false
+    t.string "corp_cd", limit: 20, null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.integer "hist_seq", null: false
+    t.string "source_key", limit: 120
+    t.string "source_kind", limit: 20, null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.index ["corp_cd", "changed_at"], name: "index_std_corp_hist_on_corp_and_changed_at"
+    t.index ["corp_cd", "hist_seq"], name: "index_std_corp_hist_on_corp_and_seq", unique: true
+  end
+
+  create_table "std_corporations", force: :cascade do |t|
+    t.string "addr_cd", limit: 300
+    t.string "bizcond_cd", limit: 120, null: false
+    t.string "compreg_slip_cd", limit: 30
+    t.string "corp_cd", limit: 20, null: false
+    t.string "corp_nm", limit: 120, null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "dtl_addr_cd", limit: 300
+    t.string "indstype_cd", limit: 120, null: false
+    t.string "rptr_nm_cd", limit: 120, null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "upper_corp_cd", limit: 20
+    t.string "use_yn_cd", limit: 1, default: "Y", null: false
+    t.string "vat_sctn_cd", limit: 30
+    t.string "zip_cd", limit: 20
+    t.index ["corp_cd"], name: "index_std_corporations_on_corp_cd", unique: true
+    t.index ["corp_nm"], name: "index_std_corporations_on_corp_nm"
+    t.index ["use_yn_cd"], name: "index_std_corporations_on_use_yn_cd"
+  end
+
   create_table "std_countries", force: :cascade do |t|
     t.string "corp_cd", limit: 20
     t.string "corp_nm", limit: 120
@@ -411,6 +499,51 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_22_102000) do
     t.index ["ctry_cd"], name: "index_std_countries_on_ctry_cd", unique: true
     t.index ["ctry_nm"], name: "index_std_countries_on_ctry_nm"
     t.index ["use_yn_cd"], name: "index_std_countries_on_use_yn_cd"
+  end
+
+  create_table "std_exchange_rates", force: :cascade do |t|
+    t.string "anno_dgrcnt", limit: 20, null: false
+    t.decimal "cash_buy", precision: 18, scale: 6
+    t.decimal "cash_sell", precision: 18, scale: 6
+    t.decimal "convmoney_rt", precision: 18, scale: 6
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "ctry_cd", limit: 10, null: false
+    t.decimal "fcur_check_sell", precision: 18, scale: 6
+    t.string "fnc_or_cd", limit: 20, null: false
+    t.string "if_yn_cd", limit: 1, default: "N", null: false
+    t.string "mon_cd", limit: 20, null: false
+    t.decimal "sendmoney_rcvng", precision: 18, scale: 6
+    t.decimal "sendmoney_sndg", precision: 18, scale: 6
+    t.date "std_ymd", null: false
+    t.decimal "tc_buy", precision: 18, scale: 6
+    t.decimal "tradg_std_rt", precision: 18, scale: 6
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.decimal "usd_conv_rt", precision: 18, scale: 6
+    t.string "use_yn_cd", limit: 1, default: "Y", null: false
+    t.index ["ctry_cd", "fnc_or_cd", "std_ymd", "anno_dgrcnt", "mon_cd"], name: "index_std_exch_rate_business_key", unique: true
+    t.index ["ctry_cd", "std_ymd"], name: "index_std_exchange_rates_on_ctry_cd_and_std_ymd"
+    t.index ["use_yn_cd"], name: "index_std_exchange_rates_on_use_yn_cd"
+  end
+
+  create_table "std_goods", force: :cascade do |t|
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "goods_cd", limit: 20, null: false
+    t.string "goods_nm", limit: 200, null: false
+    t.string "hatae_cd", limit: 30
+    t.string "hwajong_cd", limit: 30
+    t.string "hwajong_grp_cd", limit: 30
+    t.string "item_cd", limit: 30
+    t.string "item_grp_cd", limit: 30
+    t.string "rmk_cd", limit: 500
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn_cd", limit: 1, default: "Y", null: false
+    t.index ["goods_cd"], name: "index_std_goods_on_goods_cd", unique: true
+    t.index ["goods_nm"], name: "index_std_goods_on_goods_nm"
+    t.index ["use_yn_cd"], name: "index_std_goods_on_use_yn_cd"
   end
 
   create_table "std_holidays", force: :cascade do |t|
@@ -431,6 +564,29 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_22_102000) do
     t.index ["ctry_cd", "ymd"], name: "index_std_holidays_on_ctry_cd_and_ymd", unique: true
     t.index ["use_yn_cd"], name: "index_std_holidays_on_use_yn_cd"
     t.index ["ymd"], name: "index_std_holidays_on_ymd"
+  end
+
+  create_table "std_interface_infos", force: :cascade do |t|
+    t.string "bzac_nm", limit: 200
+    t.string "bzac_sys_nm_cd", limit: 150
+    t.string "corp_cd", limit: 20, null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "if_bzac_cd", limit: 20
+    t.string "if_cd", limit: 11, null: false
+    t.text "if_desc_cd"
+    t.string "if_meth_cd", limit: 30, null: false
+    t.string "if_nm_cd", limit: 150, null: false
+    t.string "if_sctn_cd", limit: 30, null: false
+    t.string "rcv_sctn_cd", limit: 30
+    t.string "rcv_sys_cd", limit: 30
+    t.string "send_sys_cd", limit: 30
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn_cd", limit: 1, default: "Y", null: false
+    t.index ["corp_cd", "if_nm_cd"], name: "index_std_interface_infos_on_corp_cd_and_if_nm_cd"
+    t.index ["if_cd"], name: "index_std_interface_infos_on_if_cd", unique: true
+    t.index ["use_yn_cd"], name: "index_std_interface_infos_on_use_yn_cd"
   end
 
   create_table "std_region_zip_mappings", force: :cascade do |t|
@@ -463,6 +619,57 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_22_102000) do
     t.index ["regn_cd"], name: "index_std_regions_on_regn_cd", unique: true
     t.index ["regn_nm_cd"], name: "index_std_regions_on_regn_nm_cd"
     t.index ["use_yn_cd"], name: "index_std_regions_on_use_yn_cd"
+  end
+
+  create_table "std_reserved_jobs", force: :cascade do |t|
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.integer "hms_unit_min"
+    t.string "pgm_sctn_cd", limit: 30
+    t.string "rel_menu_cd", limit: 20
+    t.string "rel_menu_nm", limit: 150
+    t.string "rel_pgm_cd", limit: 60
+    t.string "rel_pgm_nm", limit: 150
+    t.text "rmk_cd"
+    t.string "rsv_work_cycle_cd", limit: 30, null: false
+    t.string "rsv_work_desc_cd", limit: 300, null: false
+    t.string "rsv_work_nm_cd", limit: 150, null: false
+    t.string "rsv_work_no", limit: 20, null: false
+    t.string "sys_sctn_cd", limit: 30, null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn_cd", limit: 1, default: "Y", null: false
+    t.index ["rsv_work_no"], name: "index_std_reserved_jobs_on_rsv_work_no", unique: true
+    t.index ["sys_sctn_cd", "rsv_work_nm_cd"], name: "index_std_reserved_jobs_on_sys_sctn_cd_and_rsv_work_nm_cd"
+    t.index ["use_yn_cd"], name: "index_std_reserved_jobs_on_use_yn_cd"
+  end
+
+  create_table "std_user_favorite_groups", force: :cascade do |t|
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "group_nm", limit: 100, null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn", limit: 1, default: "Y", null: false
+    t.string "user_id_code", limit: 16, null: false
+    t.index ["use_yn"], name: "index_std_user_favorite_groups_on_use_yn"
+    t.index ["user_id_code", "group_nm"], name: "index_std_favor_groups_on_user_and_name", unique: true
+  end
+
+  create_table "std_user_favorites", force: :cascade do |t|
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "menu_cd", limit: 20, null: false
+    t.string "menu_nm", limit: 100
+    t.integer "sort_seq", default: 0, null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn", limit: 1, default: "Y", null: false
+    t.string "user_favor_menu_grp", limit: 100
+    t.string "user_id_code", limit: 16, null: false
+    t.index ["use_yn"], name: "index_std_user_favorites_on_use_yn"
+    t.index ["user_id_code", "menu_cd"], name: "index_std_favorites_on_user_and_menu", unique: true
+    t.index ["user_id_code", "user_favor_menu_grp"], name: "index_std_favorites_on_user_and_group"
   end
 
   create_table "std_workplaces", force: :cascade do |t|
