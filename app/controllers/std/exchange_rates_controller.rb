@@ -75,6 +75,16 @@ class Std::ExchangeRatesController < Std::BaseController
     end
   end
 
+  def fetch_rates
+    # 강제로 현재일자 환율 수집 배치 즉시 실행
+    service = Std::ExchangeRateSyncService.new(Date.current)
+    if service.call
+      render json: { success: true, message: "환율 정보를 성공적으로 가져왔습니다." }
+    else
+      render json: { success: false, message: "수집 실패 또는 비영업일(에러)입니다." }, status: :unprocessable_entity
+    end
+  end
+
   private
     def menu_code_for_permission
       "STD_EXCHANGE_RATE"

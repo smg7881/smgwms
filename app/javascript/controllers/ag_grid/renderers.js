@@ -213,6 +213,53 @@ export const RENDERER_REGISTRY = {
     return span
   },
 
+  // [팝업 그리드 선택 버튼 렌더러]
+  popupSelectCellRenderer: (params) => {
+    const container = document.createElement("div")
+    container.classList.add("grid-action-buttons")
+
+    container.appendChild(createActionButton({
+      text: "선택",
+      title: "선택",
+      onClick: () => emit(container, "search-popup-grid:select", { row: params.data })
+    }))
+    return container
+  },
+
+  // [조회용 명칭 + 돋보기 렌더러]
+  // lookup_popup_type / lookup_code_field 메타가 설정된 컬럼에서 공통으로 사용됩니다.
+  lookupPopupCellRenderer: (params) => {
+    const container = document.createElement("div")
+    container.classList.add("ag-lookup-cell")
+
+    const valueEl = document.createElement("span")
+    valueEl.classList.add("ag-lookup-cell__value")
+    valueEl.textContent = params.value == null ? "" : String(params.value)
+    container.appendChild(valueEl)
+
+    const button = createActionButton({
+      text: "🔍",
+      title: "찾기",
+      classes: ["ag-lookup-cell__btn"],
+      onClick: (event) => {
+        event.preventDefault()
+        event.stopPropagation()
+
+        emit(container, "ag-grid:lookup-open", {
+          rowNode: params.node,
+          rowIndex: params.rowIndex,
+          colId: params.column?.getColId?.(),
+          keyword: params.value,
+          colDef: params.colDef
+        })
+      }
+    })
+    button.setAttribute("aria-label", "찾기")
+    container.appendChild(button)
+
+    return container
+  },
+
   // [부서 관리 액션 버튼 렌더러]
   // 부서는 트리 계층 구조를 가지므로 하위 요소 추가(+) 버튼이 포함됩니다.
   deptActionCellRenderer: (params) => {

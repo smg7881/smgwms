@@ -3,16 +3,38 @@ require "set"
 class SearchPopupsController < ApplicationController
   def show
     @type = params[:type].to_s.strip.downcase
-    @keyword = params[:q].to_s.strip
+    @frame = params[:frame].presence || "search_popup_frame"
+    @keyword = lookup_keyword
     @rows = lookup_rows(@type, @keyword)
+    @popup_form = SearchPopupForm.new(
+      display: @keyword,
+      code: params.dig(:search_popup_form, :code).to_s.strip.upcase
+    )
 
     respond_to do |format|
-      format.json { render json: @rows.map { |row| { code: row[:code], display: row[:display] } } }
+      format.json do
+        render json: @rows.map do |row|
+          {
+            code: row[:code],
+            name: row[:name],
+            display: row[:display]
+          }
+        end
+      end
       format.html { render layout: popup_layout? }
     end
   end
 
   private
+    def lookup_keyword
+      direct = params[:q].to_s.strip
+      if direct.present?
+        direct
+      else
+        params.dig(:search_popup_form, :display).to_s.strip
+      end
+    end
+
     def popup_layout?
       if turbo_frame_request? || params[:frame].present?
         false
@@ -41,14 +63,27 @@ class SearchPopupsController < ApplicationController
         []
       end
 
-      if keyword.blank?
-        rows.first(200)
-      else
-        up_keyword = keyword.upcase
-        rows.select do |row|
-          row[:code].to_s.upcase.include?(up_keyword) || row[:display].to_s.upcase.include?(up_keyword)
-        end.first(200)
-      end
+      return rows.first(200) if keyword.blank?
+
+      up_keyword = keyword.upcase
+      rows.select do |row|
+        row[:code].to_s.upcase.include?(up_keyword) ||
+          row[:name].to_s.upcase.include?(up_keyword) ||
+          row[:display].to_s.upcase.include?(up_keyword)
+      end.first(200)
+    end
+
+    def build_row(code:, name:)
+      normalized_code = code.to_s.strip.upcase
+      normalized_name = name.to_s.strip
+      return nil if normalized_code.blank?
+
+      resolved_name = normalized_name.presence || normalized_code
+      {
+        code: normalized_code,
+        name: resolved_name,
+        display: resolved_name
+      }
     end
 
     def corp_rows
@@ -57,43 +92,25 @@ class SearchPopupsController < ApplicationController
 
       if defined?(StdCorporation) && StdCorporation.table_exists?
         StdCorporation.ordered.each do |corp|
-          normalized = corp.corp_cd.to_s.strip.upcase
-          if normalized.blank?
-            next
-          end
+          row = build_row(code: corp.corp_cd, name: corp.corp_nm)
+          next unless row
 
-          code_set << normalized
-          rows << {
-            code: normalized,
-            display: "#{corp.corp_nm} (#{normalized})"
-          }
+          code_set << row[:code]
+          rows << row
         end
       end
 
       if defined?(StdWorkplace) && StdWorkplace.table_exists?
         StdWorkplace.distinct.pluck(:corp_cd).each do |code|
           normalized = code.to_s.strip.upcase
-          if normalized.present?
-            code_set << normalized
-          end
+          code_set << normalized if normalized.present?
         end
       end
 
       if defined?(StdRegion) && StdRegion.table_exists?
         StdRegion.distinct.pluck(:corp_cd).each do |code|
           normalized = code.to_s.strip.upcase
-          if normalized.present?
-            code_set << normalized
-          end
-        end
-      end
-
-      if defined?(StdCorporation) && StdCorporation.table_exists?
-        StdCorporation.distinct.pluck(:corp_cd).each do |code|
-          normalized = code.to_s.strip.upcase
-          if normalized.present?
-            code_set << normalized
-          end
+          code_set << normalized if normalized.present?
         end
       end
 
@@ -102,110 +119,71 @@ class SearchPopupsController < ApplicationController
       end
 
       extra_rows = code_set.to_a.sort.filter_map do |code|
-        if rows.any? { |row| row[:code] == code }
-          next
-        end
+        next if rows.any? { |row| row[:code] == code }
 
-        {
-          code: code,
-          display: code
-        }
+        build_row(code: code, name: code)
       end
+
       rows + extra_rows
     rescue ActiveRecord::StatementInvalid
       []
     end
 
     def region_rows
-      if defined?(StdRegion) && StdRegion.table_exists?
-        StdRegion.where(use_yn_cd: "Y").ordered.map do |row|
-          {
-            code: row.regn_cd,
-            display: "#{row.regn_nm_cd} (#{row.regn_cd})"
-          }
-        end
-      else
-        []
+      return [] unless defined?(StdRegion) && StdRegion.table_exists?
+
+      StdRegion.where(use_yn_cd: "Y").ordered.filter_map do |row|
+        build_row(code: row.regn_cd, name: row.regn_nm_cd)
       end
     rescue ActiveRecord::StatementInvalid
       []
     end
 
     def country_rows
-      if defined?(StdCountry) && StdCountry.table_exists?
-        StdCountry.where(use_yn_cd: "Y").ordered.map do |row|
-          {
-            code: row.ctry_cd,
-            display: "#{row.ctry_nm} (#{row.ctry_cd})"
-          }
-        end
-      else
-        []
+      return [] unless defined?(StdCountry) && StdCountry.table_exists?
+
+      StdCountry.where(use_yn_cd: "Y").ordered.filter_map do |row|
+        build_row(code: row.ctry_cd, name: row.ctry_nm)
       end
     rescue ActiveRecord::StatementInvalid
       []
     end
 
     def client_rows
-      if defined?(StdBzacMst) && StdBzacMst.table_exists?
-        StdBzacMst.where(use_yn_cd: "Y").ordered.map do |row|
-          {
-            code: row.bzac_cd,
-            display: "#{row.bzac_nm} (#{row.bzac_cd})"
-          }
-        end
-      else
-        []
+      return [] unless defined?(StdBzacMst) && StdBzacMst.table_exists?
+
+      StdBzacMst.where(use_yn_cd: "Y").ordered.filter_map do |row|
+        build_row(code: row.bzac_cd, name: row.bzac_nm)
       end
     rescue ActiveRecord::StatementInvalid
       []
     end
 
     def menu_rows
-      if defined?(AdmMenu) && AdmMenu.table_exists?
-        AdmMenu.active.where(menu_type: "MENU").ordered.map do |row|
-          {
-            code: row.menu_cd,
-            display: "#{row.menu_nm} (#{row.menu_cd})"
-          }
-        end
-      else
-        []
+      return [] unless defined?(AdmMenu) && AdmMenu.table_exists?
+
+      AdmMenu.active.where(menu_type: "MENU").ordered.filter_map do |row|
+        build_row(code: row.menu_cd, name: row.menu_nm)
       end
     rescue ActiveRecord::StatementInvalid
       []
     end
 
     def user_rows
-      if defined?(User) && User.table_exists?
-        User.ordered.map do |row|
-          code = row.user_id_code.to_s.strip.upcase
-          if code.blank?
-            nil
-          else
-            {
-              code: code,
-              display: "#{row.user_nm} (#{code})"
-            }
-          end
-        end.compact
-      else
-        []
+      return [] unless defined?(User) && User.table_exists?
+
+      User.ordered.filter_map do |row|
+        build_row(code: row.user_id_code, name: row.user_nm)
       end
     rescue ActiveRecord::StatementInvalid
       []
     end
 
     def workplace_rows
-      if defined?(StdWorkplace) && StdWorkplace.table_exists?
-        StdWorkplace.where(use_yn_cd: "Y").ordered.map do |row|
-          {
-            code: row.workpl_cd,
-            display: "#{row.workpl_nm} (#{row.workpl_cd})"
-          }
-        end
-      else
-        []
+      return [] unless defined?(StdWorkplace) && StdWorkplace.table_exists?
+
+      StdWorkplace.where(use_yn_cd: "Y").ordered.filter_map do |row|
+        build_row(code: row.workpl_cd, name: row.workpl_nm)
       end
     rescue ActiveRecord::StatementInvalid
       []

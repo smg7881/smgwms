@@ -23,4 +23,8 @@ if defined?(AdmMenu) && ActiveRecord::Base.connection.data_source_exists?(:adm_m
   load Rails.root.join("db/seeds/adm_menus.rb")
 end
 
+if defined?(StdCorporation) && ActiveRecord::Base.connection.data_source_exists?(:std_corporations)
+  load Rails.root.join("db/seeds/std_corporations.rb")
+end
+
 puts "기본 사용자 생성: admin@example.com / password"

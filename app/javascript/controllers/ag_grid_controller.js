@@ -15,6 +15,7 @@ import {
   registerAgGridCommunityModules
 } from "controllers/ag_grid/grid_defaults"
 import { RENDERER_REGISTRY } from "controllers/ag_grid/renderers"
+import { openLookupPopup } from "controllers/lookup_popup_modal"
 
 // 커뮤니티 전역 모듈 등록 (최초 1회만 동작하도록 내부 방어 로직 있음)
 registerAgGridCommunityModules()
@@ -46,9 +47,13 @@ export default class extends Controller {
     this.focusedRowNode = null // 현재 포커스 된 행을 추적하여 시각적 하이라이팅을 하거나 에디팅을 통제함
     this.#serverPage = 1
     this.#serverTotal = 0
+    this.lookupPopupOpening = false
 
     // AG-Grid 인스턴스 초기화 함수 호출
     this.initGrid()
+
+    this._lookupOpen = (event) => this.handleLookupOpenEvent(event)
+    this.element.addEventListener("ag-grid:lookup-open", this._lookupOpen)
 
     // Rails Turbo(Hotwire) 기능 중 페이지가 캐시되기 직전에 기존 API 객체를 정리하는 이벤트 바인딩
     this._beforeCache = () => this.teardown()
@@ -58,6 +63,7 @@ export default class extends Controller {
   // 화면을 벗어나거나 Turbo에 의해 교체될 때 DOM에서 제거 전 자동 실행
   disconnect() {
     document.removeEventListener("turbo:before-cache", this._beforeCache)
+    this.element.removeEventListener("ag-grid:lookup-open", this._lookupOpen)
     this.teardown() // 메모리 회수
   }
 
@@ -106,6 +112,7 @@ export default class extends Controller {
       getRowClass: (params) => this.buildRowClass(params),
       // 셀 포커스 이동 시 선택 하이라이팅을 이동시키기 위한 핸들러 연동
       onCellFocused: (event) => this.handleCellFocused(event),
+      onCellKeyDown: (event) => this.handleCellKeyDown(event),
       rowData: [],
       // 데이터가 0건일 때 중앙에 출력될 HTML 템플릿 처리 
       overlayNoRowsTemplate: `<span class="ag-overlay-no-rows-center">${AG_GRID_LOCALE_KO.noRowsToShow}</span>`,
@@ -202,6 +209,16 @@ export default class extends Controller {
   buildColumnDefs() {
     return this.columnsValue.map((column) => {
       const def = { ...column }
+      const hasLookupPopup = this.isLookupColumn(def)
+
+      if (hasLookupPopup) {
+        if (!def.lookup_name_field && def.field) {
+          def.lookup_name_field = def.field
+        }
+        if (!def.cellRenderer) {
+          def.cellRenderer = "lookupPopupCellRenderer"
+        }
+      }
 
       // "formatter: 'date'" 등 문자열 포맷터 호출에 맞는 실제 함수 할당
       if (def.formatter && FORMATTER_REGISTRY[def.formatter]) {
@@ -399,6 +416,98 @@ export default class extends Controller {
     }
   }
 
+  handleCellKeyDown(event) {
+    if (event?.event?.key !== "Enter") return
+
+    const colDef = event?.column?.getColDef?.()
+    if (!this.isLookupColumn(colDef)) return
+    if (!this.isApiAlive(this.gridApi)) return
+
+    event.event.preventDefault()
+    event.event.stopPropagation()
+
+    this.gridApi.stopEditing()
+
+    const rowNode = event.node || this.gridApi.getDisplayedRowAtIndex(event.rowIndex)
+    if (!rowNode?.data) return
+
+    const nameField = colDef.lookup_name_field || colDef.field
+    const keyword = rowNode.data?.[nameField] || ""
+
+    this.openLookupForCell({ rowNode, colDef, keyword })
+  }
+
+  handleLookupOpenEvent(event) {
+    event.stopPropagation()
+    if (!this.isApiAlive(this.gridApi)) return
+
+    const detail = event.detail || {}
+    const colDef = detail.colDef
+    if (!this.isLookupColumn(colDef)) return
+
+    const rowNode = detail.rowNode || this.gridApi.getDisplayedRowAtIndex(detail.rowIndex)
+    if (!rowNode?.data) return
+
+    this.openLookupForCell({
+      rowNode,
+      colDef,
+      keyword: detail.keyword
+    })
+  }
+
+  async openLookupForCell({ rowNode, colDef, keyword }) {
+    if (!this.isLookupColumn(colDef)) return
+    if (!rowNode?.data) return
+    if (this.lookupPopupOpening) return
+
+    const popupType = colDef.lookup_popup_type
+    const popupUrl = colDef.lookup_popup_url
+    const popupTitle = colDef.lookup_popup_title
+    const nameField = colDef.lookup_name_field || colDef.field
+    const codeField = colDef.lookup_code_field
+    const seedKeyword = String(keyword ?? rowNode.data?.[nameField] ?? "").trim()
+
+    this.lookupPopupOpening = true
+    try {
+      const selection = await openLookupPopup({
+        type: popupType,
+        url: popupUrl,
+        keyword: seedKeyword,
+        title: popupTitle
+      })
+
+      if (!selection) return
+
+      const nextName = String(selection.name ?? selection.display ?? "").trim()
+      const nextCode = String(selection.code ?? "").trim()
+
+      rowNode.setDataValue(nameField, nextName)
+      if (codeField) {
+        rowNode.setDataValue(codeField, nextCode)
+      }
+
+      const refreshColumns = [nameField, codeField].filter(Boolean)
+      if (refreshColumns.length > 0) {
+        this.gridApi.refreshCells({
+          rowNodes: [rowNode],
+          columns: refreshColumns,
+          force: true
+        })
+      }
+
+      this.element.dispatchEvent(new CustomEvent("ag-grid:lookup-selected", {
+        bubbles: true,
+        detail: {
+          rowNode,
+          colDef,
+          selection
+        }
+      }))
+    } finally {
+      this.lookupPopupOpening = false
+    }
+  }
+
   // 각 행이 그려질 때마다 주입할 클래스를 연산. 
   // (예방적 포커싱 기능 및 삭제 상태일 때 흐리게 보이는(soft-deleted) 클래스 주입 등)
   buildRowClass(params) {
@@ -406,6 +515,10 @@ export default class extends Controller {
     if (params.node === this.focusedRowNode) classes.push("ag-row-keyboard-focus")
     if (params.data?.__is_deleted) classes.push("ag-row-soft-deleted") // Batch 삭제 표시 효과 
     return classes.join(" ")
+  }
+
+  isLookupColumn(colDef) {
+    return Boolean(colDef?.lookup_popup_type)
   }
 
   // 현재 이벤트 대상이 '체크박스 선택 전용' 컬럼인지 판별하기 위한 헬퍼 추론 함수

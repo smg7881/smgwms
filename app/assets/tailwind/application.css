@@ -377,6 +377,52 @@ a:hover {
   @apply flex-1 border-b border-dashed border-border;
 }
 
+/* Lookup popup modal */
+.form-grid-modal {
+  border: none;
+  padding: 0;
+  background: transparent;
+  width: min(980px, calc(100vw - 24px));
+  max-width: min(980px, calc(100vw - 24px));
+}
+
+.form-grid-modal::backdrop {
+  background: rgba(0, 0, 0, 0.52);
+}
+
+.form-grid-modal-content {
+  @apply rounded-lg border border-border bg-bg-primary shadow-[0_4px_24px_rgba(0,0,0,0.35)] overflow-hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
+
+.form-grid-modal-header {
+  @apply px-4 py-3 border-b border-border bg-bg-primary flex items-center justify-between;
+}
+
+.form-grid-modal-header h3 {
+  @apply text-sm font-semibold text-text-primary m-0;
+}
+
+.form-grid-modal-body {
+  @apply p-3 bg-bg-secondary overflow-auto;
+}
+
+.btn-close {
+  @apply inline-flex items-center justify-center border border-border rounded-md bg-bg-tertiary text-text-primary cursor-pointer;
+  width: 30px;
+  height: 30px;
+}
+
+.btn-close:hover {
+  @apply bg-bg-hover;
+}
+
+.form-grid-loading {
+  @apply py-6 text-center text-sm text-text-secondary;
+}
+
 /* ── Modal body scrollbar ── */
 .modal-body::-webkit-scrollbar {
   width: 10px;
@@ -413,6 +459,19 @@ a:hover {
 
 .ag-row .tree-menu-folder {
   @apply font-semibold;
+}
+
+.ag-lookup-cell {
+  @apply flex items-center gap-1 w-full;
+}
+
+.ag-lookup-cell__value {
+  @apply min-w-0 flex-1 truncate;
+}
+
+.ag-lookup-cell__btn {
+  @apply shrink-0 px-1;
+  min-width: 22px;
 }
 
 .ag-row.ag-row-keyboard-focus .ag-cell {

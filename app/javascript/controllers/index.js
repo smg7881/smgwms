@@ -21,6 +21,9 @@ application.register("resource-form", ResourceFormController)
 import SearchPopupController from "controllers/search_popup_controller"
 application.register("search-popup", SearchPopupController)
 
+import SearchPopupGridController from "controllers/search_popup_grid_controller"
+application.register("search-popup-grid", SearchPopupGridController)
+
 import UserCrudController from "controllers/user_crud_controller"
 application.register("user-crud", UserCrudController)
 

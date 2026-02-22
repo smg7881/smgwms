@@ -1,11 +1,25 @@
 <%# app/views/shared/search_form/fields/_popup.html.erb %>
 <% field_id = "q_#{field[:field]}" %>
+<%
+  display_width = field[:display_width].presence
+  code_width = field[:code_width].presence || "120px"
+  button_width = field[:button_width].presence || "40px"
+
+  display_style = if display_width.present?
+    "flex: 0 0 #{display_width}; max-width: #{display_width}; min-width: 0;"
+  else
+    "flex: 1 1 auto; min-width: 0;"
+  end
+  code_style = "flex: 0 0 #{code_width}; max-width: #{code_width};"
+  button_style = "width: #{button_width}; min-width: #{button_width};"
+%>
 <div class="flex flex-col gap-1 col-span-24 min-w-0 <%= span_classes_for(field, cols: cols) %>"
      data-search-form-target="fieldGroup"
      data-controller="search-popup"
-     data-search-popup-type-value="<%= field[:popup_type] %>">
+     data-search-popup-type-value="<%= field[:popup_type] %>"
+     data-search-popup-title-value="<%= resolve_label(field) %> 조회">
   <label class="text-sm font-medium text-text-secondary" for="<%= field_id %>"><%= resolve_label(field) %></label>
-  <div class="flex gap-1">
+  <div class="flex flex-nowrap items-center gap-1 w-full min-w-0">
     <input type="hidden"
            name="q[<%= field[:code_field] %>]"
            value="<%= q_value(field[:code_field]) %>"
@@ -15,11 +29,23 @@
            name="q[<%= field[:field] %>]"
            value="<%= q_value(field[:field]) %>"
            class="form-grid-input"
-           readonly
+           style="<%= display_style %>"
            data-search-popup-target="display"
+           data-action="input->search-popup#onDisplayInput keydown.enter->search-popup#open"
            placeholder="<%= resolve_placeholder(field) %>">
-    <button type="button" class="px-3 border border-border bg-bg-tertiary text-text-primary rounded-md cursor-pointer hover:bg-bg-hover" data-action="search-popup#open">
-      ...
+    <input type="text"
+           value="<%= q_value(field[:code_field]) %>"
+           class="form-grid-input"
+           style="<%= code_style %>"
+           aria-label="<%= resolve_label(field) %> 코드"
+           disabled
+           data-search-popup-target="codeDisplay">
+    <button type="button"
+            class="inline-flex items-center justify-center h-9 border border-border bg-bg-tertiary text-text-primary rounded-md cursor-pointer hover:bg-bg-hover"
+            style="<%= button_style %>"
+            aria-label="<%= resolve_label(field) %> 찾기"
+            data-action="search-popup#open">
+      <%= lucide_icon("search", css_class: "w-4 h-4") %>
     </button>
   </div>
 </div>

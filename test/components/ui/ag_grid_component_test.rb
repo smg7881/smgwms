@@ -57,6 +57,29 @@ class Ui::AgGridComponentTest < ViewComponent::TestCase
     assert_selector '[data-controller="ag-grid"]'
   end
 
+  test "keeps lookup popup metadata keys in column values" do
+    render_inline(Ui::AgGridComponent.new(
+      columns: [
+        {
+          field: "menu_nm",
+          lookup_popup_type: "menu",
+          lookup_popup_url: "/search_popups/menu",
+          lookup_code_field: "menu_cd",
+          lookup_name_field: "menu_nm",
+          lookup_popup_title: "메뉴 조회"
+        }
+      ],
+      row_data: []
+    ))
+
+    html = rendered_content
+    assert_includes html, "lookup_popup_type"
+    assert_includes html, "lookup_popup_url"
+    assert_includes html, "lookup_code_field"
+    assert_includes html, "lookup_name_field"
+    assert_includes html, "lookup_popup_title"
+  end
+
   test "applies default values" do
     render_inline(Ui::AgGridComponent.new(
       columns: [ { field: "name" } ],

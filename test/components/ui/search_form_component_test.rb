@@ -96,6 +96,47 @@ class Ui::SearchFormComponentTest < ViewComponent::TestCase
     end
   end
 
+  test "popup field renders name, disabled code and open button" do
+    render_inline(Ui::SearchFormComponent.new(
+      url: "/posts",
+      fields: [
+        {
+          field: "customer_name",
+          type: "popup",
+          popup_type: "client",
+          code_field: "customer_code",
+          label: "거래처"
+        }
+      ]
+    ))
+
+    assert_selector 'input[name="q[customer_name]"][data-search-popup-target="display"]'
+    assert_no_selector 'input[name="q[customer_name]"][readonly]'
+    assert_selector 'input[data-search-popup-target="codeDisplay"][disabled]'
+    assert_selector 'button[data-action="search-popup#open"]'
+  end
+
+  test "popup field applies width parameters with defaults" do
+    render_inline(Ui::SearchFormComponent.new(
+      url: "/posts",
+      fields: [
+        {
+          field: "lookup_name",
+          type: "popup",
+          popup_type: "menu",
+          code_field: "lookup_code",
+          display_width: "280px",
+          code_width: "150px",
+          button_width: "44px"
+        }
+      ]
+    ))
+
+    assert_selector 'input[name="q[lookup_name]"][style*="280px"]'
+    assert_selector 'input[data-search-popup-target="codeDisplay"][style*="150px"]'
+    assert_selector 'button[data-action="search-popup#open"][style*="44px"]'
+  end
+
   test "hides buttons when show_buttons is false" do
     render_inline(Ui::SearchFormComponent.new(
       url: "/posts",

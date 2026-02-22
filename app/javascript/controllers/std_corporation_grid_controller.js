@@ -170,7 +170,14 @@ export default class extends Controller {
         "upper_corp_cd", "zip_cd", "addr_cd", "dtl_addr_cd", "vat_sctn_cd", "use_yn_cd"
       ],
       firstEditCol: "corp_cd",
-      pkLabels: { corp_cd: "법인코드" }
+      pkLabels: { corp_cd: "법인코드" },
+      onRowDataUpdated: () => {
+        if (!isApiAlive(this.countryManager?.api)) {
+          return
+        }
+
+        this.syncMasterSelection()
+      }
     }
   }
 

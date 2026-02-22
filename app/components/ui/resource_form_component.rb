@@ -17,13 +17,14 @@ class Ui::ResourceFormComponent < ApplicationComponent
   VALID_FIELD_NAME = /\A[a-zA-Z0-9_]+\z/
   FIELD_TYPES = %w[input number select date_picker textarea rich_textarea checkbox radio switch photo multi_file].freeze
 
-  def initialize(model:, fields:, url: nil, cols: 3,
+  def initialize(model:, fields:, url: nil, method: nil, cols: 3,
                  show_buttons: true, submit_label: "저장",
                  cancel_url: nil, form_data: {}, form_html: {},
                  target_controller: nil, **html_options)
     @model = model
     @fields = fields
     @url = url
+    @form_method = method
     @cols = cols
     @show_buttons = show_buttons
     @submit_label = submit_label
@@ -35,7 +36,7 @@ class Ui::ResourceFormComponent < ApplicationComponent
   end
 
   private
-    attr_reader :model, :fields, :url, :cols, :show_buttons,
+    attr_reader :model, :fields, :url, :form_method, :cols, :show_buttons,
                 :submit_label, :cancel_url, :form_data, :form_html,
                 :target_controller, :html_options
 
@@ -71,8 +72,8 @@ class Ui::ResourceFormComponent < ApplicationComponent
       { novalidate: true }.merge(form_html)
     end
 
-    def sanitize_resource_field_defs(fields)
-      fields.map do |field|
+    def sanitize_resource_field_defs(field_defs)
+      field_defs.map do |field|
         field = field.symbolize_keys
         validate_resource_field_name!(field[:field])
 
@@ -105,9 +106,9 @@ class Ui::ResourceFormComponent < ApplicationComponent
       normalized
     end
 
-    def extract_dependencies(fields)
+    def extract_dependencies(field_defs)
       deps = {}
-      fields.each do |field|
+      field_defs.each do |field|
         next unless field[:depends_on].present?
 
         deps[field[:field].to_s] = {

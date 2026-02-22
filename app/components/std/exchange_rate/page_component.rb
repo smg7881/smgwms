@@ -7,6 +7,10 @@ class Std::ExchangeRate::PageComponent < Std::BasePageComponent
       helpers.batch_save_std_exchange_rates_path
     end
 
+    def fetch_rates_url
+      helpers.fetch_rates_std_exchange_rates_path
+    end
+
     def search_fields
       [
         { field: "ctry_cd", type: "popup", label: "국가", popup_type: "country", code_field: "ctry_cd", placeholder: "국가 선택" },
@@ -76,15 +80,15 @@ class Std::ExchangeRate::PageComponent < Std::BasePageComponent
           cellEditor: "agSelectCellEditor",
           cellEditorParams: { values: common_code_values("STD_MON_CODE") }
         },
-        { field: "cash_buy", headerName: "현찰매입", minWidth: 100, editable: true, cellEditor: "agNumberCellEditor" },
-        { field: "cash_sell", headerName: "현찰매도", minWidth: 100, editable: true, cellEditor: "agNumberCellEditor" },
-        { field: "sendmoney_sndg", headerName: "송금보낼때", minWidth: 100, editable: true, cellEditor: "agNumberCellEditor" },
-        { field: "sendmoney_rcvng", headerName: "송금받을때", minWidth: 100, editable: true, cellEditor: "agNumberCellEditor" },
-        { field: "tc_buy", headerName: "TC매입", minWidth: 100, editable: true, cellEditor: "agNumberCellEditor" },
-        { field: "fcur_check_sell", headerName: "외화수표매도", minWidth: 120, editable: true, cellEditor: "agNumberCellEditor" },
-        { field: "tradg_std_rt", headerName: "매매기준율", minWidth: 110, editable: true, cellEditor: "agNumberCellEditor" },
-        { field: "convmoney_rt", headerName: "환산율", minWidth: 120, editable: true, cellEditor: "agNumberCellEditor" },
-        { field: "usd_conv_rt", headerName: "USD환산율", minWidth: 110, editable: true, cellEditor: "agNumberCellEditor" },
+        { field: "cash_buy", headerName: "현찰매입", minWidth: 100, editable: true, type: "numericColumn" },
+        { field: "cash_sell", headerName: "현찰매도", minWidth: 100, editable: true, type: "numericColumn" },
+        { field: "sendmoney_sndg", headerName: "송금보낼때", minWidth: 100, editable: true, type: "numericColumn" },
+        { field: "sendmoney_rcvng", headerName: "송금받을때", minWidth: 100, editable: true, type: "numericColumn" },
+        { field: "tc_buy", headerName: "TC매입", minWidth: 100, editable: true, type: "numericColumn" },
+        { field: "fcur_check_sell", headerName: "외화수표매도", minWidth: 120, editable: true, type: "numericColumn" },
+        { field: "tradg_std_rt", headerName: "매매기준율", minWidth: 110, editable: true, type: "numericColumn" },
+        { field: "convmoney_rt", headerName: "환산율", minWidth: 120, editable: true, type: "numericColumn" },
+        { field: "usd_conv_rt", headerName: "USD환산율", minWidth: 110, editable: true, type: "numericColumn" },
         {
           field: "if_yn_cd",
           headerName: "인터페이스여부",

@@ -1,6 +1,7 @@
 <div data-controller="std-exchange-rate-grid"
      data-action="ag-grid:ready->std-exchange-rate-grid#registerGrid"
-     data-std-exchange-rate-grid-batch-url-value="<%= batch_save_url %>">
+     data-std-exchange-rate-grid-batch-url-value="<%= batch_save_url %>"
+     data-std-exchange-rate-grid-fetch-url-value="<%= fetch_rates_url %>">
   <%= render Ui::SearchFormComponent.new(
     url: create_url,
     fields: search_fields,
@@ -16,6 +17,7 @@
     </h3>
     <%= render Ui::GridToolbarComponent.new(
       buttons: [
+        { label: "환율정보 가져오기", class: "btn btn-sm btn-info", action: "click->std-exchange-rate-grid#fetchRates" },
         { label: "추가", class: "btn btn-sm btn-primary", action: "click->std-exchange-rate-grid#addRow" },
         { label: "삭제", class: "btn btn-sm btn-danger", action: "click->std-exchange-rate-grid#deleteRows" },
         { label: "저장", class: "btn btn-sm btn-success", action: "click->std-exchange-rate-grid#saveRows" }

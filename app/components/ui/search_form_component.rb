@@ -5,6 +5,7 @@ class Ui::SearchFormComponent < ApplicationComponent
     pattern minlength maxlength inputmode autocomplete
     date_type date_format min max
     popup_type code_field
+    display_width code_width button_width
     include_blank help
   ].freeze
 

@@ -174,7 +174,10 @@ Rails.application.routes.draw do
       post :batch_save, on: :collection
     end
     resources :exchange_rates, controller: :exchange_rates, only: [ :index ] do
-      post :batch_save, on: :collection
+      collection do
+        post :batch_save
+        post :fetch_rates
+      end
     end
   end
 

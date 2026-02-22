@@ -1,53 +1,85 @@
-﻿<div class="p-4">
-  <%= form_with url: search_popup_path(@type), method: :get,
-        data: { turbo_frame: params[:frame].presence || "search_popup_frame" },
-        class: "mb-3" do |f| %>
-    <%= hidden_field_tag :frame, params[:frame] %>
-    <div class="flex items-end gap-2">
-      <div class="flex-1">
-        <label for="search_popup_q" class="text-xs text-text-secondary mb-1 block">검색어</label>
-        <input id="search_popup_q"
-               type="text"
-               name="q"
-               value="<%= @keyword %>"
-               class="form-grid-input w-full"
-               placeholder="코드 또는 명칭 검색" />
-      </div>
-      <button type="submit" class="btn btn-sm btn-secondary">조회</button>
-    </div>
-  <% end %>
+<%
+  popup_fields = [
+    {
+      field: "display",
+      type: "input",
+      label: "명칭",
+      placeholder: "명칭 입력",
+      span: "24 s:12 m:12",
+      target: "keyword"
+    },
+    {
+      field: "code",
+      type: "input",
+      label: "코드",
+      placeholder: "코드",
+      span: "24 s:12 m:8",
+      disabled: true,
+      target: "code"
+    }
+  ]
 
-  <div class="border border-border rounded-md overflow-hidden">
-    <table class="w-full text-sm">
-      <thead class="bg-bg-tertiary">
-        <tr>
-          <th class="text-left px-3 py-2 border-b border-border">코드</th>
-          <th class="text-left px-3 py-2 border-b border-border">명칭</th>
-          <th class="text-center px-3 py-2 border-b border-border w-20">선택</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% if @rows.any? %>
-          <% @rows.each do |row| %>
-            <tr class="hover:bg-bg-hover cursor-pointer"
-                ondblclick="(function(){const modal=document.getElementById('search-popup-modal');if(!modal){return;}modal.dispatchEvent(new CustomEvent('search-popup:select',{detail:{code:'<%= j row[:code].to_s %>',display:'<%= j row[:display].to_s %>'},bubbles:true}));})();">
-              <td class="px-3 py-2 border-b border-border"><%= row[:code] %></td>
-              <td class="px-3 py-2 border-b border-border"><%= row[:display] %></td>
-              <td class="px-3 py-2 border-b border-border text-center">
-                <button type="button"
-                        class="btn btn-xs btn-primary"
-                        onclick="(function(){const modal=document.getElementById('search-popup-modal');if(!modal){return;}modal.dispatchEvent(new CustomEvent('search-popup:select',{detail:{code:'<%= j row[:code].to_s %>',display:'<%= j row[:display].to_s %>'},bubbles:true}));})();">
-                  선택
-                </button>
-              </td>
-            </tr>
-          <% end %>
-        <% else %>
-          <tr>
-            <td colspan="3" class="px-3 py-4 text-center text-text-secondary">검색 결과가 없습니다.</td>
-          </tr>
-        <% end %>
-      </tbody>
-    </table>
+  popup_columns = [
+    { field: "name", headerName: "명칭", minWidth: 220, editable: false },
+    { field: "code", headerName: "코드", minWidth: 120, maxWidth: 160, editable: false },
+    {
+      field: "__select",
+      headerName: "선택",
+      minWidth: 90,
+      maxWidth: 90,
+      editable: false,
+      sortable: false,
+      filter: false,
+      resizable: false,
+      cellStyle: { textAlign: "center" },
+      cellRenderer: "popupSelectCellRenderer"
+    }
+  ]
+
+  popup_rows = @rows.map do |row|
+    {
+      name: row[:name],
+      code: row[:code],
+      display: row[:display]
+    }
+  end
+%>
+
+<div class="p-4"
+     data-controller="search-popup-grid"
+     data-action="ag-grid:ready->search-popup-grid#registerGrid search-popup-grid:select->search-popup-grid#selectFromRenderer">
+  <%= render Ui::ResourceFormComponent.new(
+    model: @popup_form,
+    url: search_popup_path(@type, frame: @frame),
+    method: :get,
+    fields: popup_fields,
+    cols: 3,
+    show_buttons: false,
+    target_controller: "search_popup_grid",
+    form_data: {
+      turbo_frame: @frame,
+      search_popup_grid_target: "form"
+    }
+  ) %>
+
+  <div class="flex justify-end mb-3 -mt-2">
+    <button type="button"
+            class="btn btn-sm btn-secondary inline-flex items-center gap-1.5"
+            data-action="search-popup-grid#submitForm"
+            aria-label="검색">
+      <%= lucide_icon("search", css_class: "w-3.5 h-3.5") %>
+      조회
+    </button>
   </div>
+
+  <%= render Ui::AgGridComponent.new(
+    columns: popup_columns,
+    row_data: popup_rows,
+    pagination: false,
+    row_selection: "single",
+    height: "min(56vh, 480px)",
+    data: {
+      search_popup_grid_target: "grid"
+    }
+  ) %>
 </div>

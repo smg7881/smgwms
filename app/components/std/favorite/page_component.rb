@@ -53,7 +53,16 @@ class Std::Favorite::PageComponent < Std::BasePageComponent
           cellEditor: "agSelectCellEditor",
           cellEditorParams: { values: menu_code_values }
         },
-        { field: "menu_nm", headerName: "메뉴명", minWidth: 180, editable: true },
+        {
+          field: "menu_nm",
+          headerName: "메뉴명",
+          minWidth: 180,
+          editable: true,
+          lookup_popup_type: "menu",
+          lookup_code_field: "menu_cd",
+          lookup_name_field: "menu_nm",
+          lookup_popup_title: "메뉴 조회"
+        },
         { field: "user_favor_menu_grp", headerName: "즐겨찾기그룹", minWidth: 130, editable: true },
         { field: "sort_seq", headerName: "정렬순번", maxWidth: 95, editable: true, cellEditor: "agNumberCellEditor" },
         {

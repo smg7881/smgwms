@@ -7,6 +7,7 @@ class Ui::AgGridComponent < ApplicationComponent
     type cellEditor cellEditorParams
     formatter
     cellRenderer cellRendererParams
+    lookup_popup_type lookup_popup_url lookup_code_field lookup_name_field lookup_popup_title
   ].freeze
 
   def initialize(columns:, url: nil, row_data: nil, pagination: true,

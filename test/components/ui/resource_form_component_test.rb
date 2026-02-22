@@ -152,4 +152,14 @@ class Ui::ResourceFormComponentTest < ViewComponent::TestCase
 
     assert_selector "form[data-my-target='form']"
   end
+
+  test "supports custom form method" do
+    render_inline(Ui::ResourceFormComponent.new(
+      model: Post.new,
+      fields: [ { field: "title", type: "input" } ],
+      method: :get
+    ))
+
+    assert_selector "form[method='get']"
+  end
 end
