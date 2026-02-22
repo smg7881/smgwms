@@ -1,7 +1,7 @@
 /**
  * Grid 컨트롤러 공통 유틸리티 함수
  *
- * 8개 Grid 컨트롤러에서 동일하게 사용되는 순수 유틸리티 함수를 제공한다.
+ * Grid 컨트롤러에서 동일하게 사용되는 순수 유틸리티 함수를 제공한다.
  * 상태를 갖지 않으며, 모든 함수는 named export로 제공된다.
  */
 
@@ -122,4 +122,97 @@ export function numberOrNull(value) {
   const numeric = Number(value)
   if (Number.isNaN(numeric)) return null
   return numeric
+}
+
+// 검색 폼에서 q[fieldName] 입력값을 추출 (기본 대문자 변환)
+export function getSearchFieldValue(element, fieldName, { toUpperCase = true } = {}) {
+  const field = element.querySelector(`[name='q[${fieldName}]']`)
+  const raw = (field?.value ?? "").toString().trim()
+  return toUpperCase ? raw.toUpperCase() : raw
+}
+
+// 그리드 첫 번째 행에 포커스를 설정하고 해당 행 데이터를 반환
+export function focusFirstRow(api, { ensureVisible = false, select = false } = {}) {
+  if (!isApiAlive(api)) return null
+
+  const node = api.getDisplayedRowAtIndex(0)
+  if (!node?.data) return null
+
+  if (ensureVisible) api.ensureIndexVisible(0)
+
+  const col = api.getAllDisplayedColumns()?.[0]
+  if (col) api.setFocusedCell(0, col.getColId())
+
+  if (select) node.setSelected(true, true)
+  return node.data
+}
+
+// GridCrudManager에 미저장 변경사항이 있는지 확인
+export function hasPendingChanges(manager) {
+  if (!manager) return false
+  return hasChanges(manager.buildOperations())
+}
+
+// 미저장 변경사항이 있으면 얼럿 후 true 반환 (호출부에서 차단용)
+export function blockIfPendingChanges(manager, entityLabel = "마스터") {
+  if (!hasPendingChanges(manager)) return false
+  alert(`${entityLabel}에 저장되지 않은 변경이 있습니다.`)
+  return true
+}
+
+// URL 템플릿의 플레이스홀더를 실제 값으로 치환
+export function buildTemplateUrl(template, placeholder, value) {
+  return template.replace(placeholder, encodeURIComponent(value))
+}
+
+// SELECT 요소에 옵션 목록을 렌더링 (blankLabel=null이면 빈 옵션 생략)
+export function setSelectOptions(selectEl, options, selectedValue = "", blankLabel = "전체") {
+  if (!selectEl) return ""
+
+  const normalized = (selectedValue || "").toString()
+  const values = options.map((o) => o.value.toString())
+  const canSelect = normalized && values.includes(normalized)
+
+  selectEl.innerHTML = ""
+
+  if (blankLabel !== null) {
+    const blank = document.createElement("option")
+    blank.value = ""
+    blank.textContent = blankLabel
+    selectEl.appendChild(blank)
+  }
+
+  options.forEach((opt) => {
+    const el = document.createElement("option")
+    el.value = opt.value
+    el.textContent = opt.label
+    selectEl.appendChild(el)
+  })
+
+  selectEl.value = canSelect ? normalized : ""
+  return selectEl.value
+}
+
+// SELECT 요소의 옵션을 빈 옵션 하나만 남기고 초기화
+export function clearSelectOptions(selectEl, blankLabel = "전체") {
+  setSelectOptions(selectEl, [], "", blankLabel)
+}
+
+// 선택 상태 라벨 텍스트를 갱신
+export function refreshSelectionLabel(target, value, entityLabel, emptyMessage) {
+  if (!target) return
+  target.textContent = value
+    ? `선택 ${entityLabel}: ${value}`
+    : (emptyMessage || `${entityLabel}을(를) 먼저 선택해주세요.`)
+}
+
+// 코드→이름 매핑 Map/Object에서 이름을 조회
+export function resolveNameFromMap(map, code) {
+  if (!code || !map) return ""
+  return map[code] || ""
+}
+
+// 여러 필드 값을 구분자로 결합하여 복합 키 문자열 생성
+export function buildCompositeKey(fields, separator = "::") {
+  return fields.join(separator)
 }

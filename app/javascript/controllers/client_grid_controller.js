@@ -1,7 +1,7 @@
 import BaseGridController from "controllers/base_grid_controller"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
 import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
-import { isApiAlive, postJson, hasChanges, fetchJson, setManagerRowData } from "controllers/grid/grid_utils"
+import { isApiAlive, postJson, hasChanges, fetchJson, setManagerRowData, focusFirstRow, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel, setSelectOptions as setSelectOptionsUtil, getSearchFieldValue } from "controllers/grid/grid_utils"
 
 const CODE_FIELDS = [
   "bzac_cd",
@@ -378,8 +378,8 @@ export default class extends BaseGridController {
   async syncMasterSelectionAfterLoad() {
     if (!isApiAlive(this.manager?.api)) return
 
-    const firstRowNode = this.manager.api.getDisplayedRowAtIndex(0)
-    if (!firstRowNode?.data) {
+    const firstData = focusFirstRow(this.manager.api)
+    if (!firstData) {
       this.currentMasterRow = null
       this.selectedClientValue = ""
       this.refreshSelectedClientLabel()
@@ -389,12 +389,7 @@ export default class extends BaseGridController {
       return
     }
 
-    const firstCol = this.manager.api.getAllDisplayedColumns()?.[0]
-    if (firstCol) {
-      this.manager.api.setFocusedCell(0, firstCol.getColId())
-    }
-
-    await this.handleMasterRowChange(firstRowNode.data)
+    await this.handleMasterRowChange(firstData)
   }
 
   addContactRow() {
@@ -432,7 +427,7 @@ export default class extends BaseGridController {
       return
     }
 
-    const batchUrl = this.contactBatchUrlTemplateValue.replace(":id", encodeURIComponent(this.selectedClientValue))
+    const batchUrl = buildTemplateUrl(this.contactBatchUrlTemplateValue, ":id", this.selectedClientValue)
     const ok = await postJson(batchUrl, operations)
     if (!ok) return
 
@@ -475,7 +470,7 @@ export default class extends BaseGridController {
       return
     }
 
-    const batchUrl = this.workplaceBatchUrlTemplateValue.replace(":id", encodeURIComponent(this.selectedClientValue))
+    const batchUrl = buildTemplateUrl(this.workplaceBatchUrlTemplateValue, ":id", this.selectedClientValue)
     const ok = await postJson(batchUrl, operations)
     if (!ok) return
 
@@ -492,7 +487,7 @@ export default class extends BaseGridController {
     }
 
     try {
-      const url = this.contactListUrlTemplateValue.replace(":id", encodeURIComponent(clientCode))
+      const url = buildTemplateUrl(this.contactListUrlTemplateValue, ":id", clientCode)
       const rows = await fetchJson(url)
       setManagerRowData(this.contactManager, rows)
     } catch {
@@ -509,7 +504,7 @@ export default class extends BaseGridController {
     }
 
     try {
-      const url = this.workplaceListUrlTemplateValue.replace(":id", encodeURIComponent(clientCode))
+      const url = buildTemplateUrl(this.workplaceListUrlTemplateValue, ":id", clientCode)
       const rows = await fetchJson(url)
       setManagerRowData(this.workplaceManager, rows)
     } catch {
@@ -531,25 +526,15 @@ export default class extends BaseGridController {
 
   refreshSelectedClientLabel() {
     if (!this.hasSelectedClientLabelTarget) return
-
-    if (this.selectedClientValue) {
-      this.selectedClientLabelTarget.textContent = `선택 거래처: ${this.selectedClientValue}`
-    } else {
-      this.selectedClientLabelTarget.textContent = "거래처를 먼저 선택하세요."
-    }
+    refreshSelectionLabel(this.selectedClientLabelTarget, this.selectedClientValue, "거래처", "거래처를 먼저 선택하세요.")
   }
 
   hasMasterPendingChanges() {
-    if (!this.manager) return false
-
-    return hasChanges(this.manager.buildOperations())
+    return hasPendingChanges(this.manager)
   }
 
   blockDetailActionIfMasterChanged() {
-    if (!this.hasMasterPendingChanges()) return false
-
-    alert("마스터 거래처에 저장되지 않은 변경이 있습니다.")
-    return true
+    return blockIfPendingChanges(this.manager, "마스터 거래처")
   }
 
   switchTab(event) {
@@ -667,24 +652,7 @@ export default class extends BaseGridController {
     if (!this.hasDetailSectionFieldTarget) return
 
     const options = this.resolveSectionOptions(groupCode)
-    const values = options.map((item) => item.value.toString())
-    const normalizedSelected = (selectedCode || "").toString()
-    const canSelect = normalizedSelected && values.includes(normalizedSelected)
-
-    this.detailSectionFieldTarget.innerHTML = ""
-    const blank = document.createElement("option")
-    blank.value = ""
-    blank.textContent = ""
-    this.detailSectionFieldTarget.appendChild(blank)
-
-    options.forEach((item) => {
-      const option = document.createElement("option")
-      option.value = item.value
-      option.textContent = item.label
-      this.detailSectionFieldTarget.appendChild(option)
-    })
-
-    this.detailSectionFieldTarget.value = canSelect ? normalizedSelected : ""
+    setSelectOptionsUtil(this.detailSectionFieldTarget, options, selectedCode, "")
   }
 
   resolveSectionOptions(groupCode) {
@@ -862,44 +830,18 @@ export default class extends BaseGridController {
         value: row.detail_code,
         label: row.detail_code_name
       }))
-      this.setSelectOptions(this.sectionField, options, selectedSectionCode)
+      setSelectOptionsUtil(this.sectionField, options, selectedSectionCode)
     } catch {
       alert("거래처구분 목록 조회에 실패했습니다.")
     }
   }
 
-  setSelectOptions(selectEl, options, selectedValue = "") {
-    if (!selectEl) return
-
-    const normalized = (selectedValue || "").toString()
-    const optionValues = options.map((option) => option.value.toString())
-    const canSelect = normalized && optionValues.includes(normalized)
-
-    selectEl.innerHTML = ""
-    this.appendBlankOption(selectEl)
-    options.forEach((option) => {
-      const optionEl = document.createElement("option")
-      optionEl.value = option.value
-      optionEl.textContent = option.label
-      selectEl.appendChild(optionEl)
-    })
-
-    selectEl.value = canSelect ? normalized : ""
-  }
-
-  appendBlankOption(selectEl) {
-    const blankOption = document.createElement("option")
-    blankOption.value = ""
-    blankOption.textContent = "전체"
-    selectEl.appendChild(blankOption)
-  }
-
   selectedGroupCode() {
-    return (this.groupField?.value || "").trim().toUpperCase()
+    return getSearchFieldValue(this.element, "bzac_sctn_grp_cd")
   }
 
   selectedSectionCode() {
-    return (this.sectionField?.value || "").trim().toUpperCase()
+    return getSearchFieldValue(this.element, "bzac_sctn_cd")
   }
 
   searchField(name) {

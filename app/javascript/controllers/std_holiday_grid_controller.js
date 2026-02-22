@@ -1,5 +1,5 @@
 import BaseGridController from "controllers/base_grid_controller"
-import { getCsrfToken } from "controllers/grid/grid_utils"
+import { getCsrfToken, getSearchFieldValue } from "controllers/grid/grid_utils"
 
 export default class extends BaseGridController {
   static values = {
@@ -92,18 +92,15 @@ export default class extends BaseGridController {
   }
 
   get currentCountryCode() {
-    const field = this.element.querySelector("[name='q[ctry_cd]']")
-    return field?.value?.toString().trim().toUpperCase() || ""
+    return getSearchFieldValue(this.element, "ctry_cd")
   }
 
   get currentYear() {
-    const field = this.element.querySelector("[name='q[year]']")
-    return field?.value?.toString().trim() || ""
+    return getSearchFieldValue(this.element, "year", { toUpperCase: false })
   }
 
   get currentMonth() {
-    const field = this.element.querySelector("[name='q[month]']")
-    return field?.value?.toString().trim() || ""
+    return getSearchFieldValue(this.element, "month", { toUpperCase: false })
   }
 
   get defaultYmd() {

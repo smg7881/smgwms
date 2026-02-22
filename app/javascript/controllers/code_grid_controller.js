@@ -9,7 +9,7 @@
 import BaseGridController from "controllers/base_grid_controller"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
 import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
-import { isApiAlive, postJson, hasChanges, fetchJson, setManagerRowData } from "controllers/grid/grid_utils"
+import { isApiAlive, postJson, hasChanges, fetchJson, setManagerRowData, focusFirstRow, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel } from "controllers/grid/grid_utils"
 
 export default class extends BaseGridController {
   // 타겟 확정 (2개의 거대한 그리드 컨테이너 및 텍스트 라벨)
@@ -220,20 +220,15 @@ export default class extends BaseGridController {
   async syncMasterSelectionAfterLoad() {
     if (!isApiAlive(this.manager?.api) || !isApiAlive(this.detailManager?.api)) return
 
-    const firstRowNode = this.manager.api.getDisplayedRowAtIndex(0)
-    if (!firstRowNode?.data) {
+    const firstData = focusFirstRow(this.manager.api)
+    if (!firstData) {
       this.selectedCodeValue = ""
       this.refreshSelectedCodeLabel()
       this.clearDetailRows()
       return
     }
 
-    const firstCol = this.manager.api.getAllDisplayedColumns()?.[0]
-    if (firstCol) {
-      this.manager.api.setFocusedCell(0, firstCol.getColId())
-    }
-
-    await this.handleMasterRowChange(firstRowNode.data)
+    await this.handleMasterRowChange(firstData)
   }
 
   // ===================== [Detail Area] =========================
@@ -275,7 +270,7 @@ export default class extends BaseGridController {
     }
 
     // /codes/:code/details 형식 치환
-    const batchUrl = this.detailBatchUrlTemplateValue.replace(":code", encodeURIComponent(this.selectedCodeValue))
+    const batchUrl = buildTemplateUrl(this.detailBatchUrlTemplateValue, ":code", this.selectedCodeValue)
     const ok = await postJson(batchUrl, operations)
     if (!ok) return
 
@@ -292,7 +287,7 @@ export default class extends BaseGridController {
     }
 
     try {
-      const url = this.detailListUrlTemplateValue.replace(":code", encodeURIComponent(code))
+      const url = buildTemplateUrl(this.detailListUrlTemplateValue, ":code", code)
       const rows = await fetchJson(url)
       setManagerRowData(this.detailManager, rows)
     } catch {
@@ -307,24 +302,15 @@ export default class extends BaseGridController {
   // 상단 부제목 영역에 가시화용
   refreshSelectedCodeLabel() {
     if (!this.hasSelectedCodeLabelTarget) return
-
-    if (this.selectedCodeValue) {
-      this.selectedCodeLabelTarget.textContent = `선택 코드: ${this.selectedCodeValue}`
-    } else {
-      this.selectedCodeLabelTarget.textContent = "코드를 먼저 선택해주세요."
-    }
+    refreshSelectionLabel(this.selectedCodeLabelTarget, this.selectedCodeValue, "코드", "코드를 먼저 선택해주세요.")
   }
 
   // 마스터쪽에 C/U/D가 발생한 상태인지 체크 (종속성 무결성 보호장치용)
   hasMasterPendingChanges() {
-    if (!this.manager) return false
-    return hasChanges(this.manager.buildOperations())
+    return hasPendingChanges(this.manager)
   }
 
   blockDetailActionIfMasterChanged() {
-    if (!this.hasMasterPendingChanges()) return false
-
-    alert("마스터 코드에 저장되지 않은 변경이 있습니다.")
-    return true
+    return blockIfPendingChanges(this.manager, "마스터 코드")
   }
 }

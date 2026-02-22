@@ -7,6 +7,7 @@
  * - 사용자가 그리드 상에서 작업장 코드를 변경했을 때, 서버나 Map을 참조하여 '작업장 명칭'을 즉결 동기화.
  */
 import BaseGridController from "controllers/base_grid_controller"
+import { getSearchFieldValue, resolveNameFromMap } from "controllers/grid/grid_utils"
 
 export default class extends BaseGridController {
   static values = {
@@ -86,15 +87,12 @@ export default class extends BaseGridController {
 
   // 보조 헬퍼: JS 객체에서 코드-이름 검색
   resolveWorkplaceName(workplCd) {
-    if (!workplCd) return ""
-    return this.workplaceNameMap[workplCd] || ""
+    return resolveNameFromMap(this.workplaceNameMap, workplCd)
   }
 
   // 보조 헬퍼: HTML DOM 트리를 직접 뒤져서 <input name="q[workpl_cd]"> 등의 값을 빼냄
   selectedWorkplaceCodeFromSearch() {
-    const field = this.element.querySelector("[name='q[workpl_cd]']")
-    if (!field) return ""
-    return (field.value || "").trim().toUpperCase()
+    return getSearchFieldValue(this.element, "workpl_cd")
   }
 
   // 성공 시 사용자에게 노출될 토스트/얼럿 텍스트

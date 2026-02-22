@@ -1,4 +1,5 @@
 import BaseGridController from "controllers/base_grid_controller"
+import { getSearchFieldValue } from "controllers/grid/grid_utils"
 
 export default class extends BaseGridController {
   configureManager() {
@@ -66,23 +67,19 @@ export default class extends BaseGridController {
   }
 
   get currentCountryCode() {
-    const field = this.element.querySelector("[name='q[ctry_cd]']")
-    return field?.value?.toString().trim().toUpperCase() || ""
+    return getSearchFieldValue(this.element, "ctry_cd")
   }
 
   get currentFinancialOrg() {
-    const field = this.element.querySelector("[name='q[fnc_or_cd]']")
-    return field?.value?.toString().trim().toUpperCase() || ""
+    return getSearchFieldValue(this.element, "fnc_or_cd")
   }
 
   get currentAnnouncementDegree() {
-    const field = this.element.querySelector("[name='q[anno_dgrcnt]']")
-    return field?.value?.toString().trim().toUpperCase() || ""
+    return getSearchFieldValue(this.element, "anno_dgrcnt")
   }
 
   get currentStandardDate() {
-    const field = this.element.querySelector("[name='q[std_ymd]']")
-    return field?.value?.toString().trim() || ""
+    return getSearchFieldValue(this.element, "std_ymd", { toUpperCase: false })
   }
 
   get yesterdayDate() {

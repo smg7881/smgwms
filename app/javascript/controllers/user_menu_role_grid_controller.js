@@ -10,7 +10,7 @@
 import BaseGridController from "controllers/base_grid_controller"
 import { GridEventManager, resolveAgGridRegistration } from "controllers/grid/grid_event_manager"
 import { AbortableRequestTracker, isAbortError } from "controllers/grid/request_tracker"
-import { isApiAlive, fetchJson, setGridRowData } from "controllers/grid/grid_utils"
+import { isApiAlive, fetchJson, setGridRowData, focusFirstRow } from "controllers/grid/grid_utils"
 
 export default class extends BaseGridController {
   // 타겟 뷰: 1단User, 2단Role, 3단Menu 그리드 DOM
@@ -200,15 +200,7 @@ export default class extends BaseGridController {
 
   // 그리드에 존재하는 최상단 데이터 0번째 인덱스를 강제로 하이라이팅+선택(Select) 처리하는 API 컨트롤 로직
   selectFirstRow(api, focusField) {
-    if (!isApiAlive(api) || api.getDisplayedRowCount() === 0) return null
-
-    const firstRowNode = api.getDisplayedRowAtIndex(0)
-    if (!firstRowNode) return null
-
-    api.ensureIndexVisible(0) // 스크롤바 조절 쫓아가기
-    api.setFocusedCell(0, focusField, null) // 셀 단위 파란색 테두리 포커스
-    firstRowNode.setSelected(true, true) // 시스템 전역 체크드(Selection) 이벤트 개방
-    return firstRowNode.data
+    return focusFirstRow(api, { ensureVisible: true, select: true })
   }
 
   // 타 뷰로 넘어갈때 Abort() 호출

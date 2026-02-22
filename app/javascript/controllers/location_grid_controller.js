@@ -9,7 +9,7 @@
  * - "재고가 존재하는 로케이션(has_stock: Y)"의 경우 삭제 트랜잭션 진행 전에 방어(block) 시킵니다.
  */
 import BaseGridController from "controllers/base_grid_controller"
-import { fetchJson } from "controllers/grid/grid_utils"
+import { fetchJson, setSelectOptions as setSelectOptionsUtil, clearSelectOptions, getSearchFieldValue } from "controllers/grid/grid_utils"
 
 export default class extends BaseGridController {
   static values = {
@@ -187,8 +187,8 @@ export default class extends BaseGridController {
 
     if (!workplCd) {
       // 1뎁스 미달입 시 2/3뎁스 먹통화
-      this.clearSelect(this.areaField)
-      this.clearSelect(this.zoneField)
+      clearSelectOptions(this.areaField)
+      clearSelectOptions(this.zoneField)
       return
     }
 
@@ -197,15 +197,15 @@ export default class extends BaseGridController {
     if (this.selectedAreaCode()) {
       await this.loadZoneOptions(workplCd, this.selectedAreaCode(), zoneCd)
     } else {
-      this.clearSelect(this.zoneField)
+      clearSelectOptions(this.zoneField)
     }
   }
 
   // 작업장 콤보 변동 핸들러: 하위항목 두 가지 싹슬이 및 Area 재조회
   async handleWorkplaceChange() {
     const workplCd = this.selectedWorkplaceCode()
-    this.clearSelect(this.areaField)
-    this.clearSelect(this.zoneField)
+    clearSelectOptions(this.areaField)
+    clearSelectOptions(this.zoneField)
     if (!workplCd) return
 
     await this.loadAreaOptions(workplCd, "")
@@ -215,7 +215,7 @@ export default class extends BaseGridController {
   async handleAreaChange() {
     const workplCd = this.selectedWorkplaceCode()
     const areaCd = this.selectedAreaCode()
-    this.clearSelect(this.zoneField)
+    clearSelectOptions(this.zoneField)
     if (!workplCd || !areaCd) return
 
     await this.loadZoneOptions(workplCd, areaCd, "")
@@ -237,7 +237,7 @@ export default class extends BaseGridController {
       label: `${row.area_cd} - ${row.area_nm || ""}`
     }))
 
-    this.setSelectOptions(this.areaField, options, selectedAreaCd)
+    setSelectOptionsUtil(this.areaField, options, selectedAreaCd)
   }
 
   // 백엔드 API (zonesUrl) 호출 및 드롭다운 HTML 렌더  
@@ -256,7 +256,7 @@ export default class extends BaseGridController {
       label: `${row.zone_cd} - ${row.zone_nm || ""}`
     }))
 
-    this.setSelectOptions(this.zoneField, options, selectedZoneCd)
+    setSelectOptionsUtil(this.zoneField, options, selectedZoneCd)
   }
 
   // 순수 JSON Fetch 헬퍼 유틸
@@ -271,56 +271,17 @@ export default class extends BaseGridController {
     }
   }
 
-  // 옵션 리스트 Array를 받아 실제 Select DOM에 <option> Child 들을 박아넣음
-  setSelectOptions(selectEl, options, selectedValue = "") {
-    if (!selectEl) return
-
-    const normalized = (selectedValue || "").toString()
-    const values = options.map((option) => option.value.toString())
-    // 서버가 뱉어준 목록 내에 내가 선택하려고 했던 값이 실존하는지?
-    const canSelect = normalized && values.includes(normalized)
-
-    selectEl.innerHTML = "" // 초기화
-    this.appendBlankOption(selectEl) // 최상단 "전체" 칸 만들기
-
-    options.forEach((option) => {
-      const element = document.createElement("option")
-      element.value = option.value
-      element.textContent = option.label
-      selectEl.appendChild(element)
-    })
-
-    // 선택 유지가 가능하면 기존 값 복구, 아니면 "전체" 로 리셋
-    selectEl.value = canSelect ? normalized : ""
-  }
-
-  // 옵션을 ["전체"] 로 완전히 클리어함
-  clearSelect(selectEl) {
-    if (!selectEl) return
-
-    selectEl.innerHTML = ""
-    this.appendBlankOption(selectEl)
-    selectEl.value = ""
-  }
-
-  appendBlankOption(selectEl) {
-    const blankOption = document.createElement("option")
-    blankOption.value = ""
-    blankOption.textContent = "전체"
-    selectEl.appendChild(blankOption)
-  }
-
   // Value getter 헬퍼 삼자
   selectedWorkplaceCode() {
-    return (this.workplField?.value || "").trim().toUpperCase()
+    return getSearchFieldValue(this.element, "workpl_cd")
   }
 
   selectedAreaCode() {
-    return (this.areaField?.value || "").trim().toUpperCase()
+    return getSearchFieldValue(this.element, "area_cd")
   }
 
   selectedZoneCode() {
-    return (this.zoneField?.value || "").trim().toUpperCase()
+    return getSearchFieldValue(this.element, "zone_cd")
   }
 
   // name 속성으로 DOM 빼오기용

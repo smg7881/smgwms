@@ -1,6 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
-import { fetchJson, hasChanges, isApiAlive, postJson, setManagerRowData } from "controllers/grid/grid_utils"
+import { fetchJson, hasChanges, isApiAlive, postJson, setManagerRowData, focusFirstRow, hasPendingChanges, buildTemplateUrl, refreshSelectionLabel } from "controllers/grid/grid_utils"
 
 export default class extends Controller {
   static targets = ["masterGrid", "countryGrid", "selectedCorpLabel"]
@@ -94,7 +94,7 @@ export default class extends Controller {
       alert("법인을 먼저 선택하세요.")
       return
     }
-    if (this.hasMasterPendingChanges()) {
+    if (hasPendingChanges(this.masterManager)) {
       alert("법인 정보를 먼저 저장하세요.")
       return
     }
@@ -113,7 +113,7 @@ export default class extends Controller {
       alert("법인을 먼저 선택하세요.")
       return
     }
-    if (this.hasMasterPendingChanges()) {
+    if (hasPendingChanges(this.masterManager)) {
       alert("법인 정보를 먼저 저장하세요.")
       return
     }
@@ -125,7 +125,7 @@ export default class extends Controller {
       return
     }
 
-    const url = this.countryBatchUrlTemplateValue.replace(":id", encodeURIComponent(this.selectedCorpCode))
+    const url = buildTemplateUrl(this.countryBatchUrlTemplateValue, ":id", this.selectedCorpCode)
     const ok = await postJson(url, operations)
     if (!ok) return
 
@@ -308,22 +308,17 @@ export default class extends Controller {
   async syncMasterSelection() {
     if (!isApiAlive(this.masterManager?.api)) return
 
-    const firstNode = this.masterManager.api.getDisplayedRowAtIndex(0)
-    if (!firstNode?.data) {
+    const firstData = focusFirstRow(this.masterManager.api)
+    if (!firstData) {
       this.selectedCorpCode = ""
       this.refreshSelectedCorpLabel()
       this.clearCountryRows()
       return
     }
 
-    const firstCol = this.masterManager.api.getAllDisplayedColumns()?.[0]
-    if (firstCol) {
-      this.masterManager.api.setFocusedCell(0, firstCol.getColId())
-    }
-
-    this.selectedCorpCode = firstNode.data.corp_cd || ""
+    this.selectedCorpCode = firstData.corp_cd || ""
     this.refreshSelectedCorpLabel()
-    if (this.selectedCorpCode && !firstNode.data.__is_new && !firstNode.data.__is_deleted) {
+    if (this.selectedCorpCode && !firstData.__is_new && !firstData.__is_deleted) {
       await this.loadCountryRows(this.selectedCorpCode)
     } else {
       this.clearCountryRows()
@@ -338,7 +333,7 @@ export default class extends Controller {
     }
 
     try {
-      const url = this.countryListUrlTemplateValue.replace(":id", encodeURIComponent(corpCode))
+      const url = buildTemplateUrl(this.countryListUrlTemplateValue, ":id", corpCode)
       const rows = await fetchJson(url)
       setManagerRowData(this.countryManager, rows)
     } catch {
@@ -350,17 +345,8 @@ export default class extends Controller {
     setManagerRowData(this.countryManager, [])
   }
 
-  hasMasterPendingChanges() {
-    if (!this.masterManager) return false
-    return hasChanges(this.masterManager.buildOperations())
-  }
-
   refreshSelectedCorpLabel() {
     if (!this.hasSelectedCorpLabelTarget) return
-    if (this.selectedCorpCode) {
-      this.selectedCorpLabelTarget.textContent = `선택 법인: ${this.selectedCorpCode}`
-    } else {
-      this.selectedCorpLabelTarget.textContent = "법인을 먼저 선택하세요"
-    }
+    refreshSelectionLabel(this.selectedCorpLabelTarget, this.selectedCorpCode, "법인", "법인을 먼저 선택하세요")
   }
 }

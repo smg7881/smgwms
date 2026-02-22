@@ -1,6 +1,6 @@
 ﻿import { Controller } from "@hotwired/stimulus"
 import { resolveAgGridRegistration } from "controllers/grid/grid_event_manager"
-import { isApiAlive, getCsrfToken, fetchJson, setGridRowData } from "controllers/grid/grid_utils"
+import { isApiAlive, getCsrfToken, fetchJson, setGridRowData, buildCompositeKey } from "controllers/grid/grid_utils"
 
 export default class extends Controller {
   static targets = [
@@ -207,7 +207,7 @@ export default class extends Controller {
   }
 
   rowKey(row) {
-    return `${row.ctry_cd}::${row.zipcd}::${row.seq_no}`
+    return buildCompositeKey([row.ctry_cd, row.zipcd, row.seq_no])
   }
 
   get currentRegionCode() {

@@ -8,7 +8,7 @@
 import BaseGridController from "controllers/base_grid_controller"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
 import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
-import { isApiAlive, postJson, hasChanges, hideNoRowsOverlay, fetchJson, setManagerRowData, setGridRowData } from "controllers/grid/grid_utils"
+import { isApiAlive, postJson, hasChanges, hideNoRowsOverlay, fetchJson, setManagerRowData, setGridRowData, getSearchFieldValue, refreshSelectionLabel, buildCompositeKey } from "controllers/grid/grid_utils"
 
 export default class extends BaseGridController {
   static targets = ["areaGrid", "zoneGrid", "selectedAreaLabel"]
@@ -131,8 +131,8 @@ export default class extends BaseGridController {
     }
 
     // 동일한 Area를 다시 눌렀으면 API 중복낭비 방지 (디바운싱/최적화 체킹)
-    const nextKey = `${workplCd}::${areaCd}`
-    const currentKey = this.selectedArea ? `${this.selectedArea.workpl_cd}::${this.selectedArea.area_cd}` : ""
+    const nextKey = buildCompositeKey([workplCd, areaCd])
+    const currentKey = this.selectedArea ? buildCompositeKey([this.selectedArea.workpl_cd, this.selectedArea.area_cd]) : ""
     if (nextKey === currentKey) return
 
     // 새롭게 포커싱 된 Area로 전역 멤버변수 대체
@@ -237,22 +237,18 @@ export default class extends BaseGridController {
   refreshSelectedAreaLabel() {
     if (!this.hasSelectedAreaLabelTarget) return
 
-    if (!this.selectedArea) {
-      this.selectedAreaLabelTarget.textContent = "구역을 먼저 선택해주세요"
-      return
-    }
-
-    this.selectedAreaLabelTarget.textContent = `선택 구역: ${this.selectedArea.area_cd} / ${this.selectedArea.area_nm || ""}`
+    const value = this.selectedArea
+      ? `${this.selectedArea.area_cd} / ${this.selectedArea.area_nm || ""}`
+      : ""
+    refreshSelectionLabel(this.selectedAreaLabelTarget, value, "구역", "구역을 먼저 선택해주세요")
   }
 
   // 기타 조회조건 필드값 빼오기 유틸 체인
   zoneKeywordFromSearch() {
-    const field = this.element.querySelector("[name='q[zone_cd]']")
-    return (field?.value || "").trim()
+    return getSearchFieldValue(this.element, "zone_cd", { toUpperCase: false })
   }
 
   useYnFromSearch() {
-    const field = this.element.querySelector("[name='q[use_yn]']")
-    return (field?.value || "").trim().toUpperCase()
+    return getSearchFieldValue(this.element, "use_yn")
   }
 }

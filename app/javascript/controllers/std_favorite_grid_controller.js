@@ -1,6 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
-import { fetchJson, hasChanges, isApiAlive, postJson, setManagerRowData } from "controllers/grid/grid_utils"
+import { fetchJson, hasChanges, isApiAlive, postJson, setManagerRowData, getSearchFieldValue } from "controllers/grid/grid_utils"
 
 export default class extends Controller {
   static targets = ["grid", "groupGrid"]
@@ -184,6 +184,6 @@ export default class extends Controller {
   }
 
   get currentUserIdCode() {
-    return this.userField?.value?.toString().trim().toUpperCase() || ""
+    return getSearchFieldValue(this.element, "user_id_code")
   }
 }
