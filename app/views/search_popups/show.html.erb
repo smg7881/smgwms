@@ -1,53 +1,135 @@
 <%
-  popup_fields = [
-    {
-      field: "display",
-      type: "input",
-      label: "명칭",
-      placeholder: "명칭 입력",
-      span: "24 s:12 m:12",
-      target: "keyword"
-    },
-    {
-      field: "code",
-      type: "input",
-      label: "코드",
-      placeholder: "코드",
-      span: "24 s:12 m:8",
-      disabled: true,
-      target: "code"
-    }
-  ]
+  popup_title = if @type == "corp"
+    "법인 조회"
+  else
+    "조회"
+  end
 
-  popup_columns = [
-    { field: "name", headerName: "명칭", minWidth: 220, editable: false },
-    { field: "code", headerName: "코드", minWidth: 120, maxWidth: 160, editable: false },
-    {
-      field: "__select",
-      headerName: "선택",
-      minWidth: 90,
-      maxWidth: 90,
-      editable: false,
-      sortable: false,
-      filter: false,
-      resizable: false,
-      cellStyle: { textAlign: "center" },
-      cellRenderer: "popupSelectCellRenderer"
-    }
-  ]
+  if @type == "corp"
+    popup_fields = [
+      {
+        field: "corp_cd",
+        type: "input",
+        label: "법인코드",
+        placeholder: "법인코드 입력",
+        span: "24 s:12 m:8",
+        target: "corpCd"
+      },
+      {
+        field: "corp_nm",
+        type: "input",
+        label: "법인명",
+        placeholder: "법인명 입력",
+        span: "24 s:12 m:10",
+        target: "corpNm"
+      },
+      {
+        field: "use_yn",
+        type: "select",
+        label: "사용여부",
+        options: [
+          { label: "Y", value: "Y" },
+          { label: "N", value: "N" }
+        ],
+        include_blank: false,
+        span: "24 s:12 m:6",
+        target: "useYn"
+      }
+    ]
 
-  popup_rows = @rows.map do |row|
-    {
-      name: row[:name],
-      code: row[:code],
-      display: row[:display]
-    }
+    popup_columns = [
+      { field: "corp_cd", headerName: "법인코드", minWidth: 130, editable: false },
+      { field: "corp_nm", headerName: "법인명", minWidth: 220, editable: false },
+      { field: "ctry", headerName: "국가", minWidth: 120, editable: false },
+      { field: "biz_no", headerName: "사업자등록번호", minWidth: 160, editable: false },
+      {
+        field: "__select",
+        headerName: "선택",
+        minWidth: 90,
+        maxWidth: 90,
+        editable: false,
+        sortable: false,
+        filter: false,
+        resizable: false,
+        cellStyle: { textAlign: "center" },
+        cellRenderer: "popupSelectCellRenderer"
+      }
+    ]
+
+    popup_rows = @rows.map do |row|
+      {
+        corp_cd: row[:corp_cd],
+        corp_nm: row[:corp_nm],
+        ctry: row[:ctry],
+        biz_no: row[:biz_no],
+        code: row[:code],
+        name: row[:name],
+        display: row[:display],
+        upper_corp_cd: row[:upper_corp_cd],
+        upper_corp_nm: row[:upper_corp_nm]
+      }
+    end
+  else
+    popup_fields = [
+      {
+        field: "display",
+        type: "input",
+        label: "명칭",
+        placeholder: "명칭 입력",
+        span: "24 s:12 m:12",
+        target: "keyword"
+      },
+      {
+        field: "code",
+        type: "input",
+        label: "코드",
+        placeholder: "코드",
+        span: "24 s:12 m:8",
+        disabled: true,
+        target: "code"
+      }
+    ]
+
+    popup_columns = [
+      { field: "name", headerName: "명칭", minWidth: 220, editable: false },
+      { field: "code", headerName: "코드", minWidth: 120, maxWidth: 160, editable: false },
+      {
+        field: "__select",
+        headerName: "선택",
+        minWidth: 90,
+        maxWidth: 90,
+        editable: false,
+        sortable: false,
+        filter: false,
+        resizable: false,
+        cellStyle: { textAlign: "center" },
+        cellRenderer: "popupSelectCellRenderer"
+      }
+    ]
+
+    popup_rows = @rows.map do |row|
+      {
+        name: row[:name],
+        code: row[:code],
+        display: row[:display]
+      }
+    end
   end
 %>
 
+<turbo-frame id="<%= @frame %>">
 <div class="p-4"
      data-controller="search-popup-grid"
      data-action="ag-grid:ready->search-popup-grid#registerGrid search-popup-grid:select->search-popup-grid#selectFromRenderer">
+  <div class="flex items-center justify-between mb-3">
+    <h3 class="text-sm font-semibold text-text-primary"><%= popup_title %></h3>
+    <button type="button"
+            class="btn btn-sm btn-secondary"
+            data-action="search-popup-grid#closeModal">
+      닫기
+    </button>
+  </div>
+
   <%= render Ui::ResourceFormComponent.new(
     model: @popup_form,
     url: search_popup_path(@type, frame: @frame),
@@ -62,14 +144,15 @@
     }
   ) %>
 
-  <div class="flex justify-end mb-3 -mt-2">
+  <div class="flex justify-between items-center mb-3 -mt-2">
     <button type="button"
             class="btn btn-sm btn-secondary inline-flex items-center gap-1.5"
             data-action="search-popup-grid#submitForm"
             aria-label="검색">
       <%= lucide_icon("search", css_class: "w-3.5 h-3.5") %>
-      조회
+      검색
     </button>
+    <span></span>
   </div>
 
   <%= render Ui::AgGridComponent.new(
@@ -82,4 +165,13 @@
       search_popup_grid_target: "grid"
     }
   ) %>
+
+  <div class="flex justify-end mt-3">
+    <button type="button"
+            class="btn btn-sm btn-secondary"
+            data-action="search-popup-grid#closeModal">
+      닫기
+    </button>
+  </div>
 </div>
+</turbo-frame>

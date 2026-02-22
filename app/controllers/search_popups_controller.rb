@@ -1,15 +1,9 @@
-require "set"
-
 class SearchPopupsController < ApplicationController
   def show
     @type = params[:type].to_s.strip.downcase
     @frame = params[:frame].presence || "search_popup_frame"
-    @keyword = lookup_keyword
-    @rows = lookup_rows(@type, @keyword)
-    @popup_form = SearchPopupForm.new(
-      display: @keyword,
-      code: params.dig(:search_popup_form, :code).to_s.strip.upcase
-    )
+    @popup_form = build_popup_form
+    @rows = lookup_rows(@type)
 
     respond_to do |format|
       format.json do
@@ -17,8 +11,14 @@ class SearchPopupsController < ApplicationController
           {
             code: row[:code],
             name: row[:name],
-            display: row[:display]
-          }
+            display: row[:display],
+            corp_cd: row[:corp_cd],
+            corp_nm: row[:corp_nm],
+            ctry: row[:ctry],
+            biz_no: row[:biz_no],
+            upper_corp_cd: row[:upper_corp_cd],
+            upper_corp_nm: row[:upper_corp_nm]
+          }.compact
         end
       end
       format.html { render layout: popup_layout? }
@@ -26,27 +26,67 @@ class SearchPopupsController < ApplicationController
   end
 
   private
-    def lookup_keyword
-      direct = params[:q].to_s.strip
-      if direct.present?
-        direct
-      else
-        params.dig(:search_popup_form, :display).to_s.strip
-      end
-    end
-
     def popup_layout?
-      if turbo_frame_request? || params[:frame].present?
+      if params[:popup].present?
+        "popup"
+      elsif turbo_frame_request? || params[:frame].present?
         false
       else
         "application"
       end
     end
 
-    def lookup_rows(type, keyword)
-      rows = case type
-      when "corp"
+    def popup_form_params
+      params.fetch(:search_popup_form, {}).permit(:display, :code, :corp_cd, :corp_nm, :use_yn)
+    end
+
+    def corp_popup?
+      @type == "corp"
+    end
+
+    def normalized_use_yn(value)
+      normalized = value.to_s.strip.upcase
+      if %w[Y N].include?(normalized)
+        normalized
+      else
+        "Y"
+      end
+    end
+
+    def lookup_keyword
+      direct = params[:q].to_s.strip
+      if direct.present?
+        direct
+      else
+        popup_form_params[:display].to_s.strip
+      end
+    end
+
+    def build_popup_form
+      if corp_popup?
+        SearchPopupForm.new(
+          corp_cd: popup_form_params[:corp_cd].to_s.strip.upcase,
+          corp_nm: popup_form_params[:corp_nm].to_s.strip.presence || params[:q].to_s.strip,
+          use_yn: normalized_use_yn(popup_form_params[:use_yn])
+        )
+      else
+        SearchPopupForm.new(
+          display: lookup_keyword,
+          code: popup_form_params[:code].to_s.strip.upcase
+        )
+      end
+    end
+
+    def lookup_rows(type)
+      if type == "corp"
         corp_rows
+      else
+        generic_rows(type)
+      end
+    end
+
+    def generic_rows(type)
+      rows = case type
       when "region", "regn"
         region_rows
       when "country", "ctry"
@@ -63,6 +103,7 @@ class SearchPopupsController < ApplicationController
         []
       end
 
+      keyword = lookup_keyword
       return rows.first(200) if keyword.blank?
 
       up_keyword = keyword.upcase
@@ -73,7 +114,7 @@ class SearchPopupsController < ApplicationController
       end.first(200)
     end
 
-    def build_row(code:, name:)
+    def build_generic_row(code:, name:)
       normalized_code = code.to_s.strip.upcase
       normalized_name = name.to_s.strip
       return nil if normalized_code.blank?
@@ -86,45 +127,61 @@ class SearchPopupsController < ApplicationController
       }
     end
 
+    # PRD: 법인코드 + 법인명 + 사용여부(Y/N, 기본 Y) 조회 조건
+    #      그리드: 법인코드/법인명/국가/사업자등록번호
     def corp_rows
-      rows = []
-      code_set = Set.new
+      return [] unless defined?(StdCorporation) && StdCorporation.table_exists?
 
-      if defined?(StdCorporation) && StdCorporation.table_exists?
-        StdCorporation.ordered.each do |corp|
-          row = build_row(code: corp.corp_cd, name: corp.corp_nm)
-          next unless row
-
-          code_set << row[:code]
-          rows << row
-        end
+      scope = StdCorporation.ordered
+      if @popup_form.corp_cd.present?
+        scope = scope.where("corp_cd LIKE ?", "%#{@popup_form.corp_cd}%")
+      end
+      if @popup_form.corp_nm.present?
+        scope = scope.where("corp_nm LIKE ?", "%#{@popup_form.corp_nm}%")
+      end
+      if @popup_form.use_yn.present?
+        scope = scope.where(use_yn_cd: @popup_form.use_yn)
       end
 
-      if defined?(StdWorkplace) && StdWorkplace.table_exists?
-        StdWorkplace.distinct.pluck(:corp_cd).each do |code|
-          normalized = code.to_s.strip.upcase
-          code_set << normalized if normalized.present?
-        end
+      corporations = scope.limit(200).to_a
+      return [] if corporations.empty?
+
+      corp_codes = corporations.map(&:corp_cd)
+
+      country_rows = []
+      if defined?(StdCorporationCountry) && StdCorporationCountry.table_exists?
+        country_rows = StdCorporationCountry
+          .where(corp_cd: corp_codes, use_yn_cd: "Y")
+          .order(Arel.sql("CASE WHEN rpt_yn_cd = 'Y' THEN 0 ELSE 1 END"), :seq)
+      end
+      country_by_corp = {}
+      country_rows.each do |country|
+        country_by_corp[country.corp_cd] ||= country.ctry_cd.to_s.upcase
       end
 
-      if defined?(StdRegion) && StdRegion.table_exists?
-        StdRegion.distinct.pluck(:corp_cd).each do |code|
-          normalized = code.to_s.strip.upcase
-          code_set << normalized if normalized.present?
-        end
+      upper_codes = corporations.map(&:upper_corp_cd).compact_blank.uniq
+      upper_name_by_code = if upper_codes.empty?
+        {}
+      else
+        StdCorporation.where(corp_cd: upper_codes).pluck(:corp_cd, :corp_nm).to_h
       end
 
-      if code_set.empty?
-        code_set << "DEFAULT"
+      corporations.map do |corp|
+        corp_cd = corp.corp_cd.to_s.upcase
+        corp_nm = corp.corp_nm.to_s.strip
+
+        {
+          code: corp_cd,
+          name: corp_nm,
+          display: corp_nm,
+          corp_cd: corp_cd,
+          corp_nm: corp_nm,
+          ctry: country_by_corp[corp_cd].to_s,
+          biz_no: corp.compreg_slip_cd.to_s,
+          upper_corp_cd: corp.upper_corp_cd.to_s.upcase.presence,
+          upper_corp_nm: upper_name_by_code[corp.upper_corp_cd.to_s.upcase]
+        }.compact
       end
-
-      extra_rows = code_set.to_a.sort.filter_map do |code|
-        next if rows.any? { |row| row[:code] == code }
-
-        build_row(code: code, name: code)
-      end
-
-      rows + extra_rows
     rescue ActiveRecord::StatementInvalid
       []
     end
@@ -133,7 +190,7 @@ class SearchPopupsController < ApplicationController
       return [] unless defined?(StdRegion) && StdRegion.table_exists?
 
       StdRegion.where(use_yn_cd: "Y").ordered.filter_map do |row|
-        build_row(code: row.regn_cd, name: row.regn_nm_cd)
+        build_generic_row(code: row.regn_cd, name: row.regn_nm_cd)
       end
     rescue ActiveRecord::StatementInvalid
       []
@@ -143,7 +200,7 @@ class SearchPopupsController < ApplicationController
       return [] unless defined?(StdCountry) && StdCountry.table_exists?
 
       StdCountry.where(use_yn_cd: "Y").ordered.filter_map do |row|
-        build_row(code: row.ctry_cd, name: row.ctry_nm)
+        build_generic_row(code: row.ctry_cd, name: row.ctry_nm)
       end
     rescue ActiveRecord::StatementInvalid
       []
@@ -153,7 +210,7 @@ class SearchPopupsController < ApplicationController
       return [] unless defined?(StdBzacMst) && StdBzacMst.table_exists?
 
       StdBzacMst.where(use_yn_cd: "Y").ordered.filter_map do |row|
-        build_row(code: row.bzac_cd, name: row.bzac_nm)
+        build_generic_row(code: row.bzac_cd, name: row.bzac_nm)
       end
     rescue ActiveRecord::StatementInvalid
       []
@@ -163,7 +220,7 @@ class SearchPopupsController < ApplicationController
       return [] unless defined?(AdmMenu) && AdmMenu.table_exists?
 
       AdmMenu.active.where(menu_type: "MENU").ordered.filter_map do |row|
-        build_row(code: row.menu_cd, name: row.menu_nm)
+        build_generic_row(code: row.menu_cd, name: row.menu_nm)
       end
     rescue ActiveRecord::StatementInvalid
       []
@@ -173,7 +230,7 @@ class SearchPopupsController < ApplicationController
       return [] unless defined?(User) && User.table_exists?
 
       User.ordered.filter_map do |row|
-        build_row(code: row.user_id_code, name: row.user_nm)
+        build_generic_row(code: row.user_id_code, name: row.user_nm)
       end
     rescue ActiveRecord::StatementInvalid
       []
@@ -183,7 +240,7 @@ class SearchPopupsController < ApplicationController
       return [] unless defined?(StdWorkplace) && StdWorkplace.table_exists?
 
       StdWorkplace.where(use_yn_cd: "Y").ordered.filter_map do |row|
-        build_row(code: row.workpl_cd, name: row.workpl_nm)
+        build_generic_row(code: row.workpl_cd, name: row.workpl_nm)
       end
     rescue ActiveRecord::StatementInvalid
       []

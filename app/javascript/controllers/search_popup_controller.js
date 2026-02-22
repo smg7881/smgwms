@@ -15,16 +15,37 @@ export default class extends Controller {
       event.preventDefault()
     }
 
-    const selection = await openLookupPopup({
-      type: this.typeValue,
-      url: this.urlValue,
-      keyword: this.seedKeyword,
-      title: this.titleValue
-    })
+    let selection = null
+    try {
+      selection = await openLookupPopup({
+        type: this.typeValue,
+        url: this.urlValue,
+        keyword: this.seedKeyword,
+        title: this.titleValue
+      })
+    } catch (error) {
+      console.error("[search-popup] failed to open lookup modal", error)
+      this.openFallbackWindow()
+      return
+    }
 
     if (selection) {
       this.select(selection)
     }
+  }
+
+  openFallbackWindow() {
+    const popupType = String(this.typeValue || "").trim()
+    if (!popupType) return
+
+    const baseUrl = String(this.urlValue || "").trim() || `/search_popups/${encodeURIComponent(popupType)}`
+    const url = new URL(baseUrl, window.location.origin)
+    const keyword = this.seedKeyword
+    if (keyword) {
+      url.searchParams.set("q", keyword)
+    }
+
+    window.open(url.toString(), "lookup_popup_window", "width=980,height=700,left=60,top=40,resizable=yes,scrollbars=yes")
   }
 
   onDisplayInput() {
@@ -52,7 +73,8 @@ export default class extends Controller {
     return codeValue
   }
 
-  select({ code, name, display }) {
+  select(selection) {
+    const { code, name, display } = selection || {}
     const resolvedCode = String(code ?? "").trim()
     const resolvedDisplay = String(name ?? display ?? "").trim()
 
@@ -69,5 +91,10 @@ export default class extends Controller {
       this.displayTarget.value = resolvedDisplay
       this.displayTarget.dispatchEvent(new Event("change", { bubbles: true }))
     }
+
+    this.element.dispatchEvent(new CustomEvent("search-popup:selected", {
+      bubbles: true,
+      detail: selection || {}
+    }))
   }
 }

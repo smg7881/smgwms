@@ -49,7 +49,16 @@
         },
         { field: "ctry_telno", headerName: "전화번호", minWidth: 100, editable: true },
         { field: "corp_cd", headerName: "법인코드", minWidth: 110, editable: true },
-        { field: "corp_nm", headerName: "법인명", minWidth: 140, editable: true },
+        {
+          field: "corp_nm",
+          headerName: "법인명",
+          minWidth: 140,
+          editable: true,
+          lookup_popup_type: "corp",
+          lookup_code_field: "corp_cd",
+          lookup_name_field: "corp_nm",
+          lookup_popup_title: "법인 조회"
+        },
         {
           field: "use_yn_cd",
           headerName: "사용여부",

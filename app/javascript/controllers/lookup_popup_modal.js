@@ -1,17 +1,28 @@
 const MODAL_ID = "search-popup-modal"
-const FRAME_ID = "search_popup_frame"
 
 let activeClose = null
 
+function closeModalElement(modal) {
+  if (!modal) return
+  modal.style.display = "none"
+  modal.removeAttribute("data-open")
+}
+
+function openModalElement(modal) {
+  if (!modal) return
+  modal.style.display = "flex"
+  modal.setAttribute("data-open", "true")
+}
+
 function applyModalBaseStyle(modal) {
-  modal.style.border = "none"
-  modal.style.padding = "0"
-  modal.style.background = "transparent"
-  modal.style.width = "min(980px, calc(100vw - 24px))"
-  modal.style.maxWidth = "min(980px, calc(100vw - 24px))"
   modal.style.position = "fixed"
   modal.style.inset = "0"
-  modal.style.margin = "auto"
+  modal.style.display = "none"
+  modal.style.alignItems = "center"
+  modal.style.justifyContent = "center"
+  modal.style.padding = "12px"
+  modal.style.background = "rgba(0, 0, 0, 0.52)"
+  modal.style.zIndex = "2147483000"
 }
 
 function escapeHtml(value) {
@@ -25,10 +36,11 @@ function escapeHtml(value) {
 function normalizeSelection(detail) {
   if (!detail || typeof detail !== "object") return null
 
-  const code = String(detail.code ?? "").trim()
-  const name = String(detail.name ?? detail.display ?? "").trim()
+  const code = String(detail.code ?? detail.corp_cd ?? "").trim()
+  const name = String(detail.name ?? detail.corp_nm ?? detail.display ?? "").trim()
 
   return {
+    ...detail,
     code,
     name,
     display: name
@@ -37,7 +49,7 @@ function normalizeSelection(detail) {
 
 function buildFrameSrc(baseUrl, keyword) {
   const url = new URL(baseUrl, window.location.origin)
-  url.searchParams.set("frame", FRAME_ID)
+  url.searchParams.set("popup", "1")
 
   const text = String(keyword ?? "").trim()
   if (text.length > 0) {
@@ -47,23 +59,38 @@ function buildFrameSrc(baseUrl, keyword) {
   return `${url.pathname}${url.search}${url.hash}`
 }
 
+function buildOverlayElement() {
+  const modal = document.createElement("div")
+  modal.id = MODAL_ID
+  modal.setAttribute("role", "dialog")
+  modal.setAttribute("aria-modal", "true")
+  modal.className = "search-popup-overlay"
+  applyModalBaseStyle(modal)
+
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal) {
+      modal.dispatchEvent(new CustomEvent("search-popup:close"))
+    }
+  })
+
+  return modal
+}
+
 function ensureModal() {
   let modal = document.getElementById(MODAL_ID)
-  if (modal) {
+  if (modal && modal.tagName === "DIV") {
     applyModalBaseStyle(modal)
     return modal
   }
 
-  modal = document.createElement("dialog")
-  modal.id = MODAL_ID
-  modal.className = "form-grid-modal"
-  applyModalBaseStyle(modal)
-  modal.addEventListener("click", (event) => {
-    if (event.target === modal) {
-      modal.close()
-    }
-  })
-  document.body.appendChild(modal)
+  const nextModal = buildOverlayElement()
+  if (modal?.parentNode) {
+    modal.parentNode.replaceChild(nextModal, modal)
+  } else {
+    document.body.appendChild(nextModal)
+  }
+  modal = nextModal
+
   return modal
 }
 
@@ -91,15 +118,17 @@ export function openLookupPopup({ type, url, keyword, title } = {}) {
   const heading = String(title ?? "").trim() || defaultTitle(popupType)
 
   modal.innerHTML = `
-    <div class="form-grid-modal-content" style="display:flex;flex-direction:column;max-height:90vh;">
+    <div class="form-grid-modal-content" style="display:flex;flex-direction:column;max-height:90vh;width:min(980px, calc(100vw - 24px));max-width:min(980px, calc(100vw - 24px));">
       <div class="form-grid-modal-header" style="display:flex;align-items:center;justify-content:space-between;">
         <h3>${escapeHtml(heading)}</h3>
         <button type="button" class="btn-close" data-role="lookup-popup-close">×</button>
       </div>
       <div class="form-grid-modal-body" style="overflow:auto;">
-        <turbo-frame id="${FRAME_ID}" src="${escapeHtml(frameSrc)}" loading="lazy">
-          <div class="form-grid-loading">로딩 중...</div>
-        </turbo-frame>
+        <iframe
+          title="${escapeHtml(heading)}"
+          src="${escapeHtml(frameSrc)}"
+          style="width:100%;height:min(70vh,640px);border:0;background:transparent;"
+          loading="eager"></iframe>
       </div>
     </div>
   `
@@ -111,36 +140,59 @@ export function openLookupPopup({ type, url, keyword, title } = {}) {
       settled = true
       activeClose = null
       modal.removeEventListener("search-popup:select", onSelect)
-      modal.removeEventListener("close", onClose)
+      modal.removeEventListener("search-popup:close", onRequestClose)
+      window.removeEventListener("message", onMessage)
       resolve(selection)
     }
 
     const onSelect = (event) => {
       const selection = normalizeSelection(event.detail)
       if (!selection) return
+      closeModalElement(modal)
       finalize(selection)
-      if (modal.open) {
-        modal.close()
-      }
     }
 
-    const onClose = () => {
+    const onRequestClose = () => {
+      closeModalElement(modal)
       finalize(null)
     }
 
-    activeClose = finalize
+    const onMessage = (event) => {
+      if (event.origin !== window.location.origin) return
+
+      const data = event.data || {}
+      if (data.source !== "search-popup-iframe") return
+
+      if (data.type === "search-popup-select") {
+        const selection = normalizeSelection(data.detail)
+        if (!selection) return
+        closeModalElement(modal)
+        finalize(selection)
+        return
+      }
+
+      if (data.type === "search-popup-close") {
+        closeModalElement(modal)
+        finalize(null)
+      }
+    }
+
+    activeClose = (selection = null) => {
+      closeModalElement(modal)
+      finalize(selection)
+    }
 
     modal.addEventListener("search-popup:select", onSelect)
-    modal.addEventListener("close", onClose)
+    modal.addEventListener("search-popup:close", onRequestClose)
+    window.addEventListener("message", onMessage)
 
     const closeButton = modal.querySelector("[data-role='lookup-popup-close']")
     if (closeButton) {
-      closeButton.addEventListener("click", () => modal.close(), { once: true })
+      closeButton.addEventListener("click", () => {
+        modal.dispatchEvent(new CustomEvent("search-popup:close"))
+      }, { once: true })
     }
 
-    if (modal.open) {
-      modal.close()
-    }
-    modal.showModal()
+    openModalElement(modal)
   })
 }

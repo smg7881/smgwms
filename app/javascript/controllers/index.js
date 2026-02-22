@@ -1,109 +1,67 @@
-﻿import { application } from "controllers/application"
+import { application } from "controllers/application"
 
 import SidebarController from "controllers/sidebar_controller"
-application.register("sidebar", SidebarController)
-
 import TabsController from "controllers/tabs_controller"
-application.register("tabs", TabsController)
-
-import AgGridController from "controllers/ag_grid_controller"
-application.register("ag-grid", AgGridController)
-
-import GridActionsController from "controllers/grid_actions_controller"
-application.register("grid-actions", GridActionsController)
-
-import MenuCrudController from "controllers/menu_crud_controller"
-application.register("menu-crud", MenuCrudController)
-
 import ResourceFormController from "controllers/resource_form_controller"
-application.register("resource-form", ResourceFormController)
-
 import SearchPopupController from "controllers/search_popup_controller"
-application.register("search-popup", SearchPopupController)
-
 import SearchPopupGridController from "controllers/search_popup_grid_controller"
+
+application.register("sidebar", SidebarController)
+application.register("tabs", TabsController)
+application.register("resource-form", ResourceFormController)
+application.register("search-popup", SearchPopupController)
 application.register("search-popup-grid", SearchPopupGridController)
 
-import UserCrudController from "controllers/user_crud_controller"
-application.register("user-crud", UserCrudController)
+function registerController(identifier, modulePath) {
+  import(modulePath)
+    .then((module) => {
+      if (module?.default) {
+        application.register(identifier, module.default)
+      } else {
+        console.error(`[stimulus] controller has no default export: ${identifier} (${modulePath})`)
+      }
+    })
+    .catch((error) => {
+      console.error(`[stimulus] failed to load controller "${identifier}" from "${modulePath}"`, error)
+    })
+}
 
-import DeptCrudController from "controllers/dept_crud_controller"
-application.register("dept-crud", DeptCrudController)
+const CONTROLLERS = [
+  ["ag-grid", "controllers/ag_grid_controller"],
+  ["grid-actions", "controllers/grid_actions_controller"],
+  ["menu-crud", "controllers/menu_crud_controller"],
+  ["user-crud", "controllers/user_crud_controller"],
+  ["dept-crud", "controllers/dept_crud_controller"],
+  ["notice-crud", "controllers/notice_crud_controller"],
+  ["code-grid", "controllers/code_grid_controller"],
+  ["role-grid", "controllers/role_grid_controller"],
+  ["workplace-grid", "controllers/workplace_grid_controller"],
+  ["area-grid", "controllers/area_grid_controller"],
+  ["zone-grid", "controllers/zone_grid_controller"],
+  ["location-grid", "controllers/location_grid_controller"],
+  ["role-user-grid", "controllers/role_user_grid_controller"],
+  ["user-menu-role-grid", "controllers/user_menu_role_grid_controller"],
+  ["lucide", "controllers/lucide_controller"],
+  ["client-grid", "controllers/client_grid_controller"],
+  ["std-workplace-grid", "controllers/std_workplace_grid_controller"],
+  ["std-region-grid", "controllers/std_region_grid_controller"],
+  ["std-region-zip-grid", "controllers/std_region_zip_grid_controller"],
+  ["std-country-grid", "controllers/std_country_grid_controller"],
+  ["std-holiday-grid", "controllers/std_holiday_grid_controller"],
+  ["std-approval-grid", "controllers/std_approval_grid_controller"],
+  ["std-approval-request-grid", "controllers/std_approval_request_grid_controller"],
+  ["std-approval-history-grid", "controllers/std_approval_history_grid_controller"],
+  ["std-corporation-grid", "controllers/std_corporation_grid_controller"],
+  ["std-business-certificate-grid", "controllers/std_business_certificate_grid_controller"],
+  ["std-good-grid", "controllers/std_good_grid_controller"],
+  ["std-favorite-grid", "controllers/std_favorite_grid_controller"],
+  ["std-interface-info-grid", "controllers/std_interface_info_grid_controller"],
+  ["std-reserved-job-grid", "controllers/std_reserved_job_grid_controller"],
+  ["std-exchange-rate-grid", "controllers/std_exchange_rate_grid_controller"],
+  ["header-favorites", "controllers/header_favorites_controller"]
+]
 
-import NoticeCrudController from "controllers/notice_crud_controller"
-application.register("notice-crud", NoticeCrudController)
+CONTROLLERS.forEach(([identifier, modulePath]) => {
+  registerController(identifier, modulePath)
+})
 
-import CodeGridController from "controllers/code_grid_controller"
-application.register("code-grid", CodeGridController)
-
-import RoleGridController from "controllers/role_grid_controller"
-application.register("role-grid", RoleGridController)
-
-import WorkplaceGridController from "controllers/workplace_grid_controller"
-application.register("workplace-grid", WorkplaceGridController)
-
-import AreaGridController from "controllers/area_grid_controller"
-application.register("area-grid", AreaGridController)
-
-import ZoneGridController from "controllers/zone_grid_controller"
-application.register("zone-grid", ZoneGridController)
-
-import LocationGridController from "controllers/location_grid_controller"
-application.register("location-grid", LocationGridController)
-
-import RoleUserGridController from "controllers/role_user_grid_controller"
-application.register("role-user-grid", RoleUserGridController)
-
-import UserMenuRoleGridController from "controllers/user_menu_role_grid_controller"
-application.register("user-menu-role-grid", UserMenuRoleGridController)
-
-import LucideController from "controllers/lucide_controller"
-application.register("lucide", LucideController)
-
-import ClientGridController from "controllers/client_grid_controller"
-application.register("client-grid", ClientGridController)
-
-import StdWorkplaceGridController from "controllers/std_workplace_grid_controller"
-application.register("std-workplace-grid", StdWorkplaceGridController)
-
-import StdRegionGridController from "controllers/std_region_grid_controller"
-application.register("std-region-grid", StdRegionGridController)
-
-import StdRegionZipGridController from "controllers/std_region_zip_grid_controller"
-application.register("std-region-zip-grid", StdRegionZipGridController)
-
-import StdCountryGridController from "controllers/std_country_grid_controller"
-application.register("std-country-grid", StdCountryGridController)
-
-import StdHolidayGridController from "controllers/std_holiday_grid_controller"
-application.register("std-holiday-grid", StdHolidayGridController)
-
-import StdApprovalGridController from "controllers/std_approval_grid_controller"
-application.register("std-approval-grid", StdApprovalGridController)
-
-import StdApprovalRequestGridController from "controllers/std_approval_request_grid_controller"
-application.register("std-approval-request-grid", StdApprovalRequestGridController)
-
-import StdApprovalHistoryGridController from "controllers/std_approval_history_grid_controller"
-application.register("std-approval-history-grid", StdApprovalHistoryGridController)
-
-import StdCorporationGridController from "controllers/std_corporation_grid_controller"
-application.register("std-corporation-grid", StdCorporationGridController)
-
-import StdBusinessCertificateGridController from "controllers/std_business_certificate_grid_controller"
-application.register("std-business-certificate-grid", StdBusinessCertificateGridController)
-
-import StdGoodGridController from "controllers/std_good_grid_controller"
-application.register("std-good-grid", StdGoodGridController)
-
-import StdFavoriteGridController from "controllers/std_favorite_grid_controller"
-application.register("std-favorite-grid", StdFavoriteGridController)
-
-import StdInterfaceInfoGridController from "controllers/std_interface_info_grid_controller"
-application.register("std-interface-info-grid", StdInterfaceInfoGridController)
-
-import StdReservedJobGridController from "controllers/std_reserved_job_grid_controller"
-application.register("std-reserved-job-grid", StdReservedJobGridController)
-
-import StdExchangeRateGridController from "controllers/std_exchange_rate_grid_controller"
-application.register("std-exchange-rate-grid", StdExchangeRateGridController)

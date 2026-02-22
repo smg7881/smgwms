@@ -17,8 +17,7 @@ class Std::Favorite::PageComponent < Std::BasePageComponent
 
     def search_fields
       [
-        { field: "user_nm", type: "popup", label: "사용자", popup_type: "user", code_field: "user_id_code", placeholder: "사용자 선택" },
-        { field: "menu_nm", type: "input", label: "메뉴명", placeholder: "메뉴명 검색" },
+        { field: "user_favor_menu_grp", type: "input", label: "그룹명", placeholder: "그룹명 검색" },
         {
           field: "use_yn",
           type: "select",
@@ -94,7 +93,6 @@ class Std::Favorite::PageComponent < Std::BasePageComponent
           cellStyle: { textAlign: "center" },
           cellRenderer: "rowStatusCellRenderer"
         },
-        { field: "user_id_code", headerName: "사용자ID", minWidth: 120, editable: true },
         { field: "group_nm", headerName: "그룹명", minWidth: 180, editable: true },
         {
           field: "use_yn",
@@ -112,5 +110,25 @@ class Std::Favorite::PageComponent < Std::BasePageComponent
 
     def menu_code_values
       AdmMenu.active.where(menu_type: "MENU").ordered.pluck(:menu_cd)
+    end
+
+    def sitemap_menus
+      AdmMenu.active.where(menu_level: 1).ordered.map do |top_menu|
+        children = top_menu.children.active.ordered.map do |sub_menu|
+          if sub_menu.menu_type == "FOLDER"
+            sub_children = sub_menu.children.active.ordered
+            sub_children.map do |leaf|
+              { menu_cd: leaf.menu_cd, menu_nm: leaf.menu_nm }
+            end
+          else
+            { menu_cd: sub_menu.menu_cd, menu_nm: sub_menu.menu_nm }
+          end
+        end.flatten
+        {
+          menu_cd: top_menu.menu_cd,
+          menu_nm: top_menu.menu_nm,
+          children: children
+        }
+      end
     end
 end
