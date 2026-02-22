@@ -29,7 +29,7 @@ class Std::GoodsController < Std::BaseController
         goods_cd = attrs[:goods_cd].to_s.strip.upcase
         row = StdGood.find_by(goods_cd: goods_cd)
         if row.nil?
-          errors << "Goods not found: #{goods_cd}"
+          errors << "품명 정보를 찾을 수 없습니다: #{goods_cd}"
           next
         end
 
@@ -51,7 +51,7 @@ class Std::GoodsController < Std::BaseController
         if row.update(use_yn_cd: "N")
           result[:deleted] += 1
         else
-          errors.concat(row.errors.full_messages.presence || [ "Goods deactivation failed: #{goods_cd}" ])
+          errors.concat(row.errors.full_messages.presence || [ "품명 비활성화에 실패했습니다: #{goods_cd}" ])
         end
       end
 
@@ -63,7 +63,7 @@ class Std::GoodsController < Std::BaseController
     if errors.any?
       render json: { success: false, errors: errors.uniq }, status: :unprocessable_entity
     else
-      render json: { success: true, message: "Goods data saved.", data: result }
+      render json: { success: true, message: "품명 정보가 저장되었습니다.", data: result }
     end
   end
 

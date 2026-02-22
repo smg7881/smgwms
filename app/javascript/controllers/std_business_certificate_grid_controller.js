@@ -50,11 +50,11 @@ export default class extends BaseGridController {
         "attached_file_nm", "use_yn_cd"
       ],
       firstEditCol: "bzac_cd",
-      pkLabels: { bzac_cd: "Client Code" }
+      pkLabels: { bzac_cd: "거래처코드" }
     }
   }
 
   get saveMessage() {
-    return "Business certificate data saved."
+    return "사업자등록증 정보가 저장되었습니다."
   }
 }

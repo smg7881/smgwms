@@ -77,25 +77,25 @@ export default class extends Controller {
     this.masterManager.stopEditing()
     const operations = this.masterManager.buildOperations()
     if (!hasChanges(operations)) {
-      alert("No changed data.")
+      alert("변경된 데이터가 없습니다.")
       return
     }
 
     const ok = await postJson(this.masterBatchUrlValue, operations)
     if (!ok) return
 
-    alert("Corporation data saved.")
+    alert("법인 정보가 저장되었습니다.")
     await this.reloadMasterRows()
   }
 
   addCountryRow() {
     if (!this.countryManager) return
     if (!this.selectedCorpCode) {
-      alert("Select corporation first.")
+      alert("법인을 먼저 선택하세요.")
       return
     }
     if (this.hasMasterPendingChanges()) {
-      alert("Save corporation changes first.")
+      alert("법인 정보를 먼저 저장하세요.")
       return
     }
     this.countryManager.addRow({ ctry_cd: "KR", use_yn_cd: "Y", rpt_yn_cd: "N" })
@@ -110,18 +110,18 @@ export default class extends Controller {
   async saveCountryRows() {
     if (!this.countryManager) return
     if (!this.selectedCorpCode) {
-      alert("Select corporation first.")
+      alert("법인을 먼저 선택하세요.")
       return
     }
     if (this.hasMasterPendingChanges()) {
-      alert("Save corporation changes first.")
+      alert("법인 정보를 먼저 저장하세요.")
       return
     }
 
     this.countryManager.stopEditing()
     const operations = this.countryManager.buildOperations()
     if (!hasChanges(operations)) {
-      alert("No changed data.")
+      alert("변경된 데이터가 없습니다.")
       return
     }
 
@@ -129,7 +129,7 @@ export default class extends Controller {
     const ok = await postJson(url, operations)
     if (!ok) return
 
-    alert("Corporation country data saved.")
+    alert("법인 국가 정보가 저장되었습니다.")
     await this.loadCountryRows(this.selectedCorpCode)
   }
 
@@ -170,7 +170,7 @@ export default class extends Controller {
         "upper_corp_cd", "zip_cd", "addr_cd", "dtl_addr_cd", "vat_sctn_cd", "use_yn_cd"
       ],
       firstEditCol: "corp_cd",
-      pkLabels: { corp_cd: "Corporation Code" }
+      pkLabels: { corp_cd: "법인코드" }
     }
   }
 
@@ -207,7 +207,7 @@ export default class extends Controller {
         "sys_lang_slc", "vat_rt", "rpt_yn_cd", "use_yn_cd"
       ],
       firstEditCol: "ctry_cd",
-      pkLabels: { seq: "Seq" },
+      pkLabels: { seq: "순번" },
       onCellValueChanged: (event) => this.handleCountryCellChanged(event)
     }
   }
@@ -301,7 +301,7 @@ export default class extends Controller {
       setManagerRowData(this.masterManager, rows)
       await this.syncMasterSelection()
     } catch {
-      alert("Failed to reload corporation list.")
+      alert("법인 목록을 다시 불러오지 못했습니다.")
     }
   }
 
@@ -342,7 +342,7 @@ export default class extends Controller {
       const rows = await fetchJson(url)
       setManagerRowData(this.countryManager, rows)
     } catch {
-      alert("Failed to load corporation country rows.")
+      alert("법인 국가 정보를 불러오지 못했습니다.")
     }
   }
 
@@ -358,9 +358,9 @@ export default class extends Controller {
   refreshSelectedCorpLabel() {
     if (!this.hasSelectedCorpLabelTarget) return
     if (this.selectedCorpCode) {
-      this.selectedCorpLabelTarget.textContent = `Selected corporation: ${this.selectedCorpCode}`
+      this.selectedCorpLabelTarget.textContent = `선택 법인: ${this.selectedCorpCode}`
     } else {
-      this.selectedCorpLabelTarget.textContent = "Select corporation first"
+      this.selectedCorpLabelTarget.textContent = "법인을 먼저 선택하세요"
     }
   }
 }

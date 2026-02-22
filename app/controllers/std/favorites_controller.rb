@@ -54,7 +54,7 @@ class Std::FavoritesController < Std::BaseController
         menu_cd = attrs[:menu_cd].to_s.strip.upcase
         row = StdUserFavorite.find_by(user_id_code: user_id_code, menu_cd: menu_cd)
         if row.nil?
-          errors << "Favorite row not found: #{user_id_code}/#{menu_cd}"
+          errors << "즐겨찾기 정보를 찾을 수 없습니다: #{user_id_code}/#{menu_cd}"
           next
         end
 
@@ -88,7 +88,7 @@ class Std::FavoritesController < Std::BaseController
         if row.update(use_yn: "N")
           result[:deleted] += 1
         else
-          errors.concat(row.errors.full_messages.presence || [ "Favorite deactivation failed: #{user_id_code}/#{menu_cd}" ])
+          errors.concat(row.errors.full_messages.presence || [ "즐겨찾기 비활성화에 실패했습니다: #{user_id_code}/#{menu_cd}" ])
         end
       end
 
@@ -100,7 +100,7 @@ class Std::FavoritesController < Std::BaseController
     if errors.any?
       render json: { success: false, errors: errors.uniq }, status: :unprocessable_entity
     else
-      render json: { success: true, message: "Favorite data saved.", data: result }
+      render json: { success: true, message: "즐겨찾기 정보가 저장되었습니다.", data: result }
     end
   end
 
@@ -132,7 +132,7 @@ class Std::FavoritesController < Std::BaseController
         group_nm = attrs[:group_nm].to_s.strip
         row = StdUserFavoriteGroup.find_by(user_id_code: user_id_code, group_nm: group_nm)
         if row.nil?
-          errors << "Favorite group not found: #{user_id_code}/#{group_nm}"
+          errors << "즐겨찾기 그룹 정보를 찾을 수 없습니다: #{user_id_code}/#{group_nm}"
           next
         end
 
@@ -166,7 +166,7 @@ class Std::FavoritesController < Std::BaseController
         if row.update(use_yn: "N")
           result[:deleted] += 1
         else
-          errors.concat(row.errors.full_messages.presence || [ "Favorite group deactivation failed: #{user_id_code}/#{group_nm}" ])
+          errors.concat(row.errors.full_messages.presence || [ "즐겨찾기 그룹 비활성화에 실패했습니다: #{user_id_code}/#{group_nm}" ])
         end
       end
 
@@ -178,7 +178,7 @@ class Std::FavoritesController < Std::BaseController
     if errors.any?
       render json: { success: false, errors: errors.uniq }, status: :unprocessable_entity
     else
-      render json: { success: true, message: "Favorite group data saved.", data: result }
+      render json: { success: true, message: "즐겨찾기 그룹 정보가 저장되었습니다.", data: result }
     end
   end
 

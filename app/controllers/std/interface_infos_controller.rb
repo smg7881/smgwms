@@ -29,7 +29,7 @@ class Std::InterfaceInfosController < Std::BaseController
         if_cd = attrs[:if_cd].to_s.strip.upcase
         row = StdInterfaceInfo.find_by(if_cd: if_cd)
         if row.nil?
-          errors << "Interface row not found: #{if_cd}"
+          errors << "인터페이스 정보를 찾을 수 없습니다: #{if_cd}"
           next
         end
 
@@ -51,7 +51,7 @@ class Std::InterfaceInfosController < Std::BaseController
         if row.update(use_yn_cd: "N")
           result[:deleted] += 1
         else
-          errors.concat(row.errors.full_messages.presence || [ "Interface row deactivation failed: #{if_cd}" ])
+          errors.concat(row.errors.full_messages.presence || [ "인터페이스 비활성화에 실패했습니다: #{if_cd}" ])
         end
       end
 
@@ -63,7 +63,7 @@ class Std::InterfaceInfosController < Std::BaseController
     if errors.any?
       render json: { success: false, errors: errors.uniq }, status: :unprocessable_entity
     else
-      render json: { success: true, message: "Interface data saved.", data: result }
+      render json: { success: true, message: "인터페이스 정보가 저장되었습니다.", data: result }
     end
   end
 

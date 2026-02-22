@@ -41,11 +41,11 @@ export default class extends BaseGridController {
         "rmk_cd", "use_yn_cd"
       ],
       firstEditCol: "sys_sctn_cd",
-      pkLabels: { rsv_work_no: "Reserved Job No" }
+      pkLabels: { rsv_work_no: "예약작업번호" }
     }
   }
 
   get saveMessage() {
-    return "Reserved job data saved."
+    return "예약작업 정보가 저장되었습니다."
   }
 }

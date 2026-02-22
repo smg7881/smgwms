@@ -40,11 +40,11 @@ export default class extends BaseGridController {
         "rcv_sctn_cd", "use_yn_cd", "if_bzac_cd", "bzac_nm", "bzac_sys_nm_cd", "if_desc_cd"
       ],
       firstEditCol: "corp_cd",
-      pkLabels: { if_cd: "Interface Code" }
+      pkLabels: { if_cd: "인터페이스코드" }
     }
   }
 
   get saveMessage() {
-    return "Interface data saved."
+    return "인터페이스 정보가 저장되었습니다."
   }
 }

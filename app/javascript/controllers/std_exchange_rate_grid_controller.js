@@ -47,11 +47,11 @@ export default class extends BaseGridController {
       ],
       firstEditCol: "ctry_cd",
       pkLabels: {
-        ctry_cd: "Country",
-        fnc_or_cd: "Financial Org",
-        std_ymd: "Standard Date",
-        anno_dgrcnt: "Announcement Degree",
-        mon_cd: "Currency"
+        ctry_cd: "국가코드",
+        fnc_or_cd: "금융기관",
+        std_ymd: "기준일자",
+        anno_dgrcnt: "고시회차",
+        mon_cd: "통화"
       }
     }
   }
@@ -95,6 +95,6 @@ export default class extends BaseGridController {
   }
 
   get saveMessage() {
-    return "Exchange rate data saved."
+    return "환율 정보가 저장되었습니다."
   }
 }

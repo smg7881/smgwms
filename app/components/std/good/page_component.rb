@@ -9,13 +9,13 @@ class Std::Good::PageComponent < Std::BasePageComponent
 
     def search_fields
       [
-        { field: "goods_cd", type: "input", label: "Goods Code", placeholder: "Search code" },
-        { field: "goods_nm", type: "input", label: "Goods Name", placeholder: "Search goods name" },
+        { field: "goods_cd", type: "input", label: "품명코드", placeholder: "코드 검색" },
+        { field: "goods_nm", type: "input", label: "품명", placeholder: "품명 검색" },
         {
           field: "use_yn_cd",
           type: "select",
-          label: "Use Y/N",
-          options: common_code_options("CMM_USE_YN", include_all: true),
+          label: "사용여부",
+          options: common_code_options("CMM_USE_YN", include_all: true, all_label: "전체"),
           include_blank: false
         }
       ]
@@ -25,7 +25,7 @@ class Std::Good::PageComponent < Std::BasePageComponent
       [
         {
           field: "__row_status",
-          headerName: "Status",
+          headerName: "상태",
           width: 68,
           minWidth: 68,
           maxWidth: 68,
@@ -36,11 +36,11 @@ class Std::Good::PageComponent < Std::BasePageComponent
           cellStyle: { textAlign: "center" },
           cellRenderer: "rowStatusCellRenderer"
         },
-        { field: "goods_cd", headerName: "Goods Code", minWidth: 110, editable: true },
-        { field: "goods_nm", headerName: "Goods Name", minWidth: 160, editable: true },
+        { field: "goods_cd", headerName: "품명코드", minWidth: 110, editable: true },
+        { field: "goods_nm", headerName: "품명", minWidth: 160, editable: true },
         {
           field: "hatae_cd",
-          headerName: "Hatae",
+          headerName: "하태코드",
           minWidth: 110,
           editable: true,
           cellEditor: "agSelectCellEditor",
@@ -48,7 +48,7 @@ class Std::Good::PageComponent < Std::BasePageComponent
         },
         {
           field: "item_grp_cd",
-          headerName: "Item Group",
+          headerName: "품목그룹",
           minWidth: 110,
           editable: true,
           cellEditor: "agSelectCellEditor",
@@ -56,7 +56,7 @@ class Std::Good::PageComponent < Std::BasePageComponent
         },
         {
           field: "item_cd",
-          headerName: "Item",
+          headerName: "품목",
           minWidth: 110,
           editable: true,
           cellEditor: "agSelectCellEditor",
@@ -64,7 +64,7 @@ class Std::Good::PageComponent < Std::BasePageComponent
         },
         {
           field: "hwajong_cd",
-          headerName: "Cargo Type",
+          headerName: "화종",
           minWidth: 110,
           editable: true,
           cellEditor: "agSelectCellEditor",
@@ -72,24 +72,24 @@ class Std::Good::PageComponent < Std::BasePageComponent
         },
         {
           field: "hwajong_grp_cd",
-          headerName: "Cargo Group",
+          headerName: "화종그룹",
           minWidth: 110,
           editable: true,
           cellEditor: "agSelectCellEditor",
           cellEditorParams: { values: common_code_values("STD_HWAJONG_GRP") }
         },
-        { field: "rmk_cd", headerName: "Remark", minWidth: 200, editable: true },
+        { field: "rmk_cd", headerName: "비고", minWidth: 200, editable: true },
         {
           field: "use_yn_cd",
-          headerName: "Use Y/N",
+          headerName: "사용여부",
           maxWidth: 90,
           editable: true,
           cellEditor: "agSelectCellEditor",
           cellEditorParams: { values: common_code_values("CMM_USE_YN") },
           cellRenderer: "codeUseYnCellRenderer"
         },
-        { field: "update_by", headerName: "Updated By", minWidth: 100, editable: false },
-        { field: "update_time", headerName: "Updated At", minWidth: 160, formatter: "datetime", editable: false }
+        { field: "update_by", headerName: "수정자", minWidth: 100, editable: false },
+        { field: "update_time", headerName: "수정일시", minWidth: 160, formatter: "datetime", editable: false }
       ]
     end
 end

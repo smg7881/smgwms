@@ -84,7 +84,7 @@ class Std::CorporationsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :unprocessable_entity
     body = JSON.parse(response.body)
-    assert_includes body["errors"].join(" "), "Only one representative country"
+    assert_includes body["errors"].join(" "), "법인별 대표 국가는 1개만 설정할 수 있습니다."
   end
 
   test "country infos endpoint returns rows for selected corporation" do

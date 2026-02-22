@@ -11,14 +11,14 @@
   <div class="flex items-center justify-between gap-3 mb-3 mt-2">
     <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
       <%= helpers.lucide_icon("calendar-clock", css_class: "w-4 h-4 text-text-secondary") %>
-      Reserved Job List
+      예약작업 목록
       <%= render Ui::GridActionsComponent.new(grid_id: "std-reserved-job") %>
     </h3>
     <%= render Ui::GridToolbarComponent.new(
       buttons: [
-        { label: "Add", class: "btn btn-sm btn-primary", action: "click->std-reserved-job-grid#addRow" },
-        { label: "Delete", class: "btn btn-sm btn-danger", action: "click->std-reserved-job-grid#deleteRows" },
-        { label: "Save", class: "btn btn-sm btn-success", action: "click->std-reserved-job-grid#saveRows" }
+        { label: "추가", class: "btn btn-sm btn-primary", action: "click->std-reserved-job-grid#addRow" },
+        { label: "삭제", class: "btn btn-sm btn-danger", action: "click->std-reserved-job-grid#deleteRows" },
+        { label: "저장", class: "btn btn-sm btn-success", action: "click->std-reserved-job-grid#saveRows" }
       ]
     ) %>
   </div>

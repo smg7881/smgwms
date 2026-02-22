@@ -34,7 +34,7 @@ class Std::BusinessCertificatesController < Std::BaseController
         bzac_cd = attrs[:bzac_cd].to_s.strip.upcase
         row = StdBusinessCertificate.find_by(bzac_cd: bzac_cd)
         if row.nil?
-          errors << "Business certificate not found: #{bzac_cd}"
+          errors << "사업자등록증 정보를 찾을 수 없습니다: #{bzac_cd}"
           next
         end
 
@@ -56,7 +56,7 @@ class Std::BusinessCertificatesController < Std::BaseController
         if row.update(use_yn_cd: "N")
           result[:deleted] += 1
         else
-          errors.concat(row.errors.full_messages.presence || [ "Business certificate deactivation failed: #{bzac_cd}" ])
+          errors.concat(row.errors.full_messages.presence || [ "사업자등록증 비활성화에 실패했습니다: #{bzac_cd}" ])
         end
       end
 
@@ -68,7 +68,7 @@ class Std::BusinessCertificatesController < Std::BaseController
     if errors.any?
       render json: { success: false, errors: errors.uniq }, status: :unprocessable_entity
     else
-      render json: { success: true, message: "Business certificate data saved.", data: result }
+      render json: { success: true, message: "사업자등록증 정보가 저장되었습니다.", data: result }
     end
   end
 

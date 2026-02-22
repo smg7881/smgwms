@@ -35,7 +35,7 @@ class Std::CorporationsController < Std::BaseController
         corp_cd = attrs[:corp_cd].to_s.strip.upcase
         row = StdCorporation.find_by(corp_cd: corp_cd)
         if row.nil?
-          errors << "Corporation not found: #{corp_cd}"
+          errors << "법인 정보를 찾을 수 없습니다: #{corp_cd}"
           next
         end
 
@@ -71,7 +71,7 @@ class Std::CorporationsController < Std::BaseController
           end
           result[:deleted] += 1
         else
-          errors.concat(row.errors.full_messages.presence || [ "Corporation deactivation failed: #{normalized_code}" ])
+          errors.concat(row.errors.full_messages.presence || [ "법인 비활성화에 실패했습니다: #{normalized_code}" ])
         end
       end
 
@@ -83,7 +83,7 @@ class Std::CorporationsController < Std::BaseController
     if errors.any?
       render json: { success: false, errors: errors.uniq }, status: :unprocessable_entity
     else
-      render json: { success: true, message: "Corporation data saved.", data: result }
+      render json: { success: true, message: "법인 정보가 저장되었습니다.", data: result }
     end
   end
 
@@ -112,7 +112,7 @@ class Std::CorporationsController < Std::BaseController
       Array(operations[:rowsToUpdate]).each do |attrs|
         row = StdCorporationCountry.find_by(corp_cd: corporation.corp_cd, seq: attrs[:seq].to_i)
         if row.nil?
-          errors << "Corporation country row not found: #{corporation.corp_cd}/#{attrs[:seq]}"
+          errors << "법인 국가 정보를 찾을 수 없습니다: #{corporation.corp_cd}/#{attrs[:seq]}"
           next
         end
 
@@ -152,13 +152,13 @@ class Std::CorporationsController < Std::BaseController
           end
           result[:deleted] += 1
         else
-          errors.concat(row.errors.full_messages.presence || [ "Corporation country row deactivation failed: #{corporation.corp_cd}/#{seq}" ])
+          errors.concat(row.errors.full_messages.presence || [ "법인 국가 정보 비활성화에 실패했습니다: #{corporation.corp_cd}/#{seq}" ])
         end
       end
 
       active_rep_count = StdCorporationCountry.where(corp_cd: corporation.corp_cd, rpt_yn_cd: "Y", use_yn_cd: "Y").count
       if active_rep_count > 1
-        errors << "Only one representative country can be set per corporation."
+        errors << "법인별 대표 국가는 1개만 설정할 수 있습니다."
       end
 
       if errors.any?
@@ -169,7 +169,7 @@ class Std::CorporationsController < Std::BaseController
     if errors.any?
       render json: { success: false, errors: errors.uniq }, status: :unprocessable_entity
     else
-      render json: { success: true, message: "Corporation country data saved.", data: result }
+      render json: { success: true, message: "법인 국가 정보가 저장되었습니다.", data: result }
     end
   end
 

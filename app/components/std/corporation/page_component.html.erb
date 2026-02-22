@@ -15,14 +15,14 @@
     <div class="flex items-center justify-between gap-3 mb-3 mt-2">
       <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
         <%= helpers.lucide_icon("building-2", css_class: "w-4 h-4 text-text-secondary") %>
-        Corporation List
+        법인 목록
         <%= render Ui::GridActionsComponent.new(grid_id: "std-corporation-master") %>
       </h3>
       <%= render Ui::GridToolbarComponent.new(
         buttons: [
-          { label: "Add", class: "btn btn-sm btn-primary", action: "click->std-corporation-grid#addMasterRow" },
-          { label: "Delete", class: "btn btn-sm btn-danger", action: "click->std-corporation-grid#deleteMasterRows" },
-          { label: "Save", class: "btn btn-sm btn-success", action: "click->std-corporation-grid#saveMasterRows" }
+          { label: "추가", class: "btn btn-sm btn-primary", action: "click->std-corporation-grid#addMasterRow" },
+          { label: "삭제", class: "btn btn-sm btn-danger", action: "click->std-corporation-grid#deleteMasterRows" },
+          { label: "저장", class: "btn btn-sm btn-success", action: "click->std-corporation-grid#saveMasterRows" }
         ]
       ) %>
     </div>
@@ -42,15 +42,15 @@
     <div class="flex items-center justify-between gap-3 mb-3 mt-2">
       <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
         <%= helpers.lucide_icon("globe-2", css_class: "w-4 h-4 text-text-secondary") %>
-        Corporation Country Info
-        <span class="text-sm font-normal text-text-secondary" data-std-corporation-grid-target="selectedCorpLabel">Select corporation first</span>
+        법인 국가 정보
+        <span class="text-sm font-normal text-text-secondary" data-std-corporation-grid-target="selectedCorpLabel">법인을 먼저 선택하세요</span>
         <%= render Ui::GridActionsComponent.new(grid_id: "std-corporation-country") %>
       </h3>
       <%= render Ui::GridToolbarComponent.new(
         buttons: [
-          { label: "Add", class: "btn btn-sm btn-primary", action: "click->std-corporation-grid#addCountryRow" },
-          { label: "Delete", class: "btn btn-sm btn-danger", action: "click->std-corporation-grid#deleteCountryRows" },
-          { label: "Save", class: "btn btn-sm btn-success", action: "click->std-corporation-grid#saveCountryRows" }
+          { label: "추가", class: "btn btn-sm btn-primary", action: "click->std-corporation-grid#addCountryRow" },
+          { label: "삭제", class: "btn btn-sm btn-danger", action: "click->std-corporation-grid#deleteCountryRows" },
+          { label: "저장", class: "btn btn-sm btn-success", action: "click->std-corporation-grid#saveCountryRows" }
         ]
       ) %>
     </div>

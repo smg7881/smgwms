@@ -29,11 +29,11 @@ export default class extends BaseGridController {
       blankCheckFields: ["goods_nm"],
       comparableFields: ["goods_nm", "hatae_cd", "item_grp_cd", "item_cd", "hwajong_cd", "hwajong_grp_cd", "rmk_cd", "use_yn_cd"],
       firstEditCol: "goods_cd",
-      pkLabels: { goods_cd: "Goods Code" }
+      pkLabels: { goods_cd: "품명코드" }
     }
   }
 
   get saveMessage() {
-    return "Goods data saved."
+    return "품명 정보가 저장되었습니다."
   }
 }

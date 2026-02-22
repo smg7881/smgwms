@@ -12,13 +12,13 @@ class AddStdMasterDataMenusAndPermissions < ActiveRecord::Migration[8.1]
   end
 
   MENU_DEFINITIONS = [
-    { menu_cd: "STD_CORPORATION", menu_nm: "Corporation Management", menu_url: "/std/corporations", menu_icon: "building-2", tab_id: "std-corporations" },
-    { menu_cd: "STD_BIZ_CERT", menu_nm: "Business Certificate", menu_url: "/std/business_certificates", menu_icon: "id-card", tab_id: "std-business-certificates" },
-    { menu_cd: "STD_GOODS", menu_nm: "Goods Management", menu_url: "/std/goods", menu_icon: "package", tab_id: "std-goods" },
-    { menu_cd: "STD_FAVORITE", menu_nm: "Favorite Management", menu_url: "/std/favorites", menu_icon: "star", tab_id: "std-favorites" },
-    { menu_cd: "STD_INTERFACE_INFO", menu_nm: "Interface Management", menu_url: "/std/interface_infos", menu_icon: "workflow", tab_id: "std-interface-infos" },
-    { menu_cd: "STD_RESERVED_JOB", menu_nm: "Reserved Job", menu_url: "/std/reserved_jobs", menu_icon: "calendar-clock", tab_id: "std-reserved-jobs" },
-    { menu_cd: "STD_EXCHANGE_RATE", menu_nm: "Exchange Rate", menu_url: "/std/exchange_rates", menu_icon: "coins", tab_id: "std-exchange-rates" }
+    { menu_cd: "STD_CORPORATION", menu_nm: "법인관리", menu_url: "/std/corporations", menu_icon: "building-2", tab_id: "std-corporations" },
+    { menu_cd: "STD_BIZ_CERT", menu_nm: "사업자등록증관리", menu_url: "/std/business_certificates", menu_icon: "id-card", tab_id: "std-business-certificates" },
+    { menu_cd: "STD_GOODS", menu_nm: "품명관리", menu_url: "/std/goods", menu_icon: "package", tab_id: "std-goods" },
+    { menu_cd: "STD_FAVORITE", menu_nm: "즐겨찾기관리", menu_url: "/std/favorites", menu_icon: "star", tab_id: "std-favorites" },
+    { menu_cd: "STD_INTERFACE_INFO", menu_nm: "인터페이스정보관리", menu_url: "/std/interface_infos", menu_icon: "workflow", tab_id: "std-interface-infos" },
+    { menu_cd: "STD_RESERVED_JOB", menu_nm: "예약작업관리", menu_url: "/std/reserved_jobs", menu_icon: "calendar-clock", tab_id: "std-reserved-jobs" },
+    { menu_cd: "STD_EXCHANGE_RATE", menu_nm: "환율관리", menu_url: "/std/exchange_rates", menu_icon: "coins", tab_id: "std-exchange-rates" }
   ].freeze
 
   def up
@@ -47,7 +47,7 @@ class AddStdMasterDataMenusAndPermissions < ActiveRecord::Migration[8.1]
       std_menu = MigrationAdmMenu.find_or_initialize_by(menu_cd: "STD")
       if std_menu.new_record?
         std_menu.assign_attributes(
-          menu_nm: "Standard",
+          menu_nm: "기준정보",
           parent_cd: nil,
           menu_url: nil,
           menu_icon: "database",
@@ -59,7 +59,7 @@ class AddStdMasterDataMenusAndPermissions < ActiveRecord::Migration[8.1]
         )
       else
         std_menu.assign_attributes(
-          menu_nm: "Standard",
+          menu_nm: "기준정보",
           menu_icon: "database",
           menu_type: "FOLDER",
           use_yn: "Y"

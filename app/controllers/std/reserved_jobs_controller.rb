@@ -33,7 +33,7 @@ class Std::ReservedJobsController < Std::BaseController
         rsv_work_no = attrs[:rsv_work_no].to_s.strip.upcase
         row = StdReservedJob.find_by(rsv_work_no: rsv_work_no)
         if row.nil?
-          errors << "Reserved job not found: #{rsv_work_no}"
+          errors << "예약작업 정보를 찾을 수 없습니다: #{rsv_work_no}"
           next
         end
 
@@ -55,7 +55,7 @@ class Std::ReservedJobsController < Std::BaseController
         if row.update(use_yn_cd: "N")
           result[:deleted] += 1
         else
-          errors.concat(row.errors.full_messages.presence || [ "Reserved job deactivation failed: #{rsv_work_no}" ])
+          errors.concat(row.errors.full_messages.presence || [ "예약작업 비활성화에 실패했습니다: #{rsv_work_no}" ])
         end
       end
 
@@ -67,7 +67,7 @@ class Std::ReservedJobsController < Std::BaseController
     if errors.any?
       render json: { success: false, errors: errors.uniq }, status: :unprocessable_entity
     else
-      render json: { success: true, message: "Reserved job data saved.", data: result }
+      render json: { success: true, message: "예약작업 정보가 저장되었습니다.", data: result }
     end
   end
 

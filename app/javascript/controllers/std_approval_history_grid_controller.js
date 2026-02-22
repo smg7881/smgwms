@@ -72,7 +72,7 @@ export default class extends BaseGridController {
       blankCheckFields: ["apv_req_no"],
       comparableFields: [],
       firstEditCol: "apv_req_no",
-      pkLabels: { apv_req_no: "寃곗옱?붿껌踰덊샇" }
+      pkLabels: { apv_req_no: "결재요청번호" }
     }
   }
 
@@ -100,7 +100,7 @@ export default class extends BaseGridController {
 
     const selectedRows = this.manager.api.getSelectedRows()
     if (!selectedRows.length) {
-      alert("泥섎━???됱쓣 ?좏깮?댁＜?몄슂.")
+      alert("처리할 행을 선택해주세요.")
       return
     }
 
@@ -110,7 +110,7 @@ export default class extends BaseGridController {
     }
 
     const apvReqNos = selectedRows.map((row) => row.apv_req_no).filter((value) => value)
-    const inputContent = window.prompt("寃곗옱?붿껌?댁슜???낅젰?섏꽭??", "")
+    const inputContent = window.prompt("결재요청내용을 입력하세요.", "")
     if (inputContent === null) {
       return
     }
@@ -126,7 +126,7 @@ export default class extends BaseGridController {
 
     const selectedRows = this.manager.api.getSelectedRows()
     if (!selectedRows.length) {
-      alert("泥섎━???됱쓣 ?좏깮?댁＜?몄슂.")
+      alert("처리할 행을 선택해주세요.")
       return
     }
 
@@ -136,7 +136,7 @@ export default class extends BaseGridController {
     }
 
     const apvReqNos = selectedRows.map((row) => row.apv_req_no).filter((value) => value)
-    const inputOpinion = window.prompt("寃곗옱?섍껄???낅젰?섏꽭??", "")
+    const inputOpinion = window.prompt("결재의견을 입력하세요.", "")
     if (inputOpinion === null) {
       return
     }
@@ -152,12 +152,12 @@ export default class extends BaseGridController {
 
     const reqNo = this.selectedRequestNoTarget.value
     if (!reqNo) {
-      alert("寃곗옱?붿껌踰덊샇瑜??뺤씤?댁＜?몄슂.")
+      alert("결재요청번호를 확인해주세요.")
       return
     }
 
     if (this.mode !== "requester") {
-      alert("?붿껌 泥섎━ 沅뚰븳???놁뒿?덈떎.")
+      alert("요청 처리 권한이 없습니다.")
       return
     }
 
@@ -176,12 +176,12 @@ export default class extends BaseGridController {
 
     const reqNo = this.selectedRequestNoTarget.value
     if (!reqNo) {
-      alert("寃곗옱?붿껌踰덊샇瑜??뺤씤?댁＜?몄슂.")
+      alert("결재요청번호를 확인해주세요.")
       return
     }
 
     if (this.mode !== "approver") {
-      alert("?뱀씤 泥섎━ 沅뚰븳???놁뒿?덈떎.")
+      alert("승인 처리 권한이 없습니다.")
       return
     }
 
@@ -213,7 +213,7 @@ export default class extends BaseGridController {
     this.modalApproveYmdTarget.value = this.formatDateTime(row.apv_apv_ymd)
     this.modalStatusTarget.value = row.apv_stat_cd || "REQUESTED"
     this.modalTypeTarget.value = row.apv_type_cd || ""
-    this.modalTitleTarget.textContent = `寃곗옱?붿껌?뱀씤 - ${row.apv_req_no || ""}`
+    this.modalTitleTarget.textContent = `결재요청승인 - ${row.apv_req_no || ""}`
 
     this.applyMode(row)
     this.openModal()
@@ -254,17 +254,17 @@ export default class extends BaseGridController {
       })
       const result = await response.json()
       if (!response.ok || !result.success) {
-        alert("泥섎━ ?ㅽ뙣: " + (result.errors || ["?붿껌 泥섎━ ?ㅽ뙣"]).join(", "))
+        alert("처리 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
         return
       }
 
-      alert(result.message || "泥섎━媛 ?꾨즺?섏뿀?듬땲??")
+      alert(result.message || "처리가 완료되었습니다.")
       if (options.closeModal) {
         this.closeModal()
       }
       this.reloadRows()
     } catch {
-      alert("泥섎━ ?ㅽ뙣: ?ㅽ듃?뚰겕 ?ㅻ쪟")
+      alert("처리 실패: 네트워크 오류")
     }
   }
 

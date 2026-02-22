@@ -32,7 +32,7 @@ class Std::ExchangeRatesController < Std::BaseController
       Array(operations[:rowsToUpdate]).each do |attrs|
         row = find_exchange_rate_row(attrs)
         if row.nil?
-          errors << "Exchange rate row not found: #{exchange_rate_key(attrs)}"
+          errors << "환율 정보를 찾을 수 없습니다: #{exchange_rate_key(attrs)}"
           next
         end
 
@@ -59,7 +59,7 @@ class Std::ExchangeRatesController < Std::BaseController
         if row.update(use_yn_cd: "N")
           result[:deleted] += 1
         else
-          errors.concat(row.errors.full_messages.presence || [ "Exchange rate deactivation failed: #{exchange_rate_key(attrs)}" ])
+          errors.concat(row.errors.full_messages.presence || [ "환율 비활성화에 실패했습니다: #{exchange_rate_key(attrs)}" ])
         end
       end
 
@@ -71,7 +71,7 @@ class Std::ExchangeRatesController < Std::BaseController
     if errors.any?
       render json: { success: false, errors: errors.uniq }, status: :unprocessable_entity
     else
-      render json: { success: true, message: "Exchange rate data saved.", data: result }
+      render json: { success: true, message: "환율 정보가 저장되었습니다.", data: result }
     end
   end
 

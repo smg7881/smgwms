@@ -69,14 +69,14 @@ export default class extends Controller {
     this.favoriteManager.stopEditing()
     const operations = this.favoriteManager.buildOperations()
     if (!hasChanges(operations)) {
-      alert("No changed data.")
+      alert("변경된 데이터가 없습니다.")
       return
     }
 
     const ok = await postJson(this.batchUrlValue, operations)
     if (!ok) return
 
-    alert("Favorite data saved.")
+    alert("즐겨찾기 정보가 저장되었습니다.")
     this.reloadFavoriteRows()
   }
 
@@ -96,14 +96,14 @@ export default class extends Controller {
     this.groupManager.stopEditing()
     const operations = this.groupManager.buildOperations()
     if (!hasChanges(operations)) {
-      alert("No changed data.")
+      alert("변경된 데이터가 없습니다.")
       return
     }
 
     const ok = await postJson(this.groupBatchUrlValue, operations)
     if (!ok) return
 
-    alert("Favorite group data saved.")
+    alert("즐겨찾기 그룹 정보가 저장되었습니다.")
     this.reloadGroups()
   }
 
@@ -129,7 +129,7 @@ export default class extends Controller {
       blankCheckFields: ["menu_cd"],
       comparableFields: ["menu_nm", "user_favor_menu_grp", "sort_seq", "use_yn"],
       firstEditCol: "menu_cd",
-      pkLabels: { user_id_code: "User ID", menu_cd: "Menu Code" }
+      pkLabels: { user_id_code: "사용자ID", menu_cd: "메뉴코드" }
     }
   }
 
@@ -149,7 +149,7 @@ export default class extends Controller {
       blankCheckFields: ["group_nm"],
       comparableFields: ["use_yn"],
       firstEditCol: "group_nm",
-      pkLabels: { user_id_code: "User ID", group_nm: "Group Name" }
+      pkLabels: { user_id_code: "사용자ID", group_nm: "그룹명" }
     }
   }
 
@@ -161,7 +161,7 @@ export default class extends Controller {
       const rows = await fetchJson(this.favoriteGridController.urlValue)
       setManagerRowData(this.favoriteManager, rows)
     } catch {
-      alert("Failed to reload favorite list.")
+      alert("즐겨찾기 목록을 다시 불러오지 못했습니다.")
     }
   }
 
@@ -179,7 +179,7 @@ export default class extends Controller {
       const rows = await fetchJson(`${this.groupListUrlValue}?${query.toString()}`)
       setManagerRowData(this.groupManager, rows)
     } catch {
-      alert("Failed to load favorite groups.")
+      alert("즐겨찾기 그룹을 불러오지 못했습니다.")
     }
   }
 
