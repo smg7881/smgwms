@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_21_102000) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_22_102000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -247,6 +247,61 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_21_102000) do
     t.index ["user_id"], name: "index_sessions_on_user_id"
   end
 
+  create_table "std_approval_requests", force: :cascade do |t|
+    t.datetime "apv_apv_ymd"
+    t.text "apv_opi"
+    t.text "apv_req_conts"
+    t.string "apv_req_no", limit: 20, null: false
+    t.datetime "apv_req_ymd"
+    t.string "apv_reqr", limit: 50, null: false
+    t.string "apv_stat_cd", limit: 30, default: "REQUESTED", null: false
+    t.string "apv_type_cd", limit: 30
+    t.string "apver_chg", limit: 50
+    t.string "asmt_apver", limit: 50, null: false
+    t.string "corp_cd", limit: 20, null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "menu_cd", limit: 30
+    t.string "menu_nm", limit: 120, null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn", limit: 1, default: "Y", null: false
+    t.string "user_cd", limit: 50
+    t.index ["apv_req_no"], name: "index_std_approval_requests_on_apv_req_no", unique: true
+    t.index ["apv_req_ymd"], name: "index_std_approval_requests_on_apv_req_ymd"
+    t.index ["apv_reqr"], name: "index_std_approval_requests_on_apv_reqr"
+    t.index ["apv_stat_cd"], name: "index_std_approval_requests_on_apv_stat_cd"
+    t.index ["asmt_apver"], name: "index_std_approval_requests_on_asmt_apver"
+  end
+
+  create_table "std_approvals", force: :cascade do |t|
+    t.string "apv_delegate", limit: 50
+    t.string "apv_delegt_yn", limit: 1, default: "N", null: false
+    t.string "apv_type_cd", limit: 30
+    t.string "asmt_apver_yn", limit: 1, default: "Y", null: false
+    t.string "chrg_apver", limit: 50
+    t.string "col1_cd", limit: 60
+    t.string "col2_cd", limit: 60
+    t.string "col3_cd", limit: 60
+    t.string "col4_cd", limit: 60
+    t.string "col5_cd", limit: 60
+    t.string "corp_cd", limit: 20, null: false
+    t.string "corp_nm", limit: 120
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "menu_cd", limit: 30, null: false
+    t.string "menu_nm", limit: 120, null: false
+    t.string "not_asmt_apver_resp", limit: 50
+    t.string "rmk", limit: 500
+    t.string "table_cd", limit: 60
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn", limit: 1, default: "Y", null: false
+    t.index ["corp_cd", "menu_cd"], name: "index_std_approvals_on_corp_cd_and_menu_cd", unique: true
+    t.index ["menu_nm"], name: "index_std_approvals_on_menu_nm"
+    t.index ["use_yn"], name: "index_std_approvals_on_use_yn"
+  end
+
   create_table "std_bzac_mst", force: :cascade do |t|
     t.string "acnt_no_cd", limit: 50
     t.string "addr_cd", limit: 300
@@ -338,6 +393,124 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_21_102000) do
     t.datetime "update_time"
     t.index ["bzac_cd", "changed_at"], name: "index_std_cm04004_on_bzac_cd_and_changed_at"
     t.index ["bzac_cd", "hist_seq"], name: "index_std_cm04004_on_bzac_cd_and_hist_seq", unique: true
+  end
+
+  create_table "std_countries", force: :cascade do |t|
+    t.string "corp_cd", limit: 20
+    t.string "corp_nm", limit: 120
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "ctry_ar_cd", limit: 30, null: false
+    t.string "ctry_cd", limit: 10, null: false
+    t.string "ctry_eng_nm", limit: 120, null: false
+    t.string "ctry_nm", limit: 120, null: false
+    t.string "ctry_telno", limit: 20
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn_cd", limit: 1, default: "Y", null: false
+    t.index ["ctry_cd"], name: "index_std_countries_on_ctry_cd", unique: true
+    t.index ["ctry_nm"], name: "index_std_countries_on_ctry_nm"
+    t.index ["use_yn_cd"], name: "index_std_countries_on_use_yn_cd"
+  end
+
+  create_table "std_holidays", force: :cascade do |t|
+    t.string "asmt_holday_yn_cd", limit: 1, default: "N", null: false
+    t.string "clsdy_yn_cd", limit: 1, default: "N", null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "ctry_cd", limit: 10, null: false
+    t.string "event_day_yn_cd", limit: 1, default: "N", null: false
+    t.string "holiday_nm_cd", limit: 120, null: false
+    t.string "rmk_cd", limit: 500
+    t.string "sat_yn_cd", limit: 1, default: "N", null: false
+    t.string "sunday_yn_cd", limit: 1, default: "N", null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn_cd", limit: 1, default: "Y", null: false
+    t.date "ymd", null: false
+    t.index ["ctry_cd", "ymd"], name: "index_std_holidays_on_ctry_cd_and_ymd", unique: true
+    t.index ["use_yn_cd"], name: "index_std_holidays_on_use_yn_cd"
+    t.index ["ymd"], name: "index_std_holidays_on_ymd"
+  end
+
+  create_table "std_region_zip_mappings", force: :cascade do |t|
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "ctry_cd", limit: 10, null: false
+    t.string "regn_cd", limit: 10, null: false
+    t.integer "seq_no", default: 1, null: false
+    t.integer "sort_seq", default: 0, null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "zipcd", limit: 20, null: false
+    t.index ["regn_cd", "ctry_cd", "zipcd", "seq_no"], name: "index_std_region_zip_map_unique", unique: true
+    t.index ["regn_cd", "sort_seq"], name: "index_std_region_zip_map_on_regn_and_sort"
+  end
+
+  create_table "std_regions", force: :cascade do |t|
+    t.string "corp_cd", limit: 20, null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "regn_cd", limit: 10, null: false
+    t.string "regn_eng_nm_cd", limit: 120, null: false
+    t.string "regn_nm_cd", limit: 120, null: false
+    t.string "rmk_cd", limit: 500
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "upper_regn_cd", limit: 10
+    t.string "use_yn_cd", limit: 1, default: "Y", null: false
+    t.index ["corp_cd"], name: "index_std_regions_on_corp_cd"
+    t.index ["regn_cd"], name: "index_std_regions_on_regn_cd", unique: true
+    t.index ["regn_nm_cd"], name: "index_std_regions_on_regn_nm_cd"
+    t.index ["use_yn_cd"], name: "index_std_regions_on_use_yn_cd"
+  end
+
+  create_table "std_workplaces", force: :cascade do |t|
+    t.string "addr_cd", limit: 300
+    t.decimal "adpt_capa", precision: 14, scale: 3
+    t.string "bzac_cd", limit: 20
+    t.string "capa_spec_unit_cd", limit: 30
+    t.string "corp_cd", limit: 20, null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "ctry_cd", limit: 10
+    t.string "dept_cd", limit: 50, null: false
+    t.decimal "dimem", precision: 14, scale: 3
+    t.string "dimem_spec_unit_cd", limit: 30
+    t.string "dtl_addr_cd", limit: 300
+    t.decimal "max_capa", precision: 14, scale: 3
+    t.text "remk_cd"
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "upper_workpl_cd", limit: 20
+    t.string "use_yn_cd", limit: 1, default: "Y", null: false
+    t.string "wm_yn_cd", limit: 1, default: "N", null: false
+    t.string "workpl_cd", limit: 20, null: false
+    t.string "workpl_nm", limit: 120, null: false
+    t.string "workpl_sctn_cd", limit: 50, null: false
+    t.string "zip_cd", limit: 20
+    t.index ["corp_cd"], name: "index_std_workplaces_on_corp_cd"
+    t.index ["use_yn_cd"], name: "index_std_workplaces_on_use_yn_cd"
+    t.index ["workpl_cd"], name: "index_std_workplaces_on_workpl_cd", unique: true
+    t.index ["workpl_nm"], name: "index_std_workplaces_on_workpl_nm"
+  end
+
+  create_table "std_zip_codes", force: :cascade do |t|
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "ctry_cd", limit: 10, null: false
+    t.string "eupdiv", limit: 80
+    t.integer "seq_no", default: 1, null: false
+    t.string "sgng", limit: 80
+    t.string "sido", limit: 80
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn_cd", limit: 1, default: "Y", null: false
+    t.string "zipaddr", limit: 300
+    t.string "zipcd", limit: 20, null: false
+    t.index ["ctry_cd", "zipcd", "seq_no"], name: "index_std_zip_codes_on_ctry_cd_and_zipcd_and_seq_no", unique: true
+    t.index ["use_yn_cd"], name: "index_std_zip_codes_on_use_yn_cd"
+    t.index ["zipcd"], name: "index_std_zip_codes_on_zipcd"
   end
 
   create_table "wm_areas", force: :cascade do |t|

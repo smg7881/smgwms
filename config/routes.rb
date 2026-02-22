@@ -93,6 +93,44 @@ Rails.application.routes.draw do
   end
 
   namespace :std do
+    resources :workplaces, controller: :workplaces, only: [ :index ] do
+      post :batch_save, on: :collection
+    end
+    resources :regions, controller: :regions, only: [ :index ] do
+      post :batch_save, on: :collection
+    end
+    resources :region_zipcodes, controller: :region_zipcodes, only: [ :index ] do
+      collection do
+        get :mapped_zipcodes
+        get :unmapped_zipcodes
+        post :save_mappings
+      end
+    end
+    resources :countries, controller: :countries, only: [ :index ] do
+      post :batch_save, on: :collection
+    end
+    resources :holidays, controller: :holidays, only: [ :index ] do
+      collection do
+        post :batch_save
+        post :generate_weekends
+      end
+    end
+    resources :approvals, controller: :approvals, only: [ :index ] do
+      post :batch_save, on: :collection
+    end
+    resources :approval_requests, controller: :approval_requests, only: [ :index ] do
+      collection do
+        post :batch_save
+        post :request_action
+        post :approve_action
+      end
+    end
+    resources :approval_histories, controller: :approval_histories, only: [ :index ] do
+      collection do
+        post :request_action
+        post :approve_action
+      end
+    end
     resources :clients, controller: :clients, only: [ :index ] do
       collection do
         get :sections
@@ -107,6 +145,8 @@ Rails.application.routes.draw do
       end
     end
   end
+
+  get "search_popups/:type", to: "search_popups#show", as: :search_popup
 
   get "up" => "rails/health#show", as: :rails_health_check
 end

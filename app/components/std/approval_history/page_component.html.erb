@@ -1,0 +1,140 @@
+<div data-controller="std-approval-history-grid"
+     data-action="ag-grid:ready->std-approval-history-grid#registerGrid"
+     data-std-approval-history-grid-request-url-value="<%= request_action_url %>"
+     data-std-approval-history-grid-approve-url-value="<%= approve_action_url %>"
+     data-std-approval-history-grid-current-user-code-value="<%= current_user_code %>">
+  <%= render Ui::SearchFormComponent.new(
+    url: create_url,
+    fields: search_fields,
+    cols: 5,
+    enable_collapse: true
+  ) %>
+
+  <div class="flex items-center justify-between gap-3 mb-3 mt-2">
+    <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
+      <%= helpers.lucide_icon("history", css_class: "w-4 h-4 text-text-secondary") %>
+      결재이력 목록
+      <%= render Ui::GridActionsComponent.new(grid_id: "std-approval-history") %>
+    </h3>
+    <p class="text-xs text-text-secondary">행 더블클릭 시 결재요청승인 팝업이 열립니다.</p>
+    <%= render Ui::GridToolbarComponent.new(
+      buttons: [
+        { label: "요청처리", class: "btn btn-sm btn-secondary", action: "click->std-approval-history-grid#requestRows" },
+        { label: "승인처리", class: "btn btn-sm btn-secondary", action: "click->std-approval-history-grid#approveRows" }
+      ]
+    ) %>
+  </div>
+
+  <%= render Ui::AgGridComponent.new(
+    columns: columns,
+    url: grid_url,
+    height: "calc(100vh - 370px)",
+    page_size: 20,
+    row_selection: "multiple",
+    grid_id: "std-approval-history",
+    data: { std_approval_history_grid_target: "grid" }
+  ) %>
+
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]"
+       data-std-approval-history-grid-target="overlay"
+       data-action="click->std-approval-history-grid#closeModalOnOverlay"
+       hidden>
+    <div class="bg-bg-primary border border-border rounded-lg max-w-[calc(100vw-32px)] w-[720px] max-h-[90vh] flex flex-col overflow-hidden"
+         data-std-approval-history-grid-target="modal"
+         data-action="click->std-approval-history-grid#stopPropagation">
+      <div class="flex justify-between items-center px-5 py-4 border-b border-border sticky top-0 z-[2] bg-bg-primary cursor-move"
+           data-action="mousedown->std-approval-history-grid#startDrag">
+        <h3 class="m-0 text-base" data-std-approval-history-grid-target="modalTitle">결재요청승인</h3>
+        <button type="button"
+                class="bg-transparent border-none text-xl cursor-pointer text-text-secondary"
+                data-action="click->std-approval-history-grid#closeModal">&times;</button>
+      </div>
+
+      <div class="modal-body px-5 py-5 overflow-y-auto flex-1 min-h-0">
+        <input type="hidden" data-std-approval-history-grid-target="selectedRequestNo" />
+
+        <div class="grid grid-cols-2 gap-3">
+          <div class="flex flex-col gap-1">
+            <label class="text-xs text-text-secondary">법인코드</label>
+            <input type="text" class="form-grid-input" data-std-approval-history-grid-target="modalCorpCd" readonly />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs text-text-secondary">메뉴명</label>
+            <input type="text" class="form-grid-input" data-std-approval-history-grid-target="modalMenuNm" readonly />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs text-text-secondary">결재요청번호</label>
+            <input type="text" class="form-grid-input" data-std-approval-history-grid-target="modalRequestNo" readonly />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs text-text-secondary">결재요청자</label>
+            <input type="text" class="form-grid-input" data-std-approval-history-grid-target="modalRequester" readonly />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs text-text-secondary">지정결재자</label>
+            <input type="text" class="form-grid-input" data-std-approval-history-grid-target="modalApprover" readonly />
+          </div>
+          <div class="flex flex-col gap-1"
+               data-controller="search-popup"
+               data-search-popup-type-value="user">
+            <label class="text-xs text-text-secondary">결재자변경</label>
+            <div class="flex gap-1">
+              <input type="hidden"
+                     data-search-popup-target="code"
+                     data-std-approval-history-grid-target="modalApproverCode" />
+              <input type="text"
+                     class="form-grid-input"
+                     data-search-popup-target="display"
+                     data-std-approval-history-grid-target="modalApproverDisplay" />
+              <button type="button"
+                      class="btn btn-sm btn-secondary shrink-0"
+                      data-action="search-popup#open">찾기</button>
+            </div>
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs text-text-secondary">결재요청일자</label>
+            <input type="text" class="form-grid-input" data-std-approval-history-grid-target="modalRequestYmd" readonly />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs text-text-secondary">결재승인일자</label>
+            <input type="text" class="form-grid-input" data-std-approval-history-grid-target="modalApproveYmd" readonly />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs text-text-secondary">결재상태</label>
+            <select class="form-grid-select" data-std-approval-history-grid-target="modalStatus">
+              <% status_options_for_modal.each do |option| %>
+                <option value="<%= option[:value] %>"><%= option[:label] %></option>
+              <% end %>
+            </select>
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs text-text-secondary">결재유형</label>
+            <input type="text" class="form-grid-input" data-std-approval-history-grid-target="modalType" readonly />
+          </div>
+          <div class="col-span-2 flex flex-col gap-1">
+            <label class="text-xs text-text-secondary">결재요청내용</label>
+            <textarea class="form-grid-input" rows="3" data-std-approval-history-grid-target="modalRequestContents"></textarea>
+          </div>
+          <div class="col-span-2 flex flex-col gap-1">
+            <label class="text-xs text-text-secondary">결재의견</label>
+            <textarea class="form-grid-input" rows="3" data-std-approval-history-grid-target="modalOpinion"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 px-5 py-3 border-t border-border sticky bottom-0 z-[2] bg-bg-primary">
+        <button type="button"
+                class="btn btn-sm btn-secondary"
+                data-std-approval-history-grid-target="requestButton"
+                data-action="click->std-approval-history-grid#submitRequestFromModal">요청</button>
+        <button type="button"
+                class="btn btn-sm btn-primary"
+                data-std-approval-history-grid-target="approveButton"
+                data-action="click->std-approval-history-grid#submitApproveFromModal">승인</button>
+        <button type="button"
+                class="btn btn-sm btn-secondary"
+                data-action="click->std-approval-history-grid#closeModal">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>

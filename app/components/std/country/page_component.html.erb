@@ -1,0 +1,35 @@
+<div data-controller="std-country-grid"
+     data-action="ag-grid:ready->std-country-grid#registerGrid"
+     data-std-country-grid-batch-url-value="<%= batch_save_url %>">
+  <%= render Ui::SearchFormComponent.new(
+    url: create_url,
+    fields: search_fields,
+    cols: 3,
+    enable_collapse: true
+  ) %>
+
+  <div class="flex items-center justify-between gap-3 mb-3 mt-2">
+    <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
+      <%= helpers.lucide_icon("globe-2", css_class: "w-4 h-4 text-text-secondary") %>
+      국가코드 목록
+      <%= render Ui::GridActionsComponent.new(grid_id: "std-country") %>
+    </h3>
+    <%= render Ui::GridToolbarComponent.new(
+      buttons: [
+        { label: "행추가", class: "btn btn-sm btn-primary", action: "click->std-country-grid#addRow" },
+        { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->std-country-grid#deleteRows" },
+        { label: "저장", class: "btn btn-sm btn-success", action: "click->std-country-grid#saveRows" }
+      ]
+    ) %>
+  </div>
+
+  <%= render Ui::AgGridComponent.new(
+    columns: columns,
+    url: grid_url,
+    height: "calc(100vh - 370px)",
+    page_size: 20,
+    row_selection: "multiple",
+    grid_id: "std-country",
+    data: { std_country_grid_target: "grid" }
+  ) %>
+</div>

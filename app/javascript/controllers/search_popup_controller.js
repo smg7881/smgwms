@@ -26,8 +26,13 @@ export default class extends Controller {
     }
 
     // 돋보기 버튼 클릭 등 사용자가 팝업 열기를 트리거했을 때 실행
-    open(event) {
+    async open(event) {
         event.preventDefault()
+
+        const autoSelected = await this.tryAutoSelect()
+        if (autoSelected) {
+            return
+        }
 
         // 1. 단일 모달 컨테이너 DOM 요소 탐색. 없으면 <dialog> 태그로 즉석 생성함.
         //    (여러 개의 팝업이 있더라도 화면 전체를 덮는 <dialog> 하나를 재활용함)
@@ -80,6 +85,50 @@ export default class extends Controller {
         modal.addEventListener("search-popup:select", selectHandler, { once: true })
     }
 
+    async tryAutoSelect() {
+        const baseUrl = this.urlValue || `/search_popups/${this.typeValue}`
+        const seedKeyword = this.seedKeyword
+        if (!seedKeyword) {
+            return false
+        }
+
+        const query = new URLSearchParams({
+            q: seedKeyword,
+            format: "json"
+        })
+
+        try {
+            const response = await fetch(`${baseUrl}?${query.toString()}`, {
+                headers: { Accept: "application/json" }
+            })
+            if (!response.ok) {
+                return false
+            }
+            const rows = await response.json()
+            if (!Array.isArray(rows)) {
+                return false
+            }
+            if (rows.length !== 1) {
+                return false
+            }
+
+            this.select(rows[0])
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    get seedKeyword() {
+        const code = this.hasCodeTarget ? this.codeTarget.value.toString().trim() : ""
+        if (code) {
+            return code
+        }
+
+        const display = this.hasDisplayTarget ? this.displayTarget.value.toString().trim() : ""
+        return display
+    }
+
     // 모달에서 값이 날아와 선택이 최종 이뤄진 시점에 돌아가는 콜백 역할
     select({ code, display }) {
         // 각 타겟 폼(input)에 값을 욱여넣음
@@ -88,6 +137,11 @@ export default class extends Controller {
 
         // 데이터가 시스템이 아닌 브라우저 DOM 레벨 이벤트(사용자 타이핑 등)로 바꼈음을 
         // JS 에코시스템에 전파하기 위해 강제 change 이벤트를 발생시킴 (더티체킹, 의존성 필드 작동용)
-        this.displayTarget.dispatchEvent(new Event("change", { bubbles: true }))
+        if (this.hasDisplayTarget) {
+            this.displayTarget.dispatchEvent(new Event("change", { bubbles: true }))
+        }
+        if (this.hasCodeTarget) {
+            this.codeTarget.dispatchEvent(new Event("change", { bubbles: true }))
+        }
     }
 }
