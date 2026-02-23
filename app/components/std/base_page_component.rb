@@ -24,6 +24,10 @@ class Std::BasePageComponent < ApplicationComponent
       AdmCodeDetail.select_values_for(code, value_transform: value_transform)
     end
 
+    def common_code_map(code, value_transform: nil)
+      AdmCodeDetail.select_options_for(code, value_transform: value_transform).to_h { |opt| [ opt[:value], opt[:label] ] }
+    end
+
     def collection_path(**) = raise(NotImplementedError, "Subclasses must implement collection_path")
     def member_path(id, **) = raise(NotImplementedError, "Subclasses must implement member_path")
 end

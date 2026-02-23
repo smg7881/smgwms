@@ -1,6 +1,13 @@
 <%
+  financial_org_popup = %w[financial_institution fin_org financial_org fnc_or].include?(@type)
+  sellbuy_attr_popup = %w[sellbuy_attr sellbuyattribute sell_buy_attr].include?(@type)
+
   popup_title = if @type == "corp"
     "법인 조회"
+  elsif financial_org_popup
+    "금융기관 조회"
+  elsif sellbuy_attr_popup
+    "매출입항목 조회"
   else
     "조회"
   end
@@ -67,6 +74,175 @@
         display: row[:display],
         upper_corp_cd: row[:upper_corp_cd],
         upper_corp_nm: row[:upper_corp_nm]
+      }
+    end
+  elsif financial_org_popup
+    popup_fields = [
+      {
+        field: "ctry_cd",
+        type: "input",
+        label: "국가코드",
+        placeholder: "국가코드 입력",
+        span: "24 s:12 m:6"
+      },
+      {
+        field: "fnc_or_cd",
+        type: "input",
+        label: "금융기관코드",
+        placeholder: "금융기관코드 입력",
+        span: "24 s:12 m:6"
+      },
+      {
+        field: "fnc_or_nm",
+        type: "input",
+        label: "금융기관명",
+        placeholder: "금융기관명 입력",
+        span: "24 s:12 m:8"
+      },
+      {
+        field: "use_yn",
+        type: "select",
+        label: "사용여부",
+        options: [
+          { label: "Y", value: "Y" },
+          { label: "N", value: "N" }
+        ],
+        include_blank: false,
+        span: "24 s:12 m:4"
+      }
+    ]
+
+    popup_columns = [
+      { field: "ctry", headerName: "국가", minWidth: 120, editable: false },
+      { field: "fnc_or_cd", headerName: "금융기관코드", minWidth: 140, editable: false },
+      { field: "fnc_or_nm", headerName: "금융기관명", minWidth: 200, editable: false },
+      { field: "fnc_or_eng_nm", headerName: "금융기관영문명", minWidth: 220, editable: false },
+      {
+        field: "__select",
+        headerName: "선택",
+        minWidth: 90,
+        maxWidth: 90,
+        editable: false,
+        sortable: false,
+        filter: false,
+        resizable: false,
+        cellStyle: { textAlign: "center" },
+        cellRenderer: "popupSelectCellRenderer"
+      }
+    ]
+
+    popup_rows = @rows.map do |row|
+      {
+        code: row[:code],
+        name: row[:name],
+        display: row[:display],
+        ctry: row[:ctry],
+        ctry_cd: row[:ctry_cd],
+        ctry_nm: row[:ctry_nm],
+        fnc_or_cd: row[:fnc_or_cd] || row[:code],
+        fnc_or_nm: row[:fnc_or_nm] || row[:name],
+        fnc_or_eng_nm: row[:fnc_or_eng_nm],
+        use_yn: row[:use_yn]
+      }
+    end
+  elsif sellbuy_attr_popup
+    popup_fields = [
+      {
+        field: "sellbuy_attr_cd",
+        type: "input",
+        label: "매출입항목코드",
+        placeholder: "매출입항목코드 입력",
+        span: "24 s:12 m:6"
+      },
+      {
+        field: "sellbuy_attr_nm",
+        type: "input",
+        label: "매출입항목명",
+        placeholder: "매출입항목명 입력",
+        span: "24 s:12 m:8"
+      },
+      {
+        field: "corp_nm",
+        type: "popup",
+        label: "법인",
+        popup_type: "corp",
+        code_field: "corp_cd",
+        placeholder: "법인 선택",
+        span: "24 s:12 m:10"
+      },
+      {
+        field: "use_yn",
+        type: "select",
+        label: "사용여부",
+        options: [
+          { label: "Y", value: "Y" },
+          { label: "N", value: "N" }
+        ],
+        include_blank: false,
+        span: "24 s:8 m:4"
+      },
+      {
+        field: "tran_yn",
+        type: "select",
+        label: "운송여부",
+        options: [
+          { label: "전체", value: "" },
+          { label: "Y", value: "Y" },
+          { label: "N", value: "N" }
+        ],
+        include_blank: false,
+        span: "24 s:8 m:4"
+      },
+      {
+        field: "strg_yn",
+        type: "select",
+        label: "보관여부",
+        options: [
+          { label: "전체", value: "" },
+          { label: "Y", value: "Y" },
+          { label: "N", value: "N" }
+        ],
+        include_blank: false,
+        span: "24 s:8 m:4"
+      }
+    ]
+
+    popup_columns = [
+      { field: "sellbuy_attr_cd", headerName: "매출입항목코드", minWidth: 140, editable: false },
+      { field: "sellbuy_attr_nm", headerName: "매출입항목명", minWidth: 190, editable: false },
+      { field: "sellbuy_attr_eng_nm", headerName: "영문매출입항목명", minWidth: 210, editable: false },
+      { field: "rdtn_nm", headerName: "단축명", minWidth: 140, editable: false },
+      { field: "upper_sellbuy_attr_cd", headerName: "상위매출입항목코드", minWidth: 150, editable: false },
+      { field: "upper_sellbuy_attr_nm", headerName: "상위매출입항목명", minWidth: 170, editable: false },
+      {
+        field: "__select",
+        headerName: "선택",
+        minWidth: 90,
+        maxWidth: 90,
+        editable: false,
+        sortable: false,
+        filter: false,
+        resizable: false,
+        cellStyle: { textAlign: "center" },
+        cellRenderer: "popupSelectCellRenderer"
+      }
+    ]
+
+    popup_rows = @rows.map do |row|
+      {
+        code: row[:code],
+        name: row[:name],
+        display: row[:display],
+        corp_cd: row[:corp_cd],
+        sellbuy_attr_cd: row[:sellbuy_attr_cd] || row[:code],
+        sellbuy_attr_nm: row[:sellbuy_attr_nm] || row[:name],
+        sellbuy_attr_eng_nm: row[:sellbuy_attr_eng_nm],
+        rdtn_nm: row[:rdtn_nm],
+        upper_sellbuy_attr_cd: row[:upper_sellbuy_attr_cd],
+        upper_sellbuy_attr_nm: row[:upper_sellbuy_attr_nm],
+        tran_yn: row[:tran_yn],
+        strg_yn: row[:strg_yn],
+        use_yn: row[:use_yn]
       }
     end
   else

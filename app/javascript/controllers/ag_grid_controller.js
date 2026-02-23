@@ -234,6 +234,8 @@ export default class extends Controller {
         if (!def.cellRenderer) {
           def.cellRenderer = "lookupPopupCellRenderer"
         }
+        // lookup 컬럼은 렌더러 내부 입력창으로 편집하므로 AG Grid 기본 편집모드는 비활성화
+        def.editable = false
       }
 
       // "formatter: 'date'" 등 문자열 포맷터 호출에 맞는 실제 함수 할당

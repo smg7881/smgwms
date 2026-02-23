@@ -44,7 +44,8 @@ class Std::Good::PageComponent < Std::BasePageComponent
           minWidth: 110,
           editable: true,
           cellEditor: "agSelectCellEditor",
-          cellEditorParams: { values: common_code_values("STD_HATAE") }
+          cellEditorParams: { values: common_code_values("STD_HATAE") },
+          refData: common_code_map("STD_HATAE")
         },
         {
           field: "item_grp_cd",
@@ -52,7 +53,8 @@ class Std::Good::PageComponent < Std::BasePageComponent
           minWidth: 110,
           editable: true,
           cellEditor: "agSelectCellEditor",
-          cellEditorParams: { values: common_code_values("STD_ITEM_GRP") }
+          cellEditorParams: { values: common_code_values("STD_ITEM_GRP") },
+          refData: common_code_map("STD_ITEM_GRP")
         },
         {
           field: "item_cd",
@@ -60,7 +62,8 @@ class Std::Good::PageComponent < Std::BasePageComponent
           minWidth: 110,
           editable: true,
           cellEditor: "agSelectCellEditor",
-          cellEditorParams: { values: common_code_values("STD_ITEM") }
+          cellEditorParams: { values: common_code_values("STD_ITEM") },
+          refData: common_code_map("STD_ITEM")
         },
         {
           field: "hwajong_cd",
@@ -68,7 +71,8 @@ class Std::Good::PageComponent < Std::BasePageComponent
           minWidth: 110,
           editable: true,
           cellEditor: "agSelectCellEditor",
-          cellEditorParams: { values: common_code_values("STD_HWAJONG") }
+          cellEditorParams: { values: common_code_values("STD_HWAJONG") },
+          refData: common_code_map("STD_HWAJONG")
         },
         {
           field: "hwajong_grp_cd",
@@ -76,7 +80,8 @@ class Std::Good::PageComponent < Std::BasePageComponent
           minWidth: 110,
           editable: true,
           cellEditor: "agSelectCellEditor",
-          cellEditorParams: { values: common_code_values("STD_HWAJONG_GRP") }
+          cellEditorParams: { values: common_code_values("STD_HWAJONG_GRP") },
+          refData: common_code_map("STD_HWAJONG_GRP")
         },
         { field: "rmk_cd", headerName: "비고", minWidth: 200, editable: true },
         {

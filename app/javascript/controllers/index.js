@@ -59,6 +59,10 @@ const CONTROLLERS = [
   ["std-interface-info-grid", "controllers/std_interface_info_grid_controller"],
   ["std-reserved-job-grid", "controllers/std_reserved_job_grid_controller"],
   ["std-exchange-rate-grid", "controllers/std_exchange_rate_grid_controller"],
+  ["purchase-contract-grid", "controllers/purchase_contract_grid_controller"],
+  ["std-financial-institution-grid", "controllers/std_financial_institution_grid_controller"],
+  ["std-client-item-code-crud", "controllers/std_client_item_code_crud_controller"],
+  ["std-sellbuy-attribute-crud", "controllers/std_sellbuy_attribute_crud_controller"],
   ["header-favorites", "controllers/header_favorites_controller"]
 ]
 

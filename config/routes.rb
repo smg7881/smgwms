@@ -144,6 +144,17 @@ Rails.application.routes.draw do
         post :batch_save_workplaces
       end
     end
+    resources :purchase_contracts, controller: :purchase_contracts, only: [ :index ] do
+      collection do
+        post :batch_save
+      end
+
+      member do
+        get :settlements
+        get :change_histories
+        post :batch_save_settlements
+      end
+    end
     resources :corporations, controller: :corporations, only: [ :index ] do
       collection do
         post :batch_save
@@ -179,6 +190,11 @@ Rails.application.routes.draw do
         post :fetch_rates
       end
     end
+    resources :financial_institutions, controller: :financial_institutions, only: [ :index ] do
+      post :batch_save, on: :collection
+    end
+    resources :client_item_codes, controller: :client_item_codes, only: [ :index, :create, :update, :destroy ]
+    resources :sellbuy_attributes, controller: :sellbuy_attributes, only: [ :index, :create, :update, :destroy ]
   end
 
   get "search_popups/:type", to: "search_popups#show", as: :search_popup

@@ -23,6 +23,24 @@ function createActionButton({ text, title, classes = [], onClick }) {
   return button
 }
 
+const SEARCH_ICON_SVG = `
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="lucide-icon w-4 h-4"
+    aria-hidden="true">
+    <circle cx="11" cy="11" r="8"></circle>
+    <path d="m21 21-4.3-4.3"></path>
+  </svg>
+`.trim()
+
 /**
  * RENDERER_REGISTRY
  * 
@@ -123,6 +141,52 @@ export const RENDERER_REGISTRY = {
       onClick: () => emit(container, "std-workplace-crud:delete", {
         id: params.data.id || params.data.workpl_cd,
         workplNm: params.data.workpl_nm || params.data.workpl_cd
+      })
+    }))
+
+    return container
+  },
+
+  // [STD 매출입항목 관리 액션 버튼 렌더러]
+  stdSellbuyAttrActionCellRenderer: (params) => {
+    const container = document.createElement("div")
+    container.classList.add("grid-action-buttons")
+
+    container.appendChild(createActionButton({
+      text: "✎",
+      title: "수정",
+      onClick: () => emit(container, "std-sellbuy-attribute-crud:edit", { sellbuyAttrData: params.data })
+    }))
+    container.appendChild(createActionButton({
+      text: "X",
+      title: "삭제",
+      classes: ["grid-action-btn--danger"],
+      onClick: () => emit(container, "std-sellbuy-attribute-crud:delete", {
+        id: params.data.id || params.data.sellbuy_attr_cd,
+        sellbuyAttrNm: params.data.sellbuy_attr_nm || params.data.sellbuy_attr_cd
+      })
+    }))
+
+    return container
+  },
+
+  // [STD 거래처별아이템코드 관리 액션 버튼 렌더러]
+  stdClientItemCodeActionCellRenderer: (params) => {
+    const container = document.createElement("div")
+    container.classList.add("grid-action-buttons")
+
+    container.appendChild(createActionButton({
+      text: "✎",
+      title: "수정",
+      onClick: () => emit(container, "std-client-item-code-crud:edit", { clientItemCodeData: params.data })
+    }))
+    container.appendChild(createActionButton({
+      text: "X",
+      title: "삭제",
+      classes: ["grid-action-btn--danger"],
+      onClick: () => emit(container, "std-client-item-code-crud:delete", {
+        id: params.data.id,
+        itemCd: params.data.item_cd || params.data.id
       })
     }))
 
@@ -254,30 +318,95 @@ export const RENDERER_REGISTRY = {
   lookupPopupCellRenderer: (params) => {
     const container = document.createElement("div")
     container.classList.add("ag-lookup-cell")
+    container.style.position = "relative"
+    container.style.width = "100%"
+    container.style.height = "100%"
 
-    const valueEl = document.createElement("span")
-    valueEl.classList.add("ag-lookup-cell__value")
-    valueEl.textContent = params.value == null ? "" : String(params.value)
-    container.appendChild(valueEl)
+    const field = params.colDef?.field
+    const rowData = params.data || {}
+    const input = document.createElement("input")
+    input.type = "text"
+    input.classList.add("ag-lookup-cell__input")
+    input.value = params.value == null ? "" : String(params.value)
+    input.disabled = Boolean(rowData.__is_deleted)
+    input.style.width = "100%"
+    input.style.height = "26px"
+    input.style.paddingRight = "34px"
+
+    const syncValue = () => {
+      if (!field || !params.node) return
+      const next = input.value ?? ""
+      if (String(rowData[field] ?? "") === String(next)) return
+      params.node.setDataValue(field, next)
+    }
+
+    const stopBubble = (event) => {
+      event.stopPropagation()
+    }
+
+    input.addEventListener("mousedown", stopBubble)
+    input.addEventListener("click", stopBubble)
+    input.addEventListener("dblclick", stopBubble)
+    input.addEventListener("input", () => {
+      if (!field) return
+      rowData[field] = input.value ?? ""
+    })
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault()
+        event.stopPropagation()
+        syncValue()
+        emit(container, "ag-grid:lookup-open", {
+          rowNode: params.node,
+          rowIndex: params.rowIndex,
+          colId: params.column?.getColId?.(),
+          keyword: input.value,
+          colDef: params.colDef
+        })
+        return
+      }
+
+      if (event.key !== "Tab") {
+        event.stopPropagation()
+      }
+    })
+    input.addEventListener("blur", syncValue)
+
+    container.appendChild(input)
 
     const button = createActionButton({
-      text: "🔍",
+      text: SEARCH_ICON_SVG,
       title: "찾기",
       classes: ["ag-lookup-cell__btn"],
       onClick: (event) => {
         event.preventDefault()
         event.stopPropagation()
+        syncValue()
 
         emit(container, "ag-grid:lookup-open", {
           rowNode: params.node,
           rowIndex: params.rowIndex,
           colId: params.column?.getColId?.(),
-          keyword: params.value,
+          keyword: input.value,
           colDef: params.colDef
         })
       }
     })
     button.setAttribute("aria-label", "찾기")
+    button.disabled = Boolean(rowData.__is_deleted)
+    button.style.position = "absolute"
+    button.style.right = "2px"
+    button.style.top = "50%"
+    button.style.transform = "translateY(-50%)"
+    button.style.zIndex = "2"
+    button.style.width = "28px"
+    button.style.minWidth = "28px"
+    button.style.height = "24px"
+    button.style.display = "inline-flex"
+    button.style.alignItems = "center"
+    button.style.justifyContent = "center"
+    button.style.visibility = "visible"
+    button.style.opacity = "1"
     container.appendChild(button)
 
     return container

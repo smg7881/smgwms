@@ -1,116 +1,74 @@
-﻿<div data-controller="std-region-zip-grid"
-     data-action="ag-grid:ready->std-region-zip-grid#registerGrid"
+<div data-controller="std-region-zip-grid"
+     data-action="ag-grid:ready->std-region-zip-grid#registerGrid change->std-region-zip-grid#handleConditionChange"
      data-std-region-zip-grid-mapped-url-value="<%= mapped_zipcodes_url %>"
      data-std-region-zip-grid-unmapped-url-value="<%= unmapped_zipcodes_url %>"
-     data-std-region-zip-grid-save-url-value="<%= save_mappings_url %>">
-  <section class="mb-3 border border-border rounded-lg p-4 bg-bg-secondary">
-    <div class="grid grid-cols-24 gap-2 items-end">
-      <div class="col-span-8" data-controller="search-popup" data-search-popup-type-value="region">
-        <label class="text-xs text-text-secondary mb-1 block">권역</label>
-        <div class="flex gap-1">
-          <input type="hidden"
-                 data-search-popup-target="code"
-                 data-std-region-zip-grid-target="regionCodeInput"
-                 data-action="change->std-region-zip-grid#onRegionChange" />
-          <input type="text"
-                 class="form-grid-input w-full"
-                 placeholder="권역 선택"
-                 readonly
-                 data-search-popup-target="display"
-                 data-std-region-zip-grid-target="regionDisplayInput" />
-          <button type="button"
-                  class="btn btn-sm btn-secondary shrink-0"
-                  data-action="search-popup#open">찾기</button>
-        </div>
-      </div>
-      <div class="col-span-4">
-        <button type="button" class="btn btn-sm btn-secondary w-full" data-action="click->std-region-zip-grid#searchMapped">상단조회</button>
-      </div>
-      <div class="col-span-6" data-controller="search-popup" data-search-popup-type-value="country">
-        <label class="text-xs text-text-secondary mb-1 block">국가</label>
-        <div class="flex gap-1">
-          <input type="hidden"
-                 data-search-popup-target="code"
-                 data-std-region-zip-grid-target="countryCodeInput"
-                 data-action="change->std-region-zip-grid#onCountryChange" />
-          <input type="text"
-                 class="form-grid-input w-full"
-                 placeholder="국가 선택"
-                 readonly
-                 data-search-popup-target="display"
-                 data-std-region-zip-grid-target="countryDisplayInput" />
-          <button type="button"
-                  class="btn btn-sm btn-secondary shrink-0"
-                  data-action="search-popup#open">찾기</button>
-        </div>
-      </div>
-      <div class="col-span-3">
-        <label for="std-region-zipcode-zipcd" class="text-xs text-text-secondary mb-1 block">우편번호</label>
-        <input id="std-region-zipcode-zipcd"
-               type="text"
-               class="form-grid-input w-full"
-               placeholder="우편번호"
-               data-std-region-zip-grid-target="zipcdInput"
-               data-action="keydown.enter->std-region-zip-grid#searchUnmapped" />
-      </div>
-      <div class="col-span-3">
-        <label for="std-region-zipcode-zipaddr" class="text-xs text-text-secondary mb-1 block">우편주소</label>
-        <input id="std-region-zipcode-zipaddr"
-               type="text"
-               class="form-grid-input w-full"
-               placeholder="우편주소"
-               data-std-region-zip-grid-target="zipaddrInput"
-               data-action="keydown.enter->std-region-zip-grid#searchUnmapped" />
-      </div>
-      <div class="col-span-24 md:col-span-2">
-        <button type="button" class="btn btn-sm btn-secondary w-full" data-action="click->std-region-zip-grid#searchUnmapped">하단조회</button>
-      </div>
-    </div>
+     data-std-region-zip-grid-save-url-value="<%= save_mappings_url %>"
+     data-std-region-zip-grid-default-corp-code-value="<%= default_corp_code %>"
+     data-std-region-zip-grid-default-corp-name-value="<%= default_corp_name %>"
+     data-std-region-zip-grid-default-country-code-value="<%= default_country_code %>"
+     data-std-region-zip-grid-default-country-name-value="<%= default_country_name %>">
+  <section class="mb-2" data-std-region-zip-grid-target="topSearchArea">
+    <%= render Ui::SearchFormComponent.new(
+      url: create_url,
+      fields: top_search_fields,
+      cols: 2,
+      enable_collapse: false,
+      show_buttons: true,
+      class: "std-region-zip-search-form"
+    ) %>
   </section>
 
-  <div class="grid grid-cols-[minmax(0,1fr)_92px_minmax(0,1fr)] gap-2 max-[980px]:grid-cols-1">
-    <section class="min-w-0">
-      <div class="flex items-center justify-between gap-3 mb-3">
-        <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
-          <%= helpers.lucide_icon("mail-check", css_class: "w-4 h-4 text-text-secondary") %>
-          권역 할당 우편번호
-          <%= render Ui::GridActionsComponent.new(grid_id: "std-region-zip-mapped") %>
-        </h3>
-      </div>
-      <%= render Ui::AgGridComponent.new(
-        columns: mapped_columns,
-        row_data: [],
-        page_size: 20,
-        row_selection: "multiple",
-        height: "calc(100vh - 430px)",
-        grid_id: "std-region-zip-mapped",
-        data: { std_region_zip_grid_target: "mappedGrid" }
-      ) %>
-    </section>
+  <section class="min-w-0">
+    <%= render Ui::AgGridComponent.new(
+      columns: mapped_columns,
+      row_data: [],
+      page_size: 20,
+      row_selection: "multiple",
+      height: "max(220px, calc(50vh - 170px))",
+      grid_id: "std-region-zip-mapped",
+      data: { std_region_zip_grid_target: "mappedGrid" }
+    ) %>
+  </section>
 
-    <section class="flex flex-col justify-center items-center gap-3">
-      <button type="button" class="btn btn-sm btn-primary" data-action="click->std-region-zip-grid#moveUp">▲ 위로 이동</button>
-      <button type="button" class="btn btn-sm btn-danger" data-action="click->std-region-zip-grid#moveDown">▼ 아래로 이동</button>
-      <button type="button" class="btn btn-sm btn-success" data-action="click->std-region-zip-grid#save">저장</button>
-    </section>
+  <section class="flex justify-center gap-2 py-1.5">
+    <button type="button"
+            class="btn btn-sm btn-secondary w-7 h-7 p-0 text-xs"
+            aria-label="위로 이동"
+            data-action="click->std-region-zip-grid#moveUp">
+      &#9650;
+    </button>
+    <button type="button"
+            class="btn btn-sm btn-secondary w-7 h-7 p-0 text-xs"
+            aria-label="아래로 이동"
+            data-action="click->std-region-zip-grid#moveDown">
+      &#9660;
+    </button>
+  </section>
 
-    <section class="min-w-0">
-      <div class="flex items-center justify-between gap-3 mb-3">
-        <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
-          <%= helpers.lucide_icon("mail", css_class: "w-4 h-4 text-text-secondary") %>
-          미할당 우편번호
-          <%= render Ui::GridActionsComponent.new(grid_id: "std-region-zip-unmapped") %>
-        </h3>
-      </div>
-      <%= render Ui::AgGridComponent.new(
-        columns: unmapped_columns,
-        row_data: [],
-        page_size: 20,
-        row_selection: "multiple",
-        height: "calc(100vh - 430px)",
-        grid_id: "std-region-zip-unmapped",
-        data: { std_region_zip_grid_target: "unmappedGrid" }
-      ) %>
-    </section>
+  <section class="mb-2" data-std-region-zip-grid-target="bottomSearchArea">
+    <%= render Ui::SearchFormComponent.new(
+      url: create_url,
+      fields: bottom_search_fields,
+      cols: 3,
+      enable_collapse: false,
+      show_buttons: true,
+      class: "std-region-zip-search-form"
+    ) %>
+  </section>
+
+  <section class="min-w-0">
+    <%= render Ui::AgGridComponent.new(
+      columns: unmapped_columns,
+      row_data: [],
+      page_size: 20,
+      row_selection: "multiple",
+      height: "max(220px, calc(50vh - 210px))",
+      grid_id: "std-region-zip-unmapped",
+      data: { std_region_zip_grid_target: "unmappedGrid" }
+    ) %>
+  </section>
+
+  <div class="flex justify-end pt-2">
+    <button type="button" class="btn btn-sm btn-success w-16" data-action="click->std-region-zip-grid#save">저장</button>
   </div>
 </div>

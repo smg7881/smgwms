@@ -1,5 +1,9 @@
-﻿<%= turbo_frame_tag "main-content" do %>
+<%= turbo_frame_tag "main-content" do %>
   <%= render Std::RegionZipcode::PageComponent.new(
-    query_params: request.query_parameters
+    query_params: request.query_parameters,
+    default_corp_code: @default_corp_code,
+    default_corp_name: @default_corp_name,
+    default_country_code: @default_country_code,
+    default_country_name: @default_country_name
   ) %>
 <% end %>

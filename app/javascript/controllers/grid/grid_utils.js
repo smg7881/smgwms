@@ -64,6 +64,10 @@ export function hideNoRowsOverlay(api) {
 
   const rowCount = api.getDisplayedRowCount?.() || 0
   if (rowCount > 0) {
+    // AG Grid v32+: hideOverlay does not hide loading overlay while loading=true.
+    if (typeof api.setGridOption === "function") {
+      api.setGridOption("loading", false)
+    }
     api.hideOverlay?.()
   }
 }

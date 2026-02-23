@@ -56,6 +56,7 @@ export default class extends BaseGridController {
   connect() {
     super.connect()
     this.initialMasterSyncDone = false
+    this.financialInstitutionNameCache = new Map()
     this.masterGridEvents = new GridEventManager()
     this.contactGridController = null
     this.contactManager = null
@@ -87,6 +88,7 @@ export default class extends BaseGridController {
     this.contactGridController = null
     this.workplaceGridController = null
     this.currentMasterRow = null
+    this.financialInstitutionNameCache = null
     super.disconnect()
   }
 
@@ -568,13 +570,16 @@ export default class extends BaseGridController {
       const key = this.detailFieldKey(field)
       if (!key) return
 
-      field.value = this.normalizeValueForInput(key, rowData[key])
+      const normalized = this.normalizeValueForInput(key, rowData[key])
+      field.value = normalized
+      this.syncPopupFieldPresentation(field, key, normalized, rowData)
     })
   }
 
   clearDetailForm() {
     this.detailFieldTargets.forEach((field) => {
       field.value = ""
+      this.syncPopupFieldPresentation(field, this.detailFieldKey(field), "")
     })
     this.updateDetailSectionOptions("", "")
     this.toggleDetailFields(true)
@@ -583,6 +588,7 @@ export default class extends BaseGridController {
   toggleDetailFields(disabled) {
     this.detailFieldTargets.forEach((field) => {
       field.disabled = disabled
+      this.togglePopupFieldDisabled(field, disabled)
     })
     this.lookupButtonTargets.forEach((button) => {
       button.disabled = disabled
@@ -863,6 +869,89 @@ export default class extends BaseGridController {
     if (matchFromId) return matchFromId[1]
 
     return ""
+  }
+
+  syncPopupFieldPresentation(fieldEl, key, value, rowData = null) {
+    const popupRoot = this.popupRootForField(fieldEl)
+    if (!popupRoot) return
+
+    const codeDisplay = popupRoot.querySelector("[data-search-popup-target='codeDisplay']")
+    if (codeDisplay) {
+      codeDisplay.value = value || ""
+    }
+
+    const displayInput = popupRoot.querySelector("[data-search-popup-target='display']")
+    if (!displayInput) return
+
+    if (!key) return
+    if (key === "fnc_or_cd") {
+      const seededName = (rowData?.fnc_or_nm || "").toString().trim()
+      displayInput.value = seededName || value || ""
+      this.resolveFinancialInstitutionNameForPopup(popupRoot, value)
+    }
+  }
+
+  togglePopupFieldDisabled(fieldEl, disabled) {
+    const popupRoot = this.popupRootForField(fieldEl)
+    if (!popupRoot) return
+
+    const displayInput = popupRoot.querySelector("[data-search-popup-target='display']")
+    if (displayInput) {
+      displayInput.disabled = disabled
+    }
+
+    const codeDisplay = popupRoot.querySelector("[data-search-popup-target='codeDisplay']")
+    if (codeDisplay) {
+      codeDisplay.disabled = true
+    }
+
+    const openButton = popupRoot.querySelector("button[data-action='search-popup#open']")
+    if (openButton) {
+      openButton.disabled = disabled
+    }
+  }
+
+  popupRootForField(fieldEl) {
+    if (!fieldEl) return null
+    if (fieldEl.dataset.searchPopupTarget !== "code") return null
+    return fieldEl.closest("[data-controller~='search-popup']")
+  }
+
+  async resolveFinancialInstitutionNameForPopup(popupRoot, code) {
+    const normalizedCode = (code || "").toString().trim().toUpperCase()
+    if (!popupRoot || !normalizedCode) return
+
+    const displayInput = popupRoot.querySelector("[data-search-popup-target='display']")
+    if (!displayInput) return
+
+    const cached = this.financialInstitutionNameCache?.get(normalizedCode)
+    if (cached) {
+      if (displayInput.value.trim() === "" || displayInput.value.trim().toUpperCase() === normalizedCode) {
+        displayInput.value = cached
+      }
+      return
+    }
+
+    try {
+      const query = new URLSearchParams({
+        "search_popup_form[fnc_or_cd]": normalizedCode,
+        "search_popup_form[use_yn]": "Y"
+      })
+      const rows = await fetchJson(`/search_popups/financial_institution?format=json&${query.toString()}`)
+      const matched = Array.isArray(rows) ? rows.find((row) => {
+        const rowCode = String(row?.fnc_or_cd ?? row?.code ?? "").trim().toUpperCase()
+        return rowCode === normalizedCode
+      }) : null
+      const resolvedName = String(matched?.fnc_or_nm ?? matched?.name ?? "").trim()
+      if (!resolvedName) return
+
+      this.financialInstitutionNameCache?.set(normalizedCode, resolvedName)
+      if (displayInput.value.trim() === "" || displayInput.value.trim().toUpperCase() === normalizedCode) {
+        displayInput.value = resolvedName
+      }
+    } catch (_error) {
+      // noop
+    }
   }
 
   normalizeMasterField(event) {

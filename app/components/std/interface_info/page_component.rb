@@ -43,7 +43,17 @@ class Std::InterfaceInfo::PageComponent < Std::BasePageComponent
           cellStyle: { textAlign: "center" },
           cellRenderer: "rowStatusCellRenderer"
         },
-        { field: "corp_cd", headerName: "법인코드", minWidth: 110, editable: true },
+        {
+          field: "corp_cd",
+          headerName: "법인코드",
+          minWidth: 110,
+          editable: true,
+          lookup_popup_type: "corp",
+          lookup_code_field: "corp_cd",
+          lookup_name_field: "corp_nm",
+          lookup_popup_title: "법인 조회"
+        },
+        { field: "corp_nm", headerName: "법인명", minWidth: 140, editable: false },
         { field: "if_cd", headerName: "인터페이스코드", minWidth: 120, editable: true },
         {
           field: "if_meth_cd",
@@ -86,8 +96,17 @@ class Std::InterfaceInfo::PageComponent < Std::BasePageComponent
           cellEditor: "agSelectCellEditor",
           cellEditorParams: { values: common_code_values("STD_SEND_RECV_SCTN") }
         },
-        { field: "if_bzac_cd", headerName: "거래처코드", minWidth: 120, editable: true },
-        { field: "bzac_nm", headerName: "거래처명", minWidth: 160, editable: true },
+        {
+          field: "if_bzac_cd",
+          headerName: "거래처코드",
+          minWidth: 120,
+          editable: true,
+          lookup_popup_type: "client",
+          lookup_code_field: "if_bzac_cd",
+          lookup_name_field: "bzac_nm",
+          lookup_popup_title: "거래처 조회"
+        },
+        { field: "bzac_nm", headerName: "거래처명", minWidth: 160, editable: false },
         { field: "bzac_sys_nm_cd", headerName: "거래처시스템", minWidth: 160, editable: true },
         { field: "if_desc_cd", headerName: "설명", minWidth: 220, editable: true },
         {

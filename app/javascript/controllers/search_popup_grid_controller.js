@@ -69,11 +69,17 @@ export default class extends Controller {
     const code = String(row.code ?? row.corp_cd ?? "").trim()
     const name = String(row.name ?? row.corp_nm ?? row.display ?? "").trim()
     const detail = {
+      ...row,
       code,
       name,
       display: name,
       corp_cd: row.corp_cd,
       corp_nm: row.corp_nm,
+      ctry_cd: row.ctry_cd,
+      ctry_nm: row.ctry_nm ?? row.ctry,
+      fnc_or_cd: row.fnc_or_cd,
+      fnc_or_nm: row.fnc_or_nm,
+      fnc_or_eng_nm: row.fnc_or_eng_nm,
       upper_corp_cd: row.upper_corp_cd,
       upper_corp_nm: row.upper_corp_nm
     }

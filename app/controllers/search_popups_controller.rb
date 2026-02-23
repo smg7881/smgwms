@@ -15,9 +15,23 @@ class SearchPopupsController < ApplicationController
             corp_cd: row[:corp_cd],
             corp_nm: row[:corp_nm],
             ctry: row[:ctry],
+            ctry_cd: row[:ctry_cd],
+            ctry_nm: row[:ctry_nm],
             biz_no: row[:biz_no],
+            fnc_or_cd: row[:fnc_or_cd],
+            fnc_or_nm: row[:fnc_or_nm],
+            fnc_or_eng_nm: row[:fnc_or_eng_nm],
+            use_yn: row[:use_yn],
             upper_corp_cd: row[:upper_corp_cd],
-            upper_corp_nm: row[:upper_corp_nm]
+            upper_corp_nm: row[:upper_corp_nm],
+            sellbuy_attr_cd: row[:sellbuy_attr_cd],
+            sellbuy_attr_nm: row[:sellbuy_attr_nm],
+            sellbuy_attr_eng_nm: row[:sellbuy_attr_eng_nm],
+            rdtn_nm: row[:rdtn_nm],
+            upper_sellbuy_attr_cd: row[:upper_sellbuy_attr_cd],
+            upper_sellbuy_attr_nm: row[:upper_sellbuy_attr_nm],
+            tran_yn: row[:tran_yn],
+            strg_yn: row[:strg_yn]
           }.compact
         end
       end
@@ -37,11 +51,23 @@ class SearchPopupsController < ApplicationController
     end
 
     def popup_form_params
-      params.fetch(:search_popup_form, {}).permit(:display, :code, :corp_cd, :corp_nm, :use_yn)
+      params.fetch(:search_popup_form, {}).permit(
+        :display, :code, :corp_cd, :corp_nm, :use_yn,
+        :ctry_cd, :fnc_or_cd, :fnc_or_nm,
+        :sellbuy_attr_cd, :sellbuy_attr_nm, :tran_yn, :strg_yn
+      )
     end
 
     def corp_popup?
       @type == "corp"
+    end
+
+    def financial_org_popup?
+      %w[financial_institution fin_org financial_org fnc_or].include?(@type)
+    end
+
+    def sellbuy_attr_popup?
+      %w[sellbuy_attr sellbuyattribute sell_buy_attr].include?(@type)
     end
 
     def normalized_use_yn(value)
@@ -50,6 +76,15 @@ class SearchPopupsController < ApplicationController
         normalized
       else
         "Y"
+      end
+    end
+
+    def normalized_optional_yn(value)
+      normalized = value.to_s.strip.upcase
+      if %w[Y N].include?(normalized)
+        normalized
+      else
+        nil
       end
     end
 
@@ -65,21 +100,48 @@ class SearchPopupsController < ApplicationController
     def build_popup_form
       if corp_popup?
         SearchPopupForm.new(
-          corp_cd: popup_form_params[:corp_cd].to_s.strip.upcase,
+          corp_cd: popup_corp_cd,
           corp_nm: popup_form_params[:corp_nm].to_s.strip.presence || params[:q].to_s.strip,
           use_yn: normalized_use_yn(popup_form_params[:use_yn])
+        )
+      elsif financial_org_popup?
+        SearchPopupForm.new(
+          ctry_cd: popup_form_params[:ctry_cd].to_s.strip.upcase.presence || params[:ctry_cd].to_s.strip.upcase.presence,
+          fnc_or_cd: popup_form_params[:fnc_or_cd].to_s.strip.upcase.presence,
+          fnc_or_nm: popup_form_params[:fnc_or_nm].to_s.strip.presence || params[:q].to_s.strip,
+          use_yn: normalized_use_yn(popup_form_params[:use_yn])
+        )
+      elsif sellbuy_attr_popup?
+        SearchPopupForm.new(
+          corp_cd: popup_corp_cd,
+          corp_nm: popup_form_params[:corp_nm].to_s.strip.presence,
+          sellbuy_attr_cd: popup_form_params[:sellbuy_attr_cd].to_s.strip.upcase.presence,
+          sellbuy_attr_nm: popup_form_params[:sellbuy_attr_nm].to_s.strip.presence || params[:q].to_s.strip.presence,
+          use_yn: normalized_use_yn(popup_form_params[:use_yn]),
+          tran_yn: normalized_optional_yn(popup_form_params[:tran_yn]),
+          strg_yn: normalized_optional_yn(popup_form_params[:strg_yn])
         )
       else
         SearchPopupForm.new(
           display: lookup_keyword,
-          code: popup_form_params[:code].to_s.strip.upcase
+          code: popup_form_params[:code].to_s.strip.upcase,
+          corp_cd: popup_corp_cd
         )
       end
+    end
+
+    def popup_corp_cd
+      value = popup_form_params[:corp_cd].presence || params[:corp_cd].presence
+      value.to_s.strip.upcase
     end
 
     def lookup_rows(type)
       if type == "corp"
         corp_rows
+      elsif financial_org_popup?
+        financial_org_rows
+      elsif sellbuy_attr_popup?
+        sellbuy_attr_rows
       else
         generic_rows(type)
       end
@@ -91,6 +153,8 @@ class SearchPopupsController < ApplicationController
         dept_rows
       when "region", "regn"
         region_rows
+      when "good", "goods", "item"
+        good_rows
       when "country", "ctry"
         country_rows
       when "client", "bzac"
@@ -190,10 +254,59 @@ class SearchPopupsController < ApplicationController
       []
     end
 
+    # PRD: 국가 + 금융기관코드 + 금융기관명 + 사용여부(Y/N, 기본 Y) 조회 조건
+    #      그리드: 국가/금융기관코드/금융기관명/금융기관영문명
+    def financial_org_rows
+      return [] unless defined?(StdFinancialInstitution) && StdFinancialInstitution.table_exists?
+
+      scope = StdFinancialInstitution.ordered
+      if @popup_form.ctry_cd.present?
+        scope = scope.where(ctry_cd: @popup_form.ctry_cd)
+      end
+      if @popup_form.fnc_or_cd.present?
+        scope = scope.where("fnc_or_cd LIKE ?", "%#{@popup_form.fnc_or_cd}%")
+      end
+      if @popup_form.fnc_or_nm.present?
+        scope = scope.where(
+          "fnc_or_cd LIKE ? OR fnc_or_nm LIKE ? OR fnc_or_eng_nm LIKE ?",
+          "%#{@popup_form.fnc_or_nm}%",
+          "%#{@popup_form.fnc_or_nm}%",
+          "%#{@popup_form.fnc_or_nm}%"
+        )
+      end
+      if @popup_form.use_yn.present?
+        scope = scope.where(use_yn_cd: @popup_form.use_yn)
+      end
+
+      scope.limit(200).map do |row|
+        fnc_or_cd = row.fnc_or_cd.to_s.upcase
+        fnc_or_nm = row.fnc_or_nm.to_s.strip
+        {
+          code: fnc_or_cd,
+          name: fnc_or_nm,
+          display: fnc_or_nm,
+          fnc_or_cd: fnc_or_cd,
+          fnc_or_nm: fnc_or_nm,
+          fnc_or_eng_nm: row.fnc_or_eng_nm.to_s.strip,
+          ctry_cd: row.ctry_cd.to_s.upcase.presence,
+          ctry_nm: row.ctry_nm.to_s.strip.presence,
+          ctry: row.ctry_nm.to_s.strip.presence || row.ctry_cd.to_s.upcase,
+          use_yn: row.use_yn_cd.to_s.upcase
+        }.compact
+      end
+    rescue ActiveRecord::StatementInvalid
+      []
+    end
+
     def region_rows
       return [] unless defined?(StdRegion) && StdRegion.table_exists?
 
-      StdRegion.where(use_yn_cd: "Y").ordered.filter_map do |row|
+      scope = StdRegion.where(use_yn_cd: "Y")
+      if @popup_form.corp_cd.present?
+        scope = scope.where(corp_cd: @popup_form.corp_cd)
+      end
+
+      scope.ordered.filter_map do |row|
         build_generic_row(code: row.regn_cd, name: row.regn_nm_cd)
       end
     rescue ActiveRecord::StatementInvalid
@@ -266,6 +379,84 @@ class SearchPopupsController < ApplicationController
 
       StdWorkplace.where(use_yn_cd: "Y").ordered.filter_map do |row|
         build_generic_row(code: row.workpl_cd, name: row.workpl_nm)
+      end
+    rescue ActiveRecord::StatementInvalid
+      []
+    end
+
+    def good_rows
+      return [] unless defined?(StdGood) && StdGood.table_exists?
+
+      StdGood.where(use_yn_cd: "Y").ordered.filter_map do |row|
+        build_generic_row(code: row.goods_cd, name: row.goods_nm)
+      end
+    rescue ActiveRecord::StatementInvalid
+      []
+    end
+
+    # PRD: 매출입항목 선택팝업
+    #      조회조건: 매출입항목코드/명, 사용여부(Y 기본), 법인, 운송여부, 보관여부
+    #      그리드: 매출입항목코드/명/영문명/단축명/상위코드/상위명
+    def sellbuy_attr_rows
+      return [] unless defined?(StdSellbuyAttribute) && StdSellbuyAttribute.table_exists?
+
+      scope = StdSellbuyAttribute.ordered
+      if @popup_form.corp_cd.present?
+        scope = scope.where(corp_cd: @popup_form.corp_cd)
+      end
+      if @popup_form.sellbuy_attr_cd.present?
+        scope = scope.where("sellbuy_attr_cd LIKE ?", "%#{@popup_form.sellbuy_attr_cd}%")
+      end
+      if @popup_form.sellbuy_attr_nm.present?
+        keyword = "%#{@popup_form.sellbuy_attr_nm}%"
+        scope = scope.where(
+          "sellbuy_attr_cd LIKE ? OR sellbuy_attr_nm LIKE ? OR sellbuy_attr_eng_nm LIKE ? OR rdtn_nm LIKE ?",
+          keyword,
+          keyword,
+          keyword,
+          keyword
+        )
+      end
+      if @popup_form.use_yn.present?
+        scope = scope.where(use_yn_cd: @popup_form.use_yn)
+      end
+      if @popup_form.tran_yn.present?
+        scope = scope.where(tran_yn_cd: @popup_form.tran_yn)
+      end
+      if @popup_form.strg_yn.present?
+        scope = scope.where(strg_yn_cd: @popup_form.strg_yn)
+      end
+
+      rows = scope.limit(200).to_a
+      return [] if rows.empty?
+
+      upper_codes = rows.map(&:upper_sellbuy_attr_cd).compact_blank.uniq
+      upper_name_by_code = if upper_codes.empty?
+        {}
+      else
+        StdSellbuyAttribute.where(sellbuy_attr_cd: upper_codes).pluck(:sellbuy_attr_cd, :sellbuy_attr_nm).to_h
+      end
+
+      rows.map do |row|
+        code = row.sellbuy_attr_cd.to_s.upcase
+        name = row.sellbuy_attr_nm.to_s.strip
+        upper_code = row.upper_sellbuy_attr_cd.to_s.upcase.presence
+
+        {
+          code: code,
+          name: name,
+          display: name,
+          corp_cd: row.corp_cd.to_s.upcase,
+          sellbuy_attr_cd: code,
+          sellbuy_attr_nm: name,
+          sellbuy_attr_eng_nm: row.sellbuy_attr_eng_nm.to_s.strip,
+          rdtn_nm: row.rdtn_nm.to_s.strip,
+          upper_sellbuy_attr_cd: upper_code,
+          upper_sellbuy_attr_nm: upper_name_by_code[upper_code].to_s.presence,
+          tran_yn: row.tran_yn_cd.to_s.upcase,
+          strg_yn: row.strg_yn_cd.to_s.upcase,
+          use_yn: row.use_yn_cd.to_s.upcase
+        }.compact
       end
     rescue ActiveRecord::StatementInvalid
       []

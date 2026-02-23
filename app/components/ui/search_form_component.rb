@@ -36,6 +36,7 @@ class Ui::SearchFormComponent < ApplicationComponent
     def wrapper_attrs
       opts = html_options.dup
       custom_data = opts.delete(:data) || {}
+      custom_class = opts.delete(:class)
 
       stimulus_data = {
         controller: "search-form",
@@ -45,7 +46,9 @@ class Ui::SearchFormComponent < ApplicationComponent
         "search-form-cols-value" => cols
       }
 
-      opts.merge(class: "max-w-full overflow-x-hidden bg-bg-secondary border border-border rounded-lg p-4 mb-4", data: custom_data.merge(stimulus_data))
+      base_class = "max-w-full overflow-x-hidden bg-bg-secondary border border-border rounded-lg p-4 mb-4"
+      composed_class = [ base_class, custom_class ].compact.join(" ").strip
+      opts.merge(class: composed_class, data: custom_data.merge(stimulus_data))
     end
 
     def sanitize_field_defs(fields)

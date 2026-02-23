@@ -1,0 +1,63 @@
+<div data-controller="std-client-item-code-crud"
+     data-std-client-item-code-crud-create-url-value="<%= create_url %>"
+     data-std-client-item-code-crud-update-url-value="<%= update_url %>"
+     data-std-client-item-code-crud-delete-url-value="<%= delete_url %>">
+  <%= render Ui::SearchFormComponent.new(
+    url: create_url,
+    fields: search_fields,
+    cols: 4,
+    enable_collapse: true
+  ) %>
+
+  <div class="flex items-center justify-between gap-3 mb-3 mt-2">
+    <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
+      <%= helpers.lucide_icon("package-search", css_class: "w-4 h-4 text-text-secondary") %>
+      거래처별아이템코드 목록
+      <%= render Ui::GridActionsComponent.new(grid_id: "std-client-item-code") %>
+    </h3>
+    <%= render Ui::GridToolbarComponent.new(
+      buttons: [
+        { label: "항목추가", class: "btn btn-sm btn-primary", action: "click->std-client-item-code-crud#openCreate" }
+      ]
+    ) %>
+  </div>
+
+  <%= render Ui::AgGridComponent.new(
+    columns: columns,
+    url: grid_url,
+    height: "calc(100vh - 370px)",
+    page_size: 20,
+    grid_id: "std-client-item-code"
+  ) %>
+
+  <%= render Ui::ModalShellComponent.new(
+    controller: "std-client-item-code-crud",
+    title: "거래처별아이템코드 추가",
+    save_form_id: "std-client-item-code-crud-form",
+    cancel_role: "cancel",
+    save_role: "save",
+    width: "840px"
+  ) do |modal| %>
+    <% modal.with_body do %>
+      <input type="hidden" data-std-client-item-code-crud-target="fieldId" />
+
+      <%= render Ui::ResourceFormComponent.new(
+        model: StdClientItemCode.new,
+        url: "#",
+        cols: 1,
+        show_buttons: false,
+        target_controller: "std_client_item_code_crud",
+        fields: form_fields,
+        form_data: {
+          std_client_item_code_crud_target: "form",
+          action: "submit->resource-form#submit submit->std-client-item-code-crud#submit"
+        },
+        form_html: {
+          id: "std-client-item-code-crud-form",
+          novalidate: true,
+          autocomplete: "off"
+        }
+      ) %>
+    <% end %>
+  <% end %>
+</div>

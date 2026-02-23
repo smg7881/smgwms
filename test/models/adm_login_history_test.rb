@@ -68,11 +68,12 @@ class AdmLoginHistoryTest < ActiveSupport::TestCase
 
   test "since and until_time scopes" do
     AdmLoginHistory.record_success(user: @admin, request: @mock_request)
+    created = AdmLoginHistory.order(:id).last
 
-    assert AdmLoginHistory.since(1.hour.ago).count >= 1
-    assert_equal 0, AdmLoginHistory.since(1.hour.from_now).count
-    assert AdmLoginHistory.until_time(1.hour.from_now).count >= 1
-    assert_equal 0, AdmLoginHistory.until_time(1.hour.ago).count
+    assert AdmLoginHistory.where(id: created.id).since(1.hour.ago).exists?
+    assert_not AdmLoginHistory.where(id: created.id).since(1.hour.from_now).exists?
+    assert AdmLoginHistory.where(id: created.id).until_time(1.hour.from_now).exists?
+    assert_not AdmLoginHistory.where(id: created.id).until_time(1.hour.ago).exists?
   end
 
   test "parse_user_agent extracts browser and os" do

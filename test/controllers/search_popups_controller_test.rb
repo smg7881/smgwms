@@ -76,6 +76,31 @@ class SearchPopupsControllerTest < ActionDispatch::IntegrationTest
       zipaddr: "서울특별시 강남구 테헤란로",
       use_yn_cd: "Y"
     )
+
+    StdFinancialInstitution.create!(
+      fnc_or_cd: "KDB",
+      fnc_or_nm: "산업은행",
+      fnc_or_eng_nm: "KOREA DEVELOPMENT BANK",
+      ctry_cd: "KR",
+      ctry_nm: "대한민국",
+      use_yn_cd: "Y"
+    )
+    StdFinancialInstitution.create!(
+      fnc_or_cd: "WBK",
+      fnc_or_nm: "월드뱅크",
+      fnc_or_eng_nm: "WORLD BANK",
+      ctry_cd: "US",
+      ctry_nm: "미국",
+      use_yn_cd: "Y"
+    )
+    StdFinancialInstitution.create!(
+      fnc_or_cd: "OLD",
+      fnc_or_nm: "비사용금융기관",
+      fnc_or_eng_nm: "OLD BANK",
+      ctry_cd: "KR",
+      ctry_nm: "대한민국",
+      use_yn_cd: "N"
+    )
   end
 
   test "country popup html renders common popup layout" do
@@ -168,5 +193,44 @@ class SearchPopupsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 1, rows.length
     assert_equal "99123", rows.first["code"]
     assert_includes rows.first["name"], "강남구"
+  end
+
+  test "financial institution popup html renders PRD search fields" do
+    get search_popup_path("financial_institution")
+
+    assert_response :success
+    assert_includes response.body, 'name="search_popup_form[ctry_cd]"'
+    assert_includes response.body, 'name="search_popup_form[fnc_or_cd]"'
+    assert_includes response.body, 'name="search_popup_form[fnc_or_nm]"'
+    assert_includes response.body, 'name="search_popup_form[use_yn]"'
+    assert_includes response.body, "금융기관코드"
+    assert_includes response.body, "금융기관영문명"
+  end
+
+  test "financial institution popup defaults use_yn to Y and filters rows" do
+    get search_popup_path("financial_institution"), params: {
+      format: :json,
+      search_popup_form: { ctry_cd: "KR", fnc_or_nm: "산업", use_yn: "Y" }
+    }
+
+    assert_response :success
+    rows = JSON.parse(response.body)
+    assert_equal 1, rows.length
+    assert_equal "KDB", rows.first["code"]
+    assert_equal "산업은행", rows.first["name"]
+    assert_equal "KDB", rows.first["fnc_or_cd"]
+    assert_equal "KOREA DEVELOPMENT BANK", rows.first["fnc_or_eng_nm"]
+    assert_equal "대한민국", rows.first["ctry_nm"]
+    assert_equal "Y", rows.first["use_yn"]
+  end
+
+  test "financial institution popup alias fin_org works" do
+    get search_popup_path("fin_org"), params: { format: :json, q: "world" }
+
+    assert_response :success
+    rows = JSON.parse(response.body)
+    assert_equal 1, rows.length
+    assert_equal "WBK", rows.first["code"]
+    assert_equal "월드뱅크", rows.first["name"]
   end
 end

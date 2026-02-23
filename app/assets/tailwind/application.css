@@ -491,16 +491,33 @@ a:hover {
 }
 
 .ag-lookup-cell {
-  @apply flex items-center gap-1 w-full;
+  @apply flex items-center gap-1 w-full h-full;
 }
 
-.ag-lookup-cell__value {
-  @apply min-w-0 flex-1 truncate;
+.ag-lookup-cell__input {
+  @apply min-w-0 flex-1 bg-transparent border border-transparent rounded-sm text-text-primary;
+  height: 26px;
+  padding: 0 6px;
+}
+
+.ag-lookup-cell__input:focus {
+  @apply outline-none border-accent;
+  box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.2);
+}
+
+.ag-lookup-cell__input:disabled {
+  @apply text-text-muted cursor-not-allowed;
 }
 
 .ag-lookup-cell__btn {
-  @apply shrink-0 px-1;
-  min-width: 22px;
+  @apply shrink-0 inline-flex items-center justify-center p-0;
+  width: 28px;
+  min-width: 28px;
+  height: 26px;
+}
+
+.ag-lookup-cell__btn .lucide-icon {
+  margin: 0 auto;
 }
 
 .ag-row.ag-row-keyboard-focus .ag-cell {
@@ -1022,4 +1039,39 @@ trix-editor:focus {
   margin-top: 10px;
   display: flex;
   justify-content: flex-end;
+}
+
+.std-region-zip-search-form {
+  margin-bottom: 0 !important;
+  padding: 10px !important;
+}
+
+.std-region-zip-search-form .grid {
+  gap: 8px 10px;
+}
+
+.std-region-zip-search-form [data-search-form-target="fieldGroup"] label {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.std-region-zip-search-form .form-grid-input,
+.std-region-zip-search-form .form-grid-select {
+  min-height: 32px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  font-size: 13px;
+}
+
+.std-region-zip-search-form [data-search-form-target="buttonGroup"] {
+  margin-top: 4px;
+  gap: 6px;
+}
+
+.std-region-zip-search-form [data-search-form-target="searchBtn"],
+.std-region-zip-search-form [data-search-form-target="resetBtn"],
+.std-region-zip-search-form [data-search-form-target="collapseBtn"] {
+  min-height: 28px;
+  font-size: 12px;
+  padding: 4px 10px;
 }

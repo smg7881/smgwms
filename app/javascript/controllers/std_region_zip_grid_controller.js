@@ -1,15 +1,11 @@
-﻿import { Controller } from "@hotwired/stimulus"
+import { Controller } from "@hotwired/stimulus"
 import { resolveAgGridRegistration } from "controllers/grid/grid_event_manager"
 import { isApiAlive, getCsrfToken, fetchJson, setGridRowData, buildCompositeKey } from "controllers/grid/grid_utils"
 
 export default class extends Controller {
   static targets = [
-    "regionCodeInput",
-    "regionDisplayInput",
-    "countryCodeInput",
-    "countryDisplayInput",
-    "zipcdInput",
-    "zipaddrInput",
+    "topSearchArea",
+    "bottomSearchArea",
     "mappedGrid",
     "unmappedGrid"
   ]
@@ -17,7 +13,11 @@ export default class extends Controller {
   static values = {
     mappedUrl: String,
     unmappedUrl: String,
-    saveUrl: String
+    saveUrl: String,
+    defaultCorpCode: String,
+    defaultCorpName: String,
+    defaultCountryCode: String,
+    defaultCountryName: String
   }
 
   connect() {
@@ -25,9 +25,14 @@ export default class extends Controller {
     this.unmappedApi = null
     this.mappedRows = []
     this.unmappedRows = []
+
+    this.bindSearchForms()
+    this.applyDefaultSearchValues()
+    this.syncRegionPopupUrl()
   }
 
   disconnect() {
+    this.unbindSearchForms()
     this.mappedApi = null
     this.unmappedApi = null
   }
@@ -44,6 +49,21 @@ export default class extends Controller {
     }
   }
 
+  handleConditionChange(event) {
+    const name = event?.target?.name
+    if (name === "q[corp_cd]") {
+      this.onCorpChange()
+      return
+    }
+    if (name === "q[regn_cd]") {
+      this.onRegionChange()
+      return
+    }
+    if (name === "q[ctry_cd]") {
+      this.onCountryChange()
+    }
+  }
+
   async onRegionChange() {
     if (!this.currentRegionCode) {
       this.mappedRows = []
@@ -53,6 +73,14 @@ export default class extends Controller {
     }
 
     await Promise.all([this.searchMapped(), this.searchUnmapped()])
+  }
+
+  onCorpChange() {
+    this.clearRegionSelection()
+    this.mappedRows = []
+    this.unmappedRows = []
+    this.render()
+    this.syncRegionPopupUrl()
   }
 
   async onCountryChange() {
@@ -73,7 +101,10 @@ export default class extends Controller {
     }
 
     try {
-      const query = new URLSearchParams({ regn_cd: this.currentRegionCode })
+      const query = new URLSearchParams({
+        corp_cd: this.currentCorpCode,
+        regn_cd: this.currentRegionCode
+      })
       this.mappedRows = await fetchJson(`${this.mappedUrlValue}?${query.toString()}`)
       this.rebuildMappedSortOrder()
       this.render()
@@ -92,6 +123,7 @@ export default class extends Controller {
 
     try {
       const query = new URLSearchParams({
+        corp_cd: this.currentCorpCode,
         regn_cd: this.currentRegionCode,
         ctry_cd: this.currentCountryCode,
         zipcd: this.currentZipCode,
@@ -172,6 +204,7 @@ export default class extends Controller {
           "X-CSRF-Token": getCsrfToken()
         },
         body: JSON.stringify({
+          corp_cd: this.currentCorpCode,
           regn_cd: this.currentRegionCode,
           rows: rows
         })
@@ -210,19 +243,128 @@ export default class extends Controller {
     return buildCompositeKey([row.ctry_cd, row.zipcd, row.seq_no])
   }
 
+  bindSearchForms() {
+    this.topSearchForm = this.topSearchAreaTarget?.querySelector("form")
+    this.bottomSearchForm = this.bottomSearchAreaTarget?.querySelector("form")
+
+    this._onTopSubmit = (event) => {
+      event.preventDefault()
+      event.stopPropagation()
+      event.stopImmediatePropagation()
+      this.searchMapped()
+    }
+
+    this._onBottomSubmit = (event) => {
+      event.preventDefault()
+      event.stopPropagation()
+      event.stopImmediatePropagation()
+      this.searchUnmapped()
+    }
+
+    if (this.topSearchForm) {
+      this.topSearchForm.addEventListener("submit", this._onTopSubmit, true)
+    }
+    if (this.bottomSearchForm) {
+      this.bottomSearchForm.addEventListener("submit", this._onBottomSubmit, true)
+    }
+  }
+
+  unbindSearchForms() {
+    if (this.topSearchForm && this._onTopSubmit) {
+      this.topSearchForm.removeEventListener("submit", this._onTopSubmit, true)
+    }
+    if (this.bottomSearchForm && this._onBottomSubmit) {
+      this.bottomSearchForm.removeEventListener("submit", this._onBottomSubmit, true)
+    }
+    this.topSearchForm = null
+    this.bottomSearchForm = null
+    this._onTopSubmit = null
+    this._onBottomSubmit = null
+  }
+
+  applyDefaultSearchValues() {
+    if (!this.currentCorpCode && this.defaultCorpCodeValue) {
+      this.setPopupValues("corp", this.defaultCorpCodeValue, this.defaultCorpNameValue)
+    }
+    if (!this.currentCountryCode && this.defaultCountryCodeValue) {
+      this.setPopupValues("country", this.defaultCountryCodeValue, this.defaultCountryNameValue)
+    }
+  }
+
+  clearRegionSelection() {
+    this.setPopupValues("region", "", "")
+  }
+
+  syncRegionPopupUrl() {
+    const wrapper = this.popupWrapper("region")
+    if (!wrapper) return
+
+    const baseUrl = wrapper.dataset.searchPopupUrlValue?.split("?")[0] || "/search_popups/region"
+    const query = new URLSearchParams()
+    if (this.currentCorpCode) {
+      query.set("corp_cd", this.currentCorpCode)
+    }
+
+    const suffix = query.toString()
+    wrapper.dataset.searchPopupUrlValue = suffix ? `${baseUrl}?${suffix}` : baseUrl
+  }
+
+  popupWrapper(type) {
+    return this.element.querySelector(`[data-controller~='search-popup'][data-search-popup-type-value='${type}']`)
+  }
+
+  popupCode(type) {
+    const wrapper = this.popupWrapper(type)
+    if (!wrapper) return ""
+
+    const input = wrapper.querySelector("[data-search-popup-target='code']")
+    return input?.value?.toString().trim().toUpperCase() || ""
+  }
+
+  setPopupValues(type, code, display) {
+    const wrapper = this.popupWrapper(type)
+    if (!wrapper) return
+
+    const normalizedCode = String(code || "").trim().toUpperCase()
+    const normalizedDisplay = String(display || "").trim()
+
+    const codeInput = wrapper.querySelector("[data-search-popup-target='code']")
+    const displayInput = wrapper.querySelector("[data-search-popup-target='display']")
+    const codeDisplayInput = wrapper.querySelector("[data-search-popup-target='codeDisplay']")
+
+    if (codeInput) {
+      codeInput.value = normalizedCode
+    }
+    if (displayInput) {
+      displayInput.value = normalizedDisplay
+    }
+    if (codeDisplayInput) {
+      codeDisplayInput.value = normalizedCode
+    }
+  }
+
+  inputValue(name) {
+    const input = this.element.querySelector(`[name='${name}']`)
+    return input?.value?.toString().trim() || ""
+  }
+
+  get currentCorpCode() {
+    return this.popupCode("corp")
+  }
+
   get currentRegionCode() {
-    return this.regionCodeInputTarget?.value?.toString().trim().toUpperCase() || ""
+    return this.popupCode("region")
   }
 
   get currentCountryCode() {
-    return this.countryCodeInputTarget?.value?.toString().trim().toUpperCase() || ""
+    return this.popupCode("country")
   }
 
   get currentZipCode() {
-    return this.zipcdInputTarget?.value?.toString().trim().toUpperCase() || ""
+    return this.inputValue("q[zipcd]").toUpperCase()
   }
 
   get currentZipAddress() {
-    return this.zipaddrInputTarget?.value?.toString().trim() || ""
+    return this.inputValue("q[zipaddr]")
   }
 }

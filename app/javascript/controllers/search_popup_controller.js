@@ -72,8 +72,8 @@ export default class extends Controller {
       if (!Array.isArray(rows) || rows.length !== 1) return null
 
       const row = rows[0] || {}
-      const code = String(row.code ?? row.corp_cd ?? "").trim()
-      const name = String(row.name ?? row.corp_nm ?? row.display ?? "").trim()
+      const code = String(row.code ?? row.corp_cd ?? row.fnc_or_cd ?? "").trim()
+      const name = String(row.name ?? row.corp_nm ?? row.fnc_or_nm ?? row.display ?? "").trim()
       if (!code && !name) return null
 
       return {

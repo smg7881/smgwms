@@ -32,8 +32,8 @@ function escapeHtml(value) {
 function normalizeSelection(detail) {
   if (!detail || typeof detail !== "object") return null
 
-  const code = String(detail.code ?? detail.corp_cd ?? "").trim()
-  const name = String(detail.name ?? detail.corp_nm ?? detail.display ?? "").trim()
+  const code = String(detail.code ?? detail.corp_cd ?? detail.fnc_or_cd ?? "").trim()
+  const name = String(detail.name ?? detail.corp_nm ?? detail.fnc_or_nm ?? detail.display ?? "").trim()
 
   return {
     ...detail,

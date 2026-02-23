@@ -18,7 +18,7 @@ class Std::ExchangeRate::PageComponent < Std::BasePageComponent
           field: "fnc_or_cd",
           type: "select",
           label: "금융기관",
-          options: common_code_options("STD_FIN_ORG", include_all: true, all_label: "전체"),
+          options: financial_institution_options(include_all: true, all_label: "전체"),
           include_blank: false
         },
         { field: "std_ymd", type: "date_picker", label: "기준일자" },
@@ -61,7 +61,7 @@ class Std::ExchangeRate::PageComponent < Std::BasePageComponent
           minWidth: 120,
           editable: true,
           cellEditor: "agSelectCellEditor",
-          cellEditorParams: { values: common_code_values("STD_FIN_ORG") }
+          cellEditorParams: { values: financial_institution_values }
         },
         { field: "std_ymd", headerName: "기준일자", minWidth: 120, editable: true },
         {
@@ -110,5 +110,31 @@ class Std::ExchangeRate::PageComponent < Std::BasePageComponent
         { field: "update_by", headerName: "수정자", minWidth: 100, editable: false },
         { field: "update_time", headerName: "수정일시", minWidth: 160, formatter: "datetime", editable: false }
       ]
+    end
+
+    def financial_institution_options(include_all:, all_label:)
+      if defined?(StdFinancialInstitution) && StdFinancialInstitution.table_exists?
+        options = StdFinancialInstitution.active.ordered.map do |row|
+          [ row.fnc_or_nm.to_s.strip.presence || row.fnc_or_cd, row.fnc_or_cd ]
+        end
+        if include_all
+          options.unshift([ all_label, "" ])
+        end
+        options
+      else
+        common_code_options("STD_FIN_ORG", include_all: include_all, all_label: all_label)
+      end
+    rescue ActiveRecord::StatementInvalid
+      common_code_options("STD_FIN_ORG", include_all: include_all, all_label: all_label)
+    end
+
+    def financial_institution_values
+      if defined?(StdFinancialInstitution) && StdFinancialInstitution.table_exists?
+        StdFinancialInstitution.active.ordered.pluck(:fnc_or_cd)
+      else
+        common_code_values("STD_FIN_ORG")
+      end
+    rescue ActiveRecord::StatementInvalid
+      common_code_values("STD_FIN_ORG")
     end
 end

@@ -308,7 +308,15 @@ class Std::Client::PageComponent < Std::BasePageComponent
         { field: "tpl_logis_yn_cd", type: "select", label: "삼자물류여부", options: use_yn_options_for_form, target: "detailField" },
         { field: "elec_taxbill_yn_cd", type: "select", label: "전자세금계산서", options: use_yn_options_for_form, target: "detailField" },
         { field: "bilg_bzac_cd", type: "input", label: "청구거래처", maxlength: 20, target: "detailField" },
-        { field: "fnc_or_cd", type: "input", label: "금융기관", maxlength: 20, target: "detailField" },
+        {
+          field: "fnc_or_nm",
+          type: "popup",
+          label: "금융기관",
+          popup_type: "financial_institution",
+          code_field: "fnc_or_cd",
+          placeholder: "금융기관 선택",
+          target: "detailField"
+        },
         { field: "acnt_no_cd", type: "input", label: "계좌번호", maxlength: 50, target: "detailField" },
         { field: "remk", type: "textarea", label: "비고", rows: 3, colspan: 2, maxlength: 500, target: "detailField" }
       ]

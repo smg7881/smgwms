@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_22_123000) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_23_135000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -406,6 +406,44 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_22_123000) do
     t.index ["use_yn_cd"], name: "index_std_bzac_workpl_on_use_yn_cd"
   end
 
+  create_table "std_client_item_codes", force: :cascade do |t|
+    t.string "basis_unit_cd", limit: 20
+    t.string "bzac_cd", limit: 20, null: false
+    t.datetime "chgdt", null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "danger_yn_cd", limit: 1, default: "N", null: false
+    t.string "goodsnm_cd", limit: 20, null: false
+    t.string "if_yn_cd", limit: 1, default: "N", null: false
+    t.string "item_cd", limit: 20, null: false
+    t.string "item_nm", limit: 200, null: false
+    t.string "len_unit_cd", limit: 20
+    t.string "mdfr_nm_cd", limit: 50, null: false
+    t.string "mstair_lading_yn_cd", limit: 1, default: "N", null: false
+    t.decimal "net_wgt_kg", precision: 18, scale: 3
+    t.decimal "pckg_qty", precision: 18, scale: 3
+    t.string "png_yn_cd", limit: 1, default: "N", null: false
+    t.string "prod_nm_cd", limit: 100, null: false
+    t.string "qty_unit_cd", limit: 20
+    t.datetime "reg_date", null: false
+    t.string "regr_nm_cd", limit: 50, null: false
+    t.string "tmpt_unit_cd", limit: 20
+    t.decimal "tot_wgt_kg", precision: 18, scale: 3
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn_cd", limit: 1, default: "Y", null: false
+    t.decimal "vessel_hght_m", precision: 18, scale: 3
+    t.decimal "vessel_tmpt_c", precision: 18, scale: 3
+    t.decimal "vessel_vert_m", precision: 18, scale: 3
+    t.decimal "vessel_vol_cbm", precision: 18, scale: 3
+    t.decimal "vessel_width_m", precision: 18, scale: 3
+    t.string "vol_unit_cd", limit: 20
+    t.string "wgt_unit_cd", limit: 20
+    t.index ["bzac_cd", "item_cd"], name: "index_std_client_item_codes_on_bzac_cd_and_item_cd", unique: true
+    t.index ["goodsnm_cd"], name: "index_std_client_item_codes_on_goodsnm_cd"
+    t.index ["use_yn_cd"], name: "index_std_client_item_codes_on_use_yn_cd"
+  end
+
   create_table "std_cm04004", force: :cascade do |t|
     t.text "after_value"
     t.text "before_value"
@@ -527,6 +565,23 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_22_123000) do
     t.index ["use_yn_cd"], name: "index_std_exchange_rates_on_use_yn_cd"
   end
 
+  create_table "std_financial_institutions", force: :cascade do |t|
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "ctry_cd", limit: 10
+    t.string "ctry_nm", limit: 120
+    t.string "fnc_or_cd", limit: 20, null: false
+    t.string "fnc_or_eng_nm", limit: 120, null: false
+    t.string "fnc_or_nm", limit: 120, null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn_cd", limit: 1, default: "Y", null: false
+    t.index ["ctry_cd"], name: "index_std_financial_institutions_on_ctry_cd"
+    t.index ["fnc_or_cd"], name: "index_std_financial_institutions_on_fnc_or_cd", unique: true
+    t.index ["fnc_or_nm"], name: "index_std_financial_institutions_on_fnc_or_nm"
+    t.index ["use_yn_cd"], name: "index_std_financial_institutions_on_use_yn_cd"
+  end
+
   create_table "std_goods", force: :cascade do |t|
     t.string "create_by", limit: 50
     t.datetime "create_time"
@@ -589,6 +644,100 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_22_123000) do
     t.index ["use_yn_cd"], name: "index_std_interface_infos_on_use_yn_cd"
   end
 
+  create_table "std_purchase_contract_change_histories", force: :cascade do |t|
+    t.text "chg_aft_conts"
+    t.text "chg_bef_conts"
+    t.string "chg_col_nm", limit: 100, null: false
+    t.datetime "chg_date"
+    t.string "chg_tbl_nm", limit: 100, null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.integer "purchase_contract_id", null: false
+    t.string "regr_cd", limit: 50
+    t.integer "seq_no", null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.index ["purchase_contract_id", "chg_date"], name: "index_std_pur_ctrt_hist_on_contract_and_date"
+    t.index ["purchase_contract_id", "seq_no"], name: "index_std_pur_ctrt_hist_on_contract_and_seq", unique: true
+    t.index ["purchase_contract_id"], name: "idx_on_purchase_contract_id_e4345b7850"
+  end
+
+  create_table "std_purchase_contract_settlements", force: :cascade do |t|
+    t.string "acnt_no_cd", limit: 50
+    t.string "anno_dgrcnt", limit: 20
+    t.string "aply_fnc_or_cd", limit: 50
+    t.string "aply_fnc_or_nm", limit: 120
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "dpstr_nm", limit: 120
+    t.string "exca_ofcr_cd", limit: 50
+    t.string "exca_ofcr_nm", limit: 100
+    t.string "exrt_aply_std_cd", limit: 30
+    t.string "fnc_or_cd", limit: 50
+    t.string "fnc_or_nm", limit: 120
+    t.string "mon_cd", limit: 10
+    t.decimal "prvs_cyfd_amt", precision: 18, scale: 2
+    t.integer "purchase_contract_id", null: false
+    t.text "remk"
+    t.integer "seq_no", null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn_cd", limit: 1, default: "Y", null: false
+    t.index ["purchase_contract_id", "seq_no"], name: "index_std_pur_ctrt_stlmnt_on_contract_and_seq", unique: true
+    t.index ["purchase_contract_id"], name: "idx_on_purchase_contract_id_3e0fa986e1"
+    t.index ["use_yn_cd"], name: "index_std_purchase_contract_settlements_on_use_yn_cd"
+  end
+
+  create_table "std_purchase_contracts", force: :cascade do |t|
+    t.string "apv_mthd_cd", limit: 30
+    t.string "apv_type_cd", limit: 30
+    t.string "bef_ctrt_no", limit: 30
+    t.string "bilg_mthd_cd", limit: 30
+    t.string "bizman_no", limit: 20, null: false
+    t.string "bzac_cd", limit: 20, null: false
+    t.string "bzac_sctn_cd", limit: 30
+    t.string "corp_cd", limit: 20
+    t.string "cprtco_ofcr_cd", limit: 50
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "ctrt_chg_reason_cd", limit: 255
+    t.string "ctrt_cnctr_cond_cd", limit: 255
+    t.string "ctrt_cnctr_dtl_reason_cd", limit: 500
+    t.string "ctrt_cnctr_reason_cd", limit: 30
+    t.date "ctrt_cnctr_ymd"
+    t.string "ctrt_dept_cd", limit: 50
+    t.string "ctrt_dept_nm", limit: 100
+    t.date "ctrt_end_day"
+    t.date "ctrt_expi_noti_ymd"
+    t.date "ctrt_exten_ymd"
+    t.string "ctrt_kind_cd", limit: 30, null: false
+    t.string "ctrt_ofcr_cd", limit: 50
+    t.string "ctrt_ofcr_nm", limit: 100
+    t.string "ctrt_sctn_cd", limit: 30, null: false
+    t.date "ctrt_strt_day"
+    t.string "dcsn_yn_cd", limit: 1, default: "N", null: false
+    t.string "loan_limt_over_yn_cd", limit: 1, default: "N", null: false
+    t.string "op_area_cd", limit: 100
+    t.string "pay_cond_cd", limit: 30
+    t.string "pur_ctrt_nm", limit: 200, null: false
+    t.string "pur_ctrt_no", limit: 30, null: false
+    t.string "re_ctrt_cond_cd", limit: 255
+    t.text "remk"
+    t.date "strt_ctrt_ymd"
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn_cd", limit: 1, default: "Y", null: false
+    t.string "vat_sctn_cd", limit: 30
+    t.string "work_step_no1_cd", limit: 30
+    t.string "work_step_no2_cd", limit: 30
+    t.index ["bzac_cd"], name: "index_std_purchase_contracts_on_bzac_cd"
+    t.index ["corp_cd"], name: "index_std_purchase_contracts_on_corp_cd"
+    t.index ["ctrt_sctn_cd"], name: "index_std_purchase_contracts_on_ctrt_sctn_cd"
+    t.index ["ctrt_strt_day"], name: "index_std_purchase_contracts_on_ctrt_strt_day"
+    t.index ["pur_ctrt_no"], name: "index_std_purchase_contracts_on_pur_ctrt_no", unique: true
+    t.index ["use_yn_cd"], name: "index_std_purchase_contracts_on_use_yn_cd"
+  end
+
   create_table "std_region_zip_mappings", force: :cascade do |t|
     t.string "create_by", limit: 50
     t.datetime "create_time"
@@ -642,6 +791,43 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_22_123000) do
     t.index ["rsv_work_no"], name: "index_std_reserved_jobs_on_rsv_work_no", unique: true
     t.index ["sys_sctn_cd", "rsv_work_nm_cd"], name: "index_std_reserved_jobs_on_sys_sctn_cd_and_rsv_work_nm_cd"
     t.index ["use_yn_cd"], name: "index_std_reserved_jobs_on_use_yn_cd"
+  end
+
+  create_table "std_sellbuy_attributes", force: :cascade do |t|
+    t.string "cgwrk_yn_cd", limit: 1, default: "N", null: false
+    t.string "corp_cd", limit: 20, null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "dc_extr_yn_cd", limit: 1, default: "N", null: false
+    t.string "dcnct_reg_pms_yn_cd", limit: 1, default: "N", null: false
+    t.string "fis_air_yn_cd", limit: 1, default: "N", null: false
+    t.string "fis_shpng_yn_cd", limit: 1, default: "N", null: false
+    t.string "lumpsum_yn_cd", limit: 1, default: "N", null: false
+    t.string "ndcsn_cost_dr_acct_cd", limit: 30
+    t.string "ndcsn_sell_cr_acct_cd", limit: 30
+    t.string "pur_cr_acct_cd", limit: 30
+    t.string "pur_dr_acct_cd", limit: 30
+    t.string "pur_yn_cd", limit: 1, default: "N", null: false
+    t.string "rdtn_nm", limit: 120, null: false
+    t.string "rmk_cd", limit: 500
+    t.string "sell_cr_acct_cd", limit: 30
+    t.string "sell_dr_acct_cd", limit: 30
+    t.string "sell_yn_cd", limit: 1, default: "N", null: false
+    t.string "sellbuy_attr_cd", limit: 20, null: false
+    t.string "sellbuy_attr_eng_nm", limit: 150, null: false
+    t.string "sellbuy_attr_nm", limit: 150, null: false
+    t.string "sellbuy_sctn_cd", limit: 30
+    t.string "strg_yn_cd", limit: 1, default: "N", null: false
+    t.string "sys_sctn_cd", limit: 30
+    t.string "tax_payfor_yn_cd", limit: 1, default: "N", null: false
+    t.string "tran_yn_cd", limit: 1, default: "N", null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "upper_sellbuy_attr_cd", limit: 20
+    t.string "use_yn_cd", limit: 1, default: "Y", null: false
+    t.index ["corp_cd"], name: "index_std_sellbuy_attributes_on_corp_cd"
+    t.index ["sellbuy_attr_cd"], name: "index_std_sellbuy_attributes_on_sellbuy_attr_cd", unique: true
+    t.index ["use_yn_cd"], name: "index_std_sellbuy_attributes_on_use_yn_cd"
   end
 
   create_table "std_user_favorite_groups", force: :cascade do |t|
@@ -810,4 +996,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_22_123000) do
   add_foreign_key "adm_users", "adm_roles", column: "role_id"
   add_foreign_key "excel_import_tasks", "adm_users", column: "requested_by_id"
   add_foreign_key "sessions", "adm_users", column: "user_id"
+  add_foreign_key "std_purchase_contract_change_histories", "std_purchase_contracts", column: "purchase_contract_id"
+  add_foreign_key "std_purchase_contract_settlements", "std_purchase_contracts", column: "purchase_contract_id"
 end

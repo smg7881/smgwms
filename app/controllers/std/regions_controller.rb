@@ -2,7 +2,20 @@ class Std::RegionsController < Std::BaseController
   def index
     respond_to do |format|
       format.html
-      format.json { render json: regions_scope.map { |row| region_json(row) } }
+      format.json do
+        rows = regions_scope.to_a
+        corp_name_by_code = build_corp_name_by_code(rows)
+        upper_region_name_by_code = build_upper_region_name_by_code(rows)
+        payload = rows.map do |row|
+          region_json(
+            row,
+            corp_name_by_code: corp_name_by_code,
+            upper_region_name_by_code: upper_region_name_by_code
+          )
+        end
+
+        render json: payload
+      end
     end
   end
 
@@ -73,19 +86,17 @@ class Std::RegionsController < Std::BaseController
     end
 
     def search_params
-      params.fetch(:q, {}).permit(:corp_cd, :regn_cd, :regn_nm_cd, :use_yn_cd)
+      params.fetch(:q, {}).permit(:corp_cd, :regn_keyword, :regn_cd, :regn_nm_cd, :use_yn_cd)
     end
 
     def regions_scope
       scope = StdRegion.ordered
       if search_corp_cd.present?
-        scope = scope.where(corp_cd: search_corp_cd)
+        scope = scope.where("#{normalized_upper_sql('corp_cd')} = ?", search_corp_cd)
       end
-      if search_regn_cd.present?
-        scope = scope.where("regn_cd LIKE ?", "%#{search_regn_cd}%")
-      end
-      if search_regn_nm_cd.present?
-        scope = scope.where("regn_nm_cd LIKE ?", "%#{search_regn_nm_cd}%")
+      if search_regn_keyword.present?
+        keyword = "%#{search_regn_keyword}%"
+        scope = scope.where("regn_cd LIKE ? OR regn_nm_cd LIKE ?", keyword, keyword)
       end
       if search_use_yn_cd.present?
         scope = scope.where(use_yn_cd: search_use_yn_cd)
@@ -97,12 +108,9 @@ class Std::RegionsController < Std::BaseController
       search_params[:corp_cd].to_s.strip.upcase.presence
     end
 
-    def search_regn_cd
-      search_params[:regn_cd].to_s.strip.upcase.presence
-    end
-
-    def search_regn_nm_cd
-      search_params[:regn_nm_cd].to_s.strip.presence
+    def search_regn_keyword
+      value = search_params[:regn_keyword].presence || search_params[:regn_cd].presence || search_params[:regn_nm_cd].presence
+      value.to_s.strip.upcase.presence
     end
 
     def search_use_yn_cd
@@ -123,14 +131,20 @@ class Std::RegionsController < Std::BaseController
       ).to_h.symbolize_keys
     end
 
-    def region_json(row)
+    def region_json(row, corp_name_by_code:, upper_region_name_by_code:)
+      regn_cd = row.regn_cd.to_s.strip.upcase
+      corp_cd = row.corp_cd.to_s.strip.upcase
+      upper_regn_cd = row.upper_regn_cd.to_s.strip.upcase
+
       {
-        id: row.regn_cd,
-        corp_cd: row.corp_cd,
-        regn_cd: row.regn_cd,
+        id: regn_cd,
+        corp_cd: corp_cd,
+        corp_nm: resolve_corp_name(corp_cd, corp_name_by_code),
+        regn_cd: regn_cd,
         regn_nm_cd: row.regn_nm_cd,
         regn_eng_nm_cd: row.regn_eng_nm_cd,
-        upper_regn_cd: row.upper_regn_cd,
+        upper_regn_cd: upper_regn_cd.presence,
+        upper_regn_nm: resolve_upper_region_name(upper_regn_cd, upper_region_name_by_code),
         rmk_cd: row.rmk_cd,
         use_yn_cd: row.use_yn_cd,
         create_by: row.create_by,
@@ -138,5 +152,75 @@ class Std::RegionsController < Std::BaseController
         update_by: row.update_by,
         update_time: row.update_time
       }
+    end
+
+    def build_corp_name_by_code(rows)
+      corp_codes = rows.map { |row| row.corp_cd.to_s.strip.upcase.presence }.compact.uniq
+      if corp_codes.empty?
+        return {}
+      end
+
+      StdCorporation
+        .where("#{normalized_upper_sql('corp_cd')} IN (?)", corp_codes)
+        .pluck(:corp_cd, :corp_nm)
+        .to_h { |corp_cd, corp_nm| [ corp_cd.to_s.strip.upcase, corp_nm ] }
+    rescue ActiveRecord::StatementInvalid
+      {}
+    end
+
+    def build_upper_region_name_by_code(rows)
+      upper_region_codes = rows.map { |row| row.upper_regn_cd.to_s.strip.upcase.presence }.compact.uniq
+      if upper_region_codes.empty?
+        return {}
+      end
+
+      StdRegion
+        .where("#{normalized_upper_sql('regn_cd')} IN (?)", upper_region_codes)
+        .pluck(:regn_cd, :regn_nm_cd)
+        .to_h { |regn_cd, regn_nm_cd| [ regn_cd.to_s.strip.upcase, regn_nm_cd ] }
+    rescue ActiveRecord::StatementInvalid
+      {}
+    end
+
+    def resolve_corp_name(corp_cd, corp_name_by_code)
+      if corp_cd.blank?
+        return nil
+      end
+
+      mapped = corp_name_by_code[corp_cd]
+      if mapped.present?
+        return mapped
+      end
+
+      corp_name_fallback_cache[corp_cd] ||= StdCorporation.where("#{normalized_upper_sql('corp_cd')} = ?", corp_cd).pick(:corp_nm)
+    rescue ActiveRecord::StatementInvalid
+      nil
+    end
+
+    def resolve_upper_region_name(upper_regn_cd, upper_region_name_by_code)
+      if upper_regn_cd.blank?
+        return nil
+      end
+
+      mapped = upper_region_name_by_code[upper_regn_cd]
+      if mapped.present?
+        return mapped
+      end
+
+      upper_region_name_fallback_cache[upper_regn_cd] ||= StdRegion.where("#{normalized_upper_sql('regn_cd')} = ?", upper_regn_cd).pick(:regn_nm_cd)
+    rescue ActiveRecord::StatementInvalid
+      nil
+    end
+
+    def corp_name_fallback_cache
+      @corp_name_fallback_cache ||= {}
+    end
+
+    def upper_region_name_fallback_cache
+      @upper_region_name_fallback_cache ||= {}
+    end
+
+    def normalized_upper_sql(column_name)
+      "TRIM(UPPER(#{column_name}))"
     end
 end
