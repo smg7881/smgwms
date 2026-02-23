@@ -155,6 +155,17 @@ Rails.application.routes.draw do
         post :batch_save_settlements
       end
     end
+    resources :sell_contracts, controller: :sell_contracts, only: [ :index ] do
+      collection do
+        post :batch_save
+      end
+
+      member do
+        get :settlements
+        get :change_histories
+        post :batch_save_settlements
+      end
+    end
     resources :corporations, controller: :corporations, only: [ :index ] do
       collection do
         post :batch_save

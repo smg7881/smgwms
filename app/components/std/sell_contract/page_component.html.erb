@@ -1,0 +1,142 @@
+<div class="std-client-screen std-sell-contract-screen"
+     data-controller="sell-contract-grid"
+     data-action="ag-grid:ready->sell-contract-grid#registerGrid"
+     data-sell-contract-grid-master-batch-url-value="<%= master_batch_save_url %>"
+     data-sell-contract-grid-settlement-batch-url-template-value="<%= settlement_batch_url_template %>"
+     data-sell-contract-grid-settlement-list-url-template-value="<%= settlement_list_url_template %>"
+     data-sell-contract-grid-history-list-url-template-value="<%= change_history_list_url_template %>"
+     data-sell-contract-grid-selected-contract-value="<%= selected_contract.to_s %>">
+  <%= render Ui::SearchFormComponent.new(
+    url: create_url,
+    fields: search_fields,
+    cols: 4,
+    enable_collapse: true,
+    class: "std-client-search"
+  ) %>
+
+  <section class="std-client-master">
+    <div class="std-client-section-head">
+      <h3 class="std-client-section-title">
+        <%= helpers.lucide_icon("file-signature", css_class: "w-4 h-4") %>
+        매출계약목록
+        <%= render Ui::GridActionsComponent.new(grid_id: "std-sell-contract-master") %>
+      </h3>
+      <%= render Ui::GridToolbarComponent.new(
+        buttons: [
+          { label: "행추가", class: "btn btn-sm btn-primary", action: "click->sell-contract-grid#addMasterRow" },
+          { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->sell-contract-grid#deleteMasterRows" },
+          { label: "저장", class: "btn btn-sm btn-success", action: "click->sell-contract-grid#saveMasterRows" }
+        ]
+      ) %>
+    </div>
+
+    <%= render Ui::AgGridComponent.new(
+      columns: master_columns,
+      url: grid_url,
+      height: "250px",
+      page_size: 20,
+      row_selection: "single",
+      grid_id: "std-sell-contract-master",
+      data: { sell_contract_grid_target: "masterGrid" }
+    ) %>
+  </section>
+
+  <section class="std-client-detail">
+    <div class="std-client-selected" data-sell-contract-grid-target="selectedContractLabel"><%= selected_contract_label %></div>
+
+    <div class="std-client-tabs">
+      <button type="button" class="std-client-tab is-active" aria-selected="true" data-sell-contract-grid-target="tabButton" data-tab="basic" data-action="click->sell-contract-grid#switchTab">매출계약기본정보</button>
+      <button type="button" class="std-client-tab" aria-selected="false" data-sell-contract-grid-target="tabButton" data-tab="additional" data-action="click->sell-contract-grid#switchTab">매출계약추가정보</button>
+      <button type="button" class="std-client-tab" aria-selected="false" data-sell-contract-grid-target="tabButton" data-tab="settlement" data-action="click->sell-contract-grid#switchTab">매출계약정산정보</button>
+      <button type="button" class="std-client-tab" aria-selected="false" data-sell-contract-grid-target="tabButton" data-tab="history" data-action="click->sell-contract-grid#switchTab">매출계약변경이력</button>
+    </div>
+
+    <div class="std-client-panel is-active" data-sell-contract-grid-target="tabPanel" data-tab-panel="basic">
+      <%= render Ui::ResourceFormComponent.new(
+        model: detail_form_model,
+        url: "#",
+        cols: 2,
+        show_buttons: false,
+        target_controller: "sell_contract_grid",
+        fields: basic_form_fields,
+        form_data: detail_form_data,
+        form_html: {
+          id: "std-sell-contract-basic-form",
+          autocomplete: "off",
+          novalidate: true
+        },
+        class: "std-client-resource-form"
+      ) %>
+    </div>
+
+    <div class="std-client-panel" data-sell-contract-grid-target="tabPanel" data-tab-panel="additional" hidden>
+      <%= render Ui::ResourceFormComponent.new(
+        model: detail_form_model,
+        url: "#",
+        cols: 2,
+        show_buttons: false,
+        target_controller: "sell_contract_grid",
+        fields: additional_form_fields,
+        form_data: detail_form_data,
+        form_html: {
+          id: "std-sell-contract-additional-form",
+          autocomplete: "off",
+          novalidate: true
+        },
+        class: "std-client-resource-form"
+      ) %>
+    </div>
+
+    <div class="std-client-panel" data-sell-contract-grid-target="tabPanel" data-tab-panel="settlement" hidden>
+      <div class="std-client-section-head">
+        <h3 class="std-client-section-title">
+          <%= helpers.lucide_icon("wallet-cards", css_class: "w-4 h-4") %>
+          매출계약정산정보
+          <%= render Ui::GridActionsComponent.new(grid_id: "std-sell-contract-settlement") %>
+        </h3>
+        <%= render Ui::GridToolbarComponent.new(
+          buttons: [
+            { label: "행추가", class: "btn btn-sm btn-primary", action: "click->sell-contract-grid#addSettlementRow" },
+            { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->sell-contract-grid#deleteSettlementRows" },
+            { label: "저장", class: "btn btn-sm btn-success", action: "click->sell-contract-grid#saveSettlementRows" }
+          ]
+        ) %>
+      </div>
+
+      <%= render Ui::AgGridComponent.new(
+        columns: settlement_columns,
+        row_data: [],
+        height: "230px",
+        page_size: 20,
+        row_selection: "multiple",
+        grid_id: "std-sell-contract-settlement",
+        data: { sell_contract_grid_target: "settlementGrid" }
+      ) %>
+    </div>
+
+    <div class="std-client-panel" data-sell-contract-grid-target="tabPanel" data-tab-panel="history" hidden>
+      <div class="std-client-section-head">
+        <h3 class="std-client-section-title">
+          <%= helpers.lucide_icon("history", css_class: "w-4 h-4") %>
+          매출계약변경이력
+          <%= render Ui::GridActionsComponent.new(grid_id: "std-sell-contract-history") %>
+        </h3>
+        <%= render Ui::GridToolbarComponent.new(
+          buttons: [
+            { label: "새로고침", class: "btn btn-sm btn-secondary", action: "click->sell-contract-grid#reloadHistoryRows" }
+          ]
+        ) %>
+      </div>
+
+      <%= render Ui::AgGridComponent.new(
+        columns: change_history_columns,
+        row_data: [],
+        height: "230px",
+        page_size: 20,
+        row_selection: "single",
+        grid_id: "std-sell-contract-history",
+        data: { sell_contract_grid_target: "historyGrid" }
+      ) %>
+    </div>
+  </section>
+</div>

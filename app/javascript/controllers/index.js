@@ -63,6 +63,7 @@ const CONTROLLERS = [
   ["std-financial-institution-grid", "controllers/std_financial_institution_grid_controller"],
   ["std-client-item-code-crud", "controllers/std_client_item_code_crud_controller"],
   ["std-sellbuy-attribute-crud", "controllers/std_sellbuy_attribute_crud_controller"],
+  ["sell-contract-grid", "controllers/sell_contract_grid_controller"],
   ["header-favorites", "controllers/header_favorites_controller"]
 ]
 

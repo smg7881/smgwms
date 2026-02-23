@@ -1,7 +1,7 @@
 require "set"
 
 class AdmMenu < ApplicationRecord
-  MAX_LEVEL = 3
+  MAX_LEVEL = 4
 
   validates :menu_cd, presence: true, uniqueness: true, length: { maximum: 20 }
   validates :menu_nm, presence: true, length: { maximum: 100 }
