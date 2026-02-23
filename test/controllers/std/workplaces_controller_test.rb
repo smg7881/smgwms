@@ -63,6 +63,25 @@ class Std::WorkplacesControllerTest < ActionDispatch::IntegrationTest
     assert_equal "N", row.reload.use_yn_cd
   end
 
+  test "create rejects same upper workplace code as workplace code" do
+    post std_workplaces_url, params: {
+      workplace: {
+        corp_cd: "C001",
+        workpl_cd: "WPSELF",
+        upper_workpl_cd: "WPSELF",
+        dept_cd: "DEPT01",
+        workpl_nm: "자기참조작업장",
+        workpl_sctn_cd: "WORK",
+        wm_yn_cd: "N",
+        use_yn_cd: "Y"
+      }
+    }, as: :json
+
+    assert_response :unprocessable_entity
+    body = JSON.parse(response.body)
+    assert_includes body["errors"].join(" "), "동일"
+  end
+
   test "batch_save inserts updates and soft deletes" do
     StdWorkplace.create!(
       corp_cd: "C001",

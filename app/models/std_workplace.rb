@@ -8,6 +8,7 @@ class StdWorkplace < ApplicationRecord
   validates :workpl_sctn_cd, presence: true, length: { maximum: 50 }
   validates :wm_yn_cd, inclusion: { in: %w[Y N] }
   validates :use_yn_cd, inclusion: { in: %w[Y N] }
+  validate :upper_workplace_not_self
 
   before_validation :assign_workpl_cd, on: :create
   before_validation :normalize_fields
@@ -79,6 +80,12 @@ class StdWorkplace < ApplicationRecord
         Current.user.email_address
       else
         "system"
+      end
+    end
+
+    def upper_workplace_not_self
+      if workpl_cd.present? && upper_workpl_cd.present? && workpl_cd == upper_workpl_cd
+        errors.add(:upper_workpl_cd, "은 작업장코드와 동일할 수 없습니다.")
       end
     end
 end

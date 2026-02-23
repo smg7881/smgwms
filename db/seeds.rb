@@ -27,4 +27,8 @@ if defined?(StdCorporation) && ActiveRecord::Base.connection.data_source_exists?
   load Rails.root.join("db/seeds/std_corporations.rb")
 end
 
+if defined?(StdWorkplace) && ActiveRecord::Base.connection.data_source_exists?(:std_workplaces)
+  load Rails.root.join("db/seeds/std_workplaces.rb")
+end
+
 puts "기본 사용자 생성: admin@example.com / password"

@@ -61,10 +61,27 @@ class Std::Workplace::PageComponent < Std::BasePageComponent
 
     def form_fields
       [
-        { field: "corp_cd", type: "input", label: "법인코드", required: true, maxlength: 20, target: "fieldCorpCd" },
+        {
+          field: "corp_lookup",
+          type: "popup",
+          label: "법인",
+          popup_type: "corp",
+          code_field: "corp_cd",
+          required: true,
+          target: "fieldCorpCd",
+          placeholder: "법인을 선택하세요."
+        },
         { field: "workpl_cd", type: "input", label: "작업장코드", required: true, maxlength: 20, target: "fieldWorkplCd" },
         { field: "workpl_nm", type: "input", label: "작업장명", required: true, maxlength: 120, target: "fieldWorkplNm" },
-        { field: "upper_workpl_cd", type: "input", label: "상위작업장", maxlength: 20, target: "fieldUpperWorkplCd" },
+        {
+          field: "upper_workpl_lookup",
+          type: "popup",
+          label: "상위작업장",
+          popup_type: "workplace",
+          code_field: "upper_workpl_cd",
+          target: "fieldUpperWorkplCd",
+          placeholder: "상위작업장을 선택하세요."
+        },
         {
           field: "dept_lookup",
           type: "popup",

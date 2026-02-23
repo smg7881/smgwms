@@ -25,7 +25,8 @@ export default class extends BaseCrudController {
     this.connectBase({
       events: [
         { name: "std-workplace-crud:edit", handler: this.handleEdit },
-        { name: "std-workplace-crud:delete", handler: this.handleDelete }
+        { name: "std-workplace-crud:delete", handler: this.handleDelete },
+        { name: "search-popup:selected", handler: this.handlePopupSelected }
       ]
     })
   }
@@ -117,6 +118,57 @@ export default class extends BaseCrudController {
 
     if (!matched) {
       radios[0].checked = true
+    }
+  }
+
+  handlePopupSelected = (event) => {
+    const fieldGroup = event.target?.closest?.("[data-field-name]")
+    if (!fieldGroup) return
+    if (fieldGroup.dataset.fieldName !== "upper_workpl_cd") return
+
+    const selectedCode = this.normalizeCode(event.detail?.code)
+    const workplCd = this.normalizeCode(this.fieldWorkplCdTarget?.value)
+    if (!selectedCode || !workplCd) return
+
+    if (selectedCode === workplCd) {
+      alert("상위작업장은 현재 작업장과 동일하게 선택할 수 없습니다.")
+      this.clearUpperWorkplaceField(fieldGroup)
+    }
+  }
+
+  async save() {
+    const workplCd = this.normalizeCode(this.fieldWorkplCdTarget?.value)
+    const upperWorkplCd = this.normalizeCode(this.fieldUpperWorkplCdTarget?.value)
+    if (workplCd && upperWorkplCd && workplCd === upperWorkplCd) {
+      alert("상위작업장은 현재 작업장과 동일하게 저장할 수 없습니다.")
+      this.clearUpperWorkplaceField()
+      return
+    }
+
+    await super.save()
+  }
+
+  normalizeCode(value) {
+    return String(value || "").trim().toUpperCase()
+  }
+
+  clearUpperWorkplaceField(fieldGroup = null) {
+    if (this.hasFieldUpperWorkplCdTarget) {
+      this.fieldUpperWorkplCdTarget.value = ""
+      this.fieldUpperWorkplCdTarget.dispatchEvent(new Event("change", { bubbles: true }))
+    }
+
+    const group = fieldGroup || this.element.querySelector("[data-field-name='upper_workpl_cd']")
+    if (!group) return
+
+    const codeDisplay = group.querySelector("[data-search-popup-target='codeDisplay']")
+    const displayInput = group.querySelector("[data-search-popup-target='display']")
+    if (codeDisplay) {
+      codeDisplay.value = ""
+    }
+    if (displayInput) {
+      displayInput.value = ""
+      displayInput.dispatchEvent(new Event("change", { bubbles: true }))
     }
   }
 
