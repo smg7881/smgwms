@@ -15,13 +15,9 @@ function openModalElement(modal) {
 }
 
 function applyModalBaseStyle(modal) {
-  modal.style.position = "fixed"
-  modal.style.inset = "0"
+  modal.className = "app-modal-overlay search-popup-overlay"
   modal.style.display = "none"
-  modal.style.alignItems = "center"
-  modal.style.justifyContent = "center"
   modal.style.padding = "12px"
-  modal.style.background = "rgba(0, 0, 0, 0.52)"
   modal.style.zIndex = "2147483000"
 }
 
@@ -64,7 +60,6 @@ function buildOverlayElement() {
   modal.id = MODAL_ID
   modal.setAttribute("role", "dialog")
   modal.setAttribute("aria-modal", "true")
-  modal.className = "search-popup-overlay"
   applyModalBaseStyle(modal)
 
   modal.addEventListener("click", (event) => {
@@ -118,17 +113,20 @@ export function openLookupPopup({ type, url, keyword, title } = {}) {
   const heading = String(title ?? "").trim() || defaultTitle(popupType)
 
   modal.innerHTML = `
-    <div class="form-grid-modal-content" style="display:flex;flex-direction:column;max-height:90vh;width:min(980px, calc(100vw - 24px));max-width:min(980px, calc(100vw - 24px));">
-      <div class="form-grid-modal-header" style="display:flex;align-items:center;justify-content:space-between;">
-        <h3>${escapeHtml(heading)}</h3>
-        <button type="button" class="btn-close" data-role="lookup-popup-close">×</button>
+    <div class="app-modal-shell" style="width:min(980px, calc(100vw - 24px));max-width:min(980px, calc(100vw - 24px));">
+      <div class="app-modal-header">
+        <h3 class="app-modal-title">${escapeHtml(heading)}</h3>
+        <button type="button" class="app-modal-close" data-role="lookup-popup-close">&times;</button>
       </div>
-      <div class="form-grid-modal-body" style="overflow:auto;">
+      <div class="app-modal-body modal-body" style="padding:0;">
         <iframe
           title="${escapeHtml(heading)}"
           src="${escapeHtml(frameSrc)}"
-          style="width:100%;height:min(70vh,640px);border:0;background:transparent;"
+          style="width:100%;height:min(72vh,700px);border:0;background:transparent;display:block;"
           loading="eager"></iframe>
+      </div>
+      <div class="app-modal-footer">
+        <button type="button" class="btn btn-sm btn-secondary" data-role="lookup-popup-cancel">닫기</button>
       </div>
     </div>
   `
@@ -186,12 +184,12 @@ export function openLookupPopup({ type, url, keyword, title } = {}) {
     modal.addEventListener("search-popup:close", onRequestClose)
     window.addEventListener("message", onMessage)
 
-    const closeButton = modal.querySelector("[data-role='lookup-popup-close']")
-    if (closeButton) {
-      closeButton.addEventListener("click", () => {
+    const closeButtons = modal.querySelectorAll("[data-role='lookup-popup-close'], [data-role='lookup-popup-cancel']")
+    closeButtons.forEach((button) => {
+      button.addEventListener("click", () => {
         modal.dispatchEvent(new CustomEvent("search-popup:close"))
-      }, { once: true })
-    }
+      })
+    })
 
     openModalElement(modal)
   })

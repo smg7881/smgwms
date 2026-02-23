@@ -93,7 +93,7 @@ Rails.application.routes.draw do
   end
 
   namespace :std do
-    resources :workplaces, controller: :workplaces, only: [ :index ] do
+    resources :workplaces, controller: :workplaces, only: [ :index, :create, :update, :destroy ] do
       post :batch_save, on: :collection
     end
     resources :regions, controller: :regions, only: [ :index ] do

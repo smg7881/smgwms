@@ -87,12 +87,16 @@ class SearchPopupsController < ApplicationController
 
     def generic_rows(type)
       rows = case type
+      when "dept", "department"
+        dept_rows
       when "region", "regn"
         region_rows
       when "country", "ctry"
         country_rows
       when "client", "bzac"
         client_rows
+      when "zipcode", "zipcd", "zip"
+        zipcode_rows
       when "menu"
         menu_rows
       when "user"
@@ -231,6 +235,27 @@ class SearchPopupsController < ApplicationController
 
       User.ordered.filter_map do |row|
         build_generic_row(code: row.user_id_code, name: row.user_nm)
+      end
+    rescue ActiveRecord::StatementInvalid
+      []
+    end
+
+    def dept_rows
+      return [] unless defined?(AdmDept) && AdmDept.table_exists?
+
+      AdmDept.where(use_yn: "Y").ordered.filter_map do |row|
+        build_generic_row(code: row.dept_code, name: row.dept_nm)
+      end
+    rescue ActiveRecord::StatementInvalid
+      []
+    end
+
+    def zipcode_rows
+      return [] unless defined?(StdZipCode) && StdZipCode.table_exists?
+
+      StdZipCode.active.ordered.filter_map do |row|
+        label = row.zipaddr.to_s.strip.presence || row.zipcd.to_s.strip
+        build_generic_row(code: row.zipcd, name: label)
       end
     rescue ActiveRecord::StatementInvalid
       []

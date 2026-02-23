@@ -1,22 +1,22 @@
-<div class="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]"
+<div class="app-modal-overlay fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]"
      data-<%= controller %>-target="overlay"
      <%= overlay_action_attr&.html_safe %>
      hidden>
-  <div class="bg-bg-primary border border-border rounded-lg max-w-[calc(100vw-32px)] max-h-[90vh] flex flex-col overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.15)]"
+  <div class="app-modal-shell bg-bg-primary border border-border rounded-lg max-w-[calc(100vw-32px)] max-h-[90vh] flex flex-col overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.15)]"
        style="<%= modal_style %>"
        data-<%= controller %>-target="modal"
        data-action="click-><%= controller %>#stopPropagation">
-    <div class="flex justify-between items-center px-5 py-4 border-b border-border sticky top-0 z-[2] bg-bg-primary cursor-move" data-action="mousedown-><%= controller %>#startDrag">
-      <h3 class="m-0 text-base" data-<%= controller %>-target="modalTitle"><%= title %></h3>
-      <button type="button" class="bg-transparent border-none text-xl cursor-pointer text-text-secondary"
+    <div class="app-modal-header flex justify-between items-center px-5 py-4 border-b border-border sticky top-0 z-[2] bg-bg-primary cursor-move" data-action="mousedown-><%= controller %>#startDrag">
+      <h3 class="app-modal-title m-0 text-base" data-<%= controller %>-target="modalTitle"><%= title %></h3>
+      <button type="button" class="app-modal-close bg-transparent border-none text-xl cursor-pointer text-text-secondary"
               data-action="click-><%= controller %>#closeModal">&times;</button>
     </div>
 
-    <div class="modal-body px-5 py-5 overflow-y-auto flex-1 min-h-0">
+    <div class="app-modal-body modal-body px-5 py-5 overflow-y-auto flex-1 min-h-0">
       <%= body %>
     </div>
 
-    <div class="flex justify-end gap-2 px-5 py-3 border-t border-border sticky bottom-0 z-[2] bg-bg-primary">
+    <div class="app-modal-footer flex justify-end gap-2 px-5 py-3 border-t border-border sticky bottom-0 z-[2] bg-bg-primary">
       <button type="button" class="btn btn-sm btn-secondary"
               <%= cancel_role_attr&.html_safe %>
               data-action="click-><%= controller %>#closeModal"><%= cancel_text %></button>

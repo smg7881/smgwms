@@ -50,6 +50,7 @@ export default class extends Controller {
     // 신규 생성이고, 최대 개수 제한에 걸린다면 경고 후 중단
     if (!isAlreadyOpen && this.tabIds.length >= this.maxOpenTabsValue) {
       console.warn(`[tabs] maximum open tabs (${this.maxOpenTabsValue}) reached`)
+      alert(`탭메뉴는 ${this.maxOpenTabsValue}개까지 가능합니다.`)
       return
     }
 

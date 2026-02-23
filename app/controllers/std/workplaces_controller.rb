@@ -6,6 +6,47 @@ class Std::WorkplacesController < Std::BaseController
     end
   end
 
+  def create
+    row = StdWorkplace.new(workplace_params)
+
+    if row.save
+      render json: { success: true, message: "작업장이 등록되었습니다.", workplace: workplace_json(row) }
+    else
+      render json: { success: false, errors: row.errors.full_messages }, status: :unprocessable_entity
+    end
+  end
+
+  def update
+    row = find_workplace
+    if row.nil?
+      render json: { success: false, errors: [ "작업장코드를 찾을 수 없습니다: #{params[:id]}" ] }, status: :not_found
+      return
+    end
+
+    update_attrs = workplace_params.to_h
+    update_attrs.delete("workpl_cd")
+
+    if row.update(update_attrs)
+      render json: { success: true, message: "작업장이 수정되었습니다.", workplace: workplace_json(row) }
+    else
+      render json: { success: false, errors: row.errors.full_messages }, status: :unprocessable_entity
+    end
+  end
+
+  def destroy
+    row = find_workplace
+    if row.nil?
+      render json: { success: false, errors: [ "작업장코드를 찾을 수 없습니다: #{params[:id]}" ] }, status: :not_found
+      return
+    end
+
+    if row.update(use_yn_cd: "N")
+      render json: { success: true, message: "작업장이 비활성화되었습니다." }
+    else
+      render json: { success: false, errors: row.errors.full_messages }, status: :unprocessable_entity
+    end
+  end
+
   def batch_save
     operations = batch_save_params
     result = { inserted: 0, updated: 0, deleted: 0 }
@@ -74,7 +115,7 @@ class Std::WorkplacesController < Std::BaseController
 
     def search_params
       params.fetch(:q, {}).permit(
-        :corp_cd, :workpl_cd, :workpl_nm,
+        :corp_cd, :workpl, :workpl_cd, :workpl_nm,
         :workpl_sctn_cd, :use_yn_cd
       )
     end
@@ -84,12 +125,19 @@ class Std::WorkplacesController < Std::BaseController
       if search_corp_cd.present?
         scope = scope.where(corp_cd: search_corp_cd)
       end
-      if search_workpl_cd.present?
-        scope = scope.where("workpl_cd LIKE ?", "%#{search_workpl_cd}%")
+
+      if search_workpl.present?
+        keyword = "%#{search_workpl}%"
+        scope = scope.where("workpl_cd LIKE ? OR workpl_nm LIKE ?", keyword, keyword)
+      else
+        if search_workpl_cd.present?
+          scope = scope.where("workpl_cd LIKE ?", "%#{search_workpl_cd}%")
+        end
+        if search_workpl_nm.present?
+          scope = scope.where("workpl_nm LIKE ?", "%#{search_workpl_nm}%")
+        end
       end
-      if search_workpl_nm.present?
-        scope = scope.where("workpl_nm LIKE ?", "%#{search_workpl_nm}%")
-      end
+
       if search_workpl_sctn_cd.present?
         scope = scope.where(workpl_sctn_cd: search_workpl_sctn_cd)
       end
@@ -101,6 +149,10 @@ class Std::WorkplacesController < Std::BaseController
 
     def search_corp_cd
       search_params[:corp_cd].to_s.strip.upcase.presence
+    end
+
+    def search_workpl
+      search_params[:workpl].to_s.strip.upcase.presence
     end
 
     def search_workpl_cd
@@ -135,12 +187,24 @@ class Std::WorkplacesController < Std::BaseController
       )
     end
 
+    def workplace_params
+      params.require(:workplace).permit(
+        :corp_cd, :workpl_cd, :upper_workpl_cd, :dept_cd, :workpl_nm, :workpl_sctn_cd,
+        :capa_spec_unit_cd, :max_capa, :adpt_capa, :dimem_spec_unit_cd, :dimem, :wm_yn_cd,
+        :bzac_cd, :ctry_cd, :zip_cd, :addr_cd, :dtl_addr_cd, :use_yn_cd, :remk_cd
+      )
+    end
+
     def workplace_params_from_row(row)
       row.permit(
         :corp_cd, :workpl_cd, :upper_workpl_cd, :dept_cd, :workpl_nm, :workpl_sctn_cd,
         :capa_spec_unit_cd, :max_capa, :adpt_capa, :dimem_spec_unit_cd, :dimem, :wm_yn_cd,
         :bzac_cd, :ctry_cd, :zip_cd, :addr_cd, :dtl_addr_cd, :use_yn_cd, :remk_cd
       ).to_h.symbolize_keys
+    end
+
+    def find_workplace
+      StdWorkplace.find_by(workpl_cd: params[:id].to_s.strip.upcase)
     end
 
     def workplace_json(row)

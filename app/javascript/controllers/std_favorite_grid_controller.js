@@ -1,6 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
-import { fetchJson, hasChanges, isApiAlive, postJson, setManagerRowData, getSearchFieldValue } from "controllers/grid/grid_utils"
+import { fetchJson, hasChanges, isApiAlive, postJson, setManagerRowData, getSearchFieldValue, focusFirstRow } from "controllers/grid/grid_utils"
 
 export default class extends Controller {
   static targets = ["groupGrid", "star"]
@@ -123,6 +123,11 @@ export default class extends Controller {
     try {
       const rows = await fetchJson(`${this.groupListUrlValue}?${query}`)
       setManagerRowData(this.groupManager, rows)
+
+      // 데이터가 존재하면 무조건 첫번째 행으로 포커스 및 선택
+      const firstRow = focusFirstRow(this.groupManager.api, { select: true, ensureVisible: true })
+      this._activeGroup = firstRow
+      this.renderStars()
     } catch {
       alert("즐겨찾기 그룹을 불러오지 못했습니다.")
     }
@@ -142,14 +147,32 @@ export default class extends Controller {
   // --- Sitemap Star Methods ---
 
   onGroupSelectionChanged() {
+    const selectedRows = this.groupManager?.api?.getSelectedRows() || []
+    if (selectedRows.length > 0 && !this._activeGroup) {
+      this._activeGroup = selectedRows[0]
+    }
     this.renderStars()
   }
 
-  onGroupRowClicked() {
+  onGroupRowClicked(event) {
+    if (event.detail && event.detail.data) {
+      this._activeGroup = event.detail.data
+    }
+    this.renderStars()
+  }
+
+  onGroupRowFocused(event) {
+    if (event.detail && event.detail.data) {
+      this._activeGroup = event.detail.data
+    }
     this.renderStars()
   }
 
   get selectedGroup() {
+    if (this._activeGroup && !this._activeGroup.__is_deleted) {
+      return this._activeGroup
+    }
+
     const selectedRows = this.groupManager?.api?.getSelectedRows() || []
     return selectedRows.length > 0 ? selectedRows[0] : null
   }

@@ -113,6 +113,12 @@ export default class extends Controller {
       // 셀 포커스 이동 시 선택 하이라이팅을 이동시키기 위한 핸들러 연동
       onCellFocused: (event) => this.handleCellFocused(event),
       onCellKeyDown: (event) => this.handleCellKeyDown(event),
+      onRowClicked: (event) => {
+        this.element.dispatchEvent(new CustomEvent("ag-grid:rowClicked", { bubbles: true, detail: event }))
+      },
+      onSelectionChanged: (event) => {
+        this.element.dispatchEvent(new CustomEvent("ag-grid:selectionChanged", { bubbles: true, detail: event }))
+      },
       rowData: [],
       // 데이터가 0건일 때 중앙에 출력될 HTML 템플릿 처리 
       overlayNoRowsTemplate: `<span class="ag-overlay-no-rows-center">${AG_GRID_LOCALE_KO.noRowsToShow}</span>`,
@@ -209,11 +215,21 @@ export default class extends Controller {
   buildColumnDefs() {
     return this.columnsValue.map((column) => {
       const def = { ...column }
+
+      // Move AG Grid invalid custom properties (lookup_*) into `colDef.context`
+      def.context = def.context || {}
+      Object.keys(def).forEach(key => {
+        if (key.startsWith('lookup_')) {
+          def.context[key] = def[key]
+          delete def[key]
+        }
+      })
+
       const hasLookupPopup = this.isLookupColumn(def)
 
       if (hasLookupPopup) {
-        if (!def.lookup_name_field && def.field) {
-          def.lookup_name_field = def.field
+        if (!def.context.lookup_name_field && def.field) {
+          def.context.lookup_name_field = def.field
         }
         if (!def.cellRenderer) {
           def.cellRenderer = "lookupPopupCellRenderer"
@@ -250,8 +266,8 @@ export default class extends Controller {
       floatingFilter: false,      // 헤더 아래 인풋 박스형 필터 표시여부
       sortable: true,             // 컬럼 내용 클릭 시 정렬 (ASC/DESC/NONE)
       resizable: true,            // 드래그를 통해 너비 조절 기능
-      suppressHeaderMenuButton: false,
-      suppressMenuHide: true      // 헤더 메뉴(햄버거 버튼)가 호버 없어도 고정 표시
+      // AG Grid v35에서는 suppressMenuHide가 제거됨. 메뉴 버튼은 suppressHeaderMenuButton으로 제어.
+      suppressHeaderMenuButton: false
     }
   }
 
@@ -414,6 +430,12 @@ export default class extends Controller {
       // 행 다시 그리기 => getRowClass() 함수가 호출됨
       this.gridApi.redrawRows({ rowNodes })
     }
+
+    // 포커스된 행이 변경되었으므로 이벤트를 방출하여 외부에서 알 수 있게 함
+    this.element.dispatchEvent(new CustomEvent("ag-grid:rowFocused", {
+      bubbles: true,
+      detail: { node: nextFocusedNode, data: nextFocusedNode.data, rowIndex: event.rowIndex }
+    }))
   }
 
   handleCellKeyDown(event) {
@@ -460,11 +482,12 @@ export default class extends Controller {
     if (!rowNode?.data) return
     if (this.lookupPopupOpening) return
 
-    const popupType = colDef.lookup_popup_type
-    const popupUrl = colDef.lookup_popup_url
-    const popupTitle = colDef.lookup_popup_title
-    const nameField = colDef.lookup_name_field || colDef.field
-    const codeField = colDef.lookup_code_field
+    const ctx = colDef.context || {}
+    const popupType = ctx.lookup_popup_type
+    const popupUrl = ctx.lookup_popup_url
+    const popupTitle = ctx.lookup_popup_title
+    const nameField = ctx.lookup_name_field || colDef.field
+    const codeField = ctx.lookup_code_field
     const seedKeyword = String(keyword ?? rowNode.data?.[nameField] ?? "").trim()
 
     this.lookupPopupOpening = true
@@ -518,7 +541,7 @@ export default class extends Controller {
   }
 
   isLookupColumn(colDef) {
-    return Boolean(colDef?.lookup_popup_type)
+    return Boolean(colDef?.context?.lookup_popup_type)
   }
 
   // 현재 이벤트 대상이 '체크박스 선택 전용' 컬럼인지 판별하기 위한 헬퍼 추론 함수

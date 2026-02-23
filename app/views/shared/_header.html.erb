@@ -42,17 +42,17 @@
       <button class="inline-flex items-center justify-center bg-transparent border border-border rounded-md px-2 py-1.5 cursor-pointer text-text-secondary leading-none hover:bg-bg-hover transition-colors duration-150" type="button" aria-label="즐겨찾기" data-action="click->header-favorites#toggle">
         <%= lucide_icon("star", css_class: "w-4 h-4") %>
       </button>
-      <div data-header-favorites-target="popup" class="hidden absolute top-full right-0 mt-2 w-[550px] bg-bg-primary border border-border rounded-lg shadow-xl z-50 overflow-hidden flex flex-col origin-top-right">
-        <div class="px-5 py-3 border-b border-border bg-bg-secondary flex items-center justify-between gap-4">
+      <div data-header-favorites-target="popup" class="hidden fixed bg-bg-primary border border-border rounded-lg shadow-xl z-[1000] overflow-hidden flex flex-col" style="top: calc(var(--spacing-header) + var(--spacing-tab-bar) + 8px); right: 16px; width: min(300px, calc(100vw - 32px)); max-height: calc(100vh - var(--spacing-header) - var(--spacing-tab-bar) - 24px);">
+        <div class="px-5 py-3 border-b border-border bg-bg-secondary flex items-center gap-3">
           <div class="flex items-center gap-2">
             <%= lucide_icon("star", css_class: "w-4 h-4 text-blue-500 fill-blue-500") %>
             <span class="text-sm font-bold text-text-primary shrink-0">즐겨찾기 사이트맵</span>
           </div>
-          <select class="w-48 bg-bg-primary border border-border text-text-primary rounded p-1.5 outline-none text-[13px]" data-header-favorites-target="groupSelect" data-action="change->header-favorites#renderMenus">
+          <select class="w-52 bg-bg-primary border border-border text-text-primary rounded p-1.5 outline-none text-[13px]" data-header-favorites-target="groupSelect" data-action="change->header-favorites#renderMenus">
             <option value="">그룹 선택</option>
           </select>
         </div>
-        <div class="max-h-[500px] overflow-y-auto p-5 text-sm text-text-primary" data-header-favorites-target="menuList">
+        <div class="flex-1 min-h-0 overflow-y-auto p-5 text-sm text-text-primary" data-header-favorites-target="menuList">
           <!-- Menus will be rendered here -->
         </div>
       </div>

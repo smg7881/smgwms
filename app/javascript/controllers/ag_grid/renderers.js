@@ -106,6 +106,29 @@ export const RENDERER_REGISTRY = {
     return container
   },
 
+  // [STD 작업장 관리 액션 버튼 렌더러]
+  stdWorkplaceActionCellRenderer: (params) => {
+    const container = document.createElement("div")
+    container.classList.add("grid-action-buttons")
+
+    container.appendChild(createActionButton({
+      text: "✎",
+      title: "수정",
+      onClick: () => emit(container, "std-workplace-crud:edit", { workplaceData: params.data })
+    }))
+    container.appendChild(createActionButton({
+      text: "X",
+      title: "삭제",
+      classes: ["grid-action-btn--danger"],
+      onClick: () => emit(container, "std-workplace-crud:delete", {
+        id: params.data.id || params.data.workpl_cd,
+        workplNm: params.data.workpl_nm || params.data.workpl_cd
+      })
+    }))
+
+    return container
+  },
+
   // [부서 트리형 레이블 렌더러]
   // 부서 계층에 따라 동일하게 레벨당 들여쓰기를 처리하는 렌더러
   deptTreeCellRenderer: (params) => {

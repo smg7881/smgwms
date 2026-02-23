@@ -44,6 +44,7 @@ const CONTROLLERS = [
   ["lucide", "controllers/lucide_controller"],
   ["client-grid", "controllers/client_grid_controller"],
   ["std-workplace-grid", "controllers/std_workplace_grid_controller"],
+  ["std-workplace-crud", "controllers/std_workplace_crud_controller"],
   ["std-region-grid", "controllers/std_region_grid_controller"],
   ["std-region-zip-grid", "controllers/std_region_zip_grid_controller"],
   ["std-country-grid", "controllers/std_country_grid_controller"],
@@ -64,4 +65,3 @@ const CONTROLLERS = [
 CONTROLLERS.forEach(([identifier, modulePath]) => {
   registerController(identifier, modulePath)
 })
-

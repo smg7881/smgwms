@@ -61,6 +61,21 @@ class SearchPopupsControllerTest < ActionDispatch::IntegrationTest
       rpt_yn_cd: "Y",
       use_yn_cd: "Y"
     )
+
+    AdmDept.create!(
+      dept_code: "ZDPT01",
+      dept_nm: "물류부",
+      dept_order: 1,
+      use_yn: "Y"
+    )
+
+    StdZipCode.create!(
+      ctry_cd: "KR",
+      zipcd: "99123",
+      seq_no: 1,
+      zipaddr: "서울특별시 강남구 테헤란로",
+      use_yn_cd: "Y"
+    )
   end
 
   test "country popup html renders common popup layout" do
@@ -133,5 +148,25 @@ class SearchPopupsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "테스트법인 본사", rows.first["corp_nm"]
     assert_equal "KR", rows.first["ctry"]
     assert_equal "111-11-11111", rows.first["biz_no"]
+  end
+
+  test "dept popup returns active departments" do
+    get search_popup_path("dept"), params: { format: :json, q: "물류" }
+
+    assert_response :success
+    rows = JSON.parse(response.body)
+    assert_equal 1, rows.length
+    assert_equal "ZDPT01", rows.first["code"]
+    assert_equal "물류부", rows.first["name"]
+  end
+
+  test "zipcode popup returns zipcode and address" do
+    get search_popup_path("zipcode"), params: { format: :json, q: "99123" }
+
+    assert_response :success
+    rows = JSON.parse(response.body)
+    assert_equal 1, rows.length
+    assert_equal "99123", rows.first["code"]
+    assert_includes rows.first["name"], "강남구"
   end
 end

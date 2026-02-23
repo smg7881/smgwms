@@ -1,6 +1,7 @@
-<div data-controller="std-workplace-grid"
-     data-action="ag-grid:ready->std-workplace-grid#registerGrid"
-     data-std-workplace-grid-batch-url-value="<%= batch_save_url %>">
+<div data-controller="std-workplace-crud"
+     data-std-workplace-crud-create-url-value="<%= create_url %>"
+     data-std-workplace-crud-update-url-value="<%= update_url %>"
+     data-std-workplace-crud-delete-url-value="<%= delete_url %>">
   <%= render Ui::SearchFormComponent.new(
     url: create_url,
     fields: search_fields,
@@ -16,9 +17,7 @@
     </h3>
     <%= render Ui::GridToolbarComponent.new(
       buttons: [
-        { label: "행추가", class: "btn btn-sm btn-primary", action: "click->std-workplace-grid#addRow" },
-        { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->std-workplace-grid#deleteRows" },
-        { label: "저장", class: "btn btn-sm btn-success", action: "click->std-workplace-grid#saveRows" }
+        { label: "작업장관리 추가", class: "btn btn-sm btn-primary", action: "click->std-workplace-crud#openCreate" }
       ]
     ) %>
   </div>
@@ -28,8 +27,37 @@
     url: grid_url,
     height: "calc(100vh - 370px)",
     page_size: 20,
-    row_selection: "multiple",
-    grid_id: "std-workplace",
-    data: { std_workplace_grid_target: "grid" }
+    grid_id: "std-workplace"
   ) %>
+
+  <%= render Ui::ModalShellComponent.new(
+    controller: "std-workplace-crud",
+    title: "작업장관리 추가",
+    save_form_id: "std-workplace-crud-form",
+    cancel_role: "cancel",
+    save_role: "save",
+    width: "900px"
+  ) do |modal| %>
+    <% modal.with_body do %>
+      <input type="hidden" data-std-workplace-crud-target="fieldId" />
+
+      <%= render Ui::ResourceFormComponent.new(
+        model: StdWorkplace.new,
+        url: "#",
+        cols: 2,
+        show_buttons: false,
+        target_controller: "std_workplace_crud",
+        fields: form_fields,
+        form_data: {
+          std_workplace_crud_target: "form",
+          action: "submit->resource-form#submit submit->std-workplace-crud#submit"
+        },
+        form_html: {
+          id: "std-workplace-crud-form",
+          novalidate: true,
+          autocomplete: "off"
+        }
+      ) %>
+    <% end %>
+  <% end %>
 </div>

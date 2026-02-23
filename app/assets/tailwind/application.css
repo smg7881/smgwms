@@ -377,6 +377,35 @@ a:hover {
   @apply flex-1 border-b border-dashed border-border;
 }
 
+/* Shared modal shell */
+.app-modal-overlay {
+  @apply fixed inset-0 bg-black/50 flex items-center justify-center z-[1000];
+}
+
+.app-modal-shell {
+  @apply bg-bg-primary border border-border rounded-lg max-w-[calc(100vw-32px)] max-h-[90vh] flex flex-col overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.15)];
+}
+
+.app-modal-header {
+  @apply flex justify-between items-center px-5 py-4 border-b border-border sticky top-0 z-[2] bg-bg-primary;
+}
+
+.app-modal-title {
+  @apply m-0 text-base text-text-primary;
+}
+
+.app-modal-close {
+  @apply bg-transparent border-none text-xl cursor-pointer text-text-secondary;
+}
+
+.app-modal-body {
+  @apply px-5 py-5 overflow-y-auto flex-1 min-h-0;
+}
+
+.app-modal-footer {
+  @apply flex justify-end gap-2 px-5 py-3 border-t border-border sticky bottom-0 z-[2] bg-bg-primary;
+}
+
 /* Lookup popup modal */
 .form-grid-modal {
   border: none;

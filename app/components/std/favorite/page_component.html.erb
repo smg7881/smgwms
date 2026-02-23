@@ -34,7 +34,7 @@
       page_size: 20,
       row_selection: "multiple",
       grid_id: "std-favorite-group",
-      data: { std_favorite_grid_target: "groupGrid", action: "ag-grid:rowClicked->std-favorite-grid#onGroupRowClicked ag-grid:selectionChanged->std-favorite-grid#onGroupSelectionChanged" }
+      data: { std_favorite_grid_target: "groupGrid", action: "ag-grid:rowClicked->std-favorite-grid#onGroupRowClicked ag-grid:rowFocused->std-favorite-grid#onGroupRowFocused ag-grid:selectionChanged->std-favorite-grid#onGroupSelectionChanged" }
     ) %>
   </section>
 

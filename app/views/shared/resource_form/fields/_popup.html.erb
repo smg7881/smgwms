@@ -1,0 +1,67 @@
+<%# app/views/shared/resource_form/fields/_popup.html.erb %>
+<%
+  code_field = field[:code_field].to_s
+  error_message = model.errors[code_field.to_sym].first || model.errors[field[:field].to_sym].first
+
+  display_width = field[:display_width].presence
+  code_width = field[:code_width].presence || "120px"
+  button_width = field[:button_width].presence || "40px"
+
+  display_style = if display_width.present?
+    "flex: 0 0 #{display_width}; max-width: #{display_width}; min-width: 0;"
+  else
+    "flex: 1 1 auto; min-width: 0;"
+  end
+  code_style = "flex: 0 0 #{code_width}; max-width: #{code_width};"
+  button_style = "width: #{button_width}; min-width: #{button_width};"
+
+  code_value = begin
+    model.public_send(code_field)
+  rescue StandardError
+    nil
+  end
+%>
+<div class="flex flex-col gap-1 col-span-24 min-w-0 <%= span_classes_for(field, cols: cols) %>"
+     data-resource-form-target="fieldGroup"
+     data-field-name="<%= code_field %>"
+     data-controller="search-popup"
+     data-search-popup-type-value="<%= field[:popup_type] %>"
+     data-search-popup-title-value="<%= resolve_label(field) %> 조회">
+  <label class="text-sm font-medium text-text-secondary">
+    <%= resolve_label(field) %>
+    <% if field[:required] %><span class="text-accent-rose ml-0.5 font-semibold">*</span><% end %>
+  </label>
+  <div class="flex flex-nowrap items-center gap-1 w-full min-w-0">
+    <input type="hidden"
+           id="<%= "#{model.model_name.param_key}_#{code_field}" %>"
+           name="<%= "#{model.model_name.param_key}[#{code_field}]" %>"
+           value="<%= code_value %>"
+           data-resource-form-target="input"
+           data-search-popup-target="code"
+           <%= "required" if field[:required] %>
+           <%= "data-#{local_assigns[:target_controller].to_s.dasherize}-target=#{field[:target]}".html_safe if field[:target].present? && local_assigns[:target_controller].present? %>>
+    <input type="text"
+           id="<%= "#{model.model_name.param_key}_#{field[:field]}" %>"
+           value="<%= field[:value].to_s %>"
+           class="form-grid-input <%= 'rf-field-error' if error_message.present? %>"
+           style="<%= display_style %>"
+           data-search-popup-target="display"
+           data-action="input->search-popup#onDisplayInput blur->resource-form#validateField"
+           placeholder="<%= resolve_placeholder(field) || "#{resolve_label(field)} 선택" %>">
+    <input type="text"
+           value="<%= code_value %>"
+           class="form-grid-input"
+           style="<%= code_style %>"
+           aria-label="<%= resolve_label(field) %> 코드"
+           disabled
+           data-search-popup-target="codeDisplay">
+    <button type="button"
+            class="inline-flex items-center justify-center h-9 border border-border bg-bg-tertiary text-text-primary rounded-md cursor-pointer hover:bg-bg-hover"
+            style="<%= button_style %>"
+            aria-label="<%= resolve_label(field) %> 찾기"
+            data-action="search-popup#open">
+      <%= lucide_icon("search", css_class: "w-4 h-4") %>
+    </button>
+  </div>
+  <span class="rf-error-msg <%= 'invisible' if error_message.blank? %>"><%= error_message.presence || " " %></span>
+</div>

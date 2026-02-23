@@ -121,14 +121,6 @@
 <div class="p-4"
      data-controller="search-popup-grid"
      data-action="ag-grid:ready->search-popup-grid#registerGrid search-popup-grid:select->search-popup-grid#selectFromRenderer">
-  <div class="flex items-center justify-between mb-3">
-    <h3 class="text-sm font-semibold text-text-primary"><%= popup_title %></h3>
-    <button type="button"
-            class="btn btn-sm btn-secondary"
-            data-action="search-popup-grid#closeModal">
-      닫기
-    </button>
-  </div>
 
   <%= render Ui::ResourceFormComponent.new(
     model: @popup_form,
@@ -166,12 +158,5 @@
     }
   ) %>
 
-  <div class="flex justify-end mt-3">
-    <button type="button"
-            class="btn btn-sm btn-secondary"
-            data-action="search-popup-grid#closeModal">
-      닫기
-    </button>
-  </div>
 </div>
 </turbo-frame>

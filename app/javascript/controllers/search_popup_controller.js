@@ -15,6 +15,12 @@ export default class extends Controller {
       event.preventDefault()
     }
 
+    const directSelection = await this.fetchSingleMatch()
+    if (directSelection) {
+      this.select(directSelection)
+      return
+    }
+
     let selection = null
     try {
       selection = await openLookupPopup({
@@ -46,6 +52,39 @@ export default class extends Controller {
     }
 
     window.open(url.toString(), "lookup_popup_window", "width=980,height=700,left=60,top=40,resizable=yes,scrollbars=yes")
+  }
+
+  async fetchSingleMatch() {
+    const popupType = String(this.typeValue || "").trim()
+    const keyword = this.seedKeyword
+    if (!popupType || !keyword) return null
+
+    const baseUrl = String(this.urlValue || "").trim() || `/search_popups/${encodeURIComponent(popupType)}`
+    const url = new URL(baseUrl, window.location.origin)
+    url.searchParams.set("q", keyword)
+    url.searchParams.set("format", "json")
+
+    try {
+      const response = await fetch(url.toString(), { headers: { Accept: "application/json" } })
+      if (!response.ok) return null
+
+      const rows = await response.json()
+      if (!Array.isArray(rows) || rows.length !== 1) return null
+
+      const row = rows[0] || {}
+      const code = String(row.code ?? row.corp_cd ?? "").trim()
+      const name = String(row.name ?? row.corp_nm ?? row.display ?? "").trim()
+      if (!code && !name) return null
+
+      return {
+        ...row,
+        code,
+        name,
+        display: name
+      }
+    } catch {
+      return null
+    }
   }
 
   onDisplayInput() {

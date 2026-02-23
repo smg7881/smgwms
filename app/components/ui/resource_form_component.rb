@@ -12,10 +12,12 @@ class Ui::ResourceFormComponent < ApplicationComponent
     accept multiple max_files max_size_mb
     existing_target selected_target
     disable_file_attachments
+    popup_type code_field
+    display_width code_width button_width
   ].freeze
 
   VALID_FIELD_NAME = /\A[a-zA-Z0-9_]+\z/
-  FIELD_TYPES = %w[input number select date_picker textarea rich_textarea checkbox radio switch photo multi_file].freeze
+  FIELD_TYPES = %w[input number select date_picker textarea rich_textarea checkbox radio switch photo multi_file popup].freeze
 
   def initialize(model:, fields:, url: nil, method: nil, cols: 3,
                  show_buttons: true, submit_label: "저장",
@@ -79,6 +81,16 @@ class Ui::ResourceFormComponent < ApplicationComponent
 
         sanitized = field.slice(*ALLOWED_FIELD_KEYS)
         sanitized[:type] = normalize_resource_field_type(sanitized[:type])
+
+        if sanitized[:type] == "popup"
+          if sanitized[:popup_type].blank?
+            raise ArgumentError, "popup 필드에는 popup_type이 필요합니다 (field: #{field[:field]})"
+          end
+          if sanitized[:code_field].blank?
+            raise ArgumentError, "popup 필드에는 code_field가 필요합니다 (field: #{field[:field]})"
+          end
+          validate_resource_field_name!(sanitized[:code_field])
+        end
 
         rejected = field.keys - ALLOWED_FIELD_KEYS
         if rejected.any?

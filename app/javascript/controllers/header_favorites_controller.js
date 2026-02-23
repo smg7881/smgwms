@@ -33,9 +33,11 @@ export default class extends Controller {
     }
 
     handleClickOutside(event) {
-        if (!this.element.contains(event.target)) {
-            this.popupTarget.classList.add("hidden")
+        // Don't close if clicking the toggle button or inside the popup itself
+        if (this.element.contains(event.target)) {
+            return
         }
+        this.popupTarget.classList.add("hidden")
     }
 
     async loadData() {
@@ -87,9 +89,9 @@ export default class extends Controller {
             return
         }
 
-        // Render as a grid mega-menu (Sitemap style)
+        // Render as a grid mega-menu (Sitemap style) - Force 3 columns natively
         const listWrapper = document.createElement("div")
-        listWrapper.className = "grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-6"
+        listWrapper.className = "grid grid-cols-3 gap-x-8 gap-y-6"
 
         // Group the favorites by parent menu name
         const groupedFavs = groupFavs.reduce((acc, fav) => {
@@ -140,6 +142,10 @@ export default class extends Controller {
 
         // Try to trigger the sidebar click if element exists
         const sidebarBtn = document.querySelector(`[data-tab-id="${tabId}"]`)
+
+        // Hide popup first for better UX
+        this.popupTarget.classList.add("hidden")
+
         if (sidebarBtn) {
             sidebarBtn.click()
         } else if (menuUrl) {
@@ -167,7 +173,5 @@ export default class extends Controller {
             }
         }
 
-        // Close the popup
-        this.popupTarget.classList.add("hidden")
     }
 }
