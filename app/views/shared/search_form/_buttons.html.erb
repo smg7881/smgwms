@@ -1,17 +1,18 @@
 <%# app/views/shared/search_form/_buttons.html.erb %>
-<div class="flex justify-end gap-2 mt-2 col-[1/-1] min-w-0" data-search-form-target="buttonGroup">
-  <button type="button" class="btn btn-secondary" data-action="search-form#reset" data-search-form-target="resetBtn">
+<div class="flex items-end justify-end gap-2 min-w-0" data-search-form-target="buttonGroup">
+  <button type="button" class="btn btn-secondary btn-sm" data-action="search-form#reset" data-search-form-target="resetBtn">
     초기화
   </button>
-  <button type="submit" class="btn btn-primary" data-search-form-target="searchBtn">
+  <button type="submit" class="btn btn-primary btn-sm" data-search-form-target="searchBtn">
     검색
   </button>
 
-  <button type="button" class="btn btn-text"
+  <button type="button" class="btn btn-text btn-sm"
           data-action="search-form#toggleCollapse"
           data-search-form-target="collapseBtn"
           aria-expanded="false">
-    <span data-search-form-target="collapseBtnText">펼치기</span>
-    <span data-search-form-target="collapseBtnIcon">▼</span>
+    <span data-search-form-target="collapseBtnIcon">
+      <i data-lucide="chevron-down" class="w-4 h-4"></i>
+    </span>
   </button>
 </div>

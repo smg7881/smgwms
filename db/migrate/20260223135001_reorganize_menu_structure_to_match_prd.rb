@@ -23,7 +23,7 @@ class ReorganizeMenuStructureToMatchPrd < ActiveRecord::Migration[8.0]
 
       # Level 3 under SALES_CONTRACT
       { cd: "SALES_CONTRACT_BASE", nm: "계약기초관리", lv: 3, parent: "SALES_CONTRACT" },
-      { cd: "SALES_SELLBUY_CONTRACT", nm: "매출입계약관리", lv: 3, parent: "SALES_CONTRACT" }
+      { cd: "SALES_SB_CONTRACT", nm: "매출입계약관리", lv: 3, parent: "SALES_CONTRACT" }
     ]
 
     folders.each_with_index do |f, i|
@@ -41,7 +41,7 @@ class ReorganizeMenuStructureToMatchPrd < ActiveRecord::Migration[8.0]
     mappings = {
       # STD_WORK_BASE (Level 4)
       "STD_WORK_ROUTING" => { parent: "STD_WORK_BASE", nm: "기준작업경로관리", type: "MENU" },
-      "STD_WORK_ROUTING_STEP" => { parent: "STD_WORK_BASE", nm: "기준작업경로별작업단계관리", type: "MENU" },
+      "STD_WRK_RTING_STEP" => { parent: "STD_WORK_BASE", nm: "기준작업경로별작업단계관리", type: "MENU" },
       "STD_ORDER_TYPE" => { parent: "STD_WORK_BASE", nm: "오더유형관리", type: "MENU" },
 
       # STD_CODE_BIZ (Level 4)
@@ -78,14 +78,14 @@ class ReorganizeMenuStructureToMatchPrd < ActiveRecord::Migration[8.0]
 
       # SALES_CLIENT (Level 3)
       "STD_CLIENT" => { parent: "SALES_CLIENT", nm: "거래처관리", type: "MENU" },
-      "SALES_CUSTOMER_CLIENT" => { parent: "SALES_CLIENT", nm: "고객거래처관리", type: "MENU" },
+      "SALES_CUST_CLIENT" => { parent: "SALES_CLIENT", nm: "고객거래처관리", type: "MENU" },
 
       # SALES_CONTRACT_BASE (Level 4)
       "STD_BIZ_CERT" => { parent: "SALES_CONTRACT_BASE", nm: "사업자등록증관리", type: "MENU" },
 
-      # SALES_SELLBUY_CONTRACT (Level 4)
-      "SALES_SELL_CONTRACT" => { parent: "SALES_SELLBUY_CONTRACT", nm: "매출계약관리", type: "MENU" },
-      "STD_PURCHASE_CONTRACT" => { parent: "SALES_SELLBUY_CONTRACT", nm: "매입계약관리", type: "MENU" }
+      # SALES_SB_CONTRACT (Level 4)
+      "SALES_SELL_CONTRACT" => { parent: "SALES_SB_CONTRACT", nm: "매출계약관리", type: "MENU" },
+      "STD_PUR_CONTRACT" => { parent: "SALES_SB_CONTRACT", nm: "매입계약관리", type: "MENU" }
     }
 
     mappings.each_with_index do |(cd, info), index|

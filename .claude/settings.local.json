@@ -56,7 +56,9 @@
       "mcp__playwright__browser_wait_for",
       "mcp__playwright__browser_console_messages",
       "mcp__playwright__browser_evaluate",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "mcp__serena__find_symbol",
+      "mcp__chrome-devtools__list_console_messages"
     ]
   }
 }

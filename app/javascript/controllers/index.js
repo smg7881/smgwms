@@ -3,12 +3,14 @@ import { application } from "controllers/application"
 import SidebarController from "controllers/sidebar_controller"
 import TabsController from "controllers/tabs_controller"
 import ResourceFormController from "controllers/resource_form_controller"
+import SearchFormController from "controllers/search_form_controller"
 import SearchPopupController from "controllers/search_popup_controller"
 import SearchPopupGridController from "controllers/search_popup_grid_controller"
 
 application.register("sidebar", SidebarController)
 application.register("tabs", TabsController)
 application.register("resource-form", ResourceFormController)
+application.register("search-form", SearchFormController)
 application.register("search-popup", SearchPopupController)
 application.register("search-popup-grid", SearchPopupGridController)
 
