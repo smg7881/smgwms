@@ -47,12 +47,13 @@ class Std::SellContract::PageComponent < Std::BasePageComponent
           include_blank: false
         },
         { field: "sell_ctrt_no", type: "input", label: "매출계약번호", placeholder: "매출계약번호 검색" },
-        { field: "inq_prid_from", type: "date_picker", label: "조회시작일" },
-        { field: "inq_prid_to", type: "date_picker", label: "조회종료일" },
+        { field: "inq_prid_from", type: "date_picker", label: "조회시작일", span: "m:5" },
+        { field: "inq_prid_to", type: "date_picker", label: "조회종료일", span: "m:5" },
         {
           field: "use_yn_cd",
           type: "select",
           label: "사용여부",
+          span: "m:4",
           options: common_code_options("CMM_USE_YN", include_all: true, all_label: "전체"),
           include_blank: false
         }
