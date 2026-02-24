@@ -1,14 +1,11 @@
 <div data-controller="om-customer-system-config-grid"
      data-action="ag-grid:ready->om-customer-system-config-grid#registerGrid"
      data-om-customer-system-config-grid-batch-url-value="<%= batch_save_url %>">
-  <%= render Ui::ResourceFormComponent.new(
-    model: search_form,
-    fields: search_fields,
+  <%= render Ui::SearchFormComponent.new(
     url: create_url,
-    method: :get,
+    fields: search_fields,
     cols: 4,
-    submit_label: "조회",
-    form_html: { class: "om-customer-system-config-search", novalidate: true }
+    enable_collapse: true
   ) %>
 
   <div class="flex items-center justify-between gap-3 mb-3 mt-2">

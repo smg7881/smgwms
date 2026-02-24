@@ -1,14 +1,11 @@
 <div data-controller="om-order-manual-completion"
      data-om-order-manual-completion-complete-url-value="<%= complete_path %>"
      data-om-order-manual-completion-details-url-template-value="<%= details_path_template %>">
-  <%= render Ui::ResourceFormComponent.new(
-    model: search_form,
-    fields: search_fields,
+  <%= render Ui::SearchFormComponent.new(
     url: create_url,
-    method: :get,
+    fields: search_fields,
     cols: 5,
-    submit_label: "조회",
-    form_html: { class: "om-order-manual-completion-search", novalidate: true }
+    enable_collapse: true
   ) %>
 
   <div class="flex items-center justify-between gap-3 mb-3 mt-2">

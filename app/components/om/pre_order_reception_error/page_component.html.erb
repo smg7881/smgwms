@@ -3,14 +3,11 @@
      data-om-pre-order-reception-error-items-url-value="<%= items_url %>"
      data-om-pre-order-reception-error-download-url-value="<%= download_template_url %>"
      data-om-pre-order-reception-error-upload-url-value="<%= upload_template_url %>">
-  <%= render Ui::ResourceFormComponent.new(
-    model: search_form,
-    fields: search_fields,
+  <%= render Ui::SearchFormComponent.new(
     url: create_url,
-    method: :get,
+    fields: search_fields,
     cols: 4,
-    submit_label: "조회",
-    form_html: { class: "om-pre-order-reception-error-search", novalidate: true }
+    enable_collapse: true
   ) %>
 
   <section class="mb-5">

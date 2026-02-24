@@ -1,24 +1,15 @@
 <%= helpers.system_page_container do %>
   <%= helpers.system_page_header("오더별작업진행조회") %>
 
-  <div data-controller="om-order-work-progress">
+  <div data-controller="om-order-work-progress"
+       data-action="search-form:success@window->om-order-work-progress#loadData">
     
     <!-- 검색조건 영역 -->
-    <%= render Ui::ResourceFormComponent.new(
-      model: search_form,
-      fields: search_fields,
+    <%= render Ui::SearchFormComponent.new(
       url: collection_path(format: :json),
-      method: :get,
+      fields: search_fields,
       cols: 4,
-      submit_label: "조회",
-      form_html: { 
-        class: "search-form", 
-        novalidate: true, 
-        data: { 
-          controller: "search-form", 
-          action: "submit->search-form#search search-form:success@window->om-order-work-progress#loadData" 
-        } 
-      }
+      enable_collapse: true
     ) %>
 
     <!-- 마스터 정보 영역 -->

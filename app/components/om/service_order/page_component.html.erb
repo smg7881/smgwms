@@ -6,21 +6,11 @@
     <!-- 검색 조건 및 상단 툴바 영역 -->
     <div class="flex justify-between items-end mb-4">
       <!-- 좌측 검색 영역 -->
-      <%= render Ui::ResourceFormComponent.new(
-        model: search_form,
-        fields: search_fields,
+      <%= render Ui::SearchFormComponent.new(
         url: collection_path(format: :json),
-        method: :get,
+        fields: search_fields,
         cols: 3,
-        submit_label: "조회",
-        form_html: { 
-          class: "search-form", 
-          novalidate: true, 
-          data: { 
-            controller: "search-form", 
-            action: "submit->search-form#search" 
-          } 
-        }
+        enable_collapse: true
       ) %>
 
       <!-- 우측 툴바 버튼 영역 -->

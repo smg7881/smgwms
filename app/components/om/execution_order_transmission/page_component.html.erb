@@ -6,21 +6,11 @@
        data-controller="om-execution-order-transmission-grid"
        data-om-execution-order-transmission-grid-retransmit-url-value="<%= retransmit_path %>">
     
-    <%= render Ui::ResourceFormComponent.new(
-      model: search_form,
-      fields: search_fields,
+    <%= render Ui::SearchFormComponent.new(
       url: collection_path(format: :json),
-      method: :get,
+      fields: search_fields,
       cols: 4,
-      submit_label: "조회",
-      form_html: { 
-        class: "search-form", 
-        novalidate: true, 
-        data: { 
-          controller: "search-form", 
-          action: "submit->search-form#search" 
-        } 
-      }
+      enable_collapse: true
     ) %>
 
     <div class="flex items-center justify-between gap-3 mb-3 mt-2">

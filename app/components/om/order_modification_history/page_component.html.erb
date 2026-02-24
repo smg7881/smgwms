@@ -1,24 +1,15 @@
 <%= helpers.system_page_container do %>
   <%= helpers.system_page_header("오더수정이력조회") %>
 
-  <div data-controller="om-order-modification-history">
+  <div data-controller="om-order-modification-history"
+       data-action="search-form:success@window->om-order-modification-history#loadMasterData">
     
     <!-- 검색조건 영역: 오더번호 및 이력순번 -->
-    <%= render Ui::ResourceFormComponent.new(
-      model: search_form,
-      fields: search_fields,
+    <%= render Ui::SearchFormComponent.new(
       url: collection_path(format: :json),
-      method: :get,
+      fields: search_fields,
       cols: 4,
-      submit_label: "조회",
-      form_html: { 
-        class: "search-form", 
-        novalidate: true, 
-        data: { 
-          controller: "search-form", 
-          action: "submit->search-form#search search-form:success@window->om-order-modification-history#loadMasterData" 
-        } 
-      }
+      enable_collapse: true
     ) %>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full min-h-[500px]">

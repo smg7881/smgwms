@@ -2,21 +2,11 @@
   <%= helpers.system_page_header("대기오더관리") %>
 
   <!-- 검색조건 (resource_form 활용) -->
-  <%= render Ui::ResourceFormComponent.new(
-    model: search_form,
-    fields: search_fields,
+  <%= render Ui::SearchFormComponent.new(
     url: collection_path(format: :json),
-    method: :get,
+    fields: search_fields,
     cols: 4,
-    submit_label: "조회",
-    form_html: { 
-      class: "search-form", 
-      novalidate: true, 
-      data: { 
-        controller: "search-form", 
-        action: "submit->search-form#search" 
-      } 
-    }
+    enable_collapse: true
   ) %>
 
   <!-- 에이지 그리드 -->

@@ -2,14 +2,11 @@
      data-action="ag-grid:ready->om-pre-order-reception#registerGrid ag-grid:selectionChanged->om-pre-order-reception#handleSelectionChanged"
      data-om-pre-order-reception-create-url-value="<%= create_order_url %>"
      data-om-pre-order-reception-items-url-value="<%= items_url %>">
-  <%= render Ui::ResourceFormComponent.new(
-    model: search_form,
-    fields: search_fields,
+  <%= render Ui::SearchFormComponent.new(
     url: create_url,
-    method: :get,
+    fields: search_fields,
     cols: 4,
-    submit_label: "조회",
-    form_html: { class: "om-pre-order-reception-search", novalidate: true }
+    enable_collapse: true
   ) %>
 
   <section class="mb-5">
