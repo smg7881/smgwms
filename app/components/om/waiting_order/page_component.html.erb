@@ -1,6 +1,3 @@
-<%= helpers.system_page_container do %>
-  <%= helpers.system_page_header("대기오더관리") %>
-
   <!-- 검색조건 (resource_form 활용) -->
   <%= render Ui::SearchFormComponent.new(
     url: collection_path(format: :json),
@@ -31,40 +28,32 @@
     <% end %>
 
     <!-- 마스터 그리드 -->
-    <%= helpers.ag_grid_tag(
+    <%= render Ui::AgGridComponent.new(
       url: grid_url,
-      options: {
-        rowSelection: "multiple",
-        onSelectionChanged: "onSelectionChanged",
-        stopEditingWhenCellsLoseFocus: true
-      },
-      data: { 
+      columns: [
+        { field: "ord_stat_cd", headerName: "오더상태", width: 100 },
+        { field: "ord_no", headerName: "오더번호", width: 130 },
+        { field: "ord_type_cd", headerName: "오더유형", width: 100 },
+        { field: "create_time", headerName: "오더생성일시", width: 150 },
+        { field: "aptd_req_ymd", headerName: "고객납기요청", width: 120 },
+        { field: "dpt_ar_nm", headerName: "출발지", width: 150 },
+        { field: "arv_ar_nm", headerName: "도착지", width: 150 },
+        { field: "item_cd", headerName: "아이템코드", width: 120 },
+        { field: "item_nm", headerName: "아이템명", width: 200 },
+        { field: "ord_qty", headerName: "오더수량", headerClass: "text-right", cellClass: "text-right", type: "numericColumn" },
+        { field: "avail_qty", headerName: "가용재고", headerClass: "text-right text-blue-600 font-bold", cellClass: "text-right text-blue-600 font-bold", type: "numericColumn" },
+        { field: "dist_qty", headerName: "분배 수량 (입력)", editable: true, headerClass: "text-right text-green-600 bg-green-50", cellClass: "text-right bg-green-50", type: "numericColumn",
+          valueParser: "Number(newValue)",
+          valueSetter: "params.data.dist_qty = Math.min(Number(newValue) || 0, Math.min(params.data.avail_qty || 0, params.data.ord_qty || 0)); return true;"
+        },
+        { field: "remain_qty", headerName: "잔여수량", headerClass: "text-right text-red-500", cellClass: "text-right text-red-500", type: "numericColumn",
+          valueGetter: "Number(data.ord_qty || 0) - Number(data.dist_qty || 0)"
+        }
+      ],
+      row_selection: "multiple",
+      data: {
         om_waiting_order_grid_target: "grid",
         action: "ag-grid:grid-ready->om-waiting-order-grid#onGridReady search-form:success@window->om-waiting-order-grid#reload"
       }
-    ) do |grid| %>
-      <% grid.with_column(field: "ord_stat_cd", header_name: "오더상태", width: 100) %>
-      <% grid.with_column(field: "ord_no", header_name: "오더번호", width: 130) %>
-      <% grid.with_column(field: "ord_type_cd", header_name: "오더유형", width: 100) %>
-      <% grid.with_column(field: "create_time", header_name: "오더생성일시", width: 150) %>
-      <% grid.with_column(field: "aptd_req_ymd", header_name: "고객납기요청", width: 120) %>
-      
-      <% grid.with_column(field: "dpt_ar_nm", header_name: "출발지", width: 150) %>
-      <% grid.with_column(field: "arv_ar_nm", header_name: "도착지", width: 150) %>
-      <% grid.with_column(field: "item_cd", header_name: "아이템코드", width: 120) %>
-      <% grid.with_column(field: "item_nm", header_name: "아이템명", width: 200) %>
-      
-      <% grid.with_column(field: "ord_qty", header_name: "오더수량", header_class: "text-right", cell_class: "text-right", type: "numericColumn") %>
-      <% grid.with_column(field: "avail_qty", header_name: "가용재고", header_class: "text-right text-blue-600 font-bold", cell_class: "text-right text-blue-600 font-bold", type: "numericColumn") %>
-      
-      <% grid.with_column(field: "dist_qty", header_name: "분배 수량 (입력)", editable: true, header_class: "text-right text-green-600 bg-green-50", cell_class: "text-right bg-green-50", type: "numericColumn",
-          valueParser: "Number(newValue)",
-          valueSetter: "params.data.dist_qty = Math.min(Number(newValue) || 0, Math.min(params.data.avail_qty || 0, params.data.ord_qty || 0)); return true;"
-      ) %>
-      
-      <% grid.with_column(field: "remain_qty", header_name: "잔여수량", header_class: "text-right text-red-500", cell_class: "text-right text-red-500", type: "numericColumn",
-          valueGetter: "Number(data.ord_qty || 0) - Number(data.dist_qty || 0)"
-      ) %>
-    <% end %>
+    ) %>
   </div>
-<% end %>

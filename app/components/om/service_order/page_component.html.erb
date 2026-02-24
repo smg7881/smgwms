@@ -1,6 +1,3 @@
-<%= helpers.system_page_container do %>
-  <%= helpers.system_page_header("서비스오더관리") %>
-
   <div data-controller="om-service-order-form" data-om-service-order-form-url-value="<%= collection_path %>">
     
     <!-- 검색 조건 및 상단 툴바 영역 -->
@@ -166,32 +163,24 @@
         </div>
       </div>
       
-      <%= helpers.ag_grid_tag(
+      <%= render Ui::AgGridComponent.new(
         url: grid_url,
-        options: {
-          rowSelection: "multiple",
-          onSelectionChanged: "onSelectionChanged",
-          stopEditingWhenCellsLoseFocus: true,
-          onCellValueChanged: "onCellValueChanged"
-        },
+        columns: [
+          { field: "item_cd", headerName: "아이템코드", width: 150, editable: true, cellEditor: "agTextCellEditor" },
+          { field: "item_nm", headerName: "아이템명", width: 200 },
+          { field: "basis_unit_cd", headerName: "기본단위", width: 100 },
+          { field: "qty", headerName: "수량", headerClass: "text-right bg-blue-50", cellClass: "text-right", type: "numericColumn", editable: true },
+          { field: "qty_unit_cd", headerName: "수량단위", width: 100 },
+          { field: "wgt", headerName: "중량", headerClass: "text-right bg-gray-50", cellClass: "text-right", type: "numericColumn" },
+          { field: "wgt_unit_cd", headerName: "중량단위", width: 100 },
+          { field: "vol", headerName: "부피", headerClass: "text-right bg-gray-50", cellClass: "text-right", type: "numericColumn" },
+          { field: "vol_unit_cd", headerName: "부피단위", width: 100 }
+        ],
+        row_selection: "multiple",
         data: { 
           om_service_order_form_target: "grid",
-          action: "ag-grid:grid-ready->om-service-order-form#onGridReady search-form:success@window->om-service-order-form#loadDetail"
+          action: "ag-grid:grid-ready->om_service_order_form#onGridReady search-form:success@window->om_service_order_form#loadDetail"
         }
-      ) do |grid| %>
-        <% grid.with_column(field: "item_cd", header_name: "아이템코드", width: 150, editable: true, cellEditor: "agTextCellEditor") %>
-        <% grid.with_column(field: "item_nm", header_name: "아이템명", width: 200) %>
-        <% grid.with_column(field: "basis_unit_cd", header_name: "기본단위", width: 100) %>
-        
-        <% grid.with_column(field: "qty", header_name: "수량", header_class: "text-right bg-blue-50", cell_class: "text-right", type: "numericColumn", editable: true) %>
-        <% grid.with_column(field: "qty_unit_cd", header_name: "수량단위", width: 100) %>
-        
-        <% grid.with_column(field: "wgt", header_name: "중량", header_class: "text-right bg-gray-50", cell_class: "text-right", type: "numericColumn") %>
-        <% grid.with_column(field: "wgt_unit_cd", header_name: "중량단위", width: 100) %>
-        
-        <% grid.with_column(field: "vol", header_name: "부피", header_class: "text-right bg-gray-50", cell_class: "text-right", type: "numericColumn") %>
-        <% grid.with_column(field: "vol_unit_cd", header_name: "부피단위", width: 100) %>
-      <% end %>
+      ) %>
     </div>
   </div>
-<% end %>

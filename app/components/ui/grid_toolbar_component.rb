@@ -1,5 +1,8 @@
 class Ui::GridToolbarComponent < ApplicationComponent
-  def initialize(buttons:)
+  renders_one :left
+  renders_one :right
+
+  def initialize(buttons: [])
     @buttons = buttons
   end
 

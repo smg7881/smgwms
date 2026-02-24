@@ -1,11 +1,17 @@
-<div class="flex justify-end items-center">
-  <div class="flex gap-2">
+<div class="flex justify-between items-center w-full">
+  <div class="flex items-center gap-2">
+    <%= left if left? %>
+  </div>
+
+  <div class="flex items-center gap-2">
     <% buttons.each do |button| %>
       <button type="<%= button[:type] || "button" %>"
               class="<%= button[:class] || "btn btn-sm btn-primary" %>"
               <%= %(data-action="#{button[:action]}").html_safe if button[:action].present? %>>
-        <%= button[:label] %>
+        <%= button[:label].to_s.html_safe %>
       </button>
     <% end %>
+    <%= right if right? %>
+    <%= content if content.present? %>
   </div>
 </div>

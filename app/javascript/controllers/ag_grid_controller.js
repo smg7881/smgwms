@@ -110,6 +110,7 @@ export default class extends Controller {
       animateRows: true, // 정렬/필터 시 행 애니메이션 부드러운 효과 적용
       // 각 行 마다 특정 조건식(삭제 상태 등)이 부합할 때 커스텀 클래스를 주입하기 위한 콜백
       getRowClass: (params) => this.buildRowClass(params),
+
       // 셀 포커스 이동 시 선택 하이라이팅을 이동시키기 위한 핸들러 연동
       onCellFocused: (event) => this.handleCellFocused(event),
       onCellKeyDown: (event) => this.handleCellKeyDown(event),
@@ -118,6 +119,9 @@ export default class extends Controller {
       },
       onSelectionChanged: (event) => {
         this.element.dispatchEvent(new CustomEvent("ag-grid:selectionChanged", { bubbles: true, detail: event }))
+      },
+      onCellValueChanged: (event) => {
+        this.element.dispatchEvent(new CustomEvent("ag-grid:cellValueChanged", { bubbles: true, detail: event }))
       },
       rowData: [],
       // 데이터가 0건일 때 중앙에 출력될 HTML 템플릿 처리 
