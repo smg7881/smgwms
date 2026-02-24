@@ -1,10 +1,16 @@
+# 고객 오더 담당자 관리 화면을 렌더링하기 위한 뷰 컴포넌트
+# 검색 조건 폼 설정과 그리드(ag-Grid) 설정(컬럼 정보, 라우팅 등)을 관리합니다.
 class Om::CustomerOrderOfficer::PageComponent < Om::BasePageComponent
+  # 공통코드(OM_EXP_IMP_DOM_SCTN) 조회가 불가능할 때 사용할 기본(Fallback) 옵션 리스트
   FALLBACK_EXP_IMP_DOM_OPTIONS = [
     { label: "수출", value: "EXPORT" },
     { label: "수입", value: "IMPORT" },
     { label: "내수", value: "DOMESTIC" }
   ].freeze
 
+  # 컴포넌트 초기화
+  # @param query_params [Hash] URL의 쿼리 파라미터
+  # @param search_form [Object] 화면 상단의 검색 폼 객체
   def initialize(query_params:, search_form:)
     super(query_params: query_params)
     @search_form = search_form
@@ -13,13 +19,18 @@ class Om::CustomerOrderOfficer::PageComponent < Om::BasePageComponent
   private
     attr_reader :search_form
 
+    # 목록 조회용 API URL 반환
     def collection_path(**) = helpers.om_customer_order_officers_path(**)
+    # 단건 조회용 API URL 반환
     def member_path(_id, **) = helpers.om_customer_order_officers_path(**)
 
+    # 그리드 데이터의 일괄 저장(추가/수정/삭제)을 위한 API 엔드포인트 URL 반환
     def batch_save_url
       helpers.batch_save_om_customer_order_officers_path
     end
 
+    # 상단 검색 폼에 렌더링될 필드 속성 목록을 반환
+    # (부서조회 팝업, 고객조회 팝업, 콤보박스, 텍스트입력 등 4개 필드로 구성)
     def search_fields
       [
         {
@@ -60,6 +71,8 @@ class Om::CustomerOrderOfficer::PageComponent < Om::BasePageComponent
       ]
     end
 
+    # ag-Grid에 렌더링될 각 컬럼의 속성을 반환
+    # (팝업 연동 에디터, 셀렉트박스 에디터, 수정 가능 여부, 너비 등을 세부 정의)
     def columns
       [
         {
@@ -113,10 +126,13 @@ class Om::CustomerOrderOfficer::PageComponent < Om::BasePageComponent
       ]
     end
 
+    # 그리드 내 [수출입내수구분] 셀렉트박스(에디터)에서 선택 가능한 값(value)들만의 배열 반환
     def exp_imp_dom_values
       exp_imp_dom_options(include_all: false).map { |option| option[:value] }
     end
 
+    # "수출입내수구분" 항목에 맵핑할 `{ label: "", value: "" }` 구조의 옵션 배열을 반환
+    # @param include_all [Boolean] "전체" 항목 추가 여부
     def exp_imp_dom_options(include_all:)
       options = common_code_options("OM_EXP_IMP_DOM_SCTN", include_all: include_all, all_label: "전체")
 
