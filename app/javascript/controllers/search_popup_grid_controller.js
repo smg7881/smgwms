@@ -7,11 +7,28 @@ export default class extends Controller {
   connect() {
     this.gridEvents = new GridEventManager()
     this.gridApi = null
+
+    this.messageListener = (event) => {
+      if (event.data?.source === "search-popup-modal" && event.data?.type === "request-select") {
+        if (this.gridApi) {
+          const rows = this.gridApi.getSelectedRows()
+          if (rows && rows.length > 0) {
+            this.selectRow(rows[0])
+          } else {
+            alert("조회된 목록에서 항목을 먼저 선택하세요.")
+          }
+        }
+      }
+    }
+    window.addEventListener("message", this.messageListener)
   }
 
   disconnect() {
     this.gridEvents.unbindAll()
     this.gridApi = null
+    if (this.messageListener) {
+      window.removeEventListener("message", this.messageListener)
+    }
   }
 
   registerGrid(event) {
@@ -22,7 +39,6 @@ export default class extends Controller {
 
     this.gridApi = registration.api
     this.gridEvents.unbindAll()
-    this.gridEvents.bind(this.gridApi, "rowClicked", this.handleRowClicked)
     this.gridEvents.bind(this.gridApi, "rowDoubleClicked", this.handleRowDoubleClicked)
     this.gridEvents.bind(this.gridApi, "cellKeyDown", this.handleCellKeyDown)
   }
@@ -46,10 +62,6 @@ export default class extends Controller {
   selectFromRenderer(event) {
     event.stopPropagation()
     this.selectRow(event.detail?.row)
-  }
-
-  handleRowClicked = (event) => {
-    this.selectRow(event?.data)
   }
 
   handleRowDoubleClicked = (event) => {

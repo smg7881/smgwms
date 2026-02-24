@@ -2,6 +2,22 @@ class SearchPopupsController < ApplicationController
   def show
     @type = params[:type].to_s.strip.downcase
     @frame = params[:frame].presence || "search_popup_frame"
+
+    # 팝업 호출 시 ?q=xxx 문자열 검색어가 넘어오면, 폼 호환성을 위해 Hash로 변환
+    if params[:q].is_a?(String)
+      keyword = params[:q].strip
+      params[:q] = {}
+      if corp_popup?
+        params[:q][:corp_nm] = keyword
+      elsif financial_org_popup?
+        params[:q][:fnc_or_nm] = keyword
+      elsif sellbuy_attr_popup?
+        params[:q][:sellbuy_attr_nm] = keyword
+      else
+        params[:q][:display] = keyword
+      end
+    end
+
     @popup_form = build_popup_form
     @rows = lookup_rows(@type)
 
@@ -54,7 +70,7 @@ class SearchPopupsController < ApplicationController
 
     # 팝업의 검색 폼에서 전송된(허용된) 파라미터(Strong Parameters)를 반환합니다.
     def popup_form_params
-      params.fetch(:search_popup_form, {}).permit(
+      params.fetch(:q, {}).permit(
         :display, :code, :corp_cd, :corp_nm, :use_yn,
         :ctry_cd, :fnc_or_cd, :fnc_or_nm,
         :sellbuy_attr_cd, :sellbuy_attr_nm, :tran_yn, :strg_yn
@@ -93,12 +109,7 @@ class SearchPopupsController < ApplicationController
     end
 
     def lookup_keyword
-      direct = params[:q].to_s.strip
-      if direct.present?
-        direct
-      else
-        popup_form_params[:display].to_s.strip
-      end
+      popup_form_params[:display].to_s.strip
     end
 
     # 검색 폼 객체(SearchPopupForm)를 초기화합니다.
@@ -107,14 +118,14 @@ class SearchPopupsController < ApplicationController
       if corp_popup?
         SearchPopupForm.new(
           corp_cd: popup_corp_cd,
-          corp_nm: popup_form_params[:corp_nm].to_s.strip.presence || params[:q].to_s.strip,
+          corp_nm: popup_form_params[:corp_nm].to_s.strip.presence,
           use_yn: normalized_use_yn(popup_form_params[:use_yn])
         )
       elsif financial_org_popup?
         SearchPopupForm.new(
-          ctry_cd: popup_form_params[:ctry_cd].to_s.strip.upcase.presence || params[:ctry_cd].to_s.strip.upcase.presence,
+          ctry_cd: popup_form_params[:ctry_cd].to_s.strip.upcase.presence,
           fnc_or_cd: popup_form_params[:fnc_or_cd].to_s.strip.upcase.presence,
-          fnc_or_nm: popup_form_params[:fnc_or_nm].to_s.strip.presence || params[:q].to_s.strip,
+          fnc_or_nm: popup_form_params[:fnc_or_nm].to_s.strip.presence,
           use_yn: normalized_use_yn(popup_form_params[:use_yn])
         )
       elsif sellbuy_attr_popup?
@@ -122,7 +133,7 @@ class SearchPopupsController < ApplicationController
           corp_cd: popup_corp_cd,
           corp_nm: popup_form_params[:corp_nm].to_s.strip.presence,
           sellbuy_attr_cd: popup_form_params[:sellbuy_attr_cd].to_s.strip.upcase.presence,
-          sellbuy_attr_nm: popup_form_params[:sellbuy_attr_nm].to_s.strip.presence || params[:q].to_s.strip.presence,
+          sellbuy_attr_nm: popup_form_params[:sellbuy_attr_nm].to_s.strip.presence,
           use_yn: normalized_use_yn(popup_form_params[:use_yn]),
           tran_yn: normalized_optional_yn(popup_form_params[:tran_yn]),
           strg_yn: normalized_optional_yn(popup_form_params[:strg_yn])

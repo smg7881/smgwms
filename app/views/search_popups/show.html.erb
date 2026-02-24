@@ -19,7 +19,6 @@
         type: "input",
         label: "법인코드",
         placeholder: "법인코드 입력",
-        span: "24 s:12 m:8",
         target: "corpCd"
       },
       {
@@ -27,7 +26,6 @@
         type: "input",
         label: "법인명",
         placeholder: "법인명 입력",
-        span: "24 s:12 m:10",
         target: "corpNm"
       },
       {
@@ -39,7 +37,6 @@
           { label: "N", value: "N" }
         ],
         include_blank: false,
-        span: "24 s:12 m:6",
         target: "useYn"
       }
     ]
@@ -82,22 +79,19 @@
         field: "ctry_cd",
         type: "input",
         label: "국가코드",
-        placeholder: "국가코드 입력",
-        span: "24 s:12 m:6"
+        placeholder: "국가코드 입력"
       },
       {
         field: "fnc_or_cd",
         type: "input",
         label: "금융기관코드",
-        placeholder: "금융기관코드 입력",
-        span: "24 s:12 m:6"
+        placeholder: "금융기관코드 입력"
       },
       {
         field: "fnc_or_nm",
         type: "input",
         label: "금융기관명",
-        placeholder: "금융기관명 입력",
-        span: "24 s:12 m:8"
+        placeholder: "금융기관명 입력"
       },
       {
         field: "use_yn",
@@ -107,8 +101,7 @@
           { label: "Y", value: "Y" },
           { label: "N", value: "N" }
         ],
-        include_blank: false,
-        span: "24 s:12 m:4"
+        include_blank: false
       }
     ]
 
@@ -151,15 +144,13 @@
         field: "sellbuy_attr_cd",
         type: "input",
         label: "매출입항목코드",
-        placeholder: "매출입항목코드 입력",
-        span: "24 s:12 m:6"
+        placeholder: "매출입항목코드 입력"
       },
       {
         field: "sellbuy_attr_nm",
         type: "input",
         label: "매출입항목명",
-        placeholder: "매출입항목명 입력",
-        span: "24 s:12 m:8"
+        placeholder: "매출입항목명 입력"
       },
       {
         field: "corp_nm",
@@ -167,8 +158,7 @@
         label: "법인",
         popup_type: "corp",
         code_field: "corp_cd",
-        placeholder: "법인 선택",
-        span: "24 s:12 m:10"
+        placeholder: "법인 선택"
       },
       {
         field: "use_yn",
@@ -178,8 +168,7 @@
           { label: "Y", value: "Y" },
           { label: "N", value: "N" }
         ],
-        include_blank: false,
-        span: "24 s:8 m:4"
+        include_blank: false
       },
       {
         field: "tran_yn",
@@ -190,8 +179,7 @@
           { label: "Y", value: "Y" },
           { label: "N", value: "N" }
         ],
-        include_blank: false,
-        span: "24 s:8 m:4"
+        include_blank: false
       },
       {
         field: "strg_yn",
@@ -202,8 +190,7 @@
           { label: "Y", value: "Y" },
           { label: "N", value: "N" }
         ],
-        include_blank: false,
-        span: "24 s:8 m:4"
+        include_blank: false
       }
     ]
 
@@ -252,7 +239,6 @@
         type: "input",
         label: "명칭",
         placeholder: "명칭 입력",
-        span: "24 s:12 m:12",
         target: "keyword"
       },
       {
@@ -260,7 +246,6 @@
         type: "input",
         label: "코드",
         placeholder: "코드",
-        span: "24 s:12 m:8",
         disabled: true,
         target: "code"
       }
@@ -298,30 +283,17 @@
      data-controller="search-popup-grid"
      data-action="ag-grid:ready->search-popup-grid#registerGrid search-popup-grid:select->search-popup-grid#selectFromRenderer">
 
-  <%= render Ui::ResourceFormComponent.new(
-    model: @popup_form,
+  <%= render Ui::SearchFormComponent.new(
     url: search_popup_path(@type, frame: @frame),
-    method: :get,
     fields: popup_fields,
     cols: 3,
-    show_buttons: false,
-    target_controller: "search_popup_grid",
-    form_data: {
-      turbo_frame: @frame,
-      search_popup_grid_target: "form"
-    }
+    turbo_frame: @frame,
+    class: "mb-4"
   ) %>
 
-  <div class="flex justify-between items-center mb-3 -mt-2">
-    <button type="button"
-            class="btn btn-sm btn-secondary inline-flex items-center gap-1.5"
-            data-action="search-popup-grid#submitForm"
-            aria-label="검색">
-      <%= lucide_icon("search", css_class: "w-3.5 h-3.5") %>
-      검색
-    </button>
-    <span></span>
-  </div>
+  <%= render Ui::GridHeaderComponent.new(
+    icon: "list", title: popup_title, grid_id: "popup-grid"
+  ) %>
 
   <%= render Ui::AgGridComponent.new(
     columns: popup_columns,

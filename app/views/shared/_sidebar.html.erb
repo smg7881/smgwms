@@ -48,8 +48,5 @@
       <div class="text-[13px] font-semibold text-text-primary">관리자</div>
       <div class="text-[11px] text-text-muted whitespace-nowrap overflow-hidden text-ellipsis"><%= Current.user&.email_address %></div>
     </div>
-    <%= button_to session_path, method: :delete, class: "btn btn-sm btn-secondary" do %>
-      로그아웃
-    <% end %>
   </div>
 </aside>

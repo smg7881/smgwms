@@ -125,7 +125,8 @@ export function openLookupPopup({ type, url, keyword, title } = {}) {
           style="width:100%;height:min(72vh,700px);border:0;background:transparent;display:block;"
           loading="eager"></iframe>
       </div>
-      <div class="app-modal-footer">
+      <div class="app-modal-footer flex gap-2 justify-end">
+        <button type="button" class="btn btn-sm btn-primary" data-role="lookup-popup-select">선택</button>
         <button type="button" class="btn btn-sm btn-secondary" data-role="lookup-popup-cancel">닫기</button>
       </div>
     </div>
@@ -188,6 +189,16 @@ export function openLookupPopup({ type, url, keyword, title } = {}) {
     closeButtons.forEach((button) => {
       button.addEventListener("click", () => {
         modal.dispatchEvent(new CustomEvent("search-popup:close"))
+      })
+    })
+
+    const selectButtons = modal.querySelectorAll("[data-role='lookup-popup-select']")
+    selectButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const iframe = modal.querySelector("iframe")
+        if (iframe && iframe.contentWindow) {
+          iframe.contentWindow.postMessage({ source: "search-popup-modal", type: "request-select" }, "*")
+        }
       })
     })
 
