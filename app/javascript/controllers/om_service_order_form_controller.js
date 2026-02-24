@@ -12,7 +12,7 @@ export default class extends Controller {
         "custOfcrNm", "custOfcrTel", "tranDivCd", "remark",
         "dptTypeCd", "dptCd", "dptAddr", "reqStartDt",
         "arvTypeCd", "arvCd", "arvAddr", "aptdReqYmd",
-        "ordNoDisplay", "reasonGroup", "changeReason"
+        "ordNoDisplay", "changeReason"
     ]
 
     connect() {
@@ -68,7 +68,10 @@ export default class extends Controller {
         this.ordNoDisplayTarget.value = data.ord_no || ""
 
         // 수정 모드이므로 사유란 노출
-        this.reasonGroupTarget.classList.remove("hidden")
+        const reasonGroup = this.changeReasonTarget.closest('[data-resource-form-target="fieldGroup"]')
+        if (reasonGroup) {
+            reasonGroup.classList.remove("hidden")
+        }
     }
 
     newOrder() {
@@ -85,7 +88,10 @@ export default class extends Controller {
         this.arvTypeCdTarget.disabled = false
 
         // 사유란 숨김
-        this.reasonGroupTarget.classList.add("hidden")
+        const reasonGroup = this.changeReasonTarget.closest('[data-resource-form-target="fieldGroup"]')
+        if (reasonGroup) {
+            reasonGroup.classList.add("hidden")
+        }
         this.changeReasonTarget.value = ""
 
         if (this.agGridController) {
@@ -117,7 +123,10 @@ export default class extends Controller {
                     this.ordNoDisplayTarget.value = data.ord_no // 채번된 번호 매핑
                     this.methodInputTarget.value = "put"
                     this.idInputTarget.value = data.ord_no
-                    this.reasonGroupTarget.classList.remove("hidden")
+                    const reasonGroup = this.changeReasonTarget.closest('[data-resource-form-target="fieldGroup"]')
+                    if (reasonGroup) {
+                        reasonGroup.classList.remove("hidden")
+                    }
                 }
             } else {
                 alert(data.message || "오류가 발생했습니다.")

@@ -5,11 +5,7 @@ import { get } from "@rails/request.js"
 export default class extends Controller {
     static targets = [
         // 그리드
-        "masterGridContainer", "detailGridContainer",
-        // 탭 1, 2, 3 Data Bindings
-        "sctnLabel1", "dptArCd", "dptArAddr", "strtReqDate", "dptArOfcr", "dptArTelNo", "arvArCd", "arvArAddr", "aptdReqDate", "arvArOfcr", "arvArTelNo", "prclText",
-        "sctnLabel2", "ordTypeCdPre", "custOrdRecpDate", "custOrdRecpChn", "ordReqCustCdPre", "custOfcrNm", "custTelNo",
-        "sctnLabel3", "creatDate", "cnclDate", "ordCnclReasonCd", "ordReasonCd", "cmptDate"
+        "masterGridContainer", "detailGridContainer"
     ]
 
     connect() {
@@ -39,8 +35,6 @@ export default class extends Controller {
     }
 
     resetDetailTabs() {
-        const emptyObj = {}
-        this.bindTabForms(emptyObj, "")
         if (this.detailGridApi) {
             this.detailGridApi.setGridOption('rowData', [])
         }
@@ -95,9 +89,6 @@ export default class extends Controller {
                 const body = await response.json
                 const sctnLabel = `${row.sctn} (${row.hist_seq}차)`
 
-                // Form 맵핑 수행
-                this.bindTabForms(body.form || {}, sctnLabel)
-
                 // Item 맵핑 수행
                 if (this.detailGridApi) {
                     this.detailGridApi.setGridOption('rowData', body.items || [])
@@ -137,40 +128,5 @@ export default class extends Controller {
         this.detailGridApi = createGrid(this.detailGridContainerTarget, gridOptions)
     }
 
-    // 탭 폼 Input 할당 로직
-    bindTabForms(form, sctnLabel) {
-        // Labels
-        this.sctnLabel1Target.value = sctnLabel
-        this.sctnLabel2Target.value = sctnLabel
-        this.sctnLabel3Target.value = sctnLabel
 
-        // 1 탭
-        this.dptArCdTarget.value = form.dpt_ar_cd || ""
-        this.dptArAddrTarget.value = form.dpt_ar_addr || ""
-        this.strtReqDateTarget.value = form.strt_req_date || ""
-        this.dptArOfcrTarget.value = form.dpt_ar_ofcr || ""
-        this.dptArTelNoTarget.value = form.dpt_ar_tel_no || ""
-
-        this.arvArCdTarget.value = form.arv_ar_cd || ""
-        this.arvArAddrTarget.value = form.arv_ar_addr || ""
-        this.aptdReqDateTarget.value = form.aptd_req_date || ""
-        this.arvArOfcrTarget.value = form.arv_ar_ofcr || ""
-        this.arvArTelNoTarget.value = form.arv_ar_tel_no || ""
-        this.prclTextTarget.value = form.prcl || ""
-
-        // 2 탭
-        this.ordTypeCdPreTarget.value = form.ord_type_cd_pre || ""
-        this.custOrdRecpDateTarget.value = form.cust_ord_recp_date || ""
-        this.custOrdRecpChnTarget.value = form.cust_ord_recp_chn || ""
-        this.ordReqCustCdPreTarget.value = form.ord_req_cust_cd_pre || ""
-        this.custOfcrNmTarget.value = form.cust_ofcr_nm || ""
-        this.custTelNoTarget.value = form.cust_tel_no || ""
-
-        // 3 탭
-        this.creatDateTarget.value = form.creat_date || ""
-        this.cnclDateTarget.value = form.cncl_date || ""
-        this.ordCnclReasonCdTarget.value = form.ord_cncl_reason_cd || ""
-        this.ordReasonCdTarget.value = form.ord_reason_cd || ""
-        this.cmptDateTarget.value = form.cmpt_date || ""
-    }
 }

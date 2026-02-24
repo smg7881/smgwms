@@ -7,136 +7,86 @@
     <!-- 검색 조건 및 상단 툴바 영역 -->
     <div class="flex justify-between items-end mb-4">
       <!-- 좌측 검색 영역 -->
-      <div class="flex items-center space-x-4 bg-white p-3 rounded shadow-sm border">
-        <div class="flex items-center space-x-2">
-          <label class="font-medium text-sm text-gray-700 whitespace-nowrap">오더번호</label>
-          <%= text_field_tag "search_ord_no", nil,
-                class: "form-input w-48 text-sm",
-                placeholder: "오더번호 입력",
-                data: { om_internal_order_target: "searchOrdNo",
-                        action: "keydown.enter->om-internal-order#search" } %>
-          <button type="button" class="btn btn-secondary px-3" data-action="click->om-internal-order#search">
-            <i data-lucide="search" class="w-4 h-4"></i>
-          </button>
-        </div>
-      </div>
+      <%= render Ui::SearchFormComponent.new(
+        url: collection_path(format: :json),
+        fields: search_fields,
+        cols: 4,
+        enable_collapse: true
+      ) %>
 
       <!-- 우측 툴바 버튼 영역 -->
-      <div class="space-x-2">
-        <button type="button" class="btn btn-primary" data-action="click->om-internal-order#newOrder">
-          <i data-lucide="plus" class="w-4 h-4 mr-2"></i> 신규
-        </button>
-        <button type="button" class="btn btn-success" data-action="click->om-internal-order#saveOrder"
-                data-om-internal-order-target="saveBtn">
-          <i data-lucide="save" class="w-4 h-4 mr-2"></i> 저장
-        </button>
-        <button type="button" class="btn btn-danger" data-action="click->om-internal-order#cancelOrder"
-                data-om-internal-order-target="cancelBtn">
-          <i data-lucide="x-circle" class="w-4 h-4 mr-2"></i> 오더취소
-        </button>
-      </div>
+      <%= render Ui::GridToolbarComponent.new(
+        buttons: [
+          { label: "행추가", class: "btn btn-sm btn-primary", action: "click->client-grid#addMasterRow" },
+          { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->client-grid#deleteMasterRows" },
+          { label: "저장", class: "btn btn-sm btn-success", action: "click->client-grid#saveMasterRows" }
+        ]
+      ) %>
     </div>
 
     <!-- 마스터 : 오더 헤더 폼 -->
-    <div class="bg-white p-4 rounded shadow-sm border mb-4" data-om-internal-order-target="headerForm">
-      <h3 class="text-sm font-bold text-gray-800 mb-3 border-b pb-2">기본 정보</h3>
+    <div class="mb-4" data-om-internal-order-target="headerForm">
+      <%= render Ui::ResourceFormComponent.new(
+        model: nil,
+        title: "기본 정보",
+        fields: [
+          # 1 Row
+          { field: "ord_no", type: "input", label: "오더번호", disabled: true, data: { om_internal_order_target: "fieldOrdNo" }, placeholder: "저장 시 자동 채번" },
+          { field: "ord_stat_cd", type: "input", label: "오더상태", disabled: true, data: { om_internal_order_target: "fieldOrdStatCd" } },
+          { field: "create_time", type: "input", label: "생성일시", disabled: true, data: { om_internal_order_target: "fieldCreateTime" } },
+          { field: "ord_type_cd", type: "select", label: "오더유형", options: common_code_options("75"), include_blank: "선택", disabled: true, data: { om_internal_order_target: "fieldOrdTypeCd" } },
+          
+          # 2 Row
+          { field: "ctrt_no", type: "input", label: "계약번호", disabled: true, data: { om_internal_order_target: "fieldCtrtNo" } },
+          { 
+            field: "bilg_cust_nm", 
+            type: "popup", 
+            label: "청구고객", 
+            popup_type: "client",
+            code_field: "bilg_cust_cd",
+            disabled: true,
+            data: { 
+              om_internal_order_target: "fieldBilgCustNm",
+              code_target: "fieldBilgCustCd",
+              action_target: "bilgCustSearchBtn"
+            }
+          },
+          { 
+            field: "ctrt_cust_nm", 
+            type: "popup", 
+            label: "계약고객", 
+            popup_type: "client",
+            code_field: "ctrt_cust_cd",
+            disabled: true,
+            data: { 
+              om_internal_order_target: "fieldCtrtCustNm",
+              code_target: "fieldCtrtCustCd",
+              action_target: "ctrtCustSearchBtn"
+            }
+          },
+          { field: "ord_reason_cd", type: "select", label: "사유코드", options: common_code_options("87"), include_blank: "선택", disabled: true, data: { om_internal_order_target: "fieldOrdReasonCd" } },
 
-      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        <!-- 1 Row : 읽기전용 -->
-        <div class="form-group flex items-center space-x-2">
-          <label class="font-medium text-sm text-gray-700 w-28">오더번호</label>
-          <input type="text" class="form-input flex-1 text-sm font-bold text-blue-600 bg-gray-100"
-                 readonly data-om-internal-order-target="fieldOrdNo" placeholder="저장 시 자동 채번">
-        </div>
-        <div class="form-group flex items-center space-x-2">
-          <label class="font-medium text-sm text-gray-700 w-28">오더상태</label>
-          <input type="text" class="form-input flex-1 text-sm bg-gray-100"
-                 readonly data-om-internal-order-target="fieldOrdStatCd">
-        </div>
-        <div class="form-group flex items-center space-x-2">
-          <label class="font-medium text-sm text-gray-700 w-28">생성일시</label>
-          <input type="text" class="form-input flex-1 text-sm bg-gray-100"
-                 readonly data-om-internal-order-target="fieldCreateTime">
-        </div>
-        <div class="form-group flex items-center space-x-2">
-          <label class="font-medium text-sm text-gray-700 w-28">오더유형</label>
-          <%= select_tag "order[ord_type_cd]",
-                options_for_select(common_code_options("75"), nil),
-                include_blank: "선택",
-                class: "form-select flex-1 text-sm",
-                disabled: true,
-                data: { om_internal_order_target: "fieldOrdTypeCd" } %>
-        </div>
-
-        <!-- 2 Row -->
-        <div class="form-group flex items-center space-x-2">
-          <label class="font-medium text-sm text-gray-700 w-28">계약번호</label>
-          <input type="text" name="order[ctrt_no]" class="form-input flex-1 text-sm"
-                 disabled data-om-internal-order-target="fieldCtrtNo">
-        </div>
-        <div class="form-group flex items-center space-x-2">
-          <label class="font-medium text-sm text-gray-700 w-28">청구고객</label>
-          <div class="flex-1 flex items-center space-x-1" data-controller="search-popup" data-search-popup-type-value="client">
-            <input type="text" name="order[bilg_cust_cd]" class="form-input w-24 text-sm bg-gray-50"
-                   readonly disabled
-                   data-om-internal-order-target="fieldBilgCustCd"
-                   data-search-popup-target="code">
-            <input type="text" class="form-input flex-1 text-sm bg-gray-50"
-                   readonly data-om-internal-order-target="fieldBilgCustNm"
-                   data-search-popup-target="name">
-            <button type="button" class="btn btn-secondary px-2" data-action="search-popup#open" disabled
-                    data-om-internal-order-target="bilgCustSearchBtn">
-              <i data-lucide="search" class="w-4 h-4"></i>
-            </button>
-          </div>
-        </div>
-        <div class="form-group flex items-center space-x-2">
-          <label class="font-medium text-sm text-gray-700 w-28">계약고객</label>
-          <div class="flex-1 flex items-center space-x-1" data-controller="search-popup" data-search-popup-type-value="client">
-            <input type="text" name="order[ctrt_cust_cd]" class="form-input w-24 text-sm bg-gray-50"
-                   readonly disabled
-                   data-om-internal-order-target="fieldCtrtCustCd"
-                   data-search-popup-target="code">
-            <input type="text" class="form-input flex-1 text-sm bg-gray-50"
-                   readonly data-om-internal-order-target="fieldCtrtCustNm"
-                   data-search-popup-target="name">
-            <button type="button" class="btn btn-secondary px-2" data-action="search-popup#open" disabled
-                    data-om-internal-order-target="ctrtCustSearchBtn">
-              <i data-lucide="search" class="w-4 h-4"></i>
-            </button>
-          </div>
-        </div>
-        <div class="form-group flex items-center space-x-2">
-          <label class="font-medium text-sm text-gray-700 w-28">사유코드</label>
-          <%= select_tag "order[ord_reason_cd]",
-                options_for_select(common_code_options("87"), nil),
-                include_blank: "선택",
-                class: "form-select flex-1 text-sm",
-                disabled: true,
-                data: { om_internal_order_target: "fieldOrdReasonCd" } %>
-        </div>
-
-        <!-- 3 Row -->
-        <div class="form-group flex items-center space-x-2">
-          <label class="font-medium text-sm text-gray-700 w-28">실행부서</label>
-          <input type="text" name="order[ord_exec_dept_cd]" class="form-input w-24 text-sm"
-                 disabled data-om-internal-order-target="fieldOrdExecDeptCd">
-          <input type="text" name="order[ord_exec_dept_nm]" class="form-input flex-1 text-sm"
-                 disabled data-om-internal-order-target="fieldOrdExecDeptNm">
-        </div>
-        <div class="form-group flex items-center space-x-2">
-          <label class="font-medium text-sm text-gray-700 w-28">실행담당자</label>
-          <input type="text" name="order[ord_exec_ofcr_cd]" class="form-input w-24 text-sm"
-                 disabled data-om-internal-order-target="fieldOrdExecOfcrCd">
-          <input type="text" name="order[ord_exec_ofcr_nm]" class="form-input flex-1 text-sm"
-                 disabled data-om-internal-order-target="fieldOrdExecOfcrNm">
-        </div>
-        <div class="form-group flex items-center space-x-2 col-span-2">
-          <label class="font-medium text-sm text-gray-700 w-28">특이사항</label>
-          <input type="text" name="order[remk]" class="form-input flex-1 text-sm"
-                 disabled data-om-internal-order-target="fieldRemk">
-        </div>
-      </div>
+          # 3 Row
+          { 
+            field: "ord_exec_dept_cd", 
+            type: "input", 
+            label: "실행부서", 
+            disabled: true, 
+            data: { om_internal_order_target: "fieldOrdExecDeptCd" }
+          },
+          { 
+            field: "ord_exec_ofcr_cd", 
+            type: "input", 
+            label: "실행담당자", 
+            disabled: true, 
+            data: { om_internal_order_target: "fieldOrdExecOfcrCd" }
+          },
+          { field: "remk", type: "input", label: "특이사항", disabled: true, col_span: 2, data: { om_internal_order_target: "fieldRemk" } }
+        ],
+        cols: 4,
+        show_buttons: false,
+        form_data: { om_internal_order_target: "form" }
+      ) %>
     </div>
 
     <!-- 탭 영역 : 출도착지상세 / 아이템상세 -->
@@ -161,93 +111,55 @@
       <div class="p-4" data-om-internal-order-target="tabLocation">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <!-- 출발지 그룹 -->
-          <div class="bg-gray-50 p-3 rounded border">
-            <div class="font-semibold text-gray-700 mb-2">출발지 정보</div>
-            <div class="space-y-3">
-              <div class="flex items-center space-x-2">
-                <label class="text-sm w-24 text-gray-600">유형</label>
-                <%= select_tag "order[dpt_type_cd]",
-                      options_for_select(loc_type_options, nil),
-                      include_blank: "선택",
-                      class: "form-select flex-1 text-sm",
-                      disabled: true,
-                      data: { om_internal_order_target: "fieldDptTypeCd",
-                              action: "change->om-internal-order#onDptTypeChange" } %>
-              </div>
-              <div class="flex items-center space-x-2">
-                <label class="text-sm w-24 text-gray-600">코드</label>
-                <input type="text" name="order[dpt_cd]" class="form-input flex-1 text-sm"
-                       disabled data-om-internal-order-target="fieldDptCd">
-              </div>
-              <div class="flex items-center space-x-2">
-                <label class="text-sm w-24 text-gray-600">우편번호</label>
-                <input type="text" name="order[dpt_zip_cd]" class="form-input w-32 text-sm"
-                       disabled data-om-internal-order-target="fieldDptZipCd">
-              </div>
-              <div class="flex items-center space-x-2">
-                <label class="text-sm w-24 text-gray-600">주소</label>
-                <input type="text" name="order[dpt_addr]" class="form-input flex-1 text-sm"
-                       disabled data-om-internal-order-target="fieldDptAddr">
-              </div>
-              <div class="flex items-center space-x-2">
-                <label class="text-sm w-24 text-gray-600">시작요청일</label>
-                <input type="date" name="order[strt_req_ymd]" class="form-input flex-1 text-sm"
-                       disabled data-om-internal-order-target="fieldStrtReqYmd">
-              </div>
-            </div>
+          <div>
+            <%= render Ui::ResourceFormComponent.new(
+              model: nil,
+              title: "출발지 정보",
+              fields: [
+                { field: "dpt_type_cd", type: "select", label: "유형", options: loc_type_options, include_blank: "선택", disabled: true, data: { om_internal_order_target: "fieldDptTypeCd", action: "change->om-internal-order#onDptTypeChange" } },
+                { field: "dpt_cd", type: "input", label: "코드", disabled: true, data: { om_internal_order_target: "fieldDptCd" } },
+                { field: "dpt_zip_cd", type: "input", label: "우편번호", disabled: true, data: { om_internal_order_target: "fieldDptZipCd" } },
+                { field: "dpt_addr", type: "input", label: "주소", disabled: true, data: { om_internal_order_target: "fieldDptAddr" } },
+                { field: "strt_req_ymd", type: "input", input_type: "date", label: "시작요청일", disabled: true, data: { om_internal_order_target: "fieldStrtReqYmd" } }
+              ],
+              cols: 1,
+              show_buttons: false
+            ) %>
           </div>
 
           <!-- 도착지 그룹 -->
-          <div class="bg-gray-50 p-3 rounded border">
-            <div class="font-semibold text-gray-700 mb-2">도착지 정보</div>
-            <div class="space-y-3">
-              <div class="flex items-center space-x-2">
-                <label class="text-sm w-24 text-gray-600">유형</label>
-                <%= select_tag "order[arv_type_cd]",
-                      options_for_select(loc_type_options, nil),
-                      include_blank: "선택",
-                      class: "form-select flex-1 text-sm",
-                      disabled: true,
-                      data: { om_internal_order_target: "fieldArvTypeCd",
-                              action: "change->om-internal-order#onArvTypeChange" } %>
-              </div>
-              <div class="flex items-center space-x-2">
-                <label class="text-sm w-24 text-gray-600">코드</label>
-                <input type="text" name="order[arv_cd]" class="form-input flex-1 text-sm"
-                       disabled data-om-internal-order-target="fieldArvCd">
-              </div>
-              <div class="flex items-center space-x-2">
-                <label class="text-sm w-24 text-gray-600">우편번호</label>
-                <input type="text" name="order[arv_zip_cd]" class="form-input w-32 text-sm"
-                       disabled data-om-internal-order-target="fieldArvZipCd">
-              </div>
-              <div class="flex items-center space-x-2">
-                <label class="text-sm w-24 text-gray-600">주소</label>
-                <input type="text" name="order[arv_addr]" class="form-input flex-1 text-sm"
-                       disabled data-om-internal-order-target="fieldArvAddr">
-              </div>
-              <div class="flex items-center space-x-2">
-                <label class="text-sm w-24 text-gray-600">납기요청일시</label>
-                <input type="datetime-local" name="order[aptd_req_dtm]" class="form-input flex-1 text-sm"
-                       disabled data-om-internal-order-target="fieldAptdReqDtm">
-              </div>
-            </div>
+          <div>
+            <%= render Ui::ResourceFormComponent.new(
+              model: nil,
+              title: "도착지 정보",
+              fields: [
+                { field: "arv_type_cd", type: "select", label: "유형", options: loc_type_options, include_blank: "선택", disabled: true, data: { om_internal_order_target: "fieldArvTypeCd", action: "change->om-internal-order#onArvTypeChange" } },
+                { field: "arv_cd", type: "input", label: "코드", disabled: true, data: { om_internal_order_target: "fieldArvCd" } },
+                { field: "arv_zip_cd", type: "input", label: "우편번호", disabled: true, data: { om_internal_order_target: "fieldArvZipCd" } },
+                { field: "arv_addr", type: "input", label: "주소", disabled: true, data: { om_internal_order_target: "fieldArvAddr" } },
+                { field: "aptd_req_dtm", type: "input", input_type: "datetime-local", label: "납기요청일시", disabled: true, data: { om_internal_order_target: "fieldAptdReqDtm" } }
+              ],
+              cols: 1,
+              show_buttons: false
+            ) %>
           </div>
         </div>
       </div>
 
       <!-- 아이템상세 탭 -->
       <div class="p-4 hidden" data-om-internal-order-target="tabItems">
-        <div class="flex justify-between items-center mb-2">
-          <h3 class="text-sm font-bold text-gray-800">아이템 목록 (최대 20건)</h3>
-          <div class="space-x-1">
-            <button type="button" class="btn btn-sm btn-secondary" data-action="click->om-internal-order#addItemRow">
-              <i data-lucide="plus" class="w-3 h-3 mr-1"></i> 행추가
-            </button>
-            <button type="button" class="btn btn-sm btn-danger" data-action="click->om-internal-order#deleteItemRows">
-              <i data-lucide="minus" class="w-3 h-3 mr-1"></i> 행삭제
-            </button>
-          </div>
+        <div class="flex items-center justify-between gap-3 mb-3">
+          <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
+            <%= helpers.lucide_icon("list", css_class: "w-4 h-4 text-gray-500") %>
+            아이템 목록 (최대 20건)
+            <%= render Ui::GridActionsComponent.new(grid_id: "om-internal-order-items") %>
+          </h3>
+          <%= render Ui::GridToolbarComponent.new(
+            buttons: [
+              { label: "행추가", class: "btn btn-sm btn-primary", action: "click->om-internal-order#addItemRow" },
+              { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->om-internal-order#deleteItemRows" }
+            ]
+          ) %>
         </div>
 
         <div class="h-[300px]">

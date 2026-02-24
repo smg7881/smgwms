@@ -11,159 +11,83 @@
       ) %>
 
       <!-- 우측 툴바 버튼 영역 -->
-      <div class="space-x-2">
-        <button type="button" class="btn btn-primary" data-action="click->om-service-order-form#newOrder">
-          <i data-lucide="plus" class="w-4 h-4 mr-2"></i> 신규
-        </button>
-        <button type="button" class="btn btn-success" data-action="click->om-service-order-form#saveOrder">
-          <i data-lucide="save" class="w-4 h-4 mr-2"></i> 저장
-        </button>
-        <button type="button" class="btn btn-danger" data-action="click->om-service-order-form#cancelOrder">
-          <i data-lucide="x-circle" class="w-4 h-4 mr-2"></i> 오더취소
-        </button>
-      </div>
+      <%= render Ui::GridToolbarComponent.new(
+        buttons: [
+          { label: "신규", class: "btn btn-primary", action: "click->om-service-order-form#newOrder" },
+          { label: "저장", class: "btn btn-success", action: "click->om-service-order-form#saveOrder" },
+          { label: "오더취소", class: "btn btn-danger", action: "click->om-service-order-form#cancelOrder" }
+        ]
+      ) %>
     </div>
 
     <!-- 마스터 : 서비스 오더 등록/수정 폼 -->
-    <div class="bg-white p-4 rounded shadow-sm border mb-4">
-      <h3 class="text-sm font-bold text-gray-800 mb-3 border-b pb-2">기본 정보</h3>
+    <div class="mb-4">
+      <input type="hidden" data-om-service-order-form-target="methodInput" value="post">
+      <input type="hidden" data-om-service-order-form-target="idInput">
       
-      <%= form_with url: collection_path, method: :post, data: { om_service_order_form_target: "form" } do |f| %>
-        <input type="hidden" name="_method" value="post" data-om-service-order-form-target="methodInput">
-        <input type="hidden" name="id" data-om-service-order-form-target="idInput">
-        
-        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          <!-- 1 Row -->
-          <div class="form-group flex items-center space-x-2">
-            <label class="font-medium text-sm text-gray-700 w-24">계약번호 <span class="text-red-500">*</span></label>
-            <div class="flex-1 flex items-center space-x-1" data-controller="search-popup" data-search-popup-type-value="client">
-              <%= f.text_field "order[ctrt_no]", class: "form-input flex-1 text-sm bg-gray-50", readonly: true, data: { search_popup_target: "code", om_service_order_form_target: "ctrtNo" } %>
-              <button type="button" class="btn btn-secondary px-2" data-action="search-popup#open"><i data-lucide="search" class="w-4 h-4"></i></button>
-            </div>
-          </div>
-          <div class="form-group flex items-center space-x-2">
-            <label class="font-medium text-sm text-gray-700 w-24">오더유형 <span class="text-red-500">*</span></label>
-            <%= f.select "order[ord_type_cd]", common_code_options("75"), { include_blank: "선택" }, class: "form-select flex-1 text-sm", data: { om_service_order_form_target: "ordTypeCd" } %>
-          </div>
-          <div class="form-group flex items-center space-x-2">
-            <label class="font-medium text-sm text-gray-700 w-24">고객코드 <span class="text-red-500">*</span></label>
-            <div class="flex-1 flex items-center space-x-1">
-              <%= f.text_field "order[cust_cd]", class: "form-input w-16 text-sm bg-gray-50", readonly: true, data: { om_service_order_form_target: "custCd" } %>
-              <input type="text" class="form-input flex-1 text-sm bg-gray-50" readonly data-om-service-order-form-target="custNm">
-            </div>
-          </div>
-          <div class="form-group flex items-center space-x-2">
-            <label class="font-medium text-sm text-gray-700 w-24">청구고객 <span class="text-red-500">*</span></label>
-            <%= f.text_field "order[bilg_cust_cd]", class: "form-input flex-1 text-sm bg-gray-50", readonly: true, data: { om_service_order_form_target: "bilgCustCd" } %>
-          </div>
-          
-          <!-- 2 Row -->
-          <div class="form-group flex items-center space-x-2">
-            <label class="font-medium text-sm text-gray-700 w-24">오더요청고객 <span class="text-red-500">*</span></label>
-            <%= f.text_field "order[req_cust_cd]", class: "form-input flex-1 text-sm bg-gray-50", readonly: true, data: { om_service_order_form_target: "reqCustCd" } %>
-          </div>
-          <div class="form-group flex items-center space-x-2">
-            <label class="font-medium text-sm text-gray-700 w-24">계약고객 <span class="text-red-500">*</span></label>
-            <%= f.text_field "order[ctrt_cust_cd]", class: "form-input flex-1 text-sm bg-gray-50", readonly: true, data: { om_service_order_form_target: "ctrtCustCd" } %>
-          </div>
-          <div class="form-group flex items-center space-x-2">
-            <label class="font-medium text-sm text-gray-700 w-24">고객담당자 <span class="text-red-500">*</span></label>
-            <%= f.text_field "order[cust_ofcr_nm]", class: "form-input flex-1 text-sm", data: { om_service_order_form_target: "custOfcrNm" } %>
-          </div>
-          <div class="form-group flex items-center space-x-2">
-            <label class="font-medium text-sm text-gray-700 w-24">전화번호 <span class="text-red-500">*</span></label>
-            <%= f.text_field "order[cust_ofcr_tel]", class: "form-input flex-1 text-sm", data: { om_service_order_form_target: "custOfcrTel" } %>
-          </div>
-          
-          <!-- 3 Row -->
-          <div class="form-group flex items-center space-x-2">
-            <label class="font-medium text-sm text-gray-700 w-24">운송구분 <span class="text-red-500">*</span></label>
-            <%= f.select "order[tran_div_cd]", common_code_options("87"), { include_blank: "선택" }, class: "form-select flex-1 text-sm", data: { om_service_order_form_target: "tranDivCd" } %>
-          </div>
-          <div class="form-group flex items-center space-x-2 col-span-3">
-            <label class="font-medium text-sm text-gray-700 w-24">특이사항</label>
-            <%= f.text_field "order[remark]", class: "form-input flex-1 text-sm", data: { om_service_order_form_target: "remark" } %>
-          </div>
-        </div>
-        
-        <h3 class="text-sm font-bold text-gray-800 mt-6 mb-3 border-b pb-2">출도착지 상세</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          
-          <!-- 출발지 그룹 -->
-          <div class="bg-gray-50 p-3 rounded border">
-            <div class="font-semibold text-gray-700 mb-2">출발지 정보</div>
-            <div class="space-y-3">
-              <div class="flex items-center space-x-2">
-                <label class="text-sm w-20 text-gray-600">유형/코드</label>
-                <%= f.select "order[dpt_type_cd]", common_code_options("75"), { include_blank: "선택" }, class: "form-select w-20 text-sm", data: { om_service_order_form_target: "dptTypeCd" } %>
-                <div class="flex-1 flex items-center space-x-1" data-controller="search-popup" data-search-popup-type-value="client">
-                  <%= f.text_field "order[dpt_cd]", class: "form-input flex-1 text-sm", data: { search_popup_target: "code", om_service_order_form_target: "dptCd" } %>
-                  <button type="button" class="btn btn-secondary px-2" data-action="search-popup#open"><i data-lucide="search" class="w-4 h-4"></i></button>
-                </div>
-              </div>
-              <div class="flex items-center space-x-2">
-                <label class="text-sm w-20 text-gray-600">주소</label>
-                <%= f.text_field "order[dpt_addr]", class: "form-input flex-1 text-sm bg-gray-100", readonly: true, data: { om_service_order_form_target: "dptAddr" } %>
-              </div>
-              <div class="flex items-center space-x-2">
-                <label class="text-sm w-20 text-gray-600">시작요청일</label>
-                <%= f.date_field "order[req_start_dt]", class: "form-input flex-1 text-sm", value: Time.current.strftime("%Y-%m-%d"), data: { om_service_order_form_target: "reqStartDt" } %>
-              </div>
-            </div>
-          </div>
+      <%= render Ui::ResourceFormComponent.new(
+        model: nil,
+        title: "기본 정보",
+        url: collection_path,
+        method: :post,
+        target_controller: "om-service-order-form",
+        form_data: { om_service_order_form_target: "form" },
+        fields: [
+          # 1 Row
+          { field: "ctrt_no_nm", code_field: "ctrt_no", popup_type: "client", type: "popup", label: "계약번호", required: true, target: "ctrtNo" },
+          { field: "ord_type_cd", type: "select", options: common_code_options("75"), include_blank: "선택", label: "오더유형", required: true, target: "ordTypeCd" },
+          { field: "cust_nm", code_field: "cust_cd", type: "popup", popup_type: "client", label: "고객코드", required: true, target: "custCd", data: { action_target: "custCdSearchBtn", om_service_order_form_target: "custNm" } },
+          { field: "bilg_cust_cd", type: "input", label: "청구고객", required: true, disabled: true, target: "bilgCustCd" },
 
-          <!-- 도착지 그룹 -->
-          <div class="bg-gray-50 p-3 rounded border">
-            <div class="font-semibold text-gray-700 mb-2">도착지 정보</div>
-            <div class="space-y-3">
-              <div class="flex items-center space-x-2">
-                <label class="text-sm w-20 text-gray-600">유형/코드</label>
-                <%= f.select "order[arv_type_cd]", common_code_options("75"), { include_blank: "선택" }, class: "form-select w-20 text-sm", data: { om_service_order_form_target: "arvTypeCd" } %>
-                <div class="flex-1 flex items-center space-x-1" data-controller="search-popup" data-search-popup-type-value="client">
-                  <%= f.text_field "order[arv_cd]", class: "form-input flex-1 text-sm", data: { search_popup_target: "code", om_service_order_form_target: "arvCd" } %>
-                  <button type="button" class="btn btn-secondary px-2" data-action="search-popup#open"><i data-lucide="search" class="w-4 h-4"></i></button>
-                </div>
-              </div>
-              <div class="flex items-center space-x-2">
-                <label class="text-sm w-20 text-gray-600">주소</label>
-                <%= f.text_field "order[arv_addr]", class: "form-input flex-1 text-sm bg-gray-100", readonly: true, data: { om_service_order_form_target: "arvAddr" } %>
-              </div>
-              <div class="flex items-center space-x-2">
-                <label class="text-sm w-20 text-gray-600">납기요청일</label>
-                <%= f.datetime_field "order[aptd_req_ymd]", class: "form-input flex-1 text-sm", value: Time.current.end_of_day.strftime("%Y-%m-%dT%H:%M"), data: { om_service_order_form_target: "aptdReqYmd" } %>
-              </div>
-            </div>
-          </div>
-          
-          <!-- 상태 영역 -->
-          <div class="bg-gray-50 p-3 rounded border">
-             <div class="font-semibold text-gray-700 mb-2">진행 상태</div>
-             <div class="space-y-3">
-                <div class="flex items-center space-x-2">
-                  <label class="text-sm w-20 text-gray-600">오더번호</label>
-                  <input type="text" class="form-input flex-1 text-sm font-bold text-blue-600 bg-gray-100 rounded" readonly data-om-service-order-form-target="ordNoDisplay" placeholder="저장 시 채번됩니다.">
-                </div>
-                <div class="flex items-center space-x-2 hidden" data-om-service-order-form-target="reasonGroup">
-                  <label class="text-sm w-20 text-gray-600 text-red-500 font-bold">수정사유 <span class="text-red-500">*</span></label>
-                  <%= f.text_field "order[change_reason]", class: "form-input flex-1 text-sm border-red-300", data: { om_service_order_form_target: "changeReason" }, placeholder: "수정/취소 사유 입력" %>
-                </div>
-             </div>
-          </div>
-        </div>
-      <% end %>
+          # 2 Row
+          { field: "req_cust_cd", type: "input", label: "오더요청고객", required: true, disabled: true, target: "reqCustCd" },
+          { field: "ctrt_cust_cd", type: "input", label: "계약고객", required: true, disabled: true, target: "ctrtCustCd" },
+          { field: "cust_ofcr_nm", type: "input", label: "고객담당자", required: true, target: "custOfcrNm" },
+          { field: "cust_ofcr_tel", type: "input", label: "전화번호", required: true, target: "custOfcrTel" },
+
+          # 3 Row
+          { field: "tran_div_cd", type: "select", options: common_code_options("87"), include_blank: "선택", label: "운송구분", required: true, target: "tranDivCd" },
+          { field: "remark", type: "input", label: "특이사항", col_span: 3, target: "remark" },
+
+          # 출발지
+          { field: "dpt_cd_nm", code_field: "dpt_cd", popup_type: "client", type: "popup", label: "출발지코드", target: "dptCd" },
+          { field: "dpt_type_cd", type: "select", label: "출발지유형", options: common_code_options("75"), include_blank: "선택", target: "dptTypeCd" },
+          { field: "dpt_addr", type: "input", label: "출발지주소", disabled: true, target: "dptAddr" },
+          { field: "req_start_dt", type: "input", input_type: "date", label: "시작요청일", value: Time.current.strftime("%Y-%m-%d"), target: "reqStartDt" },
+
+          # 도착지
+          { field: "arv_cd_nm", code_field: "arv_cd", popup_type: "client", type: "popup", label: "도착지코드", target: "arvCd" },
+          { field: "arv_type_cd", type: "select", label: "도착지유형", options: common_code_options("75"), include_blank: "선택", target: "arvTypeCd" },
+          { field: "arv_addr", type: "input", label: "도착지주소", disabled: true, target: "arvAddr" },
+          { field: "aptd_req_ymd", type: "input", input_type: "datetime-local", label: "납기요청일", value: Time.current.end_of_day.strftime("%Y-%m-%dT%H:%M"), target: "aptdReqYmd" },
+
+          # 상태
+          { field: "ord_no_display", type: "input", label: "오더번호", disabled: true, placeholder: "저장 시 채번됩니다.", target: "ordNoDisplay" },
+          { field: "change_reason", type: "input", label: "수정사유", placeholder: "수정/취소 사유 입력", target: "changeReason" },
+        ],
+        cols: 4,
+        show_buttons: false
+      ) %>
     </div>
 
     <!-- 디테일 : 아이템 상세내역 (그리드) -->
     <div class="flex flex-col flex-1 h-full min-h-[300px]">
-      <div class="flex justify-between items-center mb-2">
-        <h3 class="text-sm font-bold text-gray-800">아이템 상세내역</h3>
-        <div class="space-x-1">
-           <button type="button" class="btn btn-sm btn-secondary" data-action="click->om-service-order-form#addRow"><i data-lucide="plus" class="w-3 h-3 mr-1"></i> 추가</button>
-           <button type="button" class="btn btn-sm btn-danger" data-action="click->om-service-order-form#removeRow"><i data-lucide="minus" class="w-3 h-3 mr-1"></i> 삭제</button>
-        </div>
+      <div class="flex items-center justify-between gap-3 mb-3">
+        <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
+          <%= helpers.lucide_icon("list", css_class: "w-4 h-4 text-gray-500") %>
+          아이템 상세내역
+          <%= render Ui::GridActionsComponent.new(grid_id: "om-service-order-items") %>
+        </h3>
+        <%= render Ui::GridToolbarComponent.new(
+          buttons: [
+            { label: "추가", class: "btn btn-sm btn-secondary", action: "click->om-service-order-form#addRow" },
+            { label: "삭제", class: "btn btn-sm btn-danger", action: "click->om-service-order-form#removeRow" }
+          ]
+        ) %>
       </div>
       
       <%= render Ui::AgGridComponent.new(
+        grid_id: "om-service-order-items",
         url: grid_url,
         columns: [
           { field: "item_cd", headerName: "아이템코드", width: 150, editable: true, cellEditor: "agTextCellEditor" },

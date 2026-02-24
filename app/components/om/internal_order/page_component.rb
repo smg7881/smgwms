@@ -115,4 +115,19 @@ class Om::InternalOrder::PageComponent < Om::BasePageComponent
         }
       ]
     end
+
+    def search_fields
+      [
+        {
+          field: "search_ord_no",
+          type: "text",
+          label: "오더번호",
+          placeholder: "오더번호 입력",
+          data: {
+            om_internal_order_target: "searchOrdNo",
+            action: "keydown.enter->om-internal-order#search"
+          }
+        }
+      ]
+    end
 end
