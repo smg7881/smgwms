@@ -22,6 +22,8 @@ class SearchPopupsController < ApplicationController
             fnc_or_nm: row[:fnc_or_nm],
             fnc_or_eng_nm: row[:fnc_or_eng_nm],
             use_yn: row[:use_yn],
+            phone: row[:phone],
+            mobile_phone: row[:mobile_phone],
             upper_corp_cd: row[:upper_corp_cd],
             upper_corp_nm: row[:upper_corp_nm],
             sellbuy_attr_cd: row[:sellbuy_attr_cd],
@@ -347,7 +349,20 @@ class SearchPopupsController < ApplicationController
       return [] unless defined?(User) && User.table_exists?
 
       User.ordered.filter_map do |row|
-        build_generic_row(code: row.user_id_code, name: row.user_nm)
+        code = row.user_id_code.to_s.strip.upcase
+        if code.blank?
+          next
+        end
+
+        name = row.user_nm.to_s.strip.presence || code
+        phone = row.phone.to_s.strip
+        {
+          code: code,
+          name: name,
+          display: name,
+          phone: phone.presence,
+          mobile_phone: phone.presence
+        }.compact
       end
     rescue ActiveRecord::StatementInvalid
       []

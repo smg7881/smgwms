@@ -1,0 +1,44 @@
+<%= helpers.system_page_container do %>
+  <%= helpers.system_page_header("오더조회") %>
+
+  <div data-controller="om-order-inquiry" class="flex flex-col h-full bg-white p-4 rounded shadow-sm border space-y-4">
+    
+    <!-- 검색조건 영역 -->
+    <%= render Ui::ResourceFormComponent.new(
+      model: search_form,
+      fields: search_fields,
+      url: collection_path(format: :json),
+      method: :get,
+      cols: 4,
+      submit_label: "조회",
+      form_html: { 
+        class: "search-form", 
+        novalidate: true, 
+        data: { 
+          controller: "search-form", 
+          action: "submit->search-form#search search-form:success@window->om-order-inquiry#loadMasterData" 
+        } 
+      }
+    ) %>
+
+    <!-- 마스터/디테일 그리드 영역 (상하 분할) -->
+    <div class="flex-1 flex flex-col min-h-0 space-y-4">
+      
+      <!-- 1. Master: 오더목록 -->
+      <div class="flex-1 min-h-[300px] flex flex-col overflow-hidden">
+        <h3 class="text-sm font-bold text-gray-800 mb-2">오더목록</h3>
+        <div data-controller="ag-grid" class="flex-1 w-full ag-theme-alpine border rounded" data-om-order-inquiry-target="masterGridContainer"></div>
+      </div>
+
+      <!-- 2. Detail: 오더아이템목록 -->
+      <div class="h-[250px] flex flex-col overflow-hidden bg-gray-50 border p-2 rounded">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-sm font-bold text-gray-800">오더아이템목록</h3>
+          <span class="text-xs text-gray-500 font-medium" data-om-order-inquiry-target="detailHeaderLabel">오더를 선택해주세요.</span>
+        </div>
+        <div data-controller="ag-grid" class="flex-1 w-full ag-theme-alpine border bg-white" data-om-order-inquiry-target="detailGridContainer"></div>
+      </div>
+
+    </div>
+  </div>
+<% end %>

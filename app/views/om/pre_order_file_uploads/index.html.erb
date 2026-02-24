@@ -1,0 +1,6 @@
+<%= turbo_frame_tag "main-content" do %>
+  <%= render Om::PreOrderFileUpload::PageComponent.new(
+    query_params: request.query_parameters,
+    form: @form
+  ) %>
+<% end %>

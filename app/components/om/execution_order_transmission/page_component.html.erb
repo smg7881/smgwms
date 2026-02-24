@@ -1,0 +1,57 @@
+<%= helpers.system_page_container do %>
+  <%= helpers.system_page_header("실행오더전송이력조회") %>
+
+  <!-- AG Grid 영역 -->
+  <div class="flex flex-col flex-1 h-full min-h-[500px]" 
+       data-controller="om-execution-order-transmission-grid"
+       data-om-execution-order-transmission-grid-retransmit-url-value="<%= retransmit_path %>">
+    
+    <%= render Ui::ResourceFormComponent.new(
+      model: search_form,
+      fields: search_fields,
+      url: collection_path(format: :json),
+      method: :get,
+      cols: 4,
+      submit_label: "조회",
+      form_html: { 
+        class: "search-form", 
+        novalidate: true, 
+        data: { 
+          controller: "search-form", 
+          action: "submit->search-form#search" 
+        } 
+      }
+    ) %>
+
+    <div class="flex items-center justify-between gap-3 mb-3 mt-2">
+      <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
+        전송 이력 목록
+        <%= render Ui::GridActionsComponent.new(grid_id: "om-execution-order-transmission") %>
+      </h3>
+      <%= render Ui::GridToolbarComponent.new do |toolbar| %>
+        <% toolbar.with_right do %>
+          <button type="button" class="btn btn-sm btn-primary" data-action="click->om-execution-order-transmission-grid#retransmit">
+            <%= helpers.lucide_icon("refresh-ccw", css_class: "w-4 h-4 mr-1") %> 재전송
+          </button>
+        <% end %>
+      <% end %>
+    </div>
+
+    <!-- 마스터 그리드 -->
+    <%= helpers.ag_grid_tag(
+      url: collection_path(format: :json, q: query_params[:q]),
+      options: {
+        rowSelection: "multiple",
+        onSelectionChanged: "onSelectionChanged"
+      },
+      data: { 
+        om_execution_order_transmission_grid_target: "grid",
+        action: "ag-grid:grid-ready->om-execution-order-transmission-grid#onGridReady search-form:success@window->om-execution-order-transmission-grid#reload"
+      }
+    ) do |grid| %>
+      <% columns.each do |col| %>
+        <% grid.with_column(**col) %>
+      <% end %>
+    <% end %>
+  </div>
+<% end %>

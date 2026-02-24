@@ -222,18 +222,57 @@ D:\myProject\smgWms\doc\frontend\STIMULUS_COMPONENTS_GUIDE.md 이 파일일 개�
 완료가 되면 _PRD.md 파일을 _PRD_완료.md 로 변경해주세요
 
 
-/
-Standard
-/
-Client Management
- 
- 
- 
-   - doc/std/작업장관리_PRD_완료.md
-  - doc/std/권역관리_PRD_완료.md
-  - doc/std/권역별우편번호관리_PRD_완료.md
-  - doc/std/국가코드관리_PRD_완료.md
-  - doc/std/공휴일관리_PRD_완료.md
-  - doc/std/결재관리_PRD_완료.md
-  - doc/std/결재요청승인_PRD_완료.md
-  - doc/std/결재이력관리_PRD_완료.md
+D:\myProject\smgWms\doc\std\법인관리_PRD.md
+D:\myProject\smgWms\doc\std\사업자등록증관리_PRD.md
+D:\myProject\smgWms\doc\std\품명관리_PRD.md
+D:\myProject\smgWms\doc\std\즐겨찾기관리_PRD.md
+D:\myProject\smgWms\doc\std\인터페이스정보관리_PRD.md
+D:\myProject\smgWms\doc\std\예약작업관리_PRD.md
+D:\myProject\smgWms\doc\std\환율관리_PRD.md
+분석하여 하니씩 개발을 진행해주세요.
+우리시스템에 맞게 개발을 해주세요
+생성하는 소스는 std 만든 후에 생성해주세요
+메뉴 위치는 Standard\ 아래에 생성해주세요.
+작업시 스킬을 찾아서 맞는 스킬로 작업을 진행해주세요 
+D:\myProject\smgWms\doc\frontend\STIMULUS_COMPONENTS_GUIDE.md 이 파일일 개발시 참조해주세요
+메뉴도 생성해주세요. 사용자별 메뉴권한도 생성을 해주세요
+테이블은 tb_ 대신 std_ 로 시작해주세요
+완료가 되면 _PRD.md 파일을 _PRD_완료.md 로 변경해주세요
+
+
+법인관리 , 사업자등록증관리 , 품명관리 , 즐겨찾기관리 , 인터페이스정보관리 , 예약작업관리 , 환율관리 
+
+
+공통팝업창을 개발하고 싶습니다.
+조회조건에 디자인을 명칭,코드,돋보기아이콘 이렇게 변경을 해주세요. 
+이때 코드 항목은 비활성화입니다. 
+명칭에서 입력을 하면 입력데이터가 팝업창으로 넘어갑니다
+팝업창의 디자인은 기본적으로 조회조건은 resource_form 을 사용하고 그리드 ag-grid을 사용하여 개발합니다.
+그리드에서 선택을 하면 데이터가 조회조건의 명칭,코드 에 세팅됩니다
+조회조건에서 엔터을 치거나 돋보기 아이콘을 클릭했을때 팝업창이 뜬다
+그리고 그리드에서도 명칭 항목에서 엔터치거나 돋보기을 눌렀을때 똑같은 화면이 뜬다
+이것을 공통으로 만든다
+
+
+
+/plugin install frontend-design@claude-code-plugins 
+
+D:\_LOGIS\2.오더\pdf\LogisT-OM-AN13(화면정의서-V1.0)-고객별시스템설정관리.pdf
+D:\_LOGIS\2.오더\pdf\LogisT-OM-DS02(화면설계서-V1.0)-고객별시스템설정관리.pdf
+파일을 읽어서 PRD을 작성후 개발을 해주세요
+1. 같은 화면 명에 화면설계서,화면정의서가 있습니다. 
+   이 파일들을 묶어서 분석하여 D:\myProject\smgWms\doc\om\ 폴더 안에 개발할수 있도록 상세하게
+   PRD을 아래과 같이 작성해주세요
+  - User Flow: 화면 간의 유기적인 흐름 정리
+  - UI Component List: rails8 기반으로 필요한 컴포넌트 추출
+  - Data Mapping: 각 화면의 입력 필드와 매칭되는 DB 메타데이터 정의
+  - Logic Definition: 버튼 클릭 시 발생하는 상세 비즈니스 로직
+  - 화면 정의 
+  - 우리시스템에 맞게 수정해주세요.
+  - 기본적 디자인은 조회조건은 resource_form 을 사용, 그리드 ag-grid을 사용하여 개발
+  - 생성하는 소스는 om 만든 후에 생성해주세요 
+2. D:\myProject\smgWms\doc\om\ 이 폴더 안에 md 파일로 만들어주세요
+3. 작업시 스킬을 찾아서 맞는 스킬로 작업을 진행해주세요  
+4. D:\myProject\smgWms\doc\frontend\STIMULUS_COMPONENTS_GUIDE.md 이 파일일 개발시 참조해주세요
+5. 완료시 PRD 파일명에 완료을 추가해주세요
+6. 메뉴 와 사용자별 메뉴권한도 생성을 해주세요

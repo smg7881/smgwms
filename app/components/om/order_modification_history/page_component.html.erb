@@ -1,0 +1,113 @@
+<%= helpers.system_page_container do %>
+  <%= helpers.system_page_header("오더수정이력조회") %>
+
+  <div data-controller="om-order-modification-history">
+    
+    <!-- 검색조건 영역: 오더번호 및 이력순번 -->
+    <%= render Ui::ResourceFormComponent.new(
+      model: search_form,
+      fields: search_fields,
+      url: collection_path(format: :json),
+      method: :get,
+      cols: 4,
+      submit_label: "조회",
+      form_html: { 
+        class: "search-form", 
+        novalidate: true, 
+        data: { 
+          controller: "search-form", 
+          action: "submit->search-form#search search-form:success@window->om-order-modification-history#loadMasterData" 
+        } 
+      }
+    ) %>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full min-h-[500px]">
+      
+      <!-- 1. Master: 오더수정이력목록 -->
+      <div class="flex flex-col h-full bg-white p-2 rounded shadow-sm border overflow-hidden">
+        <h3 class="text-sm font-bold text-gray-800 mb-2 pl-2">오더수정이력목록</h3>
+        <div class="flex-1 min-h-[450px]">
+          <div data-controller="ag-grid" class="h-full w-full ag-theme-alpine" data-om-order-modification-history-target="masterGridContainer"></div>
+        </div>
+      </div>
+
+      <!-- 2. Detail: 상세 탭 정보 -->
+      <div class="flex flex-col h-full bg-white rounded shadow-sm border overflow-hidden">
+        <!-- Tabs 제어 -->
+        <div data-controller="tabs" data-tabs-active-tab-class="border-blue-500 text-blue-600 font-medium bg-blue-50" class="flex flex-col h-full">
+          
+          <!-- 탭 헤더 영역 -->
+          <div class="flex border-b bg-gray-50">
+            <button class="flex-1 py-3 text-sm font-medium text-gray-600 hover:bg-gray-100 border-b-2 border-transparent focus:outline-none transition-colors" data-tabs-target="tab" data-action="tabs#change" data-index="0">출도착지정보</button>
+            <button class="flex-1 py-3 text-sm font-medium text-gray-600 hover:bg-gray-100 border-b-2 border-transparent focus:outline-none transition-colors" data-tabs-target="tab" data-action="tabs#change" data-index="1">사전오더</button>
+            <button class="flex-1 py-3 text-sm font-medium text-gray-600 hover:bg-gray-100 border-b-2 border-transparent focus:outline-none transition-colors" data-tabs-target="tab" data-action="tabs#change" data-index="2">오더진행정보</button>
+            <button class="flex-1 py-3 text-sm font-medium text-gray-600 hover:bg-gray-100 border-b-2 border-transparent focus:outline-none transition-colors" data-tabs-target="tab" data-action="tabs#change" data-index="3">아이템상세</button>
+          </div>
+
+          <!-- 탭 본문 영역 -->
+          <div class="flex-1 p-4 overflow-y-auto">
+            
+            <!-- 탭 1: 출도착지정보 -->
+            <div data-tabs-target="panel" class="hidden space-y-4">
+              <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-4 bg-gray-50 p-4 rounded border">
+                  <h4 class="font-bold text-gray-700 text-sm border-b pb-2">출발지 정보</h4>
+                  <div class="flex items-center space-x-2"><label class="w-24 text-sm text-gray-600">구분/순번</label><input type="text" class="form-input flex-1 text-sm bg-white" readonly data-om-order-modification-history-target="sctnLabel1"></div>
+                  <div class="flex items-center space-x-2"><label class="w-24 text-sm text-gray-600">출발지코드</label><input type="text" class="form-input flex-1 text-sm bg-white" readonly data-om-order-modification-history-target="dptArCd"></div>
+                  <div class="flex items-center space-x-2"><label class="w-24 text-sm text-gray-600">출발지주소</label><input type="text" class="form-input flex-1 text-sm bg-white" readonly data-om-order-modification-history-target="dptArAddr"></div>
+                  <div class="flex items-center space-x-2"><label class="w-24 text-sm text-gray-600">시작요청일시</label><input type="text" class="form-input flex-1 text-sm bg-white font-medium text-blue-600" readonly data-om-order-modification-history-target="strtReqDate"></div>
+                  <div class="flex items-center space-x-2"><label class="w-24 text-sm text-gray-600">출발지담당자</label><input type="text" class="form-input flex-1 text-sm bg-white" readonly data-om-order-modification-history-target="dptArOfcr"></div>
+                  <div class="flex items-center space-x-2"><label class="w-24 text-sm text-gray-600">전화번호</label><input type="text" class="form-input flex-1 text-sm bg-white" readonly data-om-order-modification-history-target="dptArTelNo"></div>
+                </div>
+                
+                <div class="space-y-4 bg-gray-50 p-4 rounded border">
+                  <h4 class="font-bold text-gray-700 text-sm border-b pb-2">도착지 정보</h4>
+                  <div class="flex items-center space-x-2"><label class="w-24 text-sm text-gray-600">도착지코드</label><input type="text" class="form-input flex-1 text-sm bg-white" readonly data-om-order-modification-history-target="arvArCd"></div>
+                  <div class="flex items-center space-x-2"><label class="w-24 text-sm text-gray-600">도착지주소</label><input type="text" class="form-input flex-1 text-sm bg-white" readonly data-om-order-modification-history-target="arvArAddr"></div>
+                  <div class="flex items-center space-x-2"><label class="w-24 text-sm text-gray-600">납기요청일시</label><input type="text" class="form-input flex-1 text-sm bg-white font-medium text-red-600" readonly data-om-order-modification-history-target="aptdReqDate"></div>
+                  <div class="flex items-center space-x-2"><label class="w-24 text-sm text-gray-600">도착지담당자</label><input type="text" class="form-input flex-1 text-sm bg-white" readonly data-om-order-modification-history-target="arvArOfcr"></div>
+                  <div class="flex items-center space-x-2"><label class="w-24 text-sm text-gray-600">전화번호</label><input type="text" class="form-input flex-1 text-sm bg-white" readonly data-om-order-modification-history-target="arvArTelNo"></div>
+                  <div class="flex items-center space-x-2"><label class="w-24 text-sm text-gray-600">특이사항</label><input type="text" class="form-input flex-1 text-sm bg-white" readonly data-om-order-modification-history-target="prclText"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 탭 2: 사전오더 -->
+            <div data-tabs-target="panel" class="hidden space-y-4">
+              <div class="bg-gray-50 p-4 rounded border grid grid-cols-2 gap-4">
+                <div class="flex items-center space-x-2"><label class="w-24 text-sm text-gray-600">구분/순번</label><input type="text" class="form-input flex-1 text-sm bg-white" readonly data-om-order-modification-history-target="sctnLabel2"></div>
+                <div class="flex items-center space-x-2"><label class="w-24 text-sm text-gray-600">오더유형</label><input type="text" class="form-input flex-1 text-sm bg-white" readonly data-om-order-modification-history-target="ordTypeCdPre"></div>
+                <div class="flex items-center space-x-2"><label class="w-24 text-sm text-gray-600">접수일시</label><input type="text" class="form-input flex-1 text-sm bg-white font-medium" readonly data-om-order-modification-history-target="custOrdRecpDate"></div>
+                <div class="flex items-center space-x-2"><label class="w-24 text-sm text-gray-600">접수채널</label><input type="text" class="form-input flex-1 text-sm bg-white" readonly data-om-order-modification-history-target="custOrdRecpChn"></div>
+                <div class="flex items-center space-x-2"><label class="w-24 text-sm text-gray-600">요청고객</label><input type="text" class="form-input flex-1 text-sm bg-white" readonly data-om-order-modification-history-target="ordReqCustCdPre"></div>
+                <div class="flex items-center space-x-2"><label class="w-24 text-sm text-gray-600">고객담당자명</label><input type="text" class="form-input flex-1 text-sm bg-white" readonly data-om-order-modification-history-target="custOfcrNm"></div>
+                <div class="flex items-center space-x-2 col-span-2"><label class="w-24 text-sm text-gray-600">전화번호</label><input type="text" class="form-input w-[calc(50%-5rem)] text-sm bg-white" readonly data-om-order-modification-history-target="custTelNo"></div>
+              </div>
+            </div>
+
+            <!-- 탭 3: 오더진행정보 -->
+            <div data-tabs-target="panel" class="hidden space-y-4">
+              <div class="bg-gray-50 p-4 rounded border grid grid-cols-2 gap-4">
+                <div class="flex items-center space-x-2"><label class="w-24 text-sm text-gray-600">구분/순번</label><input type="text" class="form-input flex-1 text-sm bg-white" readonly data-om-order-modification-history-target="sctnLabel3"></div>
+                <div class="flex items-center space-x-2"><label class="w-24 text-sm text-gray-600">생성일시</label><input type="text" class="form-input flex-1 text-sm bg-white" readonly data-om-order-modification-history-target="creatDate"></div>
+                <div class="flex items-center space-x-2"><label class="w-24 text-sm text-gray-600">취소일시</label><input type="text" class="form-input flex-1 text-sm bg-white text-red-600" readonly data-om-order-modification-history-target="cnclDate"></div>
+                <div class="flex items-center space-x-2"><label class="w-24 text-sm text-gray-600">취소사유</label><input type="text" class="form-input flex-1 text-sm bg-white" readonly data-om-order-modification-history-target="ordCnclReasonCd"></div>
+                <div class="flex items-center space-x-2"><label class="w-24 text-sm text-gray-600">오더사유</label><input type="text" class="form-input flex-1 text-sm bg-white" readonly data-om-order-modification-history-target="ordReasonCd"></div>
+                <div class="flex items-center space-x-2"><label class="w-24 text-sm text-gray-600">완료일시</label><input type="text" class="form-input flex-1 text-sm bg-white font-medium text-blue-600" readonly data-om-order-modification-history-target="cmptDate"></div>
+              </div>
+            </div>
+
+            <!-- 탭 4: 아이템상세 (AG-Grid 2) -->
+            <div data-tabs-target="panel" class="hidden h-full">
+              <div class="h-[400px] w-full">
+                <div data-controller="ag-grid" class="h-full w-full ag-theme-alpine" data-om-order-modification-history-target="detailGridContainer"></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+<% end %>

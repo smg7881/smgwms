@@ -1,0 +1,47 @@
+<div data-controller="om-pre-order-file-upload"
+     data-action="ag-grid:ready->om-pre-order-file-upload#registerGrid"
+     data-om-pre-order-file-upload-preview-url-value="<%= preview_url %>"
+     data-om-pre-order-file-upload-validate-url-value="<%= validate_url %>"
+     data-om-pre-order-file-upload-save-url-value="<%= save_url %>"
+     data-om-pre-order-file-upload-template-url-value="<%= template_url %>">
+  <%= render Ui::ResourceFormComponent.new(
+    model: form,
+    fields: upload_fields,
+    url: preview_url,
+    method: :post,
+    cols: 1,
+    show_buttons: false,
+    target_controller: "om-pre-order-file-upload",
+    form_html: { class: "om-pre-order-file-upload-form", multipart: true, novalidate: true }
+  ) %>
+
+  <div class="flex items-center justify-between gap-3 mb-3 mt-2">
+    <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
+      <%= helpers.lucide_icon("file-up", css_class: "w-4 h-4 text-text-secondary") %>
+      사전오더 파일 업로드 결과
+      <%= render Ui::GridActionsComponent.new(grid_id: "om-pre-order-file-upload") %>
+    </h3>
+    <%= render Ui::GridToolbarComponent.new(
+      buttons: [
+        { label: "파일미리보기", class: "btn btn-sm btn-secondary", action: "click->om-pre-order-file-upload#preview" },
+        { label: "필수항목체크", class: "btn btn-sm btn-primary", action: "click->om-pre-order-file-upload#validate" },
+        { label: "양식다운로드", class: "btn btn-sm btn-outline", action: "click->om-pre-order-file-upload#downloadTemplate" },
+        { label: "업로드저장", class: "btn btn-sm btn-success", action: "click->om-pre-order-file-upload#save" }
+      ]
+    ) %>
+  </div>
+
+  <div class="rounded-md border border-border px-3 py-2 mb-3 text-sm text-text-secondary bg-bg-secondary"
+       data-om-pre-order-file-upload-target="summary">
+    업로드 파일을 선택하고 [파일미리보기] 또는 [필수항목체크]를 실행해주세요.
+  </div>
+
+  <%= render Ui::AgGridComponent.new(
+    columns: upload_result_columns,
+    row_data: [],
+    height: "calc(100vh - 360px)",
+    page_size: 20,
+    grid_id: "om-pre-order-file-upload",
+    data: { om_pre_order_file_upload_target: "grid" }
+  ) %>
+</div>

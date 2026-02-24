@@ -58,7 +58,11 @@
       "mcp__playwright__browser_evaluate",
       "Bash(python3:*)",
       "mcp__serena__find_symbol",
-      "mcp__chrome-devtools__list_console_messages"
+      "mcp__chrome-devtools__list_console_messages",
+      "Bash(python:*)",
+      "mcp__serena__check_onboarding_performed",
+      "mcp__serena__list_memories",
+      "mcp__serena__list_dir"
     ]
   }
 }

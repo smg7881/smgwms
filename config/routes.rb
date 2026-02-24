@@ -208,6 +208,66 @@ Rails.application.routes.draw do
     resources :sellbuy_attributes, controller: :sellbuy_attributes, only: [ :index, :create, :update, :destroy ]
   end
 
+  namespace :om do
+    resources :order_modification_histories, only: [ :index, :show ]
+    resources :order_work_progresses, only: [ :index ]
+    resources :execution_order_transmissions, only: [ :index ] do
+      post :retransmit, on: :collection
+    end
+    resources :service_orders, only: [ :index, :create, :update ] do
+      post :cancel, on: :member
+    end
+    resources :pre_order_file_uploads, only: [ :index ] do
+      collection do
+        post :preview
+        post :validate_rows
+        post :save
+        get :download_template
+      end
+    end
+    resources :pre_order_receptions, only: [ :index ] do
+      collection do
+        get :items
+        post :create_orders
+      end
+    end
+    resources :pre_order_reception_errors, only: [ :index ] do
+      collection do
+        get :items
+        post :reprocess
+        get :download_template
+        post :upload_template
+      end
+    end
+    resources :waiting_orders, only: [ :index ] do
+      post :distribute, on: :collection
+    end
+    get "customer-system-config", to: redirect("/om/customer_system_configs")
+    resources :customer_system_configs, only: [ :index ] do
+      post :batch_save, on: :collection
+    end
+    resources :customer_order_officers, only: [ :index ] do
+      post :batch_save, on: :collection
+    end
+    resources :order_officers, only: [ :index ] do
+      post :batch_save, on: :collection
+    end
+    resources :internal_orders, only: [ :index, :create, :update ] do
+      member do
+        post :cancel
+      end
+    end
+    resources :order_manual_completions, only: [ :index ] do
+      collection do
+        post :complete
+      end
+      member do
+        get :details
+      end
+    end
+    resources :order_inquiries, only: [ :index, :show ]
+  end
+
   get "search_popups/:type", to: "search_popups#show", as: :search_popup
 
   get "up" => "rails/health#show", as: :rails_health_check

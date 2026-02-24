@@ -1,0 +1,121 @@
+<%= helpers.system_page_container do %>
+  <%= helpers.system_page_header("오더별작업진행조회") %>
+
+  <div data-controller="om-order-work-progress">
+    
+    <!-- 검색조건 영역 -->
+    <%= render Ui::ResourceFormComponent.new(
+      model: search_form,
+      fields: search_fields,
+      url: collection_path(format: :json),
+      method: :get,
+      cols: 4,
+      submit_label: "조회",
+      form_html: { 
+        class: "search-form", 
+        novalidate: true, 
+        data: { 
+          controller: "search-form", 
+          action: "submit->search-form#search search-form:success@window->om-order-work-progress#loadData" 
+        } 
+      }
+    ) %>
+
+    <!-- 마스터 정보 영역 -->
+    <div class="bg-white p-4 rounded shadow-sm border mb-4">
+      <h3 class="text-sm font-bold text-gray-800 mb-3 border-b pb-2">기본 정보</h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <!-- 1 Row -->
+        <div class="flex items-center space-x-2">
+          <label class="font-medium text-sm text-gray-700 w-24">고객오더번호</label>
+          <input type="text" class="form-input flex-1 text-sm bg-gray-50" readonly data-om-order-work-progress-target="custOrdNo">
+        </div>
+        <div class="flex items-center space-x-2">
+          <label class="font-medium text-sm text-gray-700 w-24">오더번호</label>
+          <input type="text" class="form-input flex-1 text-sm bg-gray-50 text-blue-600 font-bold" readonly data-om-order-work-progress-target="ordNo">
+        </div>
+        <div class="flex items-center space-x-2">
+          <label class="font-medium text-sm text-gray-700 w-24">고객오더유형</label>
+          <input type="text" class="form-input flex-1 text-sm bg-gray-50" readonly data-om-order-work-progress-target="custOrdTypeNm">
+        </div>
+        <div class="flex items-center space-x-2">
+          <label class="font-medium text-sm text-gray-700 w-24">오더요청고객</label>
+          <input type="text" class="form-input flex-1 text-sm bg-gray-50" readonly data-om-order-work-progress-target="ordReqCustNm">
+        </div>
+
+        <!-- 2 Row -->
+        <div class="flex items-center space-x-2">
+          <label class="font-medium text-sm text-gray-700 w-24">계약번호</label>
+          <input type="text" class="form-input flex-1 text-sm bg-gray-50" readonly data-om-order-work-progress-target="ctrtNo">
+        </div>
+        <div class="flex items-center space-x-2">
+          <label class="font-medium text-sm text-gray-700 w-24">계약고객</label>
+          <input type="text" class="form-input flex-1 text-sm bg-gray-50" readonly data-om-order-work-progress-target="ctrtCustNm">
+        </div>
+        <div class="flex items-center space-x-2">
+          <label class="font-medium text-sm text-gray-700 w-24">청구고객</label>
+          <input type="text" class="form-input flex-1 text-sm bg-gray-50" readonly data-om-order-work-progress-target="bilgCustNm">
+        </div>
+        <div class="flex items-center space-x-2">
+          <label class="font-medium text-sm text-gray-700 w-24">오더유형</label>
+          <input type="text" class="form-input flex-1 text-sm bg-gray-50" readonly data-om-order-work-progress-target="ordTypeNm">
+        </div>
+
+        <!-- 3 Row -->
+        <div class="flex items-center space-x-2">
+          <label class="font-medium text-sm text-gray-700 w-24">고객담당자</label>
+          <input type="text" class="form-input flex-1 text-sm bg-gray-50" readonly data-om-order-work-progress-target="custOrdOfcr">
+        </div>
+        <div class="flex items-center space-x-2">
+          <label class="font-medium text-sm text-gray-700 w-24">고객연락처</label>
+          <input type="text" class="form-input flex-1 text-sm bg-gray-50" readonly data-om-order-work-progress-target="custTel">
+        </div>
+        <div class="flex items-center space-x-2">
+          <label class="font-medium text-sm text-gray-700 w-24 text-red-600">고객긴급여부</label>
+          <input type="text" class="form-input flex-1 text-sm bg-gray-50 text-red-600 font-bold" readonly data-om-order-work-progress-target="custExprYn">
+        </div>
+        <div class="flex items-center space-x-2">
+          <label class="font-medium text-sm text-gray-700 w-24 text-red-600">마감긴급여부</label>
+          <input type="text" class="form-input flex-1 text-sm bg-gray-50 text-red-600 font-bold" readonly data-om-order-work-progress-target="clsExprYn">
+        </div>
+
+        <!-- 4 Row -->
+        <div class="flex items-center space-x-2">
+          <label class="font-medium text-sm text-gray-700 w-24">반품여부</label>
+          <input type="text" class="form-input flex-1 text-sm bg-gray-50" readonly data-om-order-work-progress-target="retrngdYn">
+        </div>
+        <div class="flex items-center space-x-2">
+          <label class="font-medium text-sm text-gray-700 w-24">오더상태</label>
+          <input type="text" class="form-input flex-1 text-sm bg-gray-50 text-blue-600 font-bold" readonly data-om-order-work-progress-target="ordStatNm">
+        </div>
+        <div class="flex items-center space-x-2">
+          <label class="font-medium text-sm text-gray-700 w-24">오더완료</label>
+          <input type="text" class="form-input flex-1 text-sm bg-gray-50 text-purple-600 font-bold" readonly data-om-order-work-progress-target="ordCmptNm">
+        </div>
+      </div>
+    </div>
+
+    <!-- 상태 상세 그리드 영역 -->
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 h-full min-h-[400px]">
+      
+      <!-- 1번 그리드: 오더별 아이템 실적 비교 -->
+      <div class="flex flex-col h-full bg-white p-2 rounded shadow-sm border">
+        <h3 class="text-sm font-bold text-gray-800 mb-2 pl-2">오더 아이템별 실적</h3>
+        <div class="flex-1">
+          <div data-controller="ag-grid" class="h-full w-full ag-theme-alpine" data-om-order-work-progress-target="itemGridContainer"></div>
+        </div>
+      </div>
+
+      <!-- 2번 그리드: 오더작업진행상세 -->
+      <div class="flex flex-col h-full bg-white p-2 rounded shadow-sm border">
+        <h3 class="text-sm font-bold text-gray-800 mb-2 pl-2">오더작업진행 상세이력</h3>
+        <div class="flex-1">
+          <div data-controller="ag-grid" class="h-full w-full ag-theme-alpine" data-om-order-work-progress-target="progressGridContainer"></div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+<% end %>

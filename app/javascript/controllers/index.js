@@ -66,7 +66,15 @@ const CONTROLLERS = [
   ["std-client-item-code-crud", "controllers/std_client_item_code_crud_controller"],
   ["std-sellbuy-attribute-crud", "controllers/std_sellbuy_attribute_crud_controller"],
   ["sell-contract-grid", "controllers/sell_contract_grid_controller"],
-  ["header-favorites", "controllers/header_favorites_controller"]
+  ["header-favorites", "controllers/header_favorites_controller"],
+  ["om-customer-system-config-grid", "controllers/om_customer_system_config_grid_controller"],
+  ["om-customer-order-officer-grid", "controllers/om_customer_order_officer_grid_controller"],
+  ["om-order-officer-grid", "controllers/om_order_officer_grid_controller"],
+  ["om-pre-order-file-upload", "controllers/om_pre_order_file_upload_controller"],
+  ["om-pre-order-reception-error", "controllers/om_pre_order_reception_error_controller"],
+  ["om-pre-order-reception", "controllers/om_pre_order_reception_controller"],
+  ["om-internal-order", "controllers/om_internal_order_controller"],
+  ["om-order-manual-completion", "controllers/om_order_manual_completion_controller"]
 ]
 
 CONTROLLERS.forEach(([identifier, modulePath]) => {

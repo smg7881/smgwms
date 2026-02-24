@@ -12,3 +12,5 @@ pin "lucide", to: "https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/esm/lucide.j
 pin "ag-grid-community",
   to: "https://cdn.jsdelivr.net/npm/ag-grid-community@35.1.0/dist/package/main.esm.mjs",
   preload: true
+
+pin "@rails/request.js", to: "https://ga.jspm.io/npm:@rails/request.js@0.0.9/src/index.js"

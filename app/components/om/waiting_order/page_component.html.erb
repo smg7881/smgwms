@@ -1,0 +1,80 @@
+<%= helpers.system_page_container do %>
+  <%= helpers.system_page_header("대기오더관리") %>
+
+  <!-- 검색조건 (resource_form 활용) -->
+  <%= render Ui::ResourceFormComponent.new(
+    model: search_form,
+    fields: search_fields,
+    url: collection_path(format: :json),
+    method: :get,
+    cols: 4,
+    submit_label: "조회",
+    form_html: { 
+      class: "search-form", 
+      novalidate: true, 
+      data: { 
+        controller: "search-form", 
+        action: "submit->search-form#search" 
+      } 
+    }
+  ) %>
+
+  <!-- 에이지 그리드 -->
+  <div class="mt-4 flex flex-col flex-1 h-full min-h-[500px]" 
+       data-controller="om-waiting-order-grid"
+       data-om-waiting-order-grid-distribute-url-value="<%= distribute_path %>">
+    
+    <!-- 툴바 -->
+    <%= render Ui::GridToolbarComponent.new do |toolbar| %>
+      <% toolbar.with_left do %>
+        <span class="font-medium text-gray-700">대기오더 목록</span>
+      <% end %>
+      
+      <% toolbar.with_right do %>
+        <button type="button" class="btn btn-primary" data-action="click->om-waiting-order-grid#distributeOrders">
+          <i data-lucide="share-2" class="w-4 h-4 mr-2"></i> 오더분배
+        </button>
+        <button type="button" class="btn btn-secondary" data-action="click->om-waiting-order-grid#checkAvailableStock">
+          <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i> 가용재고조회
+        </button>
+      <% end %>
+    <% end %>
+
+    <!-- 마스터 그리드 -->
+    <%= helpers.ag_grid_tag(
+      url: grid_url,
+      options: {
+        rowSelection: "multiple",
+        onSelectionChanged: "onSelectionChanged",
+        stopEditingWhenCellsLoseFocus: true
+      },
+      data: { 
+        om_waiting_order_grid_target: "grid",
+        action: "ag-grid:grid-ready->om-waiting-order-grid#onGridReady search-form:success@window->om-waiting-order-grid#reload"
+      }
+    ) do |grid| %>
+      <% grid.with_column(field: "ord_stat_cd", header_name: "오더상태", width: 100) %>
+      <% grid.with_column(field: "ord_no", header_name: "오더번호", width: 130) %>
+      <% grid.with_column(field: "ord_type_cd", header_name: "오더유형", width: 100) %>
+      <% grid.with_column(field: "create_time", header_name: "오더생성일시", width: 150) %>
+      <% grid.with_column(field: "aptd_req_ymd", header_name: "고객납기요청", width: 120) %>
+      
+      <% grid.with_column(field: "dpt_ar_nm", header_name: "출발지", width: 150) %>
+      <% grid.with_column(field: "arv_ar_nm", header_name: "도착지", width: 150) %>
+      <% grid.with_column(field: "item_cd", header_name: "아이템코드", width: 120) %>
+      <% grid.with_column(field: "item_nm", header_name: "아이템명", width: 200) %>
+      
+      <% grid.with_column(field: "ord_qty", header_name: "오더수량", header_class: "text-right", cell_class: "text-right", type: "numericColumn") %>
+      <% grid.with_column(field: "avail_qty", header_name: "가용재고", header_class: "text-right text-blue-600 font-bold", cell_class: "text-right text-blue-600 font-bold", type: "numericColumn") %>
+      
+      <% grid.with_column(field: "dist_qty", header_name: "분배 수량 (입력)", editable: true, header_class: "text-right text-green-600 bg-green-50", cell_class: "text-right bg-green-50", type: "numericColumn",
+          valueParser: "Number(newValue)",
+          valueSetter: "params.data.dist_qty = Math.min(Number(newValue) || 0, Math.min(params.data.avail_qty || 0, params.data.ord_qty || 0)); return true;"
+      ) %>
+      
+      <% grid.with_column(field: "remain_qty", header_name: "잔여수량", header_class: "text-right text-red-500", cell_class: "text-right text-red-500", type: "numericColumn",
+          valueGetter: "Number(data.ord_qty || 0) - Number(data.dist_qty || 0)"
+      ) %>
+    <% end %>
+  </div>
+<% end %>

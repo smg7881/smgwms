@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_23_143000) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_25_013002) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -227,6 +227,310 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_23_143000) do
     t.index ["requested_by_id"], name: "index_excel_import_tasks_on_requested_by_id"
     t.index ["resource_key", "created_at"], name: "index_excel_import_tasks_on_resource_key_and_created_at"
     t.index ["status"], name: "index_excel_import_tasks_on_status"
+  end
+
+  create_table "om_customer_order_officers", force: :cascade do |t|
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "cust_cd", limit: 20, null: false
+    t.string "cust_nm", limit: 120
+    t.string "cust_ofcr_mbp_no", limit: 30
+    t.string "cust_ofcr_nm", limit: 100, null: false
+    t.string "cust_ofcr_tel_no", limit: 30
+    t.string "exp_imp_dom_sctn_cd", limit: 30
+    t.string "ord_chrg_dept_cd", limit: 50, default: "", null: false
+    t.string "ord_chrg_dept_nm", limit: 100
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn", limit: 1, default: "Y", null: false
+    t.index ["cust_cd"], name: "index_om_customer_order_officers_on_cust_cd"
+    t.index ["ord_chrg_dept_cd", "cust_cd", "exp_imp_dom_sctn_cd", "cust_ofcr_nm"], name: "idx_om_cust_ord_ofcr_unique", unique: true
+    t.index ["ord_chrg_dept_cd"], name: "index_om_customer_order_officers_on_ord_chrg_dept_cd"
+    t.index ["use_yn"], name: "index_om_customer_order_officers_on_use_yn"
+  end
+
+  create_table "om_customer_system_configs", force: :cascade do |t|
+    t.string "config_key", limit: 100, null: false
+    t.string "config_value", limit: 500
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "cust_cd", limit: 20, default: "", null: false
+    t.string "cust_nm", limit: 120
+    t.string "grp_cd", limit: 50
+    t.string "lclas_cd", limit: 50, default: "ORD_RECV", null: false
+    t.string "mclas_cd", limit: 50, default: "REQUIRED", null: false
+    t.string "module_nm", limit: 150
+    t.string "sclas_cd", limit: 50, default: "ITEM_NM", null: false
+    t.string "setup_sctn_cd", limit: 50, default: "VALIDATE", null: false
+    t.string "setup_unit_cd", limit: 30, default: "SYSTEM", null: false
+    t.string "setup_value", limit: 200
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "upper_grp_cd", limit: 50
+    t.string "use_yn", limit: 1, default: "Y", null: false
+    t.index ["cust_cd", "grp_cd", "config_key"], name: "idx_om_cust_sys_cfg_unique", unique: true
+    t.index ["cust_cd"], name: "index_om_customer_system_configs_on_cust_cd"
+    t.index ["setup_unit_cd", "cust_cd", "lclas_cd", "mclas_cd", "sclas_cd", "setup_sctn_cd"], name: "index_om_customer_system_configs_on_unique_key", unique: true
+    t.index ["setup_unit_cd"], name: "index_om_customer_system_configs_on_setup_unit_cd"
+    t.index ["use_yn"], name: "index_om_customer_system_configs_on_use_yn"
+  end
+
+  create_table "om_internal_order_items", force: :cascade do |t|
+    t.string "basis_unit_cd", limit: 20
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.integer "internal_order_id", null: false
+    t.string "item_cd", limit: 30, null: false
+    t.string "item_nm", limit: 100
+    t.decimal "ord_qty", precision: 18, scale: 4, default: "0.0"
+    t.decimal "ord_vol", precision: 18, scale: 4, default: "0.0"
+    t.decimal "ord_wgt", precision: 18, scale: 4, default: "0.0"
+    t.string "qty_unit_cd", limit: 20
+    t.integer "seq_no", null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "vol_unit_cd", limit: 20
+    t.string "wgt_unit_cd", limit: 20
+    t.index ["internal_order_id", "seq_no"], name: "idx_om_internal_order_items_on_order_seq", unique: true
+    t.index ["internal_order_id"], name: "index_om_internal_order_items_on_internal_order_id"
+  end
+
+  create_table "om_internal_orders", force: :cascade do |t|
+    t.string "aptd_req_dtm", limit: 14
+    t.string "arv_addr", limit: 200
+    t.string "arv_cd", limit: 30
+    t.string "arv_type_cd", limit: 20
+    t.string "arv_zip_cd", limit: 10
+    t.string "bilg_cust_cd", limit: 20
+    t.string "cancel_yn", limit: 1, default: "N", null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "ctrt_cust_cd", limit: 20
+    t.string "ctrt_no", limit: 30
+    t.string "dpt_addr", limit: 200
+    t.string "dpt_cd", limit: 30
+    t.string "dpt_type_cd", limit: 20
+    t.string "dpt_zip_cd", limit: 10
+    t.string "ord_exec_dept_cd", limit: 20
+    t.string "ord_exec_dept_nm", limit: 100
+    t.string "ord_exec_ofcr_cd", limit: 20
+    t.string "ord_exec_ofcr_nm", limit: 100
+    t.string "ord_no", limit: 30, null: false
+    t.string "ord_reason_cd", limit: 20
+    t.string "ord_stat_cd", limit: 20, default: "WAIT", null: false
+    t.string "ord_type_cd", limit: 20
+    t.text "remk"
+    t.string "strt_req_ymd", limit: 8
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "wait_ord_internal_yn", limit: 1, default: "N", null: false
+    t.index ["cancel_yn"], name: "index_om_internal_orders_on_cancel_yn"
+    t.index ["ord_no"], name: "index_om_internal_orders_on_ord_no", unique: true
+    t.index ["ord_stat_cd"], name: "index_om_internal_orders_on_ord_stat_cd"
+    t.index ["wait_ord_internal_yn"], name: "index_om_internal_orders_on_wait_ord_internal_yn"
+  end
+
+  create_table "om_order_change_histories", force: :cascade do |t|
+    t.string "after_val", limit: 300
+    t.string "before_val", limit: 300
+    t.string "chg_by", limit: 50
+    t.string "chg_rsn", limit: 500
+    t.datetime "chg_time"
+    t.string "chg_type_cd", limit: 30
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "ord_no", limit: 30, null: false
+    t.integer "seq", null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn", limit: 1, default: "Y", null: false
+    t.index ["chg_type_cd"], name: "index_om_order_change_histories_on_chg_type_cd"
+    t.index ["ord_no", "seq"], name: "idx_om_order_change_history_unique", unique: true
+  end
+
+  create_table "om_order_officers", force: :cascade do |t|
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "cust_cd", limit: 20
+    t.string "cust_nm", limit: 120
+    t.string "exp_imp_dom_sctn_cd", limit: 30
+    t.string "mbp_no", limit: 30
+    t.string "ofcr_cd", limit: 30, null: false
+    t.string "ofcr_nm", limit: 100, null: false
+    t.string "ord_chrg_dept_cd", limit: 50, default: "", null: false
+    t.string "ord_chrg_dept_nm", limit: 100
+    t.string "tel_no", limit: 30
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn", limit: 1, default: "Y", null: false
+    t.index ["cust_cd"], name: "index_om_order_officers_on_cust_cd"
+    t.index ["ord_chrg_dept_cd", "cust_cd", "exp_imp_dom_sctn_cd", "ofcr_cd"], name: "idx_om_ord_ofcr_unique", unique: true
+    t.index ["ord_chrg_dept_cd"], name: "index_om_order_officers_on_ord_chrg_dept_cd"
+    t.index ["use_yn"], name: "index_om_order_officers_on_use_yn"
+  end
+
+  create_table "om_order_progresses", force: :cascade do |t|
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.datetime "last_update_time"
+    t.string "latest_work_step", limit: 120
+    t.string "ord_no", limit: 30, null: false
+    t.string "progress_stat_cd", limit: 30
+    t.string "progress_step_cd", limit: 30, null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn", limit: 1, default: "Y", null: false
+    t.index ["ord_no", "progress_step_cd"], name: "idx_om_order_progress_unique", unique: true
+    t.index ["progress_stat_cd"], name: "index_om_order_progresses_on_progress_stat_cd"
+  end
+
+  create_table "om_order_transmission_logs", force: :cascade do |t|
+    t.string "asign_idct_no", limit: 40
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "err_msg", limit: 500
+    t.string "ord_no", limit: 30, null: false
+    t.string "rcv_hms", limit: 8
+    t.string "trms_hms", limit: 8
+    t.string "trms_yn", limit: 1, default: "N", null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn", limit: 1, default: "Y", null: false
+    t.index ["ord_no"], name: "index_om_order_transmission_logs_on_ord_no"
+    t.index ["trms_yn"], name: "index_om_order_transmission_logs_on_trms_yn"
+  end
+
+  create_table "om_orders", force: :cascade do |t|
+    t.date "aptd_req_ymd"
+    t.string "arv_ar_cd", limit: 30
+    t.string "arv_ar_nm", limit: 150
+    t.string "asign_idct_no", limit: 40
+    t.string "billing_cust_cd", limit: 20
+    t.string "contract_cust_cd", limit: 20
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "cust_cd", limit: 20
+    t.string "cust_nm", limit: 120
+    t.string "cust_ord_no", limit: 40
+    t.string "dpt_ar_cd", limit: 30
+    t.string "dpt_ar_nm", limit: 150
+    t.string "item_cd", limit: 40
+    t.string "item_nm", limit: 150
+    t.datetime "last_update_time"
+    t.string "manl_cmpt_rsn", limit: 500
+    t.string "ord_cmpt_div_cd", limit: 30
+    t.datetime "ord_cmpt_dtm"
+    t.string "ord_exe_dept_cd", limit: 50
+    t.string "ord_kind_nm", limit: 120
+    t.string "ord_no", limit: 30, null: false
+    t.decimal "ord_qty", precision: 14, scale: 3
+    t.string "ord_stat_cd", limit: 30
+    t.string "ord_type_cd", limit: 30
+    t.string "ord_type_nm", limit: 120
+    t.decimal "ord_vol", precision: 14, scale: 3
+    t.decimal "ord_wgt", precision: 14, scale: 3
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn", limit: 1, default: "Y", null: false
+    t.string "work_stat_cd", limit: 30
+    t.index ["cust_cd"], name: "index_om_orders_on_cust_cd"
+    t.index ["ord_cmpt_div_cd"], name: "index_om_orders_on_ord_cmpt_div_cd"
+    t.index ["ord_cmpt_dtm"], name: "index_om_orders_on_ord_cmpt_dtm"
+    t.index ["ord_no"], name: "index_om_orders_on_ord_no", unique: true
+    t.index ["ord_stat_cd"], name: "index_om_orders_on_ord_stat_cd"
+    t.index ["work_stat_cd"], name: "index_om_orders_on_work_stat_cd"
+  end
+
+  create_table "om_pre_order_errors", force: :cascade do |t|
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "cust_ord_no", limit: 40
+    t.string "err_msg", limit: 500
+    t.string "err_type_cd", limit: 30
+    t.string "item_cd", limit: 40
+    t.integer "line_no", null: false
+    t.string "resolved_yn", limit: 1, default: "N", null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "upload_batch_no", limit: 40, null: false
+    t.string "use_yn", limit: 1, default: "Y", null: false
+    t.index ["err_type_cd"], name: "index_om_pre_order_errors_on_err_type_cd"
+    t.index ["upload_batch_no", "line_no"], name: "idx_om_pre_ord_error_unique", unique: true
+  end
+
+  create_table "om_pre_order_receptions", force: :cascade do |t|
+    t.string "bef_ord_no", limit: 30, null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "cust_cd", limit: 20
+    t.string "cust_nm", limit: 120
+    t.string "cust_ord_no", limit: 40
+    t.string "item_cd", limit: 40
+    t.string "item_nm", limit: 150
+    t.decimal "qty", precision: 14, scale: 3
+    t.string "status_cd", limit: 30
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn", limit: 1, default: "Y", null: false
+    t.decimal "vol", precision: 14, scale: 3
+    t.decimal "wgt", precision: 14, scale: 3
+    t.index ["bef_ord_no"], name: "index_om_pre_order_receptions_on_bef_ord_no", unique: true
+    t.index ["cust_ord_no"], name: "index_om_pre_order_receptions_on_cust_ord_no"
+    t.index ["status_cd"], name: "index_om_pre_order_receptions_on_status_cd"
+  end
+
+  create_table "om_pre_order_upload_batches", force: :cascade do |t|
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "cust_cd", limit: 20
+    t.string "cust_nm", limit: 120
+    t.integer "error_cnt", default: 0, null: false
+    t.string "file_nm", limit: 255
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "upload_batch_no", limit: 40, null: false
+    t.string "upload_stat_cd", limit: 30
+    t.string "use_yn", limit: 1, default: "Y", null: false
+    t.index ["upload_batch_no"], name: "index_om_pre_order_upload_batches_on_upload_batch_no", unique: true
+    t.index ["upload_stat_cd"], name: "index_om_pre_order_upload_batches_on_upload_stat_cd"
+  end
+
+  create_table "om_work_route_results", force: :cascade do |t|
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "ord_no", limit: 30, null: false
+    t.decimal "rslt_qty", precision: 14, scale: 3
+    t.decimal "rslt_vol", precision: 14, scale: 3
+    t.decimal "rslt_wgt", precision: 14, scale: 3
+    t.string "rslt_yn", limit: 1, default: "N", null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn", limit: 1, default: "Y", null: false
+    t.datetime "work_end_time"
+    t.string "work_route_no", limit: 40, null: false
+    t.datetime "work_strt_time"
+    t.index ["rslt_yn"], name: "index_om_work_route_results_on_rslt_yn"
+    t.index ["work_route_no", "ord_no"], name: "idx_om_work_route_result_unique", unique: true
+  end
+
+  create_table "om_work_routes", force: :cascade do |t|
+    t.string "arv_ar_nm", limit: 150
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "dpt_ar_nm", limit: 150
+    t.string "ord_no", limit: 30, null: false
+    t.decimal "ord_vol", precision: 14, scale: 3
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn", limit: 1, default: "Y", null: false
+    t.string "work_dept_cd", limit: 50
+    t.date "work_end_date"
+    t.string "work_route_nm", limit: 150
+    t.string "work_route_no", limit: 40, null: false
+    t.string "work_step", limit: 50
+    t.date "work_strt_date"
+    t.index ["ord_no"], name: "index_om_work_routes_on_ord_no"
+    t.index ["work_route_no"], name: "index_om_work_routes_on_work_route_no", unique: true
   end
 
   create_table "posts", force: :cascade do |t|
@@ -1090,6 +1394,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_23_143000) do
   add_foreign_key "adm_users", "adm_depts", column: "dept_id"
   add_foreign_key "adm_users", "adm_roles", column: "role_id"
   add_foreign_key "excel_import_tasks", "adm_users", column: "requested_by_id"
+  add_foreign_key "om_internal_order_items", "om_internal_orders", column: "internal_order_id"
   add_foreign_key "sessions", "adm_users", column: "user_id"
   add_foreign_key "std_purchase_contract_change_histories", "std_purchase_contracts", column: "purchase_contract_id"
   add_foreign_key "std_purchase_contract_settlements", "std_purchase_contracts", column: "purchase_contract_id"
