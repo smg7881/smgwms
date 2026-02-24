@@ -52,6 +52,7 @@ class SearchPopupsController < ApplicationController
       end
     end
 
+    # 팝업의 검색 폼에서 전송된(허용된) 파라미터(Strong Parameters)를 반환합니다.
     def popup_form_params
       params.fetch(:search_popup_form, {}).permit(
         :display, :code, :corp_cd, :corp_nm, :use_yn,
@@ -68,6 +69,7 @@ class SearchPopupsController < ApplicationController
       %w[financial_institution fin_org financial_org fnc_or].include?(@type)
     end
 
+    # 현재 조회가 매출입항목 관련 팝업인지 여부를 반환합니다.
     def sellbuy_attr_popup?
       %w[sellbuy_attr sellbuyattribute sell_buy_attr].include?(@type)
     end
@@ -99,6 +101,8 @@ class SearchPopupsController < ApplicationController
       end
     end
 
+    # 검색 폼 객체(SearchPopupForm)를 초기화합니다.
+    # 팝업 종류(법인, 금융기관, 매출입항목, 일반 등)에 따라 필요한 파라미터 값들을 할당합니다.
     def build_popup_form
       if corp_popup?
         SearchPopupForm.new(
@@ -137,6 +141,7 @@ class SearchPopupsController < ApplicationController
       value.to_s.strip.upcase
     end
 
+    # 팝업 종류(type)에 따라 DB에서 조회할 데이터(목록)를 가져오는 분기 처리 메서드입니다.
     def lookup_rows(type)
       if type == "corp"
         corp_rows
@@ -149,6 +154,8 @@ class SearchPopupsController < ApplicationController
       end
     end
 
+    # 법인, 금융기관, 매출입항목과 같이 특수한 조건이 없는 모델들의 데이터를
+    # 단순 키워드(code, name) 기준으로 조회하여 배열(Array) 형태로 반환합니다.
     def generic_rows(type)
       rows = case type
       when "dept", "department"
@@ -184,6 +191,7 @@ class SearchPopupsController < ApplicationController
       end.first(200)
     end
 
+    # 공통 규격 단위의 Row 데이터를 생성하여 Hash 형태로 반환합니다.
     def build_generic_row(code:, name:)
       normalized_code = code.to_s.strip.upcase
       normalized_name = name.to_s.strip
@@ -197,6 +205,7 @@ class SearchPopupsController < ApplicationController
       }
     end
 
+    # 법인(Corporation) 팝업 조회 데이터를 구성하여 반환합니다.
     # PRD: 법인코드 + 법인명 + 사용여부(Y/N, 기본 Y) 조회 조건
     #      그리드: 법인코드/법인명/국가/사업자등록번호
     def corp_rows
@@ -256,6 +265,7 @@ class SearchPopupsController < ApplicationController
       []
     end
 
+    # 금융기관(Financial Institution) 팝업 조회 데이터를 구성하여 반환합니다.
     # PRD: 국가 + 금융기관코드 + 금융기관명 + 사용여부(Y/N, 기본 Y) 조회 조건
     #      그리드: 국가/금융기관코드/금융기관명/금융기관영문명
     def financial_org_rows
@@ -409,6 +419,7 @@ class SearchPopupsController < ApplicationController
       []
     end
 
+    # 매출입항목(Sellbuy Attribute) 팝업 조회 데이터를 구성하여 반환합니다.
     # PRD: 매출입항목 선택팝업
     #      조회조건: 매출입항목코드/명, 사용여부(Y 기본), 법인, 운송여부, 보관여부
     #      그리드: 매출입항목코드/명/영문명/단축명/상위코드/상위명
