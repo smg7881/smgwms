@@ -12,7 +12,7 @@ class Std::ClientsController < Std::BaseController
     group_code = params[:bzac_sctn_grp_cd].to_s.strip.upcase
     scope = AdmCodeDetail.active.where(code: "STD_BZAC_SCTN").ordered
     if group_code.present?
-      scope = scope.where(ref_code: group_code)
+      scope = scope.where(upper_detail_code: group_code)
     end
 
     rows = scope.map do |row|

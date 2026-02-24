@@ -26,7 +26,7 @@
         columns: master_columns,
         url: grid_url,
         height: "calc(100vh - 420px)",
-        page_size: 20,
+        pagination: false,
         row_selection: "multiple",
         grid_id: "code-master",
         data: { code_grid_target: "masterGrid" }
@@ -52,7 +52,7 @@
           columns: detail_columns,
           url: detail_grid_url,
           height: "calc(100vh - 420px)",
-          page_size: 20,
+          pagination: false,
           row_selection: "multiple",
           grid_id: "code-detail",
           data: { code_grid_target: "detailGrid" }
@@ -62,7 +62,7 @@
           columns: detail_columns,
           row_data: [],
           height: "calc(100vh - 420px)",
-          page_size: 20,
+          pagination: false,
           row_selection: "multiple",
           grid_id: "code-detail",
           data: { code_grid_target: "detailGrid" }

@@ -40,6 +40,13 @@ class System::BasePageComponent < ApplicationComponent
       AdmCodeDetail.select_values_for(code, value_transform: value_transform)
     end
 
+    def common_code_map(code, value_transform: nil)
+      options = common_code_options(code, include_all: false, value_transform: value_transform)
+      options.each_with_object({}) do |opt, hash|
+        hash[opt[:value]] = opt[:label]
+      end
+    end
+
     # 하위 클래스에서 반드시 구현해야 하는 메서드들입니다. (Template Method Pattern)
 
     # 목록(Collection) 경로를 반환해야 합니다. (예: users_path)

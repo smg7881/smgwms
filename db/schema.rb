@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_25_013002) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_25_013005) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -40,16 +40,23 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_25_013002) do
   end
 
   create_table "adm_code_details", force: :cascade do |t|
+    t.string "attr1", limit: 200
+    t.string "attr2", limit: 200
+    t.string "attr3", limit: 200
+    t.string "attr4", limit: 200
+    t.string "attr5", limit: 200
     t.string "code", limit: 50, null: false
     t.string "create_by", limit: 50
     t.datetime "create_time"
     t.string "detail_code", limit: 50, null: false
     t.string "detail_code_name", limit: 100, null: false
-    t.string "ref_code", limit: 50
+    t.string "rmk", limit: 500
     t.string "short_name", limit: 100
     t.integer "sort_order", default: 0, null: false
     t.string "update_by", limit: 50
     t.datetime "update_time"
+    t.string "upper_code", limit: 50
+    t.string "upper_detail_code", limit: 50
     t.string "use_yn", limit: 1, default: "Y", null: false
     t.index ["code", "detail_code"], name: "index_adm_code_details_on_code_and_detail_code", unique: true
     t.index ["code", "sort_order", "detail_code"], name: "index_adm_code_details_on_code_order_and_detail_code"
@@ -62,6 +69,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_25_013002) do
     t.string "code_name", limit: 100, null: false
     t.string "create_by", limit: 50
     t.datetime "create_time"
+    t.string "rmk", limit: 500
+    t.string "sys_sctn_cd", limit: 30
     t.string "update_by", limit: 50
     t.datetime "update_time"
     t.string "use_yn", limit: 1, default: "Y", null: false

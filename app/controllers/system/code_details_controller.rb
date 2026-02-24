@@ -47,7 +47,7 @@
       Array(operations[:rowsToInsert]).each do |attrs|
         next if attrs[:detail_code].to_s.strip.blank? && attrs[:detail_code_name].to_s.strip.blank?
 
-        detail = code_header!.details.new(attrs.permit(:detail_code, :detail_code_name, :short_name, :ref_code, :sort_order, :use_yn))
+        detail = code_header!.details.new(attrs.permit(:detail_code, :detail_code_name, :short_name, :upper_code, :upper_detail_code, :rmk, :attr1, :attr2, :attr3, :attr4, :attr5, :sort_order, :use_yn))
         detail.code = code_header!.code
         if detail.save
           result[:inserted] += 1
@@ -64,7 +64,7 @@
           next
         end
 
-        update_attrs = attrs.permit(:detail_code_name, :short_name, :ref_code, :sort_order, :use_yn)
+        update_attrs = attrs.permit(:detail_code_name, :short_name, :upper_code, :upper_detail_code, :rmk, :attr1, :attr2, :attr3, :attr4, :attr5, :sort_order, :use_yn)
         if detail.update(update_attrs)
           result[:updated] += 1
         else
@@ -109,14 +109,14 @@
     end
 
     def code_detail_params
-      params.require(:code_detail).permit(:code, :detail_code, :detail_code_name, :short_name, :ref_code, :sort_order, :use_yn)
+      params.require(:code_detail).permit(:code, :detail_code, :detail_code_name, :short_name, :upper_code, :upper_detail_code, :rmk, :attr1, :attr2, :attr3, :attr4, :attr5, :sort_order, :use_yn)
     end
 
     def batch_save_params
       params.permit(
         rowsToDelete: [],
-        rowsToInsert: [ :detail_code, :detail_code_name, :short_name, :ref_code, :sort_order, :use_yn ],
-        rowsToUpdate: [ :detail_code, :detail_code_name, :short_name, :ref_code, :sort_order, :use_yn ]
+        rowsToInsert: [ :detail_code, :detail_code_name, :short_name, :upper_code, :upper_detail_code, :rmk, :attr1, :attr2, :attr3, :attr4, :attr5, :sort_order, :use_yn ],
+        rowsToUpdate: [ :detail_code, :detail_code_name, :short_name, :upper_code, :upper_detail_code, :rmk, :attr1, :attr2, :attr3, :attr4, :attr5, :sort_order, :use_yn ]
       )
     end
 
@@ -127,7 +127,14 @@
         detail_code: detail.detail_code,
         detail_code_name: detail.detail_code_name,
         short_name: detail.short_name,
-        ref_code: detail.ref_code,
+        upper_code: detail.upper_code,
+        upper_detail_code: detail.upper_detail_code,
+        rmk: detail.rmk,
+        attr1: detail.attr1,
+        attr2: detail.attr2,
+        attr3: detail.attr3,
+        attr4: detail.attr4,
+        attr5: detail.attr5,
         sort_order: detail.sort_order,
         use_yn: detail.use_yn,
         update_by: detail.update_by,

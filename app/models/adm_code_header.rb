@@ -10,6 +10,8 @@ class AdmCodeHeader < ApplicationRecord
 
   validates :code, presence: true, uniqueness: true, length: { maximum: 50 }
   validates :code_name, presence: true, length: { maximum: 100 }
+  validates :sys_sctn_cd, length: { maximum: 30 }, allow_blank: true
+  validates :rmk, length: { maximum: 500 }, allow_blank: true
   validates :use_yn, inclusion: { in: %w[Y N] }
 
   before_validation :normalize_fields
@@ -22,6 +24,8 @@ class AdmCodeHeader < ApplicationRecord
     def normalize_fields
       self.code = code.to_s.strip.upcase
       self.code_name = code_name.to_s.strip
+      self.sys_sctn_cd = sys_sctn_cd.to_s.strip.upcase.presence
+      self.rmk = rmk.to_s.strip.presence
       self.use_yn = use_yn.to_s.strip.upcase.presence || "Y"
     end
 

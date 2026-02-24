@@ -16,12 +16,17 @@ class System::CodeControllerTest < ActionDispatch::IntegrationTest
         code_header: {
           code: "TEST01",
           code_name: "Test Header",
+          sys_sctn_cd: "WMS",
+          rmk: "Create remark",
           use_yn: "Y"
         }
       }, as: :json
     end
 
     assert_response :success
+    header = AdmCodeHeader.find_by!(code: "TEST01")
+    assert_equal "WMS", header.sys_sctn_cd
+    assert_equal "Create remark", header.rmk
   end
 
   test "batch_save inserts updates and deletes" do
@@ -29,14 +34,20 @@ class System::CodeControllerTest < ActionDispatch::IntegrationTest
     AdmCodeHeader.create!(code: "DEL01", code_name: "Delete Me", use_yn: "Y")
 
     post batch_save_system_code_index_url, params: {
-      rowsToInsert: [ { code: "INS01", code_name: "Inserted", use_yn: "Y" } ],
-      rowsToUpdate: [ { code: "EXIST01", code_name: "After", use_yn: "N" } ],
+      rowsToInsert: [ { code: "INS01", code_name: "Inserted", sys_sctn_cd: "WMS", rmk: "Inserted remark", use_yn: "Y" } ],
+      rowsToUpdate: [ { code: "EXIST01", code_name: "After", sys_sctn_cd: "ERP", rmk: "Updated remark", use_yn: "N" } ],
       rowsToDelete: [ "DEL01" ]
     }, as: :json
 
     assert_response :success
-    assert_equal "Inserted", AdmCodeHeader.find_by!(code: "INS01").code_name
-    assert_equal "After", AdmCodeHeader.find_by!(code: "EXIST01").code_name
+    inserted = AdmCodeHeader.find_by!(code: "INS01")
+    updated = AdmCodeHeader.find_by!(code: "EXIST01")
+    assert_equal "Inserted", inserted.code_name
+    assert_equal "WMS", inserted.sys_sctn_cd
+    assert_equal "Inserted remark", inserted.rmk
+    assert_equal "After", updated.code_name
+    assert_equal "ERP", updated.sys_sctn_cd
+    assert_equal "Updated remark", updated.rmk
     assert_not AdmCodeHeader.exists?(code: "DEL01")
   end
 

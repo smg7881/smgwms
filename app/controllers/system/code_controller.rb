@@ -48,7 +48,7 @@
       Array(operations[:rowsToInsert]).each do |attrs|
         next if attrs[:code].to_s.strip.blank? && attrs[:code_name].to_s.strip.blank?
 
-        header = AdmCodeHeader.new(attrs.permit(:code, :code_name, :use_yn))
+        header = AdmCodeHeader.new(attrs.permit(:code, :code_name, :sys_sctn_cd, :rmk, :use_yn))
         if header.save
           result[:inserted] += 1
         else
@@ -64,7 +64,7 @@
           next
         end
 
-        update_attrs = attrs.permit(:code_name, :use_yn)
+        update_attrs = attrs.permit(:code_name, :sys_sctn_cd, :rmk, :use_yn)
         if header.update(update_attrs)
           result[:updated] += 1
         else
@@ -131,11 +131,15 @@
     end
 
     def code_header_params
-      params.require(:code_header).permit(:code, :code_name, :use_yn)
+      params.require(:code_header).permit(:code, :code_name, :sys_sctn_cd, :rmk, :use_yn)
     end
 
     def batch_save_params
-      params.permit(rowsToDelete: [], rowsToInsert: [ :code, :code_name, :use_yn ], rowsToUpdate: [ :code, :code_name, :use_yn ])
+      params.permit(
+        rowsToDelete: [],
+        rowsToInsert: [ :code, :code_name, :sys_sctn_cd, :rmk, :use_yn ],
+        rowsToUpdate: [ :code, :code_name, :sys_sctn_cd, :rmk, :use_yn ]
+      )
     end
 
     def header_json(header)
@@ -143,6 +147,8 @@
         id: header.code,
         code: header.code,
         code_name: header.code_name,
+        sys_sctn_cd: header.sys_sctn_cd,
+        rmk: header.rmk,
         use_yn: header.use_yn,
         update_by: header.update_by,
         update_time: header.update_time,

@@ -11,7 +11,14 @@ class AdmCodeDetail < ApplicationRecord
   validates :detail_code, presence: true, length: { maximum: 50 }, uniqueness: { scope: :code }
   validates :detail_code_name, presence: true, length: { maximum: 100 }
   validates :short_name, length: { maximum: 100 }, allow_blank: true
-  validates :ref_code, length: { maximum: 50 }, allow_blank: true
+  validates :upper_code, length: { maximum: 50 }, allow_blank: true
+  validates :upper_detail_code, length: { maximum: 50 }, allow_blank: true
+  validates :rmk, length: { maximum: 500 }, allow_blank: true
+  validates :attr1, length: { maximum: 200 }, allow_blank: true
+  validates :attr2, length: { maximum: 200 }, allow_blank: true
+  validates :attr3, length: { maximum: 200 }, allow_blank: true
+  validates :attr4, length: { maximum: 200 }, allow_blank: true
+  validates :attr5, length: { maximum: 200 }, allow_blank: true
   validates :sort_order, numericality: { only_integer: true }
   validates :use_yn, inclusion: { in: %w[Y N] }
 
@@ -63,7 +70,14 @@ class AdmCodeDetail < ApplicationRecord
       self.detail_code = detail_code.to_s.strip.upcase
       self.detail_code_name = detail_code_name.to_s.strip
       self.short_name = short_name.to_s.strip.presence
-      self.ref_code = ref_code.to_s.strip.upcase.presence
+      self.upper_code = upper_code.to_s.strip.upcase.presence
+      self.upper_detail_code = upper_detail_code.to_s.strip.upcase.presence
+      self.rmk = rmk.to_s.strip.presence
+      self.attr1 = attr1.to_s.strip.presence
+      self.attr2 = attr2.to_s.strip.presence
+      self.attr3 = attr3.to_s.strip.presence
+      self.attr4 = attr4.to_s.strip.presence
+      self.attr5 = attr5.to_s.strip.presence
       self.use_yn = use_yn.to_s.strip.upcase.presence || "Y"
 
       if sort_order.nil?

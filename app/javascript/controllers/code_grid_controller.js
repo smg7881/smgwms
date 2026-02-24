@@ -51,11 +51,13 @@ export default class extends BaseGridController {
       fields: {
         code: "trim",
         code_name: "trim",
+        sys_sctn_cd: "trimUpper",
+        rmk: "trim",
         use_yn: "trimUpperDefault:Y"
       },
-      defaultRow: { code: "", code_name: "", use_yn: "Y" },
+      defaultRow: { code: "", code_name: "", sys_sctn_cd: "", rmk: "", use_yn: "Y" },
       blankCheckFields: ["code", "code_name"],
-      comparableFields: ["code_name", "use_yn"],
+      comparableFields: ["code_name", "sys_sctn_cd", "rmk", "use_yn"],
       firstEditCol: "code",
       pkLabels: { code: "코드" },
       // 마스터 그리드가 Ajax로 확 새로 그려졌을 때 진입되는 콜백
@@ -78,7 +80,14 @@ export default class extends BaseGridController {
         detail_code: "trim",
         detail_code_name: "trim",
         short_name: "trim",
-        ref_code: "trim",
+        upper_code: "trimUpper",
+        upper_detail_code: "trimUpper",
+        rmk: "trim",
+        attr1: "trim",
+        attr2: "trim",
+        attr3: "trim",
+        attr4: "trim",
+        attr5: "trim",
         sort_order: "number",
         use_yn: "trimUpperDefault:Y"
       },
@@ -87,12 +96,19 @@ export default class extends BaseGridController {
         detail_code: "",
         detail_code_name: "",
         short_name: "",
-        ref_code: "",
+        upper_code: "",
+        upper_detail_code: "",
+        rmk: "",
+        attr1: "",
+        attr2: "",
+        attr3: "",
+        attr4: "",
+        attr5: "",
         sort_order: 0,
         use_yn: "Y"
       },
       blankCheckFields: ["detail_code", "detail_code_name"],
-      comparableFields: ["detail_code_name", "short_name", "ref_code", "sort_order", "use_yn"],
+      comparableFields: ["detail_code_name", "short_name", "upper_code", "upper_detail_code", "rmk", "attr1", "attr2", "attr3", "attr4", "attr5", "sort_order", "use_yn"],
       firstEditCol: "detail_code",
       pkLabels: { detail_code: "상세코드" }
     }

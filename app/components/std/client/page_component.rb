@@ -325,7 +325,7 @@ class Std::Client::PageComponent < Std::BasePageComponent
     def section_option_items(group_code)
       scope = AdmCodeDetail.active.where(code: "STD_BZAC_SCTN").ordered
       if group_code.present?
-        scope = scope.where(ref_code: group_code)
+        scope = scope.where(upper_detail_code: group_code)
       end
 
       scope.map do |row|
@@ -340,7 +340,7 @@ class Std::Client::PageComponent < Std::BasePageComponent
       options = [ { label: "전체", value: "" } ]
       scope = AdmCodeDetail.active.where(code: "STD_BZAC_SCTN").ordered
       if selected_section_group.present?
-        scope = scope.where(ref_code: selected_section_group)
+        scope = scope.where(upper_detail_code: selected_section_group)
       end
       options + scope.map { |row| { label: row.detail_code_name, value: row.detail_code } }
     end

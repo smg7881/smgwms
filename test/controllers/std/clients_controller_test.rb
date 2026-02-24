@@ -138,6 +138,35 @@ class Std::ClientsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Seoul WH", workplaces.first["workpl_nm_cd"]
   end
 
+  test "sections endpoint filters by section group using upper_detail_code" do
+    AdmCodeHeader.find_or_create_by!(code: "STD_BZAC_SCTN", code_name: "거래처구분") do |header|
+      header.use_yn = "Y"
+    end
+
+    AdmCodeDetail.create!(
+      code: "STD_BZAC_SCTN",
+      detail_code: "DOMESTIC",
+      detail_code_name: "Domestic",
+      upper_detail_code: "CUSTOMER",
+      sort_order: 1,
+      use_yn: "Y"
+    )
+    AdmCodeDetail.create!(
+      code: "STD_BZAC_SCTN",
+      detail_code: "SUPPLIER",
+      detail_code_name: "Supplier",
+      upper_detail_code: "PARTNER",
+      sort_order: 2,
+      use_yn: "Y"
+    )
+
+    get sections_std_clients_url(format: :json), params: { bzac_sctn_grp_cd: "CUSTOMER" }
+    assert_response :success
+
+    rows = JSON.parse(response.body)
+    assert_equal [ "DOMESTIC" ], rows.map { |row| row["detail_code"] }
+  end
+
   test "non-admin without permission cannot access endpoints" do
     delete session_path
     user = User.find_by!(email_address: "user@example.com")
