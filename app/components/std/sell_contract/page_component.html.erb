@@ -15,20 +15,15 @@
   ) %>
 
   <section class="std-client-master">
-    <div class="std-client-section-head">
-      <h3 class="std-client-section-title">
-        <%= helpers.lucide_icon("file-signature", css_class: "w-4 h-4") %>
-        매출계약목록
-        <%= render Ui::GridActionsComponent.new(grid_id: "std-sell-contract-master") %>
-      </h3>
-      <%= render Ui::GridToolbarComponent.new(
-        buttons: [
-          { label: "행추가", class: "btn btn-sm btn-primary", action: "click->sell-contract-grid#addMasterRow" },
-          { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->sell-contract-grid#deleteMasterRows" },
-          { label: "저장", class: "btn btn-sm btn-success", action: "click->sell-contract-grid#saveMasterRows" }
-        ]
-      ) %>
-    </div>
+    <%= render Ui::GridHeaderComponent.new(
+      icon: "file-signature", title: "매출계약목록", grid_id: "std-sell-contract-master",
+      class: "std-client-section-head", title_class: "std-client-section-title", icon_class: "w-4 h-4",
+      buttons: [
+        { label: "행추가", class: "btn btn-sm btn-primary", action: "click->sell-contract-grid#addMasterRow" },
+        { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->sell-contract-grid#deleteMasterRows" },
+        { label: "저장", class: "btn btn-sm btn-success", action: "click->sell-contract-grid#saveMasterRows" }
+      ]
+    ) %>
 
     <%= render Ui::AgGridComponent.new(
       columns: master_columns,
@@ -88,20 +83,15 @@
     </div>
 
     <div class="std-client-panel" data-sell-contract-grid-target="tabPanel" data-tab-panel="settlement" hidden>
-      <div class="std-client-section-head">
-        <h3 class="std-client-section-title">
-          <%= helpers.lucide_icon("wallet-cards", css_class: "w-4 h-4") %>
-          매출계약정산정보
-          <%= render Ui::GridActionsComponent.new(grid_id: "std-sell-contract-settlement") %>
-        </h3>
-        <%= render Ui::GridToolbarComponent.new(
-          buttons: [
-            { label: "행추가", class: "btn btn-sm btn-primary", action: "click->sell-contract-grid#addSettlementRow" },
-            { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->sell-contract-grid#deleteSettlementRows" },
-            { label: "저장", class: "btn btn-sm btn-success", action: "click->sell-contract-grid#saveSettlementRows" }
-          ]
-        ) %>
-      </div>
+      <%= render Ui::GridHeaderComponent.new(
+        icon: "wallet-cards", title: "매출계약정산정보", grid_id: "std-sell-contract-settlement",
+        class: "std-client-section-head", title_class: "std-client-section-title", icon_class: "w-4 h-4",
+        buttons: [
+          { label: "행추가", class: "btn btn-sm btn-primary", action: "click->sell-contract-grid#addSettlementRow" },
+          { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->sell-contract-grid#deleteSettlementRows" },
+          { label: "저장", class: "btn btn-sm btn-success", action: "click->sell-contract-grid#saveSettlementRows" }
+        ]
+      ) %>
 
       <%= render Ui::AgGridComponent.new(
         columns: settlement_columns,
@@ -115,18 +105,13 @@
     </div>
 
     <div class="std-client-panel" data-sell-contract-grid-target="tabPanel" data-tab-panel="history" hidden>
-      <div class="std-client-section-head">
-        <h3 class="std-client-section-title">
-          <%= helpers.lucide_icon("history", css_class: "w-4 h-4") %>
-          매출계약변경이력
-          <%= render Ui::GridActionsComponent.new(grid_id: "std-sell-contract-history") %>
-        </h3>
-        <%= render Ui::GridToolbarComponent.new(
-          buttons: [
-            { label: "새로고침", class: "btn btn-sm btn-secondary", action: "click->sell-contract-grid#reloadHistoryRows" }
-          ]
-        ) %>
-      </div>
+      <%= render Ui::GridHeaderComponent.new(
+        icon: "history", title: "매출계약변경이력", grid_id: "std-sell-contract-history",
+        class: "std-client-section-head", title_class: "std-client-section-title", icon_class: "w-4 h-4",
+        buttons: [
+          { label: "새로고침", class: "btn btn-sm btn-secondary", action: "click->sell-contract-grid#reloadHistoryRows" }
+        ]
+      ) %>
 
       <%= render Ui::AgGridComponent.new(
         columns: change_history_columns,

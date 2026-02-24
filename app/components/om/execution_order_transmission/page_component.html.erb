@@ -10,19 +10,19 @@
       enable_collapse: true
     ) %>
 
-    <div class="flex items-center justify-between gap-3 mb-3 mt-2">
-      <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
-        전송 이력 목록
-        <%= render Ui::GridActionsComponent.new(grid_id: "om-execution-order-transmission") %>
-      </h3>
-      <%= render Ui::GridToolbarComponent.new do |toolbar| %>
-        <% toolbar.with_right do %>
-          <button type="button" class="btn btn-sm btn-primary" data-action="click->om-execution-order-transmission-grid#retransmit">
-            <%= helpers.lucide_icon("refresh-ccw", css_class: "w-4 h-4 mr-1") %> 재전송
-          </button>
+    <%= render Ui::GridHeaderComponent.new(
+      icon: "send", title: "전송 이력 목록", grid_id: "om-execution-order-transmission"
+    ) do |header| %>
+      <% header.with_actions do %>
+        <%= render Ui::GridToolbarComponent.new do |toolbar| %>
+          <% toolbar.with_right do %>
+            <button type="button" class="btn btn-sm btn-primary" data-action="click->om-execution-order-transmission-grid#retransmit">
+              <%= helpers.lucide_icon("refresh-ccw", css_class: "w-4 h-4 mr-1") %> 재전송
+            </button>
+          <% end %>
         <% end %>
       <% end %>
-    </div>
+    <% end %>
 
     <!-- 마스터 그리드 -->
     <%= render Ui::AgGridComponent.new(

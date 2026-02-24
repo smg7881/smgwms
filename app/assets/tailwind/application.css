@@ -960,6 +960,8 @@ trix-editor:focus {
   color: var(--color-text-primary);
   font-size: 14px;
   font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .std-client-selected {

@@ -18,20 +18,15 @@
   ) %>
 
   <section class="std-client-master">
-    <div class="std-client-section-head">
-      <h3 class="std-client-section-title">
-        <%= helpers.lucide_icon("building-2", css_class: "w-4 h-4") %>
-        거래처 목록
-        <%= render Ui::GridActionsComponent.new(grid_id: "std-client-master") %>
-      </h3>
-      <%= render Ui::GridToolbarComponent.new(
-        buttons: [
-          { label: "행추가", class: "btn btn-sm btn-primary", action: "click->client-grid#addMasterRow" },
-          { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->client-grid#deleteMasterRows" },
-          { label: "저장", class: "btn btn-sm btn-success", action: "click->client-grid#saveMasterRows" }
-        ]
-      ) %>
-    </div>
+    <%= render Ui::GridHeaderComponent.new(
+      icon: "building-2", title: "거래처 목록", grid_id: "std-client-master",
+      class: "std-client-section-head", title_class: "std-client-section-title", icon_class: "w-4 h-4",
+      buttons: [
+        { label: "행추가", class: "btn btn-sm btn-primary", action: "click->client-grid#addMasterRow" },
+        { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->client-grid#deleteMasterRows" },
+        { label: "저장", class: "btn btn-sm btn-success", action: "click->client-grid#saveMasterRows" }
+      ]
+    ) %>
 
     <%= render Ui::AgGridComponent.new(
       columns: master_columns,
@@ -91,19 +86,14 @@
     </div>
 
     <div class="std-client-panel" data-client-grid-target="tabPanel" data-tab-panel="contacts" hidden>
-      <div class="std-client-section-head">
-        <h3 class="std-client-section-title">
-          <%= helpers.lucide_icon("users", css_class: "w-4 h-4") %>
-          거래처담당자
-          <%= render Ui::GridActionsComponent.new(grid_id: "std-client-contact") %>
-        </h3>
-        <%= render Ui::GridToolbarComponent.new(
-          buttons: [
-            { label: "행추가", class: "btn btn-sm btn-primary", action: "click->client-grid#addContactRow" },
-            { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->client-grid#deleteContactRows" }
-          ]
-        ) %>
-      </div>
+      <%= render Ui::GridHeaderComponent.new(
+        icon: "users", title: "거래처담당자", grid_id: "std-client-contact",
+        class: "std-client-section-head", title_class: "std-client-section-title", icon_class: "w-4 h-4",
+        buttons: [
+          { label: "행추가", class: "btn btn-sm btn-primary", action: "click->client-grid#addContactRow" },
+          { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->client-grid#deleteContactRows" }
+        ]
+      ) %>
 
       <%= render Ui::AgGridComponent.new(
         columns: contact_columns,
@@ -117,19 +107,14 @@
     </div>
 
     <div class="std-client-panel" data-client-grid-target="tabPanel" data-tab-panel="workplaces" hidden>
-      <div class="std-client-section-head">
-        <h3 class="std-client-section-title">
-          <%= helpers.lucide_icon("map-pinned", css_class: "w-4 h-4") %>
-          거래처작업장
-          <%= render Ui::GridActionsComponent.new(grid_id: "std-client-workplace") %>
-        </h3>
-        <%= render Ui::GridToolbarComponent.new(
-          buttons: [
-            { label: "행추가", class: "btn btn-sm btn-primary", action: "click->client-grid#addWorkplaceRow" },
-            { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->client-grid#deleteWorkplaceRows" }
-          ]
-        ) %>
-      </div>
+      <%= render Ui::GridHeaderComponent.new(
+        icon: "map-pinned", title: "거래처작업장", grid_id: "std-client-workplace",
+        class: "std-client-section-head", title_class: "std-client-section-title", icon_class: "w-4 h-4",
+        buttons: [
+          { label: "행추가", class: "btn btn-sm btn-primary", action: "click->client-grid#addWorkplaceRow" },
+          { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->client-grid#deleteWorkplaceRows" }
+        ]
+      ) %>
 
       <%= render Ui::AgGridComponent.new(
         columns: workplace_columns,

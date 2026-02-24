@@ -8,20 +8,15 @@
     enable_collapse: true
   ) %>
 
-  <div class="flex items-center justify-between gap-3 mb-3 mt-2">
-    <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary whitespace-nowrap shrink-0">
-      <%= helpers.lucide_icon("settings-2", css_class: "w-4 h-4 text-text-secondary") %>
-      고객별 시스템 설정 목록
-      <%= render Ui::GridActionsComponent.new(grid_id: "om-customer-system-config") %>
-    </h3>
-    <%= render Ui::GridToolbarComponent.new(
-      buttons: [
-        { label: "추가", class: "btn btn-sm btn-primary", action: "click->om-customer-system-config-grid#addRow" },
-        { label: "삭제", class: "btn btn-sm btn-danger", action: "click->om-customer-system-config-grid#deleteRows" },
-        { label: "저장", class: "btn btn-sm btn-success", action: "click->om-customer-system-config-grid#saveRows" }
-      ]
-    ) %>
-  </div>
+  <%= render Ui::GridHeaderComponent.new(
+    icon: "settings-2", title: "고객별 시스템 설정 목록", grid_id: "om-customer-system-config",
+    title_class: "inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary whitespace-nowrap shrink-0",
+    buttons: [
+      { label: "추가", class: "btn btn-sm btn-primary", action: "click->om-customer-system-config-grid#addRow" },
+      { label: "삭제", class: "btn btn-sm btn-danger", action: "click->om-customer-system-config-grid#deleteRows" },
+      { label: "저장", class: "btn btn-sm btn-success", action: "click->om-customer-system-config-grid#saveRows" }
+    ]
+  ) %>
 
   <%= render Ui::AgGridComponent.new(
     columns: columns,

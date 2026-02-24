@@ -9,20 +9,15 @@
     enable_collapse: true
   ) %>
 
-  <div class="flex items-center justify-between gap-3 mb-3 mt-6">
-    <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
-      <%= helpers.lucide_icon("map", css_class: "w-4 h-4 text-text-secondary") %>
-      AREA 목록
-      <%= render Ui::GridActionsComponent.new(grid_id: "wm-area") %>
-    </h3>
-    <%= render Ui::GridToolbarComponent.new(
-      buttons: [
-        { label: "행추가", class: "btn btn-sm btn-primary", action: "click->area-grid#addRow" },
-        { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->area-grid#deleteRows" },
-        { label: "저장", class: "btn btn-sm btn-success", action: "click->area-grid#saveRows" }
-      ]
-    ) %>
-  </div>
+  <%= render Ui::GridHeaderComponent.new(
+    icon: "map", title: "AREA 목록", grid_id: "wm-area",
+    class: "flex items-center justify-between gap-3 mb-3 mt-6",
+    buttons: [
+      { label: "행추가", class: "btn btn-sm btn-primary", action: "click->area-grid#addRow" },
+      { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->area-grid#deleteRows" },
+      { label: "저장", class: "btn btn-sm btn-success", action: "click->area-grid#saveRows" }
+    ]
+  ) %>
 
   <%= render Ui::AgGridComponent.new(
     columns: columns,

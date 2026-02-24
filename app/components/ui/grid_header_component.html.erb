@@ -1,0 +1,30 @@
+<div class="<%= wrapper_class %>">
+  <% if subtitle? %>
+    <div class="flex items-end gap-2">
+      <h3 class="<%= resolved_title_class %>">
+        <%= helpers.lucide_icon(icon, css_class: resolved_icon_class) %>
+        <%= title %>
+        <% if inline_subtitle? %>
+          <%= inline_subtitle %>
+        <% end %>
+        <%= render Ui::GridActionsComponent.new(grid_id: grid_id, excel_action: excel_action) %>
+      </h3>
+      <span class="whitespace-nowrap shrink-0"><%= subtitle %></span>
+    </div>
+  <% else %>
+    <h3 class="<%= resolved_title_class %>">
+      <%= helpers.lucide_icon(icon, css_class: resolved_icon_class) %>
+      <%= title %>
+      <% if inline_subtitle? %>
+        <%= inline_subtitle %>
+      <% end %>
+      <%= render Ui::GridActionsComponent.new(grid_id: grid_id, excel_action: excel_action) %>
+    </h3>
+  <% end %>
+
+  <% if actions? %>
+    <%= actions %>
+  <% elsif buttons.present? %>
+    <%= render Ui::GridToolbarComponent.new(buttons: buttons) %>
+  <% end %>
+</div>

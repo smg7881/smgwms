@@ -148,19 +148,15 @@
 
       <!-- 아이템상세 탭 -->
       <div class="p-4 hidden" data-om-internal-order-target="tabItems">
-        <div class="flex items-center justify-between gap-3 mb-3">
-          <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
-            <%= helpers.lucide_icon("list", css_class: "w-4 h-4 text-gray-500") %>
-            아이템 목록 (최대 20건)
-            <%= render Ui::GridActionsComponent.new(grid_id: "om-internal-order-items") %>
-          </h3>
-          <%= render Ui::GridToolbarComponent.new(
-            buttons: [
-              { label: "행추가", class: "btn btn-sm btn-primary", action: "click->om-internal-order#addItemRow" },
-              { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->om-internal-order#deleteItemRows" }
-            ]
-          ) %>
-        </div>
+        <%= render Ui::GridHeaderComponent.new(
+          icon: "list", title: "아이템 목록 (최대 20건)", grid_id: "om-internal-order-items",
+          class: "flex items-center justify-between gap-3 mb-3",
+          icon_class: "w-4 h-4 text-gray-500",
+          buttons: [
+            { label: "행추가", class: "btn btn-sm btn-primary", action: "click->om-internal-order#addItemRow" },
+            { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->om-internal-order#deleteItemRows" }
+          ]
+        ) %>
 
         <div class="h-[300px]">
           <%= render Ui::AgGridComponent.new(

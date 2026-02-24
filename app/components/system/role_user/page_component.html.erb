@@ -24,21 +24,20 @@
 
   <div class="grid grid-cols-[minmax(0,1fr)_92px_minmax(0,1fr)] gap-2 max-[980px]:grid-cols-1">
     <section class="min-w-0">
-      <div class="flex items-center justify-between gap-3 mb-3 mt-2">
-        <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
-          <%= helpers.lucide_icon("users", css_class: "w-4 h-4 text-text-secondary") %>
-          미할당 사용자
-          <%= render Ui::GridActionsComponent.new(grid_id: "role-user-left") %>
-        </h3>
-        <div class="flex items-center gap-2">
-          <input type="text"
-                 class="form-grid-input h-8 w-40"
-                 placeholder="부서명, 사용자명 검색"
-                 data-role-user-grid-target="leftSearchInput"
-                 data-action="keydown.enter->role-user-grid#searchLeft" />
-          <button type="button" class="btn btn-sm btn-secondary w-14 shrink-0 whitespace-nowrap" data-action="click->role-user-grid#searchLeft">검색</button>
-        </div>
-      </div>
+      <%= render Ui::GridHeaderComponent.new(
+        icon: "users", title: "미할당 사용자", grid_id: "role-user-left"
+      ) do |header| %>
+        <% header.with_actions do %>
+          <div class="flex items-center gap-2">
+            <input type="text"
+                   class="form-grid-input h-8 w-40"
+                   placeholder="부서명, 사용자명 검색"
+                   data-role-user-grid-target="leftSearchInput"
+                   data-action="keydown.enter->role-user-grid#searchLeft" />
+            <button type="button" class="btn btn-sm btn-secondary w-14 shrink-0 whitespace-nowrap" data-action="click->role-user-grid#searchLeft">검색</button>
+          </div>
+        <% end %>
+      <% end %>
 
       <%= render Ui::AgGridComponent.new(
         columns: user_columns,
@@ -57,22 +56,22 @@
     </section>
 
     <section class="min-w-0">
-      <div class="flex items-start justify-between gap-3">
-        <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
-          <%= helpers.lucide_icon("user-check", css_class: "w-4 h-4 text-text-secondary") %>
-          할당 사용자
-          <%= render Ui::GridActionsComponent.new(grid_id: "role-user-right") %>
-        </h3>
-        <div class="flex items-center gap-2">
-          <input type="text"
-                 class="form-grid-input h-8 w-40"
-                 placeholder="부서명, 사용자명 검색"
-                 data-role-user-grid-target="rightSearchInput"
-                 data-action="keydown.enter->role-user-grid#searchRight" />
-          <button type="button" class="btn btn-sm btn-secondary w-14 shrink-0 whitespace-nowrap" data-action="click->role-user-grid#searchRight">검색</button>
-          <button type="button" class="btn btn-sm btn-success w-14 shrink-0 whitespace-nowrap" data-action="click->role-user-grid#save">저장</button>
-        </div>
-      </div>
+      <%= render Ui::GridHeaderComponent.new(
+        icon: "user-check", title: "할당 사용자", grid_id: "role-user-right",
+        class: "flex items-start justify-between gap-3"
+      ) do |header| %>
+        <% header.with_actions do %>
+          <div class="flex items-center gap-2">
+            <input type="text"
+                   class="form-grid-input h-8 w-40"
+                   placeholder="부서명, 사용자명 검색"
+                   data-role-user-grid-target="rightSearchInput"
+                   data-action="keydown.enter->role-user-grid#searchRight" />
+            <button type="button" class="btn btn-sm btn-secondary w-14 shrink-0 whitespace-nowrap" data-action="click->role-user-grid#searchRight">검색</button>
+            <button type="button" class="btn btn-sm btn-success w-14 shrink-0 whitespace-nowrap" data-action="click->role-user-grid#save">저장</button>
+          </div>
+        <% end %>
+      <% end %>
 
       <%= render Ui::AgGridComponent.new(
         columns: user_columns,

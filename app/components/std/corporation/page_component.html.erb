@@ -12,20 +12,14 @@
   ) %>
 
   <section class="mb-5">
-    <div class="flex items-center justify-between gap-3 mb-3 mt-2">
-      <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
-        <%= helpers.lucide_icon("building-2", css_class: "w-4 h-4 text-text-secondary") %>
-        법인 목록
-        <%= render Ui::GridActionsComponent.new(grid_id: "std-corporation-master") %>
-      </h3>
-      <%= render Ui::GridToolbarComponent.new(
-        buttons: [
-          { label: "추가", class: "btn btn-sm btn-primary", action: "click->std-corporation-grid#addMasterRow" },
-          { label: "삭제", class: "btn btn-sm btn-danger", action: "click->std-corporation-grid#deleteMasterRows" },
-          { label: "저장", class: "btn btn-sm btn-success", action: "click->std-corporation-grid#saveMasterRows" }
-        ]
-      ) %>
-    </div>
+    <%= render Ui::GridHeaderComponent.new(
+      icon: "building-2", title: "법인 목록", grid_id: "std-corporation-master",
+      buttons: [
+        { label: "추가", class: "btn btn-sm btn-primary", action: "click->std-corporation-grid#addMasterRow" },
+        { label: "삭제", class: "btn btn-sm btn-danger", action: "click->std-corporation-grid#deleteMasterRows" },
+        { label: "저장", class: "btn btn-sm btn-success", action: "click->std-corporation-grid#saveMasterRows" }
+      ]
+    ) %>
 
     <%= render Ui::AgGridComponent.new(
       columns: master_columns,
@@ -39,21 +33,18 @@
   </section>
 
   <section>
-    <div class="flex items-center justify-between gap-3 mb-3 mt-2">
-      <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
-        <%= helpers.lucide_icon("globe-2", css_class: "w-4 h-4 text-text-secondary") %>
-        법인 국가 정보
+    <%= render Ui::GridHeaderComponent.new(
+      icon: "globe-2", title: "법인 국가 정보", grid_id: "std-corporation-country",
+      buttons: [
+        { label: "추가", class: "btn btn-sm btn-primary", action: "click->std-corporation-grid#addCountryRow" },
+        { label: "삭제", class: "btn btn-sm btn-danger", action: "click->std-corporation-grid#deleteCountryRows" },
+        { label: "저장", class: "btn btn-sm btn-success", action: "click->std-corporation-grid#saveCountryRows" }
+      ]
+    ) do |header| %>
+      <% header.with_inline_subtitle do %>
         <span class="text-sm font-normal text-text-secondary" data-std-corporation-grid-target="selectedCorpLabel">법인을 먼저 선택하세요</span>
-        <%= render Ui::GridActionsComponent.new(grid_id: "std-corporation-country") %>
-      </h3>
-      <%= render Ui::GridToolbarComponent.new(
-        buttons: [
-          { label: "추가", class: "btn btn-sm btn-primary", action: "click->std-corporation-grid#addCountryRow" },
-          { label: "삭제", class: "btn btn-sm btn-danger", action: "click->std-corporation-grid#deleteCountryRows" },
-          { label: "저장", class: "btn btn-sm btn-success", action: "click->std-corporation-grid#saveCountryRows" }
-        ]
-      ) %>
-    </div>
+      <% end %>
+    <% end %>
 
     <%= render Ui::AgGridComponent.new(
       columns: country_columns,

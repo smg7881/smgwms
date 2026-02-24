@@ -72,19 +72,15 @@
 
     <!-- 디테일 : 아이템 상세내역 (그리드) -->
     <div class="flex flex-col flex-1 h-full min-h-[300px]">
-      <div class="flex items-center justify-between gap-3 mb-3">
-        <h3 class="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
-          <%= helpers.lucide_icon("list", css_class: "w-4 h-4 text-gray-500") %>
-          아이템 상세내역
-          <%= render Ui::GridActionsComponent.new(grid_id: "om-service-order-items") %>
-        </h3>
-        <%= render Ui::GridToolbarComponent.new(
-          buttons: [
-            { label: "추가", class: "btn btn-sm btn-secondary", action: "click->om-service-order-form#addRow" },
-            { label: "삭제", class: "btn btn-sm btn-danger", action: "click->om-service-order-form#removeRow" }
-          ]
-        ) %>
-      </div>
+      <%= render Ui::GridHeaderComponent.new(
+        icon: "list", title: "아이템 상세내역", grid_id: "om-service-order-items",
+        class: "flex items-center justify-between gap-3 mb-3",
+        icon_class: "w-4 h-4 text-gray-500",
+        buttons: [
+          { label: "추가", class: "btn btn-sm btn-secondary", action: "click->om-service-order-form#addRow" },
+          { label: "삭제", class: "btn btn-sm btn-danger", action: "click->om-service-order-form#removeRow" }
+        ]
+      ) %>
       
       <%= render Ui::AgGridComponent.new(
         grid_id: "om-service-order-items",
