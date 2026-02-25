@@ -10,7 +10,9 @@ export default class extends BaseGridController {
     "custOrdOfcr", "custTel", "custExprYn", "clsExprYn",
     "retrngdYn", "ordStatNm", "ordCmptNm",
     // Grid Containers
-    "itemGridContainer", "progressGridContainer"
+    "itemGridContainer", "progressGridContainer",
+    // Tabs
+    "tabButton", "tabPanel"
   ]
 
   gridRoles() {
@@ -38,6 +40,45 @@ export default class extends BaseGridController {
       if (response && response.length === 0) {
         alert("오더 번호를 정확히 넣고 검색하십시오.")
       }
+    }
+  }
+
+  switchTab(event) {
+    event.preventDefault()
+    const tabId = event.currentTarget?.dataset?.tab
+    if (!tabId) return
+
+    this.activateTab(tabId)
+  }
+
+  activateTab(tabId) {
+    // 탭 버튼 스타일 변경
+    this.tabButtonTargets.forEach((btn) => {
+      const isActive = btn.dataset.tab === tabId
+      btn.classList.toggle("is-active", isActive)
+      btn.setAttribute("aria-selected", isActive ? "true" : "false")
+    })
+
+    // 탭 컨텐츠 표시/숨김
+    this.tabPanelTargets.forEach((pane) => {
+      const isActive = pane.dataset.tabPanel === tabId
+      pane.classList.toggle("is-active", isActive)
+      pane.hidden = !isActive
+    })
+
+    // 숨겨져 있던 그리드가 표시될 때 크기 재조정 필요
+    setTimeout(() => {
+      if (tabId === "items" && this.grids.items) {
+        this.resizeGridIfNecessary(this.grids.items)
+      } else if (tabId === "progress" && this.grids.progresses) {
+        this.resizeGridIfNecessary(this.grids.progresses)
+      }
+    }, 10)
+  }
+
+  resizeGridIfNecessary(grid) {
+    if (grid && grid.api) {
+      grid.api.sizeColumnsToFit()
     }
   }
 

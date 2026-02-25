@@ -21,6 +21,7 @@ module Om
               label: "고객",
               popup_type: "client",
               code_field: "cust_cd",
+              hide_display: true,
               value: search_form.respond_to?(:cust_nm) ? search_form.cust_nm : nil,
               code_value: search_form.respond_to?(:cust_cd) ? search_form.cust_cd : nil,
               display_width: "250px"

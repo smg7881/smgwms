@@ -1,12 +1,14 @@
   <div data-controller="om-order-work-progress"
-       data-action="search-form:success@window->om-order-work-progress#loadData">
+       data-action="search-form:success@window->om-order-work-progress#loadData"
+       class="std-client-screen std-om-order-work-progress-screen flex flex-col h-full">
 
     <!-- 검색조건 영역 -->
     <%= render Ui::SearchFormComponent.new(
       url: collection_path(format: :json),
       fields: search_fields,
       cols: 4,
-      enable_collapse: true
+      enable_collapse: true,
+      class: "std-client-search"
     ) %>
 
     <!-- 마스터 정보 영역 -->
@@ -40,17 +42,34 @@
           { field: "ord_cmpt_nm", type: "input", label: "오더완료", disabled: true, target: "ordCmptNm" }
         ],
         cols: 4,
-        show_buttons: false
+        show_buttons: false,
+        class: "std-client-resource-form"
       ) %>
     </div>
 
     <!-- 상태 상세 그리드 영역 -->
-    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 h-full min-h-[400px]">
+    <div class="std-client-detail mt-0 flex-1 flex flex-col min-h-[450px]">
+      <!-- 탭 헤더 영역 -->
+      <div class="std-client-tabs">
+        <button type="button" 
+                class="std-client-tab is-active" aria-selected="true"
+                data-om-order-work-progress-target="tabButton"
+                data-action="click->om-order-work-progress#switchTab"
+                data-tab="items">
+          오더 아이템별 실적
+        </button>
+        <button type="button"
+                class="std-client-tab" aria-selected="false"
+                data-om-order-work-progress-target="tabButton"
+                data-action="click->om-order-work-progress#switchTab"
+                data-tab="progress">
+          오더작업진행 상세이력
+        </button>
+      </div>
 
-      <!-- 1번 그리드: 오더별 아이템 실적 비교 -->
-      <div class="flex flex-col h-full bg-white p-2 rounded shadow-sm border">
-        <h3 class="text-sm font-bold text-gray-800 mb-2 pl-2">오더 아이템별 실적</h3>
-        <div class="flex-1">
+      <!-- 탭 컨텐츠 영역 -->
+      <div class="std-client-panel is-active flex-1 min-h-0 relative" data-om-order-work-progress-target="tabPanel" data-tab-panel="items">
+        <div class="absolute inset-0 flex flex-col">
           <%= render Ui::AgGridComponent.new(
             columns: item_columns,
             row_data: [],
@@ -63,10 +82,8 @@
         </div>
       </div>
 
-      <!-- 2번 그리드: 오더작업진행상세 -->
-      <div class="flex flex-col h-full bg-white p-2 rounded shadow-sm border">
-        <h3 class="text-sm font-bold text-gray-800 mb-2 pl-2">오더작업진행 상세이력</h3>
-        <div class="flex-1">
+      <div class="std-client-panel flex-1 min-h-0 relative" data-om-order-work-progress-target="tabPanel" data-tab-panel="progress" hidden>
+        <div class="absolute inset-0 flex flex-col">
           <%= render Ui::AgGridComponent.new(
             columns: progress_columns,
             row_data: [],
@@ -78,7 +95,6 @@
           ) %>
         </div>
       </div>
-
     </div>
 
   </div>

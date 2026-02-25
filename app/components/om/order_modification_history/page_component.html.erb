@@ -1,20 +1,38 @@
   <div data-controller="om-order-modification-history"
-       data-action="search-form:success@window->om-order-modification-history#loadMasterData">
+       data-action="search-form:success@window->om-order-modification-history#loadMasterData"
+       class="std-client-screen std-om-order-modification-history-screen flex flex-col h-full">
 
     <!-- 검색조건 영역: 오더번호 및 이력순번 -->
     <%= render Ui::SearchFormComponent.new(
       url: collection_path(format: :json),
       fields: search_fields,
       cols: 4,
-      enable_collapse: true
+      enable_collapse: true,
+      class: "std-client-search"
     ) %>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full min-h-[500px]">
+    <div class="std-client-detail mt-0 flex-1 flex flex-col min-h-[450px]">
+      <!-- 탭 헤더 영역 -->
+      <div class="std-client-tabs">
+        <button type="button" 
+                class="std-client-tab is-active" aria-selected="true"
+                data-om-order-modification-history-target="tabButton"
+                data-action="click->om-order-modification-history#switchTab"
+                data-tab="master">
+          오더수정이력목록
+        </button>
+        <button type="button"
+                class="std-client-tab" aria-selected="false"
+                data-om-order-modification-history-target="tabButton"
+                data-action="click->om-order-modification-history#switchTab"
+                data-tab="detail">
+          아이템 상세
+        </button>
+      </div>
 
-      <!-- 1. Master: 오더수정이력목록 -->
-      <div class="flex flex-col h-full bg-white p-2 rounded shadow-sm border overflow-hidden">
-        <h3 class="text-sm font-bold text-gray-800 mb-2 pl-2">오더수정이력목록</h3>
-        <div class="flex-1 min-h-[450px]">
+      <!-- 탭 컨텐츠 영역 -->
+      <div class="std-client-panel is-active flex-1 min-h-0 relative" data-om-order-modification-history-target="tabPanel" data-tab-panel="master">
+        <div class="absolute inset-0 flex flex-col">
           <%= render Ui::AgGridComponent.new(
             columns: master_columns,
             row_data: [],
@@ -28,25 +46,24 @@
         </div>
       </div>
 
-      <!-- 2. Detail: 상세 정보 (아이템 상세 등) -->
-      <div class="flex flex-col h-full bg-white p-2 rounded shadow-sm border overflow-hidden">
-        <div class="flex items-center justify-between mb-2 pl-2">
-          <h3 class="text-sm font-bold text-gray-800">아이템 상세</h3>
+      <div class="std-client-panel flex-1 min-h-0 relative flex flex-col" data-om-order-modification-history-target="tabPanel" data-tab-panel="detail" hidden>
+        <div class="flex items-center justify-end mb-2 shrink-0">
           <%= render Ui::GridActionsComponent.new(grid_id: "om-order-modification-history-detail") %>
         </div>
-        <div class="flex-1 min-h-[450px]">
-          <%= render Ui::AgGridComponent.new(
-            columns: detail_columns,
-            row_data: [],
-            pagination: false,
-            grid_id: "om-order-modification-history-detail",
-            data: {
-              om_order_modification_history_target: "detailGridContainer",
-              action: "ag-grid:ready->om-order-modification-history#registerGrid"
-            }
-          ) %>
+        <div class="flex-1 relative">
+          <div class="absolute inset-0 flex flex-col">
+            <%= render Ui::AgGridComponent.new(
+              columns: detail_columns,
+              row_data: [],
+              pagination: false,
+              grid_id: "om-order-modification-history-detail",
+              data: {
+                om_order_modification_history_target: "detailGridContainer",
+                action: "ag-grid:ready->om-order-modification-history#registerGrid"
+              }
+            ) %>
+          </div>
         </div>
       </div>
-
     </div>
   </div>

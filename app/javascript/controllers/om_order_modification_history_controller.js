@@ -6,7 +6,9 @@ export default class extends BaseGridController {
   static targets = [
     ...BaseGridController.targets,
     "masterGridContainer",
-    "detailGridContainer"
+    "detailGridContainer",
+    // Tabs
+    "tabButton", "tabPanel"
   ]
 
   gridRoles() {
@@ -36,6 +38,46 @@ export default class extends BaseGridController {
       this.setRows("detail", body.items || [])
     } catch (e) {
       console.error("이력 상세 정보 조회 오류", e)
+    }
+  }
+
+  // --- Tab methods ---
+  switchTab(event) {
+    event.preventDefault()
+    const tabId = event.currentTarget?.dataset?.tab
+    if (!tabId) return
+
+    this.activateTab(tabId)
+  }
+
+  activateTab(tabId) {
+    // 탭 버튼 스타일 변경
+    this.tabButtonTargets.forEach((btn) => {
+      const isActive = btn.dataset.tab === tabId
+      btn.classList.toggle("is-active", isActive)
+      btn.setAttribute("aria-selected", isActive ? "true" : "false")
+    })
+
+    // 탭 컨텐츠 표시/숨김
+    this.tabPanelTargets.forEach((pane) => {
+      const isActive = pane.dataset.tabPanel === tabId
+      pane.classList.toggle("is-active", isActive)
+      pane.hidden = !isActive
+    })
+
+    // 숨겨져 있던 그리드가 표시될 때 크기 재조정 필요
+    setTimeout(() => {
+      if (tabId === "master" && this.grids.master) {
+        this.resizeGridIfNecessary(this.grids.master)
+      } else if (tabId === "detail" && this.grids.detail) {
+        this.resizeGridIfNecessary(this.grids.detail)
+      }
+    }, 10)
+  }
+
+  resizeGridIfNecessary(grid) {
+    if (grid && grid.api) {
+      grid.api.sizeColumnsToFit()
     }
   }
 }
