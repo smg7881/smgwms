@@ -1,16 +1,11 @@
 <%# app/views/shared/resource_form/fields/_switch.html.erb %>
+<%
+  param_key = model&.model_name&.param_key || 'resource'
+  current_value = model&.send(field[:field].to_sym) rescue nil
+%>
 <div class="flex flex-col gap-1 col-span-24 min-w-0 <%= span_classes_for(field, cols: cols) %>"
      data-resource-form-target="fieldGroup"
      data-field-name="<%= field[:field] %>">
-  <label class="text-sm font-medium text-text-secondary">
-    <%= resolve_label(field) %>
-    <% if field[:required] %><span class="text-accent-rose ml-0.5 font-semibold">*</span><% end %>
-  </label>
-  <div class="flex relative">
-    <label class="rf-switch">
-      <%= f.check_box field[:field].to_sym,
-            class: "rf-switch-input",
-            required: field[:required],
             disabled: field[:disabled],
             data: {
               resource_form_target: "input"
@@ -18,8 +13,8 @@
       <span class="rf-switch-slider"></span>
     </label>
   </div>
-  <% if model.errors[field[:field].to_sym].any? %>
-    <span class="rf-error-msg"><%= model.errors[field[:field].to_sym].first %></span>
+  <% if model&.errors&.[](field[:field].to_sym)&.any? %>
+    <span class="rf-error-msg"><%= model&.errors&.[](field[:field].to_sym)&.first %></span>
   <% end %>
   <% if field[:help].present? %>
     <span class="text-xs text-text-muted mt-0.5"><%= field[:help] %></span>

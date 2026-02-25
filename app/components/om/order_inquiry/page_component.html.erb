@@ -1,6 +1,6 @@
   <div data-controller="om-order-inquiry"
        data-action="search-form:success@window->om-order-inquiry#loadMasterData"
-       class="flex flex-col h-full bg-white p-4 rounded shadow-sm border space-y-4">
+       class="flex flex-col h-full gap-4">
     
     <!-- 검색조건 영역 -->
     <%= render Ui::SearchFormComponent.new(
@@ -11,21 +11,51 @@
     ) %>
 
     <!-- 마스터/디테일 그리드 영역 (상하 분할) -->
-    <div class="flex-1 flex flex-col min-h-0 space-y-4">
+    <div class="flex-1 flex flex-col min-h-0 gap-4">
       
       <!-- 1. Master: 오더목록 -->
       <div class="flex-1 min-h-[300px] flex flex-col overflow-hidden">
-        <h3 class="text-sm font-bold text-gray-800 mb-2">오더목록</h3>
-        <div data-controller="ag-grid" class="flex-1 w-full ag-theme-alpine border rounded" data-om-order-inquiry-target="masterGridContainer"></div>
+        <%= render Ui::GridHeaderComponent.new(
+          icon: "list", title: "오더목록", grid_id: "om-order-inquiry-master-grid",
+          class: "flex items-center justify-between gap-3 mb-2"
+        ) %>
+        <div class="flex-1">
+          <%= render Ui::AgGridComponent.new(
+            columns: master_columns,
+            row_data: [],
+            pagination: false,
+            row_selection: "single",
+            grid_id: "om-order-inquiry-master-grid",
+            data: {
+              om_order_inquiry_target: "masterGridContainer",
+              action: "ag-grid:ready->om-order-inquiry#initMasterGrid callback:onRowClicked->om-order-inquiry#onMasterRowClicked"
+            }
+          ) %>
+        </div>
       </div>
 
       <!-- 2. Detail: 오더아이템목록 -->
-      <div class="h-[250px] flex flex-col overflow-hidden bg-gray-50 border p-2 rounded">
-        <div class="flex items-center justify-between mb-2">
-          <h3 class="text-sm font-bold text-gray-800">오더아이템목록</h3>
+      <div class="flex-1 min-h-[250px] flex flex-col overflow-hidden">
+        <%= render Ui::GridHeaderComponent.new(
+          icon: "list", title: "오더아이템목록", grid_id: "om-order-inquiry-detail-grid",
+          class: "flex items-center justify-between gap-3 mb-2",
+          buttons: []
+        ) do %>
           <span class="text-xs text-gray-500 font-medium" data-om-order-inquiry-target="detailHeaderLabel">오더를 선택해주세요.</span>
+        <% end %>
+        <div class="flex-1">
+          <%= render Ui::AgGridComponent.new(
+            columns: detail_columns,
+            row_data: [],
+            pagination: false,
+            row_selection: "multiple",
+            grid_id: "om-order-inquiry-detail-grid",
+            data: {
+              om_order_inquiry_target: "detailGridContainer",
+              action: "ag-grid:ready->om-order-inquiry#initDetailGrid"
+            }
+          ) %>
         </div>
-        <div data-controller="ag-grid" class="flex-1 w-full ag-theme-alpine border bg-white" data-om-order-inquiry-target="detailGridContainer"></div>
       </div>
 
     </div>

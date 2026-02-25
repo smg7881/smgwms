@@ -1,17 +1,18 @@
 <%# app/views/shared/resource_form/fields/_number.html.erb %>
 <%
-  error_message = model.errors[field[:field].to_sym].first
+  param_key = model&.model_name&.param_key || 'resource'
+  error_message = model&.errors&.[](field[:field].to_sym)&.first
 %>
 <div class="flex flex-col gap-1 col-span-24 min-w-0 <%= span_classes_for(field, cols: cols) %>"
      data-resource-form-target="fieldGroup"
      data-field-name="<%= field[:field] %>">
-  <label class="text-sm font-medium text-text-secondary" for="<%= "#{model.model_name.param_key}_#{field[:field]}" %>">
+  <label class="text-sm font-medium text-text-secondary" for="<%= "#{param_key}_#{field[:field]}" %>">
     <%= resolve_label(field) %>
     <% if field[:required] %><span class="text-accent-rose ml-0.5 font-semibold">*</span><% end %>
   </label>
   <div class="flex relative">
     <%= f.number_field field[:field].to_sym,
-          id: "#{model.model_name.param_key}_#{field[:field]}",
+          id: "#{param_key}_#{field[:field]}",
           class: "form-grid-input #{'rf-field-error' if error_message.present?}",
           value: field[:value],
           placeholder: resolve_placeholder(field),

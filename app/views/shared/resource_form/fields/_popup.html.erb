@@ -1,11 +1,18 @@
 <%# app/views/shared/resource_form/fields/_popup.html.erb %>
 <%
+  param_key = model&.model_name&.param_key || 'resource'
   code_field = field[:code_field].to_s
-  error_message = model.errors[code_field.to_sym].first || model.errors[field[:field].to_sym].first
+  error_message = model&.errors&.[](code_field.to_sym)&.first || model&.errors&.[](field[:field].to_sym)&.first
 
   display_width = field[:display_width].presence
   code_width = field[:code_width].presence || "120px"
-  button_width = field[:button_width].presence || "40px"
+  button_width = field[:button_width].presence || "32px"
+
+  if display_width
+    grid_template = "#{code_width} #{button_width} calc(#{display_width} - #{code_width} - #{button_width} - 0.5rem)"
+  else
+    grid_template = "#{code_width} #{button_width} 1fr"
+  end
 
   display_style = if display_width.present?
     "flex: 0 0 #{display_width}; max-width: #{display_width}; min-width: 0;"
@@ -15,9 +22,9 @@
   code_style = "flex: 0 0 #{code_width}; max-width: #{code_width};"
   button_style = "width: #{button_width}; min-width: #{button_width};"
 
-  code_value = begin
-    model.public_send(code_field)
-  rescue StandardError
+  code_value = if model.respond_to?(code_field)
+    model&.public_send(code_field)
+  else
     nil
   end
 %>
@@ -27,21 +34,31 @@
      data-controller="search-popup"
      data-search-popup-type-value="<%= field[:popup_type] %>"
      data-search-popup-title-value="<%= resolve_label(field) %> 조회">
-  <label class="text-sm font-medium text-text-secondary">
+  <label class="text-sm font-medium text-text-secondary" for="<%= "#{param_key}_#{code_field}" %>">
     <%= resolve_label(field) %>
     <% if field[:required] %><span class="text-accent-rose ml-0.5 font-semibold">*</span><% end %>
   </label>
-  <div class="flex flex-nowrap items-center gap-1 w-full min-w-0">
-    <input type="hidden"
-           id="<%= "#{model.model_name.param_key}_#{code_field}" %>"
-           name="<%= "#{model.model_name.param_key}[#{code_field}]" %>"
-           value="<%= code_value %>"
-           data-resource-form-target="input"
-           data-search-popup-target="code"
-           <%= "required" if field[:required] %>
-           <%= "data-#{local_assigns[:target_controller].to_s.dasherize}-target=#{field[:target]}".html_safe if field[:target].present? && local_assigns[:target_controller].present? %>>
-    <input type="text"
-           id="<%= "#{model.model_name.param_key}_#{field[:field]}" %>"
+  <div class="grid gap-1" style="grid-template-columns: <%= grid_template %>;">
+    <%= f.text_field code_field.to_sym,
+           id: "#{param_key}_#{code_field}",
+           name: "#{param_key}[#{code_field}]",
+           class: "form-grid-input #{'rf-field-error' if error_message.present?}",
+           value: code_value,
+           required: field[:required],
+           readonly: field[:readonly],
+           data: {
+             resource_form_target: "input",
+             action: "blur->resource-form#validateField"
+           }.merge(field[:data] || {}) %>
+
+    <button type="button"
+            class="rf-popup-btn"
+            data-action="<%= "click->#{local_assigns[:target_controller]}##{field[:data][:action_target]}" if field[:data] && field[:data][:action_target] %>">
+      <i class="fas fa-search"></i>
+    </button>
+
+    <%= f.text_field field[:field].to_sym,
+           id: "#{param_key}_#{field[:field]}", %>"
            value="<%= field[:value].to_s %>"
            class="form-grid-input <%= 'rf-field-error' if error_message.present? %>"
            style="<%= display_style %>"

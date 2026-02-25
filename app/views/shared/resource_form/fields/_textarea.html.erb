@@ -3,7 +3,7 @@
   layout_styles = []
   logical_col_span = (field[:col_span] || field[:colspan]).to_i
   logical_row_span = (field[:row_span] || field[:rowspan]).to_i
-  error_message = model.errors[field[:field].to_sym].first
+  error_message = model&.errors&.[](field[:field].to_sym)&.first
 
   if logical_col_span.positive?
     total_logical_cols = [cols.to_i, 1].max
@@ -19,13 +19,14 @@
      data-resource-form-target="fieldGroup"
      data-field-name="<%= field[:field] %>"
      style="<%= layout_styles.join(' ') if layout_styles.any? %>">
-  <label class="text-sm font-medium text-text-secondary" for="<%= "#{model.model_name.param_key}_#{field[:field]}" %>">
+        <% param_key = model&.model_name&.param_key || 'resource' %>
+  <label class="text-sm font-medium text-text-secondary" for="<%= "#{param_key}_#{field[:field]}" %>">
     <%= resolve_label(field) %>
     <% if field[:required] %><span class="text-accent-rose ml-0.5 font-semibold">*</span><% end %>
   </label>
   <div class="flex relative">
     <%= f.text_area field[:field].to_sym,
-          id: "#{model.model_name.param_key}_#{field[:field]}",
+          id: "#{param_key}_#{field[:field]}",
           class: "form-grid-input resize-y min-h-[80px] #{'rf-field-error' if error_message.present?}",
           placeholder: resolve_placeholder(field),
           required: field[:required],

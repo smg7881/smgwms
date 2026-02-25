@@ -120,7 +120,7 @@ class Om::InternalOrder::PageComponent < Om::BasePageComponent
       [
         {
           field: "search_ord_no",
-          type: "text",
+          type: "input",
           label: "오더번호",
           placeholder: "오더번호 입력",
           data: {

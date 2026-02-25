@@ -1,14 +1,20 @@
-<%# app/views/shared/resource_form/fields/_checkbox.html.erb %>
+<%
+  param_key = model&.model_name&.param_key || 'resource'
+  current_value = model&.send(field[:field].to_sym) rescue nil
+%>
 <div class="flex flex-col gap-1 col-span-24 min-w-0 <%= span_classes_for(field, cols: cols) %>"
      data-resource-form-target="fieldGroup"
      data-field-name="<%= field[:field] %>">
-  <label class="text-sm font-medium text-text-secondary">
-    <%= resolve_label(field) %>
-    <% if field[:required] %><span class="text-accent-rose ml-0.5 font-semibold">*</span><% end %>
-  </label>
+  <div class="flex items-center h-full min-h-[38px]">
+    <label class="flex items-center gap-2 cursor-pointer text-sm font-medium text-text-secondary">
+      <%= resolve_label(field) %>
+      <% if field[:required] %><span class="text-accent-rose ml-0.5 font-semibold">*</span><% end %>
+    </label>
+  </div>
   <div class="flex relative">
     <label class="flex items-center gap-2 cursor-pointer text-[0.95rem] text-text-primary py-2">
       <%= f.check_box field[:field].to_sym,
+            id: "#{param_key}_#{field[:field]}",
             class: "w-4 h-4 text-[#3b82f6] bg-[#1f2937] border-[#374151] focus:ring-[#3b82f6] focus:ring-2 cursor-pointer rounded",
             required: field[:required],
             disabled: field[:disabled],
@@ -18,8 +24,8 @@
       <span><%= field[:placeholder] || resolve_label(field) %></span>
     </label>
   </div>
-  <% if model.errors[field[:field].to_sym].any? %>
-    <span class="rf-error-msg"><%= model.errors[field[:field].to_sym].first %></span>
+  <% if model&.errors&.[](field[:field].to_sym)&.any? %>
+    <span class="rf-error-msg"><%= model&.errors&.[](field[:field].to_sym)&.first %></span>
   <% end %>
   <% if field[:help].present? %>
     <span class="text-xs text-text-muted mt-0.5"><%= field[:help] %></span>
