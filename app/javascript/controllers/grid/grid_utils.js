@@ -164,9 +164,20 @@ export function blockIfPendingChanges(manager, entityLabel = "마스터") {
   return true
 }
 
-// URL 템플릿의 플레이스홀더를 실제 값으로 치환
-export function buildTemplateUrl(template, placeholder, value) {
-  return template.replace(placeholder, encodeURIComponent(value))
+// URL 템플릿의 :key 플레이스홀더를 실제 값으로 치환
+// 두 가지 방식 모두 지원:
+//   - 객체 방식: buildTemplateUrl("/wm/gr_prars/:gr_prar_id/save", { gr_prar_id: "GR001" })
+//   - 문자열 방식: buildTemplateUrl("/items/:id/children", ":id", "ITEM001")
+export function buildTemplateUrl(template, paramsOrPlaceholder, value) {
+  if (paramsOrPlaceholder !== null && typeof paramsOrPlaceholder === "object") {
+    // 객체 방식: { key: value } 형태로 여러 플레이스홀더 치환
+    return Object.entries(paramsOrPlaceholder).reduce((url, [key, val]) => {
+      return url.replace(`:${key}`, encodeURIComponent(val ?? ""))
+    }, template)
+  } else {
+    // 문자열 방식: (template, ":placeholder", value) 형태
+    return template.replace(paramsOrPlaceholder, encodeURIComponent(value ?? ""))
+  }
 }
 
 // SELECT 요소에 옵션 목록을 렌더링 (blankLabel=null이면 빈 옵션 생략)

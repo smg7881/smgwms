@@ -1,0 +1,29 @@
+<div data-controller="wm-cust-rule-grid"
+     data-action="ag-grid:ready->wm-cust-rule-grid#registerGrid"
+     data-wm-cust-rule-grid-batch-url-value="<%= batch_save_url %>">
+  <%= render Ui::SearchFormComponent.new(
+    url: create_url,
+    fields: search_fields,
+    cols: 3,
+    enable_collapse: true
+  ) %>
+
+  <%= render Ui::GridHeaderComponent.new(
+    icon: "list-todo", title: "고객 Rule 목록", grid_id: "wm-cust-rules",
+    buttons: [
+      { label: "행추가", class: "btn btn-sm btn-primary", action: "click->wm-cust-rule-grid#addRow" },
+      { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->wm-cust-rule-grid#deleteRows" },
+      { label: "저장", class: "btn btn-sm btn-success", action: "click->wm-cust-rule-grid#saveRows" }
+    ]
+  ) %>
+
+  <%= render Ui::AgGridComponent.new(
+    columns: columns,
+    url: grid_url,
+    height: "calc(100vh - 370px)",
+    pagination: false,
+    row_selection: "multiple",
+    grid_id: "wm-cust-rules",
+    data: { wm_cust_rule_grid_target: "grid" }
+  ) %>
+</div>

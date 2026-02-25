@@ -1,0 +1,7 @@
+<%# app/views/wm/pur_fee_rt_mngs/index.html.erb %>
+<%= turbo_frame_tag "main-content" do %>
+  <%= render Wm::PurFeeRtMngs::PageComponent.new(
+    query_params: request.query_parameters,
+    selected_fee_rt_no: params[:selected_fee_rt_no]
+  ) %>
+<% end %>

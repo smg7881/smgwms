@@ -1,0 +1,29 @@
+<div data-controller="cust-stock-attr-grid"
+     data-action="ag-grid:ready->cust-stock-attr-grid#registerGrid search-popup:selected->cust-stock-attr-grid#handlePopupSelected"
+     data-cust-stock-attr-grid-batch-url-value="<%= batch_save_url %>">
+  <%= render Ui::SearchFormComponent.new(
+    url: collection_path,
+    fields: search_fields,
+    cols: 3,
+    enable_collapse: true
+  ) %>
+
+  <%= render Ui::GridHeaderComponent.new(
+    icon: "table", title: "고객재고속성 목록", grid_id: "wm-cust-stock-attrs",
+    buttons: [
+      { label: "행추가", class: "btn btn-sm btn-primary", action: "click->cust-stock-attr-grid#addRow" },
+      { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->cust-stock-attr-grid#deleteRows" },
+      { label: "저장", class: "btn btn-sm btn-success", action: "click->cust-stock-attr-grid#saveRows" }
+    ]
+  ) %>
+
+  <%= render Ui::AgGridComponent.new(
+    columns: columns,
+    url: grid_url,
+    height: "calc(100vh - 370px)",
+    pagination: false,
+    row_selection: "multiple",
+    grid_id: "wm-cust-stock-attrs",
+    data: { cust_stock_attr_grid_target: "grid" }
+  ) %>
+</div>

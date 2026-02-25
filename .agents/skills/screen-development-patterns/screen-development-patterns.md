@@ -1,0 +1,2017 @@
+# WMS 화면 개발 패턴 가이드
+
+## 개요
+
+WMS 프로젝트의 관리 화면은 **3-레이어 아키텍처**를 따릅니다:
+
+1. **ViewComponent 페이지** (`app/components/<namespace>/<module>/page_component.rb` + `.html.erb`)
+   - `System::BasePageComponent` 상속
+   - 검색 필드, 그리드 컬럼, 폼 필드, URL 정의
+2. **Stimulus 컨트롤러** (`app/javascript/controllers/<module>_grid_controller.js` 또는 `<module>_crud_controller.js`)
+   - `BaseGridController` (인라인 편집) 또는 `BaseCrudController` (모달 CRUD) 상속
+3. **Rails 컨트롤러** (`app/controllers/<namespace>/<module>_controller.rb`)
+   - `System::BaseController` 상속, JSON 응답
+
+### 공통 규칙
+
+- 네임스페이스별 베이스 컨트롤러를 상속 (예: `System::BaseController`, `Wm::BaseController`)
+- 검색 파라미터는 `params.fetch(:q, {}).permit(...)` 패턴
+- JSON 응답: `{ success: true/false, message: "...", errors: [...] }`
+- 감사 필드(create_by, create_time, update_by, update_time)는 모델 콜백에서 자동 처리
+- UI 컴포넌트: `Ui::SearchFormComponent`, `Ui::GridHeaderComponent`, `Ui::AgGridComponent`, `Ui::ModalShellComponent`, `Ui::ResourceFormComponent`
+
+---
+
+## 공통 구성요소 스니펫
+
+### 상태 컬럼 정의 (인라인 편집 그리드 필수)
+
+```ruby
+{
+  field: "__row_status",
+  headerName: "상태",
+  width: 68,
+  minWidth: 68,
+  maxWidth: 68,
+  editable: false,
+  sortable: false,
+  filter: false,
+  resizable: false,
+  cellStyle: { textAlign: "center" },
+  cellRenderer: "rowStatusCellRenderer"
+}
+```
+
+### 감사 컬럼 정의 (공통)
+
+```ruby
+{ field: "update_by", headerName: "수정자", minWidth: 100, editable: false },
+{ field: "update_time", headerName: "수정일시", minWidth: 170, formatter: "datetime", editable: false },
+{ field: "create_by", headerName: "생성자", minWidth: 100, editable: false },
+{ field: "create_time", headerName: "생성일시", minWidth: 170, formatter: "datetime", editable: false }
+```
+
+### 사용여부 셀 (공통)
+
+```ruby
+{
+  field: "use_yn",
+  headerName: "사용여부",
+  maxWidth: 110,
+  editable: true,
+  cellEditor: "agSelectCellEditor",
+  cellEditorParams: { values: common_code_values("CMM_USE_YN") },
+  cellRenderer: "codeUseYnCellRenderer"
+}
+```
+
+### 검색 필드 타입별 예시
+
+```ruby
+# input 타입
+{ field: "zone_cd", type: "input", label: "구역코드", placeholder: "구역코드 검색.." }
+
+# select 타입
+{
+  field: "use_yn",
+  type: "select",
+  label: "사용여부",
+  options: common_code_options("CMM_USE_YN", include_all: true),
+  include_blank: false
+}
+
+# date_picker 타입
+{ field: "start_date", type: "date_picker", label: "시작일" }
+
+# date_range 타입
+{ field: "period", type: "date_range", label: "기간" }
+
+# popup 타입 (검색팝업)
+{
+  field: "item_nm",
+  type: "popup",
+  label: "품목",
+  popup_type: "item",
+  code_field: "item_cd"
+}
+```
+
+### 폼 필드 타입별 예시
+
+```ruby
+# input
+{ field: "zone_cd", type: "input", label: "구역코드", required: true, maxlength: 50, target: "fieldZoneCd" }
+
+# number
+{ field: "sort_order", type: "number", label: "정렬순서", value: 0, min: 0, target: "fieldSortOrder" }
+
+# select
+{
+  field: "zone_type",
+  type: "select",
+  label: "구역유형",
+  include_blank: true,
+  options: [
+    { label: "보관", value: "STORAGE" },
+    { label: "출고", value: "SHIPPING" }
+  ],
+  target: "fieldZoneType"
+}
+
+# radio
+{
+  field: "use_yn",
+  type: "radio",
+  label: "사용여부",
+  value: "Y",
+  options: [
+    { label: "사용", value: "Y" },
+    { label: "미사용", value: "N" }
+  ]
+}
+
+# textarea
+{ field: "description", type: "textarea", label: "설명", rows: 4, colspan: 2, maxlength: 500, target: "fieldDescription" }
+```
+
+---
+
+## 유형 1: 조회조건 + 인라인 편집 그리드
+
+행추가/행삭제/일괄저장(batch_save) 패턴. 모달 없이 그리드에서 직접 편집합니다.
+
+**기존 참조**: 역할관리(roles)
+**예제 도메인**: 창고구역 관리 (warehouse_zone)
+
+### 파일 구성
+
+```
+app/components/system/warehouse_zone/page_component.rb
+app/components/system/warehouse_zone/page_component.html.erb
+app/javascript/controllers/warehouse_zone_grid_controller.js
+app/controllers/system/warehouse_zones_controller.rb
+app/models/warehouse_zone.rb
+db/migrate/YYYYMMDDHHMMSS_create_warehouse_zones.rb
+```
+
+### PageComponent (Ruby)
+
+```ruby
+# app/components/system/warehouse_zone/page_component.rb
+class System::WarehouseZone::PageComponent < System::BasePageComponent
+  private
+    def collection_path(**) = helpers.system_warehouse_zones_path(**)
+    def member_path(id, **) = helpers.system_warehouse_zone_path(id, **)
+
+    def batch_save_url
+      helpers.batch_save_system_warehouse_zones_path
+    end
+
+    def search_fields
+      [
+        { field: "zone_cd", type: "input", label: "구역코드", placeholder: "구역코드 검색.." },
+        { field: "zone_nm", type: "input", label: "구역명", placeholder: "구역명 검색.." },
+        {
+          field: "use_yn",
+          type: "select",
+          label: "사용여부",
+          options: common_code_options("CMM_USE_YN", include_all: true),
+          include_blank: false
+        }
+      ]
+    end
+
+    def columns
+      [
+        {
+          field: "__row_status",
+          headerName: "상태",
+          width: 68, minWidth: 68, maxWidth: 68,
+          editable: false, sortable: false, filter: false, resizable: false,
+          cellStyle: { textAlign: "center" },
+          cellRenderer: "rowStatusCellRenderer"
+        },
+        { field: "zone_cd", headerName: "구역코드", minWidth: 130, editable: true },
+        { field: "zone_nm", headerName: "구역명", minWidth: 180, editable: true },
+        { field: "zone_type", headerName: "구역유형", minWidth: 130, editable: true },
+        { field: "description", headerName: "설명", minWidth: 220, editable: true },
+        {
+          field: "use_yn",
+          headerName: "사용여부",
+          maxWidth: 110,
+          editable: true,
+          cellEditor: "agSelectCellEditor",
+          cellEditorParams: { values: common_code_values("CMM_USE_YN") },
+          cellRenderer: "codeUseYnCellRenderer"
+        },
+        { field: "update_by", headerName: "수정자", minWidth: 100, editable: false },
+        { field: "update_time", headerName: "수정일시", minWidth: 170, formatter: "datetime", editable: false },
+        { field: "create_by", headerName: "생성자", minWidth: 100, editable: false },
+        { field: "create_time", headerName: "생성일시", minWidth: 170, formatter: "datetime", editable: false }
+      ]
+    end
+end
+```
+
+### ERB 템플릿
+
+```erb
+<%# app/components/system/warehouse_zone/page_component.html.erb %>
+<div data-controller="warehouse-zone-grid"
+     data-action="ag-grid:ready->warehouse-zone-grid#registerGrid"
+     data-warehouse-zone-grid-batch-url-value="<%= batch_save_url %>">
+  <%= render Ui::SearchFormComponent.new(
+    url: create_url,
+    fields: search_fields,
+    cols: 3,
+    enable_collapse: true
+  ) %>
+
+  <%= render Ui::GridHeaderComponent.new(
+    icon: "warehouse", title: "창고구역 목록", grid_id: "warehouse-zones",
+    buttons: [
+      { label: "행추가", class: "btn btn-sm btn-primary", action: "click->warehouse-zone-grid#addRow" },
+      { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->warehouse-zone-grid#deleteRows" },
+      { label: "저장", class: "btn btn-sm btn-success", action: "click->warehouse-zone-grid#saveRows" }
+    ]
+  ) %>
+
+  <%= render Ui::AgGridComponent.new(
+    columns: columns,
+    url: grid_url,
+    height: "calc(100vh - 370px)",
+    pagination: false,
+    row_selection: "multiple",
+    grid_id: "warehouse-zones",
+    data: { warehouse_zone_grid_target: "grid" }
+  ) %>
+</div>
+```
+
+### Stimulus Controller (JS)
+
+```javascript
+// app/javascript/controllers/warehouse_zone_grid_controller.js
+import BaseGridController from "controllers/base_grid_controller"
+
+export default class extends BaseGridController {
+  configureManager() {
+    return {
+      pkFields: ["zone_cd"],
+      fields: {
+        zone_cd: "trimUpper",
+        zone_nm: "trim",
+        zone_type: "trim",
+        description: "trim",
+        use_yn: "trimUpperDefault:Y"
+      },
+      defaultRow: { zone_cd: "", zone_nm: "", zone_type: "", description: "", use_yn: "Y" },
+      blankCheckFields: ["zone_cd", "zone_nm"],
+      comparableFields: ["zone_nm", "zone_type", "description", "use_yn"],
+      firstEditCol: "zone_cd",
+      pkLabels: { zone_cd: "구역코드" }
+    }
+  }
+
+  get saveMessage() {
+    return "창고구역 데이터가 저장되었습니다."
+  }
+}
+```
+
+### Rails Controller
+
+```ruby
+# app/controllers/system/warehouse_zones_controller.rb
+class System::WarehouseZonesController < System::BaseController
+  def index
+    respond_to do |format|
+      format.html
+      format.json { render json: zones_scope.map { |z| zone_json(z) } }
+    end
+  end
+
+  def batch_save
+    operations = batch_save_params
+    result = { inserted: 0, updated: 0, deleted: 0 }
+    errors = []
+
+    ActiveRecord::Base.transaction do
+      Array(operations[:rowsToInsert]).each do |attrs|
+        if attrs[:zone_cd].to_s.strip.blank? && attrs[:zone_nm].to_s.strip.blank?
+          next
+        end
+
+        zone = WarehouseZone.new(attrs.permit(:zone_cd, :zone_nm, :zone_type, :description, :use_yn))
+        if zone.save
+          result[:inserted] += 1
+        else
+          errors.concat(zone.errors.full_messages)
+        end
+      end
+
+      Array(operations[:rowsToUpdate]).each do |attrs|
+        zone = WarehouseZone.find_by(zone_cd: attrs[:zone_cd].to_s)
+        if zone.nil?
+          errors << "구역코드를 찾을 수 없습니다: #{attrs[:zone_cd]}"
+          next
+        end
+
+        if zone.update(attrs.permit(:zone_nm, :zone_type, :description, :use_yn))
+          result[:updated] += 1
+        else
+          errors.concat(zone.errors.full_messages)
+        end
+      end
+
+      Array(operations[:rowsToDelete]).each do |zone_cd|
+        zone = WarehouseZone.find_by(zone_cd: zone_cd.to_s)
+        next if zone.nil?
+
+        if zone.destroy
+          result[:deleted] += 1
+        else
+          errors.concat(zone.errors.full_messages.presence || ["구역 삭제에 실패했습니다: #{zone_cd}"])
+        end
+      end
+
+      raise ActiveRecord::Rollback if errors.any?
+    end
+
+    if errors.any?
+      render json: { success: false, errors: errors.uniq }, status: :unprocessable_entity
+    else
+      render json: { success: true, message: "창고구역 저장이 완료되었습니다.", data: result }
+    end
+  end
+
+  private
+    def search_params
+      params.fetch(:q, {}).permit(:zone_cd, :zone_nm, :use_yn)
+    end
+
+    def zones_scope
+      scope = WarehouseZone.ordered
+
+      if search_params[:zone_cd].present?
+        scope = scope.where("zone_cd LIKE ?", "%#{search_params[:zone_cd]}%")
+      end
+      if search_params[:zone_nm].present?
+        scope = scope.where("zone_nm LIKE ?", "%#{search_params[:zone_nm]}%")
+      end
+      if search_params[:use_yn].present?
+        scope = scope.where(use_yn: search_params[:use_yn])
+      end
+
+      scope
+    end
+
+    def batch_save_params
+      params.permit(
+        rowsToDelete: [],
+        rowsToInsert: [:zone_cd, :zone_nm, :zone_type, :description, :use_yn],
+        rowsToUpdate: [:zone_cd, :zone_nm, :zone_type, :description, :use_yn]
+      )
+    end
+
+    def zone_json(zone)
+      {
+        id: zone.zone_cd,
+        zone_cd: zone.zone_cd,
+        zone_nm: zone.zone_nm,
+        zone_type: zone.zone_type,
+        description: zone.description,
+        use_yn: zone.use_yn,
+        update_by: zone.update_by,
+        update_time: zone.update_time,
+        create_by: zone.create_by,
+        create_time: zone.create_time
+      }
+    end
+end
+```
+
+### Model
+
+```ruby
+# app/models/warehouse_zone.rb
+class WarehouseZone < ApplicationRecord
+  self.table_name = "warehouse_zones"
+
+  validates :zone_cd, presence: true, uniqueness: true, length: { maximum: 50 }
+  validates :zone_nm, presence: true, length: { maximum: 100 }
+  validates :use_yn, inclusion: { in: %w[Y N] }
+
+  before_validation :normalize_fields
+  before_save :assign_update_audit_fields
+  before_create :assign_create_audit_fields
+
+  scope :ordered, -> { order(:zone_cd) }
+
+  private
+    def normalize_fields
+      self.zone_cd = zone_cd.to_s.strip.upcase
+      self.zone_nm = zone_nm.to_s.strip
+      self.zone_type = zone_type.to_s.strip.presence
+      self.description = description.to_s.strip.presence
+      self.use_yn = use_yn.to_s.strip.upcase.presence || "Y"
+    end
+
+    def assign_update_audit_fields
+      actor = current_actor
+      self.update_by = actor
+      self.update_time = Time.current
+    end
+
+    def assign_create_audit_fields
+      actor = current_actor
+      self.create_by = actor
+      self.create_time = Time.current
+    end
+
+    def current_actor
+      if Current.user&.user_id_code.present?
+        Current.user.user_id_code
+      elsif Current.user&.email_address.present?
+        Current.user.email_address
+      else
+        "system"
+      end
+    end
+end
+```
+
+### Routes
+
+```ruby
+# config/routes.rb (namespace :system 내부에 추가)
+resources :warehouse_zones, only: [:index] do
+  post :batch_save, on: :collection
+end
+```
+
+### Migration
+
+```ruby
+# db/migrate/YYYYMMDDHHMMSS_create_warehouse_zones.rb
+class CreateWarehouseZones < ActiveRecord::Migration[8.1]
+  def change
+    create_table :warehouse_zones, id: false do |t|
+      t.string :zone_cd, limit: 50, null: false
+      t.string :zone_nm, limit: 100, null: false
+      t.string :zone_type, limit: 50
+      t.string :description, limit: 500
+      t.string :use_yn, limit: 1, default: "Y", null: false
+      t.string :create_by, limit: 50
+      t.datetime :create_time
+      t.string :update_by, limit: 50
+      t.datetime :update_time
+    end
+
+    add_index :warehouse_zones, :zone_cd, unique: true
+  end
+end
+```
+
+---
+
+## 유형 2: 조회조건 + 마스터 그리드 + 디테일 그리드
+
+마스터-디테일(1:N) 구조. 마스터 행 선택 시 디테일 그리드가 Ajax로 로드됩니다. 각 그리드는 독립적으로 행추가/행삭제/저장 가능합니다.
+
+**기존 참조**: 공통코드(code) 관리
+**예제 도메인**: 거래처 관리 (partner 마스터 + partner_contact 디테일)
+
+### 파일 구성
+
+```
+app/components/system/partner/page_component.rb
+app/components/system/partner/page_component.html.erb
+app/javascript/controllers/partner_grid_controller.js
+app/controllers/system/partners_controller.rb
+app/controllers/system/partner_contacts_controller.rb
+app/models/partner.rb
+app/models/partner_contact.rb
+db/migrate/YYYYMMDDHHMMSS_create_partners.rb
+db/migrate/YYYYMMDDHHMMSS_create_partner_contacts.rb
+```
+
+### PageComponent (Ruby)
+
+```ruby
+# app/components/system/partner/page_component.rb
+class System::Partner::PageComponent < System::BasePageComponent
+  def initialize(query_params:, selected_partner:)
+    super(query_params: query_params)
+    @selected_partner = selected_partner.presence
+  end
+
+  private
+    attr_reader :selected_partner
+
+    def collection_path(**) = helpers.system_partners_path(**)
+    def member_path(id, **) = helpers.system_partner_path(id, **)
+
+    def detail_grid_url
+      return nil if selected_partner.blank?
+      helpers.system_partner_contacts_path(selected_partner, format: :json)
+    end
+
+    def master_batch_save_url
+      helpers.batch_save_system_partners_path
+    end
+
+    def detail_batch_save_url_template
+      "/system/partners/:partner_cd/contacts/batch_save"
+    end
+
+    def selected_partner_label
+      selected_partner.present? ? "선택 거래처: #{selected_partner}" : "거래처를 먼저 선택하세요."
+    end
+
+    def search_fields
+      [
+        { field: "partner_cd", type: "input", label: "거래처코드", placeholder: "거래처코드 검색.." },
+        { field: "partner_nm", type: "input", label: "거래처명", placeholder: "거래처명 검색.." },
+        {
+          field: "use_yn",
+          type: "select",
+          label: "사용여부",
+          options: common_code_options("CMM_USE_YN", include_all: true),
+          include_blank: false
+        }
+      ]
+    end
+
+    def master_columns
+      [
+        {
+          field: "__row_status",
+          headerName: "상태",
+          width: 68, minWidth: 68, maxWidth: 68,
+          editable: false, sortable: false, filter: false, resizable: false,
+          cellStyle: { textAlign: "center" },
+          cellRenderer: "rowStatusCellRenderer"
+        },
+        { field: "partner_cd", headerName: "거래처코드", minWidth: 130, editable: true },
+        { field: "partner_nm", headerName: "거래처명", minWidth: 180, editable: true },
+        { field: "partner_type", headerName: "거래처유형", minWidth: 130, editable: true },
+        { field: "biz_no", headerName: "사업자번호", minWidth: 150, editable: true },
+        { field: "address", headerName: "주소", minWidth: 220, editable: true },
+        {
+          field: "use_yn",
+          headerName: "사용여부",
+          maxWidth: 100,
+          editable: true,
+          cellEditor: "agSelectCellEditor",
+          cellEditorParams: { values: common_code_values("CMM_USE_YN") },
+          cellRenderer: "codeUseYnCellRenderer"
+        },
+        { field: "update_by", headerName: "수정자", minWidth: 100, editable: false },
+        { field: "update_time", headerName: "수정일시", minWidth: 170, formatter: "datetime", editable: false },
+        { field: "create_by", headerName: "생성자", minWidth: 100, editable: false },
+        { field: "create_time", headerName: "생성일시", minWidth: 170, formatter: "datetime", editable: false }
+      ]
+    end
+
+    def detail_columns
+      [
+        {
+          field: "__row_status",
+          headerName: "상태",
+          width: 68, minWidth: 68, maxWidth: 68,
+          editable: false, sortable: false, filter: false, resizable: false,
+          cellStyle: { textAlign: "center" },
+          cellRenderer: "rowStatusCellRenderer"
+        },
+        { field: "contact_nm", headerName: "담당자명", minWidth: 150, editable: true },
+        { field: "contact_tel", headerName: "연락처", minWidth: 150, editable: true },
+        { field: "contact_email", headerName: "이메일", minWidth: 200, editable: true },
+        { field: "department", headerName: "부서", minWidth: 130, editable: true },
+        { field: "position", headerName: "직위", minWidth: 100, editable: true },
+        {
+          field: "use_yn",
+          headerName: "사용여부",
+          maxWidth: 100,
+          editable: true,
+          cellEditor: "agSelectCellEditor",
+          cellEditorParams: { values: common_code_values("CMM_USE_YN") },
+          cellRenderer: "codeUseYnCellRenderer"
+        },
+        { field: "update_by", headerName: "수정자", minWidth: 100, editable: false },
+        { field: "update_time", headerName: "수정일시", minWidth: 170, formatter: "datetime", editable: false }
+      ]
+    end
+end
+```
+
+### ERB 템플릿
+
+```erb
+<%# app/components/system/partner/page_component.html.erb %>
+<div data-controller="partner-grid"
+     data-action="ag-grid:ready->partner-grid#registerGrid"
+     data-partner-grid-master-batch-url-value="<%= master_batch_save_url %>"
+     data-partner-grid-detail-batch-url-template-value="<%= detail_batch_save_url_template %>"
+     data-partner-grid-detail-list-url-template-value="/system/partners/:partner_cd/contacts.json"
+     data-partner-grid-selected-partner-value="<%= selected_partner.to_s %>">
+  <%= render Ui::SearchFormComponent.new(
+    url: create_url,
+    fields: search_fields,
+    cols: 3,
+    enable_collapse: true
+  ) %>
+
+  <div class="grid grid-cols-2 gap-3 max-[1200px]:grid-cols-1">
+    <section class="min-w-0">
+      <%= render Ui::GridHeaderComponent.new(
+        icon: "building-2", title: "거래처 목록", grid_id: "partner-master",
+        buttons: [
+          { label: "행추가", class: "btn btn-sm btn-primary", action: "click->partner-grid#addMasterRow" },
+          { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->partner-grid#deleteMasterRows" },
+          { label: "저장", class: "btn btn-sm btn-success", action: "click->partner-grid#saveMasterRows" }
+        ]
+      ) %>
+
+      <%= render Ui::AgGridComponent.new(
+        columns: master_columns,
+        url: grid_url,
+        height: "calc(100vh - 420px)",
+        pagination: false,
+        row_selection: "multiple",
+        grid_id: "partner-master",
+        data: { partner_grid_target: "masterGrid" }
+      ) %>
+    </section>
+
+    <section class="min-w-0">
+      <%= render Ui::GridHeaderComponent.new(
+        icon: "users", title: "담당자 목록", grid_id: "partner-contact",
+        buttons: [
+          { label: "행추가", class: "btn btn-sm btn-primary", action: "click->partner-grid#addDetailRow" },
+          { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->partner-grid#deleteDetailRows" },
+          { label: "저장", class: "btn btn-sm btn-success", action: "click->partner-grid#saveDetailRows" }
+        ]
+      ) do |header| %>
+        <% header.with_subtitle do %>
+          <p class="text-text-secondary text-xs" data-partner-grid-target="selectedPartnerLabel"><%= selected_partner_label %></p>
+        <% end %>
+      <% end %>
+
+      <% if detail_grid_url.present? %>
+        <%= render Ui::AgGridComponent.new(
+          columns: detail_columns,
+          url: detail_grid_url,
+          height: "calc(100vh - 420px)",
+          pagination: false,
+          row_selection: "multiple",
+          grid_id: "partner-contact",
+          data: { partner_grid_target: "detailGrid" }
+        ) %>
+      <% else %>
+        <%= render Ui::AgGridComponent.new(
+          columns: detail_columns,
+          row_data: [],
+          height: "calc(100vh - 420px)",
+          pagination: false,
+          row_selection: "multiple",
+          grid_id: "partner-contact",
+          data: { partner_grid_target: "detailGrid" }
+        ) %>
+      <% end %>
+    </section>
+  </div>
+</div>
+```
+
+### Stimulus Controller (JS)
+
+```javascript
+// app/javascript/controllers/partner_grid_controller.js
+import BaseGridController from "controllers/base_grid_controller"
+import GridCrudManager from "controllers/grid/grid_crud_manager"
+import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
+import { isApiAlive, postJson, hasChanges, fetchJson, setManagerRowData, focusFirstRow, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel } from "controllers/grid/grid_utils"
+
+export default class extends BaseGridController {
+  static targets = [...BaseGridController.targets, "masterGrid", "detailGrid", "selectedPartnerLabel"]
+
+  static values = {
+    ...BaseGridController.values,
+    masterBatchUrl: String,
+    detailBatchUrlTemplate: String,
+    detailListUrlTemplate: String,
+    selectedPartner: String
+  }
+
+  connect() {
+    super.connect()
+    this.initialMasterSyncDone = false
+    this.masterGridEvents = new GridEventManager()
+    this.detailGridController = null
+    this.detailManager = null
+  }
+
+  disconnect() {
+    this.masterGridEvents.unbindAll()
+    if (this.detailManager) {
+      this.detailManager.detach()
+      this.detailManager = null
+    }
+    this.detailGridController = null
+    super.disconnect()
+  }
+
+  // 마스터 그리드 CRUD 설정
+  configureManager() {
+    return {
+      pkFields: ["partner_cd"],
+      fields: {
+        partner_cd: "trimUpper",
+        partner_nm: "trim",
+        partner_type: "trim",
+        biz_no: "trim",
+        address: "trim",
+        use_yn: "trimUpperDefault:Y"
+      },
+      defaultRow: { partner_cd: "", partner_nm: "", partner_type: "", biz_no: "", address: "", use_yn: "Y" },
+      blankCheckFields: ["partner_cd", "partner_nm"],
+      comparableFields: ["partner_nm", "partner_type", "biz_no", "address", "use_yn"],
+      firstEditCol: "partner_cd",
+      pkLabels: { partner_cd: "거래처코드" },
+      onRowDataUpdated: () => {
+        this.detailManager?.resetTracking()
+        if (!this.initialMasterSyncDone && isApiAlive(this.detailManager?.api)) {
+          this.initialMasterSyncDone = true
+          this.syncMasterSelectionAfterLoad()
+        }
+      }
+    }
+  }
+
+  // 디테일 그리드 CRUD 설정
+  configureDetailManager() {
+    return {
+      pkFields: ["id"],
+      fields: {
+        contact_nm: "trim",
+        contact_tel: "trim",
+        contact_email: "trim",
+        department: "trim",
+        position: "trim",
+        use_yn: "trimUpperDefault:Y"
+      },
+      defaultRow: { contact_nm: "", contact_tel: "", contact_email: "", department: "", position: "", use_yn: "Y" },
+      blankCheckFields: ["contact_nm"],
+      comparableFields: ["contact_nm", "contact_tel", "contact_email", "department", "position", "use_yn"],
+      firstEditCol: "contact_nm",
+      pkLabels: { id: "ID" }
+    }
+  }
+
+  // 그리드 등록 분기 (마스터 / 디테일)
+  registerGrid(event) {
+    const registration = resolveAgGridRegistration(event)
+    if (!registration) return
+
+    const { gridElement, api, controller } = registration
+
+    if (gridElement === this.masterGridTarget) {
+      super.registerGrid(event)
+    } else if (gridElement === this.detailGridTarget) {
+      if (this.detailManager) this.detailManager.detach()
+      this.detailGridController = controller
+      this.detailManager = new GridCrudManager(this.configureDetailManager())
+      this.detailManager.attach(api)
+    }
+
+    if (this.manager?.api && this.detailManager?.api) {
+      this.bindMasterGridEvents()
+      if (!this.initialMasterSyncDone) {
+        this.initialMasterSyncDone = true
+        this.syncMasterSelectionAfterLoad()
+      }
+    }
+  }
+
+  // 마스터 그리드 이벤트 바인딩
+  bindMasterGridEvents() {
+    this.masterGridEvents.unbindAll()
+    this.masterGridEvents.bind(this.manager?.api, "rowClicked", this.handleMasterRowClicked)
+    this.masterGridEvents.bind(this.manager?.api, "cellFocused", this.handleMasterCellFocused)
+  }
+
+  handleMasterRowClicked = async (event) => {
+    const rowData = rowDataFromGridEvent(this.manager?.api, event)
+    await this.handleMasterRowChange(rowData)
+  }
+
+  handleMasterCellFocused = async (event) => {
+    const rowData = rowDataFromGridEvent(this.manager?.api, event)
+    if (!rowData) return
+    await this.handleMasterRowChange(rowData)
+  }
+
+  async handleMasterRowChange(rowData) {
+    if (!isApiAlive(this.detailManager?.api)) return
+
+    const partnerCd = rowData?.partner_cd
+    if (!partnerCd || rowData?.__is_deleted || rowData?.__is_new) {
+      this.selectedPartnerValue = partnerCd || ""
+      this.refreshSelectedPartnerLabel()
+      this.clearDetailRows()
+      return
+    }
+
+    this.selectedPartnerValue = partnerCd
+    this.refreshSelectedPartnerLabel()
+    await this.loadDetailRows(partnerCd)
+  }
+
+  // ─── 마스터 액션 ───
+
+  addMasterRow() {
+    if (!this.manager) return
+    const txResult = this.manager.addRow()
+    const addedNode = txResult?.add?.[0]
+    if (addedNode?.data) this.handleMasterRowChange(addedNode.data)
+  }
+
+  deleteMasterRows() {
+    if (!this.manager) return
+    this.manager.deleteRows()
+  }
+
+  async saveMasterRows() {
+    if (!this.manager) return
+    this.manager.stopEditing()
+    const operations = this.manager.buildOperations()
+    if (!hasChanges(operations)) {
+      alert("변경된 데이터가 없습니다.")
+      return
+    }
+
+    const ok = await postJson(this.masterBatchUrlValue, operations)
+    if (!ok) return
+
+    alert("거래처 데이터가 저장되었습니다.")
+    await this.reloadMasterRows()
+  }
+
+  async reloadMasterRows() {
+    if (!isApiAlive(this.manager?.api)) return
+    if (!this.gridController?.urlValue) return
+
+    try {
+      const rows = await fetchJson(this.gridController.urlValue)
+      setManagerRowData(this.manager, rows)
+      await this.syncMasterSelectionAfterLoad()
+    } catch {
+      alert("거래처 목록 조회에 실패했습니다.")
+    }
+  }
+
+  async syncMasterSelectionAfterLoad() {
+    if (!isApiAlive(this.manager?.api) || !isApiAlive(this.detailManager?.api)) return
+
+    const firstData = focusFirstRow(this.manager.api)
+    if (!firstData) {
+      this.selectedPartnerValue = ""
+      this.refreshSelectedPartnerLabel()
+      this.clearDetailRows()
+      return
+    }
+
+    await this.handleMasterRowChange(firstData)
+  }
+
+  // ─── 디테일 액션 ───
+
+  addDetailRow() {
+    if (!this.detailManager) return
+    if (this.blockDetailActionIfMasterChanged()) return
+    if (!this.selectedPartnerValue) {
+      alert("거래처를 먼저 선택해주세요.")
+      return
+    }
+    this.detailManager.addRow({ partner_cd: this.selectedPartnerValue })
+  }
+
+  deleteDetailRows() {
+    if (!this.detailManager) return
+    if (this.blockDetailActionIfMasterChanged()) return
+    this.detailManager.deleteRows()
+  }
+
+  async saveDetailRows() {
+    if (!this.detailManager) return
+    if (this.blockDetailActionIfMasterChanged()) return
+    if (!this.selectedPartnerValue) {
+      alert("거래처를 먼저 선택해주세요.")
+      return
+    }
+
+    this.detailManager.stopEditing()
+    const operations = this.detailManager.buildOperations()
+    if (!hasChanges(operations)) {
+      alert("변경된 데이터가 없습니다.")
+      return
+    }
+
+    const batchUrl = buildTemplateUrl(this.detailBatchUrlTemplateValue, ":partner_cd", this.selectedPartnerValue)
+    const ok = await postJson(batchUrl, operations)
+    if (!ok) return
+
+    alert("담당자 데이터가 저장되었습니다.")
+    await this.loadDetailRows(this.selectedPartnerValue)
+  }
+
+  async loadDetailRows(partnerCd) {
+    if (!isApiAlive(this.detailManager?.api)) return
+    if (!partnerCd) {
+      this.clearDetailRows()
+      return
+    }
+
+    try {
+      const url = buildTemplateUrl(this.detailListUrlTemplateValue, ":partner_cd", partnerCd)
+      const rows = await fetchJson(url)
+      setManagerRowData(this.detailManager, rows)
+    } catch {
+      alert("담당자 목록 조회에 실패했습니다.")
+    }
+  }
+
+  clearDetailRows() {
+    setManagerRowData(this.detailManager, [])
+  }
+
+  refreshSelectedPartnerLabel() {
+    if (!this.hasSelectedPartnerLabelTarget) return
+    refreshSelectionLabel(this.selectedPartnerLabelTarget, this.selectedPartnerValue, "거래처", "거래처를 먼저 선택하세요.")
+  }
+
+  blockDetailActionIfMasterChanged() {
+    return blockIfPendingChanges(this.manager, "마스터 거래처")
+  }
+}
+```
+
+### Routes
+
+```ruby
+# config/routes.rb (namespace :system 내부에 추가)
+resources :partners, only: [:index] do
+  post :batch_save, on: :collection
+  resources :contacts, controller: :partner_contacts, only: [:index] do
+    post :batch_save, on: :collection
+  end
+end
+```
+
+---
+
+## 유형 3: 조회조건 + 그리드 + 입력 팝업(모달)
+
+그리드에서 목록을 표시하고, 등록/수정/삭제는 모달 폼으로 처리합니다.
+
+**기존 참조**: 부서관리(dept), 사용자관리(users)
+**예제 도메인**: 품목 관리 (item)
+
+### 파일 구성
+
+```
+app/components/system/item/page_component.rb
+app/components/system/item/page_component.html.erb
+app/javascript/controllers/item_crud_controller.js
+app/controllers/system/items_controller.rb
+app/models/item.rb
+db/migrate/YYYYMMDDHHMMSS_create_items.rb
+```
+
+### PageComponent (Ruby)
+
+```ruby
+# app/components/system/item/page_component.rb
+class System::Item::PageComponent < System::BasePageComponent
+  private
+    def collection_path(**) = helpers.system_items_path(**)
+    def member_path(id, **) = helpers.system_item_path(id, **)
+
+    def search_fields
+      [
+        { field: "item_cd", type: "input", label: "품목코드", placeholder: "품목코드 검색.." },
+        { field: "item_nm", type: "input", label: "품목명", placeholder: "품목명 검색.." },
+        {
+          field: "use_yn",
+          type: "select",
+          label: "사용여부",
+          options: common_code_options("CMM_USE_YN", include_all: true),
+          include_blank: false
+        }
+      ]
+    end
+
+    def columns
+      [
+        { field: "item_cd", headerName: "품목코드", minWidth: 130 },
+        { field: "item_nm", headerName: "품목명", minWidth: 200 },
+        { field: "item_type", headerName: "품목유형", minWidth: 130 },
+        { field: "unit", headerName: "단위", minWidth: 80 },
+        { field: "spec", headerName: "규격", minWidth: 150 },
+        { field: "use_yn", headerName: "사용여부", maxWidth: 100, cellRenderer: "codeUseYnCellRenderer" },
+        { field: "update_by", headerName: "수정자", minWidth: 100 },
+        { field: "update_time", headerName: "수정일시", minWidth: 170, formatter: "datetime" },
+        { field: "create_by", headerName: "생성자", minWidth: 100 },
+        { field: "create_time", headerName: "생성일시", minWidth: 170, formatter: "datetime" },
+        {
+          field: "actions",
+          headerName: "작업",
+          minWidth: 120,
+          maxWidth: 120,
+          filter: false,
+          sortable: false,
+          cellClass: "ag-cell-actions",
+          cellRenderer: "editDeleteActionCellRenderer"
+        }
+      ]
+    end
+
+    def form_fields
+      [
+        { field: "item_cd", type: "input", label: "품목코드", required: true, maxlength: 50, target: "fieldItemCd" },
+        { field: "item_nm", type: "input", label: "품목명", required: true, maxlength: 200, target: "fieldItemNm" },
+        {
+          field: "item_type",
+          type: "select",
+          label: "품목유형",
+          include_blank: true,
+          options: [
+            { label: "원자재", value: "RAW" },
+            { label: "완제품", value: "FINISHED" },
+            { label: "반제품", value: "SEMI" }
+          ],
+          target: "fieldItemType"
+        },
+        { field: "unit", type: "input", label: "단위", maxlength: 20, target: "fieldUnit" },
+        { field: "spec", type: "input", label: "규격", maxlength: 200, target: "fieldSpec" },
+        {
+          field: "use_yn",
+          type: "radio",
+          label: "사용여부",
+          value: "Y",
+          options: [
+            { label: "사용", value: "Y" },
+            { label: "미사용", value: "N" }
+          ]
+        },
+        { field: "description", type: "textarea", label: "설명", rows: 4, colspan: 2, maxlength: 500, target: "fieldDescription" }
+      ]
+    end
+end
+```
+
+### ERB 템플릿
+
+```erb
+<%# app/components/system/item/page_component.html.erb %>
+<div data-controller="item-crud"
+     data-item-crud-create-url-value="<%= create_url %>"
+     data-item-crud-update-url-value="<%= update_url %>"
+     data-item-crud-delete-url-value="<%= delete_url %>">
+  <%= render Ui::SearchFormComponent.new(
+    url: create_url,
+    fields: search_fields,
+    cols: 3,
+    enable_collapse: true
+  ) %>
+
+  <%= render Ui::GridHeaderComponent.new(
+    icon: "package", title: "품목 목록", grid_id: "items",
+    buttons: [
+      { label: "추가", class: "btn btn-sm btn-primary", action: "click->item-crud#openCreate" }
+    ]
+  ) %>
+
+  <%= render Ui::AgGridComponent.new(
+    columns: columns,
+    url: grid_url,
+    height: "calc(100vh - 370px)",
+    pagination: false,
+    grid_id: "items"
+  ) %>
+
+  <%= render Ui::ModalShellComponent.new(
+    controller: "item-crud",
+    title: "품목 추가",
+    save_form_id: "item-crud-form",
+    cancel_role: "cancel",
+    save_role: "save"
+  ) do |modal| %>
+    <% modal.with_body do %>
+      <input type="hidden" data-item-crud-target="fieldId" />
+
+      <%= render Ui::ResourceFormComponent.new(
+        model: Item.new,
+        url: "#",
+        cols: 2,
+        show_buttons: false,
+        target_controller: "item_crud",
+        fields: form_fields,
+        form_data: {
+          item_crud_target: "form",
+          action: "submit->resource-form#submit submit->item-crud#submit"
+        },
+        form_html: {
+          id: "item-crud-form",
+          novalidate: true,
+          autocomplete: "off"
+        }
+      ) %>
+    <% end %>
+  <% end %>
+</div>
+```
+
+### Stimulus Controller (JS)
+
+```javascript
+// app/javascript/controllers/item_crud_controller.js
+import BaseCrudController from "controllers/base_crud_controller"
+
+export default class extends BaseCrudController {
+  static resourceName = "item"
+  static deleteConfirmKey = "item_nm"
+  static entityLabel = "품목"
+
+  static targets = [
+    "overlay", "modal", "modalTitle", "form",
+    "fieldId", "fieldItemCd", "fieldItemNm", "fieldItemType",
+    "fieldUnit", "fieldSpec", "fieldDescription"
+  ]
+
+  static values = {
+    createUrl: String,
+    updateUrl: String,
+    deleteUrl: String
+  }
+
+  connect() {
+    this.connectBase({
+      events: [
+        { name: "item-crud:edit", handler: this.handleEdit },
+        { name: "item-crud:delete", handler: this.handleDelete }
+      ]
+    })
+  }
+
+  disconnect() {
+    this.disconnectBase()
+  }
+
+  // 신규 등록 모달
+  openCreate() {
+    this.resetForm()
+    this.modalTitleTarget.textContent = "품목 추가"
+    this.fieldItemCdTarget.readOnly = false
+    this.mode = "create"
+    this.openModal()
+  }
+
+  // 수정 모달 (그리드 셀 렌더러에서 이벤트 발생)
+  handleEdit = (event) => {
+    const data = event.detail
+    this.resetForm()
+    this.modalTitleTarget.textContent = "품목 수정"
+
+    this.fieldIdTarget.value = data.id
+    this.fieldItemCdTarget.value = data.item_cd || ""
+    this.fieldItemCdTarget.readOnly = true
+    this.fieldItemNmTarget.value = data.item_nm || ""
+    this.fieldItemTypeTarget.value = data.item_type || ""
+    this.fieldUnitTarget.value = data.unit || ""
+    this.fieldSpecTarget.value = data.spec || ""
+    this.fieldDescriptionTarget.value = data.description || ""
+
+    // 라디오 버튼 설정
+    if (String(data.use_yn || "Y") === "N") {
+      this.formTarget.querySelectorAll("input[type='radio'][name='item[use_yn]']").forEach((radio) => {
+        radio.checked = radio.value === "N"
+      })
+    }
+
+    this.mode = "update"
+    this.openModal()
+  }
+
+  // 폼 초기화
+  resetForm() {
+    this.formTarget.reset()
+    this.fieldIdTarget.value = ""
+    this.formTarget.querySelectorAll("input[type='radio'][name='item[use_yn]']").forEach((radio) => {
+      radio.checked = radio.value === "Y"
+    })
+  }
+}
+```
+
+### Rails Controller
+
+```ruby
+# app/controllers/system/items_controller.rb
+class System::ItemsController < System::BaseController
+  def index
+    respond_to do |format|
+      format.html
+      format.json { render json: items_scope.map { |item| item_json(item) } }
+    end
+  end
+
+  def create
+    item = Item.new(item_params)
+    if item.save
+      render json: { success: true, message: "품목이 추가되었습니다.", item: item_json(item) }
+    else
+      render json: { success: false, errors: item.errors.full_messages }, status: :unprocessable_entity
+    end
+  end
+
+  def update
+    item = find_item
+    attrs = item_params.to_h
+    attrs.delete("item_cd")
+
+    if item.update(attrs)
+      render json: { success: true, message: "품목이 수정되었습니다.", item: item_json(item) }
+    else
+      render json: { success: false, errors: item.errors.full_messages }, status: :unprocessable_entity
+    end
+  end
+
+  def destroy
+    item = find_item
+    item.destroy
+    render json: { success: true, message: "품목이 삭제되었습니다." }
+  end
+
+  private
+    def search_params
+      params.fetch(:q, {}).permit(:item_cd, :item_nm, :use_yn)
+    end
+
+    def items_scope
+      scope = Item.ordered
+
+      if search_params[:item_cd].present?
+        scope = scope.where("item_cd LIKE ?", "%#{search_params[:item_cd]}%")
+      end
+      if search_params[:item_nm].present?
+        scope = scope.where("item_nm LIKE ?", "%#{search_params[:item_nm]}%")
+      end
+      if search_params[:use_yn].present?
+        scope = scope.where(use_yn: search_params[:use_yn])
+      end
+
+      scope
+    end
+
+    def item_params
+      params.require(:item).permit(:item_cd, :item_nm, :item_type, :unit, :spec, :description, :use_yn)
+    end
+
+    def find_item
+      Item.find_by!(item_cd: params[:id].to_s.strip.upcase)
+    end
+
+    def item_json(item)
+      {
+        id: item.item_cd,
+        item_cd: item.item_cd,
+        item_nm: item.item_nm,
+        item_type: item.item_type,
+        unit: item.unit,
+        spec: item.spec,
+        description: item.description,
+        use_yn: item.use_yn,
+        update_by: item.update_by,
+        update_time: item.update_time,
+        create_by: item.create_by,
+        create_time: item.create_time
+      }
+    end
+end
+```
+
+### Routes
+
+```ruby
+# config/routes.rb (namespace :system 내부에 추가)
+resources :items, only: [:index, :create, :update, :destroy]
+```
+
+---
+
+## 유형 4: 조회조건 + 그리드 + 탭 구성
+
+상단에 공유 그리드, 하단에 탭별 독립 콘텐츠 영역을 구성합니다.
+
+**기존 참조**: 신규 패턴 (기존 컴포넌트 조합으로 구현)
+**예제 도메인**: 재고 관리 (inventory) — 현황/이력/조정 탭
+
+### 파일 구성
+
+```
+app/components/system/inventory/page_component.rb
+app/components/system/inventory/page_component.html.erb
+app/javascript/controllers/inventory_grid_controller.js
+app/controllers/system/inventories_controller.rb
+app/models/inventory.rb
+```
+
+### PageComponent (Ruby)
+
+```ruby
+# app/components/system/inventory/page_component.rb
+class System::Inventory::PageComponent < System::BasePageComponent
+  private
+    def collection_path(**) = helpers.system_inventories_path(**)
+    def member_path(id, **) = helpers.system_inventory_path(id, **)
+
+    def history_url_template
+      "/system/inventories/:id/histories.json"
+    end
+
+    def adjustment_url_template
+      "/system/inventories/:id/adjustments.json"
+    end
+
+    def search_fields
+      [
+        { field: "item_cd", type: "input", label: "품목코드", placeholder: "품목코드 검색.." },
+        { field: "item_nm", type: "input", label: "품목명", placeholder: "품목명 검색.." },
+        { field: "zone_cd", type: "input", label: "구역코드", placeholder: "구역코드 검색.." }
+      ]
+    end
+
+    def main_columns
+      [
+        { field: "item_cd", headerName: "품목코드", minWidth: 130 },
+        { field: "item_nm", headerName: "품목명", minWidth: 200 },
+        { field: "zone_cd", headerName: "구역코드", minWidth: 130 },
+        { field: "lot_no", headerName: "LOT번호", minWidth: 150 },
+        { field: "qty", headerName: "재고수량", minWidth: 120, type: "numericColumn" },
+        { field: "unit", headerName: "단위", minWidth: 80 },
+        { field: "update_time", headerName: "최종변경일시", minWidth: 170, formatter: "datetime" }
+      ]
+    end
+
+    def history_columns
+      [
+        { field: "history_type", headerName: "유형", minWidth: 100 },
+        { field: "qty_change", headerName: "변동수량", minWidth: 120, type: "numericColumn" },
+        { field: "qty_after", headerName: "변동후수량", minWidth: 120, type: "numericColumn" },
+        { field: "reason", headerName: "사유", minWidth: 200 },
+        { field: "create_by", headerName: "처리자", minWidth: 100 },
+        { field: "create_time", headerName: "처리일시", minWidth: 170, formatter: "datetime" }
+      ]
+    end
+
+    def adjustment_columns
+      [
+        { field: "adjust_type", headerName: "조정유형", minWidth: 130 },
+        { field: "adjust_qty", headerName: "조정수량", minWidth: 120, type: "numericColumn" },
+        { field: "adjust_reason", headerName: "조정사유", minWidth: 250 },
+        { field: "status", headerName: "상태", minWidth: 100 },
+        { field: "create_by", headerName: "요청자", minWidth: 100 },
+        { field: "create_time", headerName: "요청일시", minWidth: 170, formatter: "datetime" }
+      ]
+    end
+end
+```
+
+### ERB 템플릿
+
+```erb
+<%# app/components/system/inventory/page_component.html.erb %>
+<div data-controller="inventory-grid"
+     data-action="ag-grid:ready->inventory-grid#registerGrid"
+     data-inventory-grid-history-url-template-value="<%= history_url_template %>"
+     data-inventory-grid-adjustment-url-template-value="<%= adjustment_url_template %>">
+  <%= render Ui::SearchFormComponent.new(
+    url: create_url,
+    fields: search_fields,
+    cols: 3,
+    enable_collapse: true
+  ) %>
+
+  <%# 상단: 메인 재고 그리드 %>
+  <%= render Ui::GridHeaderComponent.new(
+    icon: "boxes", title: "재고 현황", grid_id: "inventory-main"
+  ) %>
+
+  <%= render Ui::AgGridComponent.new(
+    columns: main_columns,
+    url: grid_url,
+    height: "calc(50vh - 250px)",
+    pagination: false,
+    row_selection: "single",
+    grid_id: "inventory-main",
+    data: { inventory_grid_target: "mainGrid" }
+  ) %>
+
+  <%# 하단: 탭 영역 %>
+  <div class="mt-3">
+    <div class="flex border-b border-border">
+      <button type="button"
+              class="px-4 py-2 text-sm font-medium border-b-2 border-primary text-primary"
+              data-inventory-grid-target="tabBtn"
+              data-action="click->inventory-grid#switchTab"
+              data-tab="history">이력</button>
+      <button type="button"
+              class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-text-secondary hover:text-text-primary"
+              data-inventory-grid-target="tabBtn"
+              data-action="click->inventory-grid#switchTab"
+              data-tab="adjustment">조정</button>
+    </div>
+
+    <%# 이력 탭 %>
+    <div data-inventory-grid-target="tabPanel" data-tab="history">
+      <%= render Ui::GridHeaderComponent.new(
+        icon: "history", title: "재고 이력", grid_id: "inventory-history"
+      ) %>
+      <%= render Ui::AgGridComponent.new(
+        columns: history_columns,
+        row_data: [],
+        height: "calc(50vh - 280px)",
+        pagination: false,
+        grid_id: "inventory-history",
+        data: { inventory_grid_target: "historyGrid" }
+      ) %>
+    </div>
+
+    <%# 조정 탭 %>
+    <div data-inventory-grid-target="tabPanel" data-tab="adjustment" hidden>
+      <%= render Ui::GridHeaderComponent.new(
+        icon: "sliders-horizontal", title: "재고 조정", grid_id: "inventory-adjustment"
+      ) %>
+      <%= render Ui::AgGridComponent.new(
+        columns: adjustment_columns,
+        row_data: [],
+        height: "calc(50vh - 280px)",
+        pagination: false,
+        grid_id: "inventory-adjustment",
+        data: { inventory_grid_target: "adjustmentGrid" }
+      ) %>
+    </div>
+  </div>
+</div>
+```
+
+### Stimulus Controller (JS)
+
+```javascript
+// app/javascript/controllers/inventory_grid_controller.js
+import BaseGridController from "controllers/base_grid_controller"
+import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
+import { isApiAlive, fetchJson, setGridRowData, buildTemplateUrl } from "controllers/grid/grid_utils"
+
+export default class extends BaseGridController {
+  static targets = [
+    ...BaseGridController.targets,
+    "mainGrid", "historyGrid", "adjustmentGrid",
+    "tabBtn", "tabPanel"
+  ]
+
+  static values = {
+    ...BaseGridController.values,
+    historyUrlTemplate: String,
+    adjustmentUrlTemplate: String
+  }
+
+  connect() {
+    super.connect()
+    this.mainGridEvents = new GridEventManager()
+    this.#gridApis = {}
+    this.#activeTab = "history"
+    this.#selectedId = null
+  }
+
+  disconnect() {
+    this.mainGridEvents.unbindAll()
+    super.disconnect()
+  }
+
+  // Manager 없이 읽기 전용
+  configureManager() { return null }
+
+  // 그리드 등록
+  registerGrid(event) {
+    const registration = resolveAgGridRegistration(event)
+    if (!registration) return
+
+    const { gridElement, api, controller } = registration
+
+    if (gridElement === this.mainGridTarget) {
+      super.registerGrid(event)
+      this.#gridApis.main = api
+      this.mainGridEvents.bind(api, "rowClicked", this.#handleMainRowClicked)
+    } else if (gridElement === this.historyGridTarget) {
+      this.#gridApis.history = api
+    } else if (gridElement === this.adjustmentGridTarget) {
+      this.#gridApis.adjustment = api
+    }
+  }
+
+  // 탭 전환
+  switchTab(event) {
+    const tab = event.currentTarget.dataset.tab
+    this.#activeTab = tab
+
+    // 탭 버튼 스타일 전환
+    this.tabBtnTargets.forEach((btn) => {
+      const isActive = btn.dataset.tab === tab
+      btn.classList.toggle("border-primary", isActive)
+      btn.classList.toggle("text-primary", isActive)
+      btn.classList.toggle("border-transparent", !isActive)
+      btn.classList.toggle("text-text-secondary", !isActive)
+    })
+
+    // 탭 패널 표시/숨김
+    this.tabPanelTargets.forEach((panel) => {
+      panel.hidden = panel.dataset.tab !== tab
+    })
+
+    // 선택된 행이 있으면 해당 탭 데이터 로드
+    if (this.#selectedId) {
+      this.#loadTabData(tab, this.#selectedId)
+    }
+  }
+
+  // ─── Private ───
+
+  #gridApis
+  #activeTab
+  #selectedId
+
+  #handleMainRowClicked = async (event) => {
+    const rowData = rowDataFromGridEvent(this.#gridApis.main, event)
+    if (!rowData?.id) return
+
+    this.#selectedId = rowData.id
+    await this.#loadTabData(this.#activeTab, rowData.id)
+  }
+
+  async #loadTabData(tab, id) {
+    try {
+      if (tab === "history") {
+        const url = buildTemplateUrl(this.historyUrlTemplateValue, ":id", id)
+        const rows = await fetchJson(url)
+        if (isApiAlive(this.#gridApis.history)) {
+          setGridRowData(this.#gridApis.history, rows)
+        }
+      } else if (tab === "adjustment") {
+        const url = buildTemplateUrl(this.adjustmentUrlTemplateValue, ":id", id)
+        const rows = await fetchJson(url)
+        if (isApiAlive(this.#gridApis.adjustment)) {
+          setGridRowData(this.#gridApis.adjustment, rows)
+        }
+      }
+    } catch {
+      alert(`${tab} 데이터 조회에 실패했습니다.`)
+    }
+  }
+}
+```
+
+### Routes
+
+```ruby
+# config/routes.rb (namespace :system 내부에 추가)
+resources :inventories, only: [:index] do
+  member do
+    get :histories
+    get :adjustments
+  end
+end
+```
+
+---
+
+## 유형 5: 조회조건 + 마스터 그리드 + 디테일 탭
+
+유형2(마스터-디테일) + 유형4(탭) 결합. 마스터 행 선택 시 하단 탭 전체가 갱신됩니다.
+
+**기존 참조**: 신규 패턴 (기존 컴포넌트 조합으로 구현)
+**예제 도메인**: 입고 관리 (inbound) — 마스터 + 하단 탭(상세/이력)
+
+### 파일 구성
+
+```
+app/components/system/inbound/page_component.rb
+app/components/system/inbound/page_component.html.erb
+app/javascript/controllers/inbound_grid_controller.js
+app/controllers/system/inbounds_controller.rb
+app/models/inbound.rb
+app/models/inbound_detail.rb
+```
+
+### PageComponent (Ruby)
+
+```ruby
+# app/components/system/inbound/page_component.rb
+class System::Inbound::PageComponent < System::BasePageComponent
+  private
+    def collection_path(**) = helpers.system_inbounds_path(**)
+    def member_path(id, **) = helpers.system_inbound_path(id, **)
+
+    def detail_batch_save_url_template
+      "/system/inbounds/:id/details/batch_save"
+    end
+
+    def search_fields
+      [
+        { field: "inbound_no", type: "input", label: "입고번호", placeholder: "입고번호 검색.." },
+        { field: "partner_nm", type: "input", label: "거래처명", placeholder: "거래처명 검색.." },
+        { field: "inbound_date", type: "date_range", label: "입고일자" }
+      ]
+    end
+
+    def master_columns
+      [
+        { field: "inbound_no", headerName: "입고번호", minWidth: 150 },
+        { field: "inbound_date", headerName: "입고일자", minWidth: 120 },
+        { field: "partner_cd", headerName: "거래처코드", minWidth: 130 },
+        { field: "partner_nm", headerName: "거래처명", minWidth: 180 },
+        { field: "status", headerName: "상태", minWidth: 100 },
+        { field: "total_qty", headerName: "총수량", minWidth: 100, type: "numericColumn" },
+        { field: "create_by", headerName: "등록자", minWidth: 100 },
+        { field: "create_time", headerName: "등록일시", minWidth: 170, formatter: "datetime" }
+      ]
+    end
+
+    def detail_columns
+      [
+        {
+          field: "__row_status",
+          headerName: "상태",
+          width: 68, minWidth: 68, maxWidth: 68,
+          editable: false, sortable: false, filter: false, resizable: false,
+          cellStyle: { textAlign: "center" },
+          cellRenderer: "rowStatusCellRenderer"
+        },
+        { field: "item_cd", headerName: "품목코드", minWidth: 130, editable: true },
+        { field: "item_nm", headerName: "품목명", minWidth: 200, editable: true },
+        { field: "qty", headerName: "입고수량", minWidth: 120, editable: true, type: "numericColumn" },
+        { field: "unit", headerName: "단위", minWidth: 80, editable: true },
+        { field: "lot_no", headerName: "LOT번호", minWidth: 150, editable: true },
+        { field: "zone_cd", headerName: "입고구역", minWidth: 130, editable: true },
+        { field: "rmk", headerName: "비고", minWidth: 200, editable: true }
+      ]
+    end
+
+    def history_columns
+      [
+        { field: "action", headerName: "작업", minWidth: 100 },
+        { field: "description", headerName: "내용", minWidth: 300 },
+        { field: "create_by", headerName: "처리자", minWidth: 100 },
+        { field: "create_time", headerName: "처리일시", minWidth: 170, formatter: "datetime" }
+      ]
+    end
+end
+```
+
+### ERB 템플릿
+
+```erb
+<%# app/components/system/inbound/page_component.html.erb %>
+<div data-controller="inbound-grid"
+     data-action="ag-grid:ready->inbound-grid#registerGrid"
+     data-inbound-grid-detail-batch-url-template-value="<%= detail_batch_save_url_template %>"
+     data-inbound-grid-detail-list-url-template-value="/system/inbounds/:id/details.json"
+     data-inbound-grid-history-url-template-value="/system/inbounds/:id/histories.json">
+  <%= render Ui::SearchFormComponent.new(
+    url: create_url,
+    fields: search_fields,
+    cols: 3,
+    enable_collapse: true
+  ) %>
+
+  <%# 상단: 마스터 입고 그리드 %>
+  <%= render Ui::GridHeaderComponent.new(
+    icon: "package-check", title: "입고 목록", grid_id: "inbound-master"
+  ) %>
+
+  <%= render Ui::AgGridComponent.new(
+    columns: master_columns,
+    url: grid_url,
+    height: "calc(40vh - 200px)",
+    pagination: false,
+    row_selection: "single",
+    grid_id: "inbound-master",
+    data: { inbound_grid_target: "masterGrid" }
+  ) %>
+
+  <%# 하단: 디테일 탭 영역 %>
+  <div class="mt-3">
+    <div class="flex items-center justify-between border-b border-border">
+      <div class="flex">
+        <button type="button"
+                class="px-4 py-2 text-sm font-medium border-b-2 border-primary text-primary"
+                data-inbound-grid-target="tabBtn"
+                data-action="click->inbound-grid#switchTab"
+                data-tab="detail">입고상세</button>
+        <button type="button"
+                class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-text-secondary hover:text-text-primary"
+                data-inbound-grid-target="tabBtn"
+                data-action="click->inbound-grid#switchTab"
+                data-tab="history">처리이력</button>
+      </div>
+      <p class="text-text-secondary text-xs pr-2" data-inbound-grid-target="selectedLabel">입고를 선택하세요.</p>
+    </div>
+
+    <%# 상세 탭 (인라인 편집 그리드) %>
+    <div data-inbound-grid-target="tabPanel" data-tab="detail">
+      <%= render Ui::GridHeaderComponent.new(
+        icon: "list", title: "입고 상세", grid_id: "inbound-detail",
+        buttons: [
+          { label: "행추가", class: "btn btn-sm btn-primary", action: "click->inbound-grid#addDetailRow" },
+          { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->inbound-grid#deleteDetailRows" },
+          { label: "저장", class: "btn btn-sm btn-success", action: "click->inbound-grid#saveDetailRows" }
+        ]
+      ) %>
+      <%= render Ui::AgGridComponent.new(
+        columns: detail_columns,
+        row_data: [],
+        height: "calc(40vh - 200px)",
+        pagination: false,
+        row_selection: "multiple",
+        grid_id: "inbound-detail",
+        data: { inbound_grid_target: "detailGrid" }
+      ) %>
+    </div>
+
+    <%# 이력 탭 (읽기 전용 그리드) %>
+    <div data-inbound-grid-target="tabPanel" data-tab="history" hidden>
+      <%= render Ui::GridHeaderComponent.new(
+        icon: "history", title: "처리 이력", grid_id: "inbound-history"
+      ) %>
+      <%= render Ui::AgGridComponent.new(
+        columns: history_columns,
+        row_data: [],
+        height: "calc(40vh - 200px)",
+        pagination: false,
+        grid_id: "inbound-history",
+        data: { inbound_grid_target: "historyGrid" }
+      ) %>
+    </div>
+  </div>
+</div>
+```
+
+### Stimulus Controller (JS)
+
+```javascript
+// app/javascript/controllers/inbound_grid_controller.js
+import BaseGridController from "controllers/base_grid_controller"
+import GridCrudManager from "controllers/grid/grid_crud_manager"
+import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
+import { isApiAlive, postJson, hasChanges, fetchJson, setGridRowData, setManagerRowData, buildTemplateUrl, refreshSelectionLabel } from "controllers/grid/grid_utils"
+
+export default class extends BaseGridController {
+  static targets = [
+    ...BaseGridController.targets,
+    "masterGrid", "detailGrid", "historyGrid",
+    "tabBtn", "tabPanel", "selectedLabel"
+  ]
+
+  static values = {
+    ...BaseGridController.values,
+    detailBatchUrlTemplate: String,
+    detailListUrlTemplate: String,
+    historyUrlTemplate: String
+  }
+
+  connect() {
+    super.connect()
+    this.masterGridEvents = new GridEventManager()
+    this.detailManager = null
+    this.#gridApis = {}
+    this.#activeTab = "detail"
+    this.#selectedId = null
+  }
+
+  disconnect() {
+    this.masterGridEvents.unbindAll()
+    if (this.detailManager) {
+      this.detailManager.detach()
+      this.detailManager = null
+    }
+    super.disconnect()
+  }
+
+  // 마스터는 읽기 전용
+  configureManager() { return null }
+
+  // 디테일 그리드 CRUD 설정
+  configureDetailManager() {
+    return {
+      pkFields: ["id"],
+      fields: {
+        item_cd: "trimUpper",
+        item_nm: "trim",
+        qty: "number",
+        unit: "trim",
+        lot_no: "trimUpper",
+        zone_cd: "trimUpper",
+        rmk: "trim"
+      },
+      defaultRow: { item_cd: "", item_nm: "", qty: 0, unit: "", lot_no: "", zone_cd: "", rmk: "" },
+      blankCheckFields: ["item_cd"],
+      comparableFields: ["item_cd", "item_nm", "qty", "unit", "lot_no", "zone_cd", "rmk"],
+      firstEditCol: "item_cd",
+      pkLabels: { id: "ID" }
+    }
+  }
+
+  // 그리드 등록 분기
+  registerGrid(event) {
+    const registration = resolveAgGridRegistration(event)
+    if (!registration) return
+
+    const { gridElement, api, controller } = registration
+
+    if (gridElement === this.masterGridTarget) {
+      super.registerGrid(event)
+      this.#gridApis.master = api
+      this.masterGridEvents.bind(api, "rowClicked", this.#handleMasterRowClicked)
+    } else if (gridElement === this.detailGridTarget) {
+      if (this.detailManager) this.detailManager.detach()
+      this.detailManager = new GridCrudManager(this.configureDetailManager())
+      this.detailManager.attach(api)
+      this.#gridApis.detail = api
+    } else if (gridElement === this.historyGridTarget) {
+      this.#gridApis.history = api
+    }
+  }
+
+  // 탭 전환
+  switchTab(event) {
+    const tab = event.currentTarget.dataset.tab
+    this.#activeTab = tab
+
+    this.tabBtnTargets.forEach((btn) => {
+      const isActive = btn.dataset.tab === tab
+      btn.classList.toggle("border-primary", isActive)
+      btn.classList.toggle("text-primary", isActive)
+      btn.classList.toggle("border-transparent", !isActive)
+      btn.classList.toggle("text-text-secondary", !isActive)
+    })
+
+    this.tabPanelTargets.forEach((panel) => {
+      panel.hidden = panel.dataset.tab !== tab
+    })
+
+    if (this.#selectedId) {
+      this.#loadTabData(tab, this.#selectedId)
+    }
+  }
+
+  // ─── 디테일 CRUD 액션 ───
+
+  addDetailRow() {
+    if (!this.detailManager) return
+    if (!this.#selectedId) {
+      alert("입고를 먼저 선택해주세요.")
+      return
+    }
+    this.detailManager.addRow({ inbound_id: this.#selectedId })
+  }
+
+  deleteDetailRows() {
+    if (!this.detailManager) return
+    this.detailManager.deleteRows()
+  }
+
+  async saveDetailRows() {
+    if (!this.detailManager) return
+    if (!this.#selectedId) {
+      alert("입고를 먼저 선택해주세요.")
+      return
+    }
+
+    this.detailManager.stopEditing()
+    const operations = this.detailManager.buildOperations()
+    if (!hasChanges(operations)) {
+      alert("변경된 데이터가 없습니다.")
+      return
+    }
+
+    const batchUrl = buildTemplateUrl(this.detailBatchUrlTemplateValue, ":id", this.#selectedId)
+    const ok = await postJson(batchUrl, operations)
+    if (!ok) return
+
+    alert("입고상세 데이터가 저장되었습니다.")
+    await this.#loadDetailRows(this.#selectedId)
+  }
+
+  // ─── Private ───
+
+  #gridApis
+  #activeTab
+  #selectedId
+
+  #handleMasterRowClicked = async (event) => {
+    const rowData = rowDataFromGridEvent(this.#gridApis.master, event)
+    if (!rowData?.id) return
+
+    this.#selectedId = rowData.id
+    this.#refreshSelectedLabel(rowData.inbound_no)
+
+    // 활성 탭 데이터 로드
+    await this.#loadTabData(this.#activeTab, rowData.id)
+  }
+
+  async #loadTabData(tab, id) {
+    try {
+      if (tab === "detail") {
+        await this.#loadDetailRows(id)
+      } else if (tab === "history") {
+        const url = buildTemplateUrl(this.historyUrlTemplateValue, ":id", id)
+        const rows = await fetchJson(url)
+        if (isApiAlive(this.#gridApis.history)) {
+          setGridRowData(this.#gridApis.history, rows)
+        }
+      }
+    } catch {
+      alert(`${tab} 데이터 조회에 실패했습니다.`)
+    }
+  }
+
+  async #loadDetailRows(id) {
+    if (!isApiAlive(this.detailManager?.api)) return
+
+    try {
+      const url = buildTemplateUrl(this.detailListUrlTemplateValue, ":id", id)
+      const rows = await fetchJson(url)
+      setManagerRowData(this.detailManager, rows)
+    } catch {
+      alert("입고상세 조회에 실패했습니다.")
+    }
+  }
+
+  #refreshSelectedLabel(displayValue) {
+    if (!this.hasSelectedLabelTarget) return
+    refreshSelectionLabel(this.selectedLabelTarget, displayValue, "입고", "입고를 선택하세요.")
+  }
+}
+```
+
+### Routes
+
+```ruby
+# config/routes.rb (namespace :system 내부에 추가)
+resources :inbounds, only: [:index, :create, :update] do
+  member do
+    get :histories
+    resources :details, controller: :inbound_details, only: [:index] do
+      post :batch_save, on: :collection
+    end
+  end
+end
+```
+
+---
+
+## 새 화면 추가 체크리스트
+
+### 1. 유형 결정
+- [ ] 유형 1: 단순 인라인 편집 그리드 (행추가/삭제/일괄저장)
+- [ ] 유형 2: 마스터-디테일 그리드 (1:N 관계, 각각 독립 저장)
+- [ ] 유형 3: 그리드 + 모달 CRUD (등록/수정/삭제를 팝업으로)
+- [ ] 유형 4: 그리드 + 탭 (상단 그리드 공유 + 하단 탭별 콘텐츠)
+- [ ] 유형 5: 마스터 그리드 + 디테일 탭 (유형2 + 유형4 결합)
+
+### 2. 파일 생성
+- [ ] Migration 생성 및 실행: `bin/rails generate migration CreateXxx`
+- [ ] Model 생성: `app/models/<model>.rb`
+- [ ] Rails Controller 생성: `app/controllers/<namespace>/<module>_controller.rb`
+- [ ] PageComponent 생성: `app/components/<namespace>/<module>/page_component.rb`
+- [ ] ERB 템플릿 생성: `app/components/<namespace>/<module>/page_component.html.erb`
+- [ ] Stimulus Controller 생성: `app/javascript/controllers/<module>_grid_controller.js` 또는 `<module>_crud_controller.js`
+
+### 3. 설정/등록
+- [ ] Routes 추가: `config/routes.rb`에 리소스 추가
+- [ ] Importmap pin 확인: `config/importmap.rb`에 컨트롤러 자동 인식 확인
+- [ ] TabRegistry 등록: `app/models/tab_registry.rb`에 탭 Entry 추가
+- [ ] 메뉴 등록: `adm_menus` 테이블에 메뉴 데이터 추가
+
+### 4. 커스텀 셀 렌더러 (필요 시)
+- [ ] `app/javascript/controllers/ag_grid/renderers.js`의 `RENDERER_REGISTRY`에 렌더러 추가
+- [ ] 액션 셀 렌더러: 편집/삭제 버튼 → 커스텀 이벤트 dispatch
+
+### 5. 검증
+- [ ] `bin/rails server`로 화면 정상 렌더링 확인
+- [ ] 검색 동작 확인
+- [ ] CRUD 동작 확인 (생성/조회/수정/삭제)
+- [ ] `bin/rubocop`으로 린트 통과 확인
+- [ ] 테스트 작성 및 통과 확인

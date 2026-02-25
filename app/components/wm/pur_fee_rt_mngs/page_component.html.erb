@@ -1,0 +1,79 @@
+<%# app/components/wm/pur_fee_rt_mngs/page_component.html.erb %>
+<div data-controller="wm-pur-fee-rt-grid"
+     data-action="ag-grid:ready->wm-pur-fee-rt-grid#registerGrid"
+     data-wm-pur-fee-rt-grid-master-batch-url-value="<%= master_batch_save_url %>"
+     data-wm-pur-fee-rt-grid-detail-batch-url-template-value="<%= detail_batch_save_url_template %>"
+     data-wm-pur-fee-rt-grid-detail-list-url-template-value="/wm/pur_fee_rt_mngs/:pur_fee_rt_mng_id/details.json"
+     data-wm-pur-fee-rt-grid-selected-master-value="<%= selected_fee_rt_no.to_s %>">
+  
+  <%= render Ui::SearchFormComponent.new(
+    url: collection_path,
+    fields: search_fields,
+    cols: 3,
+    enable_collapse: true
+  ) %>
+
+  <div class="grid grid-rows-[1fr_1fr] gap-3 h-[calc(100vh-230px)]">
+    <section class="min-h-0 flex flex-col">
+      <%= render Ui::GridHeaderComponent.new(
+        icon: "file-text", title: "매입요율 목록", grid_id: "pur-fee-rt-master",
+        buttons: [
+          { label: "행추가", class: "btn btn-sm btn-primary", action: "click->wm-pur-fee-rt-grid#addMasterRow" },
+          { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->wm-pur-fee-rt-grid#deleteMasterRows" },
+          { label: "저장", class: "btn btn-sm btn-success", action: "click->wm-pur-fee-rt-grid#saveMasterRows" }
+        ]
+      ) %>
+
+      <div class="flex-1 min-h-0">
+        <%= render Ui::AgGridComponent.new(
+          columns: master_columns,
+          url: collection_path(format: :json),
+          height: "100%",
+          pagination: false,
+          row_selection: "multiple",
+          grid_id: "pur-fee-rt-master",
+          data: { wm_pur_fee_rt_grid_target: "masterGrid" }
+        ) %>
+      </div>
+    </section>
+
+    <section class="min-h-0 flex flex-col">
+      <%= render Ui::GridHeaderComponent.new(
+        icon: "list-details", title: "매입요율 상세 목록", grid_id: "pur-fee-rt-detail",
+        buttons: [
+          { label: "행추가", class: "btn btn-sm btn-primary", action: "click->wm-pur-fee-rt-grid#addDetailRow" },
+          { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->wm-pur-fee-rt-grid#deleteDetailRows" },
+          { label: "저장", class: "btn btn-sm btn-success", action: "click->wm-pur-fee-rt-grid#saveDetailRows" }
+        ]
+      ) do |header| %>
+        <% header.with_subtitle do %>
+          <p class="text-text-secondary text-xs" data-wm-pur-fee-rt-grid-target="selectedMasterLabel"><%= selected_master_label %></p>
+        <% end %>
+      <% end %>
+
+      <div class="flex-1 min-h-0">
+        <% if detail_grid_url.present? %>
+          <%= render Ui::AgGridComponent.new(
+            columns: detail_columns,
+            url: detail_grid_url,
+            height: "100%",
+            pagination: false,
+            row_selection: "multiple",
+            grid_id: "pur-fee-rt-detail",
+            data: { wm_pur_fee_rt_grid_target: "detailGrid" }
+          ) %>
+        <% else %>
+          <%= render Ui::AgGridComponent.new(
+            columns: detail_columns,
+            row_data: [],
+            height: "100%",
+            pagination: false,
+            row_selection: "multiple",
+            grid_id: "pur-fee-rt-detail",
+            data: { wm_pur_fee_rt_grid_target: "detailGrid" }
+          ) %>
+        <% end %>
+      </div>
+    </section>
+  </div>
+</div>

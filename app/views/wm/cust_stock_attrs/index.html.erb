@@ -1,0 +1,4 @@
+<%# app/views/wm/cust_stock_attrs/index.html.erb %>
+<%= turbo_frame_tag "main-content" do %>
+  <%= render Wm::CustStockAttr::PageComponent.new(query_params: request.query_parameters) %>
+<% end %>

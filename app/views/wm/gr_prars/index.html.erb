@@ -1,0 +1,7 @@
+<%# app/views/wm/gr_prars/index.html.erb %>
+<%= turbo_frame_tag "main-content" do %>
+  <%= render Wm::GrPrars::PageComponent.new(
+    query_params: request.query_parameters,
+    selected_gr_prar_no: params[:selected_gr_prar_no]
+  ) %>
+<% end %>

@@ -75,6 +75,12 @@ Rails.application.routes.draw do
   end
 
   namespace :wm do
+    resources :cust_rules, only: [ :index ] do
+      post :batch_save, on: :collection
+    end
+    resources :cust_stock_attrs, only: [ :index ] do
+      post :batch_save, on: :collection
+    end
     resources :workplace, controller: :workplace, only: [ :index ] do
       post :batch_save, on: :collection
     end
@@ -89,6 +95,25 @@ Rails.application.routes.draw do
       get :areas, on: :collection
       get :zones, on: :collection
       post :batch_save, on: :collection
+    end
+    resources :pur_fee_rt_mngs, only: [ :index ] do
+      post :batch_save, on: :collection
+      resources :details, controller: :pur_fee_rt_mng_dtls, only: [ :index ], param: :lineno do
+        post :batch_save, on: :collection
+      end
+    end
+
+    resources :gr_prars, only: [ :index ] do
+      collection do
+        get :staged_locations
+      end
+      member do
+        get  :details
+        get  :exec_results
+        post :save_gr
+        post :confirm
+        post :cancel
+      end
     end
   end
 

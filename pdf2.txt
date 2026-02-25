@@ -1,0 +1,514 @@
+                         Logis-T 프로젝트
+
+
+
+                           화면설계서
+
+
+
+                           LogisT-WM-DS02
+                                     Ver. 1.0
+
+
+
+
+
+
+
+
+                                      보관
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+              Copyright ⓒ LG CNS
+LG CNS 의 사전 승인 없이 본 내용의 전부 또는 일부에 대한 복사, 배포, 사용을 금합니다.
+Logis-T 프로젝트                          화면설계서
+
+
+                  개 정 이 력
+
+
+                       1
+ 버전  작성일           변경내용           작성자   승인자
+
+ 1.02010.0최초작성                    이준호   김창우
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+1변경 내용: 변경이 발생되는 위치와 변경 내용을 자세히 기록(장/절과 변경 내용을 기술한다.)
+
+
+                    i
+ Logis-T 프로젝트                                                   화면설계서
+
+
+                                 목    차
+
+
+1. 매입요율관리 ...........................................................1
+
+1.1 화면 Layout...........................................................1
+1.2 화면 설명.............................................................1
+1.3 화면항목 설명.........................................................1
+  1.3.1 매입요율목록검색 ................................................... 1
+
+  1.3.2 매입요율목록 ....................................................... 2
+  1.3.3 매출요율상세리스트 ................................................. 3
+1.4 이벤트................................................................3
+
+1.5 화면제어..............................................................4
+1.6 업무규칙..............................................................4
+1.7 이벤트 흐름 (순서 정의) ...............................................5
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                  ii
+ Logis-T 프로젝트                                              화면설계서
+
+
+
+
+1. 매입요율관리
+
+1.1 화면 Layout
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+1.2 화면 설명
+
+창고 매니저가 매입요율을 조회/등록/수정/삭제 하는 화면이다.
+
+
+
+1.3 화면항목 설명
+
+1.3.1 매입요율목록검색
+
+
+                                     *속성 R:ReadOnly E:Editable, H:Hidden, C:Choice
+                                                  항목설명
+ 항목명(Kor)   항목명(Eng)   영문속성명      속성    필수        규칙/validation
+
+ 작업장        Workplace workplCd     E     M
+
+            WorkplaceNa            E     M
+ 작업장명       me        workplNm
+
+            ContractCoo
+                                   E
+ 계약협력사      perationCoctrtCprtco
+            pany
+
+
+
+                               1
+ Logis-T 프로젝트                                                                화면설계서
+
+
+
+  항목명(Kor)      항목명(Eng)      영문속성명         속성                    항목설명
+                                                    필수            규칙/validation
+
+                Cooperation                   E
+ 협력사명           CompanyName  cprtcoNm
+
+                PurchaseAtt
+ 매입항목                        purAttr          E
+                ribute
+                AttributeNa
+ 항목명                         attrNm           E
+                me
+                                              E
+ 사용여부           UseYesOrNo   useYn
+                ApplyYyyymm
+ 적용일자                        aplyYmd          E
+                dd
+
+ 적용일자 2         ApplyYyyymm  aplyYmd2         E
+                dd2
+
+
+
+1.3.2 매입요율목록
+
+                                                 *속성 R:ReadOnly E:Editable, H:Hidden, C:Choice
+
+  항목명(Kor)      항목명(Eng)      영문속성명         속성                    항목설명
+                                                    필수            규칙/validation
+
+ 순번             Sequence     seq              E
+ 작업장            Workplace    workpl           E
+
+                ContractCoo
+
+ 계약협력사          perationCom  ctrtCprtco       E
+                pany
+
+                PurchaseAtt
+ 매입항목                        purAttr          E
+                ribute
+                PurchaseDep
+ 매입부서                        purDept          E
+                artment
+
+ 매입아이템유         PurchaseIte  purItemType      E
+ 형              mType
+
+                PurchaseIte
+ 매입아이템                       purItem          E
+                m
+ 매입아이템          PurchaseIte
+                             purItemNm        E
+ 명              mName
+                PurchaseUni
+
+ 매입단위분류         tClassifica  purUnitClas      E
+
+                tion
+                PurchaseUni
+ 매입단위                        purUnit          E
+                t
+
+
+                                         2
+ Logis-T 프로젝트                                                                화면설계서
+
+
+
+  항목명(Kor)      항목명(Eng)      영문속성명         속성                    항목설명
+                                                    필수            규칙/validation
+
+ 사용여부           UseYesOrNo   useYn            E
+                AutomaticYe
+ 자동여부                        autoYn           E
+                sOrNo
+
+ 비고             Remark       rmk              E
+
+
+
+1.3.3 매출요율상세리스트
+
+                                                 *속성 R:ReadOnly E:Editable, H:Hidden, C:Choice
+                                                                  항목설명
+  항목명(Kor)      항목명(Eng)      영문속성명         속성
+                                                    필수            규칙/validation
+ 라인번호           LineNumber   lineno           E
+
+                DecisionYes
+ 확정여부                        dcsnYn           E
+                OrNo
+                ApplyStartY
+ 적용시작일자                      aplyStrtYmd      E
+                yyymmdd
+                ApplyEndYyy
+ 적용종료일자                      aplyEndYmd       E
+                ymmdd
+
+                ApplyUnitPr                   E
+ 적용단가           ice          aplyUprice
+
+                CurrencyCod
+ 통화코드                        curCd            E
+                e
+                StandardWor
+ 기준작업물량                      stdWorkQty       E
+                kQuantity
+
+ 적용시작물량         ApplyStartQ  aplyStrtQty      E
+                uantity
+
+                ApplyEndQua
+ 적용종료물량                      aplyEndQty       E
+                ntity
+ 비고             Remark       rmk              E
+
+
+
+1.4 이벤트
+
+                       *관련데이터 S:다른 object 로 보내지는 데이터, R:다른 object 로부터 받는 데이터
+
+    이벤트명                  이벤트 설명                      관련데이터                관련 Object
+
+
+
+
+
+
+
+
+
+                                         3
+ Logis-T 프로젝트                                  화면설계서
+
+
+
+  이벤트명          이벤트 설명          관련데이터        관련 Object
+
+          조회조건의    적용일자   From
+          값은 당해년도 1 월 1 일 (예-
+
+          2010/01/01), To 값은 Sysdate
+ open                        로그인 id,법인코드
+          값을 셋팅한다.
+                             R:
+          사용여부의 값은 default 로 ‘Y’
+
+          Setting 함.
+
+
+
+1.5 화면제어
+
+
+[화면 display]
+-. 특이사항 없음.
+
+1)요율목록
+[매입아이템유형]
+
+-. 기타코드(분류코드-69)로 매출아이템유형 Display
+
+[매입아이템] [매입아이템명]
+-. 아이템코드 또는 아이템명 을 조회 조건으로 팝업 Open.
+
+[매입단위분류]
+
+-. 기타코드(분류코드-20)로 기본단위분류코드명 Display
+[매입단위]
+
+- 매입단위분류코드에 맞는 단위코드명을 Display 한다. (기타코드리스트 참조)
+[사용여부]
+
+-. 기타코드(분류코드-06)로 사용여부명 Display
+
+[자동여부]
+-. 기타코드(분류코드-06)로 사용여부명 Display
+
+2)요율상세목록
+
+[확정여부]
+-. 기타코드(분류코드-06)로 사용여부명 Display
+
+[적용시작일자] [적용종료일자]
+-. 적용종료일자는 적용시작일자보다 빠를 수 없다.
+
+[통화코드]
+
+-. 기타코드(분류코드-27)로 화폐코드 Display
+
+
+
+1.6 업무규칙
+
+-.신규등록시 매입요율과 매입요율상세목록을 다 입력해야만 저장이 가능하다.
+
+-.요율수정시 요율목록은 매입아이템유형, 매입아이템, 매입단위분류, 매입단위, 사용여부,
+비고 만 수정가능하다.
+
+
+                         4
+ Logis-T 프로젝트                               화면설계서
+
+
+
+요율상세목록은 전체칼럼 수정가능하다.
+
+
+
+1.7 이벤트 흐름 (순서 정의)
+
+
+-.조회조건에 조회하고자 하는 매입요율의 조건 값을 입력하고 검색버튼을 클릭한다.
+-.매입요율목록이 Display 되면 상세조회 하고자 하는 매입요율목록을 Click 한다.
+
+-.Detail 창에 매입요율상세목록이 Display 된다.
+- 수정하고자 하는 경우 매입요율목록 과 매입요율상세목록 항목을 수정하고 저장 버튼을
+
+클릭한다.
+
+-.신규등록의 경우 매입요율목록과 매입요율상세목록에서 행추가 버튼을 클릭후 신규내역을
+입력하고 저장 버튼을 클릭한다.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                       5

@@ -1,0 +1,155 @@
+<%# app/components/wm/gr_prars/page_component.html.erb %>
+<div data-controller="wm-gr-prar-grid"
+     data-action="ag-grid:ready->wm-gr-prar-grid#registerGrid"
+     data-wm-gr-prar-grid-detail-list-url-template-value="<%= detail_list_url_template %>"
+     data-wm-gr-prar-grid-exec-result-url-template-value="<%= exec_result_list_url_template %>"
+     data-wm-gr-prar-grid-save-url-template-value="<%= save_url_template %>"
+     data-wm-gr-prar-grid-confirm-url-template-value="<%= confirm_url_template %>"
+     data-wm-gr-prar-grid-cancel-url-template-value="<%= cancel_url_template %>"
+     data-wm-gr-prar-grid-staged-locations-url-value="<%= staged_locations_url %>"
+     data-wm-gr-prar-grid-selected-master-value="<%= selected_gr_prar_no.to_s %>">
+
+  <%# 검색 폼 %>
+  <%= render Ui::SearchFormComponent.new(
+    url: collection_path,
+    fields: search_fields,
+    cols: 3,
+    enable_collapse: true
+  ) %>
+
+  <%# 전체 레이아웃: 마스터 그리드 + 탭 디테일 %>
+  <div class="grid grid-rows-[40%_1fr] gap-3 h-[calc(100vh-220px)]">
+
+    <%# 마스터: 입고예정목록 %>
+    <section class="min-h-0 flex flex-col">
+      <%= render Ui::GridHeaderComponent.new(
+        icon: "package-open",
+        title: "입고예정목록",
+        grid_id: "gr-prar-master"
+      ) %>
+      <div class="flex-1 min-h-0">
+        <%= render Ui::AgGridComponent.new(
+          columns: master_columns,
+          url: collection_path(format: :json),
+          height: "100%",
+          pagination: true,
+          row_selection: "single",
+          grid_id: "gr-prar-master",
+          data: { wm_gr_prar_grid_target: "masterGrid" }
+        ) %>
+      </div>
+    </section>
+
+    <%# 디테일: 탭 구조 %>
+    <section class="min-h-0 flex flex-col">
+
+      <%# 탭 헤더 + 액션 버튼 %>
+      <div class="flex items-center justify-between border-b border-border px-1 pb-0">
+        <div class="std-client-tabs" role="tablist">
+          <button type="button" role="tab" aria-selected="true"
+                  class="std-client-tab is-active"
+                  data-wm-gr-prar-grid-target="tabButton"
+                  data-action="click->wm-gr-prar-grid#switchTab"
+                  data-tab="detail">
+            입고예정상세
+          </button>
+          <button type="button" role="tab" aria-selected="false"
+                  class="std-client-tab"
+                  data-wm-gr-prar-grid-target="tabButton"
+                  data-action="click->wm-gr-prar-grid#switchTab"
+                  data-tab="exec">
+            입고처리내역
+          </button>
+        </div>
+
+        <%# 선택 마스터 라벨 %>
+        <p class="text-xs text-text-secondary px-2"
+           data-wm-gr-prar-grid-target="selectedMasterLabel">
+          <%= selected_master_label %>
+        </p>
+
+        <%# 액션 버튼 %>
+        <div class="flex gap-2 py-1">
+          <button type="button"
+                  class="btn btn-sm btn-primary"
+                  data-action="click->wm-gr-prar-grid#saveGr">
+            저장
+          </button>
+          <button type="button"
+                  class="btn btn-sm btn-success"
+                  data-action="click->wm-gr-prar-grid#confirmGr">
+            입고확정
+          </button>
+          <button type="button"
+                  class="btn btn-sm btn-danger"
+                  data-action="click->wm-gr-prar-grid#cancelGr">
+            입고취소
+          </button>
+        </div>
+      </div>
+
+      <%# 탭 패널 영역 %>
+      <div class="flex-1 min-h-0 relative">
+
+        <%# Tab 1: 입고예정상세 %>
+        <div class="absolute inset-0 flex flex-col"
+             data-wm-gr-prar-grid-target="tabPanel"
+             data-tab-panel="detail"
+             id="gr-prar-tab-panel-1">
+          <div class="flex-1 min-h-0">
+            <% if selected_gr_prar_no.present? %>
+              <%= render Ui::AgGridComponent.new(
+                columns: detail_columns,
+                url: "/wm/gr_prars/#{selected_gr_prar_no}/details.json",
+                height: "100%",
+                pagination: false,
+                row_selection: "single",
+                grid_id: "gr-prar-detail",
+                data: { wm_gr_prar_grid_target: "detailGrid" }
+              ) %>
+            <% else %>
+              <%= render Ui::AgGridComponent.new(
+                columns: detail_columns,
+                row_data: [],
+                height: "100%",
+                pagination: false,
+                row_selection: "single",
+                grid_id: "gr-prar-detail",
+                data: { wm_gr_prar_grid_target: "detailGrid" }
+              ) %>
+            <% end %>
+          </div>
+        </div>
+
+        <%# Tab 2: 입고처리내역 (초기 숨김) %>
+        <div class="absolute inset-0 flex flex-col hidden"
+             data-wm-gr-prar-grid-target="tabPanel"
+             data-tab-panel="exec"
+             id="gr-prar-tab-panel-2">
+          <div class="flex-1 min-h-0">
+            <% if selected_gr_prar_no.present? %>
+              <%= render Ui::AgGridComponent.new(
+                columns: exec_result_columns,
+                url: "/wm/gr_prars/#{selected_gr_prar_no}/exec_results.json",
+                height: "100%",
+                pagination: false,
+                grid_id: "gr-prar-exec-result",
+                data: { wm_gr_prar_grid_target: "execRsltGrid" }
+              ) %>
+            <% else %>
+              <%= render Ui::AgGridComponent.new(
+                columns: exec_result_columns,
+                row_data: [],
+                height: "100%",
+                pagination: false,
+                grid_id: "gr-prar-exec-result",
+                data: { wm_gr_prar_grid_target: "execRsltGrid" }
+              ) %>
+            <% end %>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </div>
+</div>
