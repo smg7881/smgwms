@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html class="dark" lang="ko">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Modern Notice Registration Modal</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=Noto+Sans+KR:wght@300;400;500;700&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#3b82f6",
+                        "background-light": "#f9fafb",
+                        "background-dark": "#111827",
+                        "surface-dark": "#1f2937",
+                        "border-dark": "#374151"
+                    },
+                    fontFamily: {
+                        display: ["Inter", "Noto Sans KR", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.5rem",
+                    },
+                },
+            },
+        };
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans KR', sans-serif;
+        }
+
+        .form-input-focus {
+            @apply focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all duration-200;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 dark:bg-black min-h-screen flex items-center justify-center p-4">
+    <div
+        class="w-full max-w-3xl bg-background-light dark:bg-background-dark rounded-xl shadow-2xl border border-gray-200 dark:border-border-dark overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-border-dark flex items-center justify-between">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">공지사항 등록</h2>
+            <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                <span class="material-icons-round">close</span>
+            </button>
+        </div>
+        <div class="p-6 space-y-6 max-h-[85vh] overflow-y-auto no-scrollbar">
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    분류 <span class="text-red-500">*</span>
+                </label>
+                <div class="relative">
+                    <select
+                        class="w-full bg-white dark:bg-surface-dark border border-gray-300 dark:border-border-dark rounded-lg px-2.5 py-1.5 text-xs text-gray-900 dark:text-white appearance-none focus:ring-2 focus:ring-primary outline-none">
+                        <option disabled="" selected="" value="">선택하세요</option>
+                        <option value="general">일반 공지</option>
+                        <option value="event">이벤트</option>
+                        <option value="update">업데이트</option>
+                        <option value="emergency">긴급</option>
+                    </select>
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
+                        <span class="material-icons-round">expand_more</span>
+                    </div>
+                </div>
+            </div>
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    제목 <span class="text-red-500">*</span>
+                </label>
+                <input
+                    class="w-full bg-white dark:bg-surface-dark border border-gray-300 dark:border-border-dark rounded-lg px-2.5 py-1.5 text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary outline-none"
+                    placeholder="제목을 입력하세요" type="text" />
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-3">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">상단고정</label>
+                    <div class="flex items-center space-x-6">
+                        <label class="inline-flex items-center cursor-pointer group">
+                            <input
+                                class="w-4 h-4 text-primary border-gray-300 focus:ring-primary dark:border-border-dark dark:bg-surface-dark"
+                                name="pin" type="radio" />
+                            <span
+                                class="ml-2 text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">고정</span>
+                        </label>
+                        <label class="inline-flex items-center cursor-pointer group">
+                            <input checked=""
+                                class="w-4 h-4 text-primary border-gray-300 focus:ring-primary dark:border-border-dark dark:bg-surface-dark"
+                                name="pin" type="radio" />
+                            <span
+                                class="ml-2 text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">일반</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="space-y-3">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">게시여부</label>
+                    <div class="flex items-center space-x-6">
+                        <label class="inline-flex items-center cursor-pointer group">
+                            <input checked=""
+                                class="w-4 h-4 text-primary border-gray-300 focus:ring-primary dark:border-border-dark dark:bg-surface-dark"
+                                name="status" type="radio" />
+                            <span
+                                class="ml-2 text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">게시</span>
+                        </label>
+                        <label class="inline-flex items-center cursor-pointer group">
+                            <input
+                                class="w-4 h-4 text-primary border-gray-300 focus:ring-primary dark:border-border-dark dark:bg-surface-dark"
+                                name="status" type="radio" />
+                            <span
+                                class="ml-2 text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">미게시</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">게시 시작일</label>
+                    <div class="relative">
+                        <input
+                            class="w-full bg-white dark:bg-surface-dark border border-gray-300 dark:border-border-dark rounded-lg px-2.5 py-1.5 text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary outline-none"
+                            placeholder="연도-월-일" type="text" />
+                        <div
+                            class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
+                            <span class="material-icons-round text-lg">calendar_today</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">게시 종료일</label>
+                    <div class="relative">
+                        <input
+                            class="w-full bg-white dark:bg-surface-dark border border-gray-300 dark:border-border-dark rounded-lg px-2.5 py-1.5 text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary outline-none"
+                            placeholder="연도-월-일" type="text" />
+                        <div
+                            class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
+                            <span class="material-icons-round text-lg">calendar_today</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    내용 <span class="text-red-500">*</span>
+                </label>
+                <div class="border border-gray-300 dark:border-border-dark rounded-lg overflow-hidden flex flex-col">
+                    <div
+                        class="bg-gray-50 dark:bg-surface-dark px-3 py-2 border-b border-gray-300 dark:border-border-dark flex flex-wrap gap-1">
+                        <div
+                            class="flex items-center space-x-1 pr-2 border-r border-gray-300 dark:border-border-dark mr-2">
+                            <button
+                                class="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-600 dark:text-gray-400"
+                                title="Bold"><span class="material-icons-round text-lg">format_bold</span></button>
+                            <button
+                                class="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-600 dark:text-gray-400"
+                                title="Italic"><span class="material-icons-round text-lg">format_italic</span></button>
+                            <button
+                                class="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-600 dark:text-gray-400"
+                                title="Strikethrough"><span
+                                    class="material-icons-round text-lg">strikethrough_s</span></button>
+                            <button
+                                class="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-600 dark:text-gray-400"
+                                title="Link"><span class="material-icons-round text-lg">link</span></button>
+                        </div>
+                        <div
+                            class="flex items-center space-x-1 pr-2 border-r border-gray-300 dark:border-border-dark mr-2">
+                            <button
+                                class="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-600 dark:text-gray-400"
+                                title="Text Size"><span class="material-icons-round text-lg">text_fields</span></button>
+                            <button
+                                class="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-600 dark:text-gray-400"
+                                title="Quote"><span class="material-icons-round text-lg">format_quote</span></button>
+                            <button
+                                class="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-600 dark:text-gray-400"
+                                title="Code"><span class="material-icons-round text-lg">code</span></button>
+                        </div>
+                        <div
+                            class="flex items-center space-x-1 pr-2 border-r border-gray-300 dark:border-border-dark mr-2">
+                            <button
+                                class="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-600 dark:text-gray-400"
+                                title="Bullet List"><span
+                                    class="material-icons-round text-lg">format_list_bulleted</span></button>
+                            <button
+                                class="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-600 dark:text-gray-400"
+                                title="Numbered List"><span
+                                    class="material-icons-round text-lg">format_list_numbered</span></button>
+                        </div>
+                        <div class="flex items-center space-x-1 flex-1 justify-end">
+                            <button
+                                class="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-600 dark:text-gray-400"
+                                title="Undo"><span class="material-icons-round text-lg">undo</span></button>
+                            <button
+                                class="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-600 dark:text-gray-400"
+                                title="Redo"><span class="material-icons-round text-lg">redo</span></button>
+                        </div>
+                    </div>
+                    <textarea
+                        class="w-full bg-white dark:bg-background-dark border-none p-4 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-0 outline-none resize-none"
+                        placeholder="공지사항 내용을 입력하세요" rows="8"></textarea>
+                </div>
+            </div>
+        </div>
+        <div
+            class="px-6 py-4 bg-gray-50 dark:bg-surface-dark/50 border-t border-gray-200 dark:border-border-dark flex justify-end items-center space-x-3">
+            <button
+                class="px-5 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-surface-dark border border-gray-300 dark:border-border-dark rounded-lg transition-colors">
+                취소
+            </button>
+            <button
+                class="bg-primary hover:bg-blue-600 text-white px-6 py-2 text-sm font-semibold rounded-lg shadow-sm shadow-blue-500/20 transition-all hover:-translate-y-0.5 active:translate-y-0">
+                저장
+            </button>
+        </div>
+    </div>
+
+</body>
+
+</html>

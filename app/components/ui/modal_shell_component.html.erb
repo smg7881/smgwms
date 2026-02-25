@@ -2,7 +2,7 @@
      data-<%= controller %>-target="overlay"
      <%= overlay_action_attr&.html_safe %>
      hidden>
-  <div class="app-modal-shell bg-bg-primary border border-border rounded-lg max-w-[calc(100vw-32px)] max-h-[90vh] flex flex-col overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.15)]"
+  <div class="app-modal-shell bg-bg-primary border border-border rounded-lg max-w-[calc(100vw-32px)] max-h-[90vh] flex flex-col overflow-hidden shadow-2xl"
        style="<%= modal_style %>"
        data-<%= controller %>-target="modal"
        data-action="click-><%= controller %>#stopPropagation">

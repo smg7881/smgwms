@@ -114,24 +114,27 @@ a:hover {
 
 /* ── Buttons (component classes — used across helpers, components, renderers) ── */
 .btn {
-  @apply inline-flex items-center gap-1.5 px-3.5 py-[7px] rounded-md border border-transparent cursor-pointer text-[13px] font-semibold no-underline font-sans;
-  transition: background 0.15s, border-color 0.15s;
+  @apply inline-flex items-center justify-center gap-1.5 px-5 py-2 rounded-lg border border-transparent cursor-pointer text-sm font-semibold no-underline font-sans transition-all duration-200;
 }
 
 .btn-primary {
-  @apply bg-accent text-white border-accent;
+  @apply bg-[#3b82f6] text-white shadow-sm shadow-blue-500/20;
 }
 
 .btn-primary:hover {
-  @apply bg-accent-hover border-accent-hover no-underline text-white;
+  @apply bg-blue-600 no-underline text-white -translate-y-0.5;
+}
+
+.btn-primary:active {
+  @apply translate-y-0;
 }
 
 .btn-secondary {
-  @apply bg-bg-tertiary text-text-primary border-border;
+  @apply bg-transparent text-gray-300 border border-[#374151];
 }
 
 .btn-secondary:hover {
-  @apply bg-bg-hover no-underline text-text-primary;
+  @apply bg-[#1f2937] no-underline;
 }
 
 .btn-success {
@@ -169,36 +172,38 @@ a:hover {
 /* ── Form grid: input/select base styles ── */
 .form-grid-input,
 .form-grid-select {
-  @apply w-full py-1.5 px-2.5 border border-border rounded-md bg-bg-primary text-text-primary;
-  font-size: 0.875rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  @apply w-full border border-[#374151] rounded bg-[#1f2937] text-white outline-none;
+  padding: 4px 10px !important;
+  font-size: 13px !important;
+  height: 32px !important;
+  line-height: 1.4 !important;
+  transition: all 0.2s;
 }
 
 .form-grid-input:focus,
 .form-grid-select:focus {
-  @apply outline-none border-accent;
-  box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.2);
+  @apply ring-2 ring-[#3b82f6] border-transparent outline-none;
 }
 
 .form-grid-input::placeholder {
-  @apply text-text-muted;
+  @apply text-gray-400;
 }
 
 /* ── Search form: compact input/select ── */
 [data-controller="search-form"] .form-grid-input,
 [data-controller="search-form"] .form-grid-select {
-  font-size: 0.8125rem;
-  padding: 4px 8px;
-  height: 35px;
+  font-size: 13px !important;
+  padding: 2px 8px !important;
+  height: 30px !important;
 }
 
 [data-controller="search-form"] .form-grid-select {
-  padding-right: 24px;
+  padding-right: 28px;
 }
 
-/* Select 드롭다운 화살표 오른쪽 여백 */
+/* Select 드롭다운 오른쪽 여백 조정 */
 .form-grid-select {
-  padding-right: 28px;
+  padding-right: 2.5rem;
 }
 
 /* Number input dark scheme */
@@ -215,7 +220,7 @@ a:hover {
 .form-grid-input[type="date"],
 .form-grid-input[type="datetime-local"] {
   color-scheme: dark;
-  padding-right: 24px;
+  padding-right: 28px !important;
 }
 
 .form-grid-input[type="date"]::-webkit-calendar-picker-indicator,
@@ -401,7 +406,7 @@ a:hover {
 }
 
 .app-modal-shell {
-  @apply bg-bg-primary border border-border rounded-lg max-w-[calc(100vw-32px)] max-h-[90vh] flex flex-col overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.15)];
+  @apply bg-bg-primary border border-border rounded-lg max-w-[calc(100vw-32px)] max-h-[90vh] flex flex-col overflow-hidden shadow-2xl;
 }
 
 .app-modal-header {
@@ -438,7 +443,7 @@ a:hover {
 }
 
 .form-grid-modal-content {
-  @apply rounded-lg border border-border bg-bg-primary shadow-[0_4px_24px_rgba(0,0,0,0.35)] overflow-hidden;
+  @apply rounded-lg border border-border bg-bg-primary shadow-xl overflow-hidden;
   display: flex;
   flex-direction: column;
   max-height: 90vh;
@@ -1037,7 +1042,6 @@ trix-editor:focus {
 
 .std-client-resource-form .form-grid-input,
 .std-client-resource-form .form-grid-select {
-  min-height: 34px;
   background: rgba(15, 19, 28, 0.95);
   border-color: #3a4658;
   color: var(--color-text-primary);
