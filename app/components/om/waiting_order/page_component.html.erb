@@ -53,7 +53,7 @@
       row_selection: "multiple",
       data: {
         om_waiting_order_grid_target: "grid",
-        action: "ag-grid:grid-ready->om-waiting-order-grid#onGridReady search-form:success@window->om-waiting-order-grid#reload"
+        action: "ag-grid:ready->om-waiting-order-grid#registerGrid search-form:success@window->om-waiting-order-grid#reloadRows"
       }
     ) %>
   </div>

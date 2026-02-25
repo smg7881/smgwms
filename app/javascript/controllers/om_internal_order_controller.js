@@ -139,17 +139,17 @@ export default class extends Controller {
     if (tab === "location") {
       this.tabLocationTarget.classList.remove("hidden")
       this.tabItemsTarget.classList.add("hidden")
-      this.tabBtnLocationTarget.classList.add("border-blue-500", "text-blue-600")
-      this.tabBtnLocationTarget.classList.remove("border-transparent", "text-gray-500")
-      this.tabBtnItemsTarget.classList.remove("border-blue-500", "text-blue-600")
-      this.tabBtnItemsTarget.classList.add("border-transparent", "text-gray-500")
+      this.tabBtnLocationTarget.classList.add("border-accent-primary", "text-accent-primary")
+      this.tabBtnLocationTarget.classList.remove("border-transparent", "text-text-secondary")
+      this.tabBtnItemsTarget.classList.remove("border-accent-primary", "text-accent-primary")
+      this.tabBtnItemsTarget.classList.add("border-transparent", "text-text-secondary")
     } else {
       this.tabItemsTarget.classList.remove("hidden")
       this.tabLocationTarget.classList.add("hidden")
-      this.tabBtnItemsTarget.classList.add("border-blue-500", "text-blue-600")
-      this.tabBtnItemsTarget.classList.remove("border-transparent", "text-gray-500")
-      this.tabBtnLocationTarget.classList.remove("border-blue-500", "text-blue-600")
-      this.tabBtnLocationTarget.classList.add("border-transparent", "text-gray-500")
+      this.tabBtnItemsTarget.classList.add("border-accent-primary", "text-accent-primary")
+      this.tabBtnItemsTarget.classList.remove("border-transparent", "text-text-secondary")
+      this.tabBtnLocationTarget.classList.remove("border-accent-primary", "text-accent-primary")
+      this.tabBtnLocationTarget.classList.add("border-transparent", "text-text-secondary")
 
       // AG Grid는 hidden 상태에서 사이즈를 못 잡으므로 refresh
       if (this.#itemGridApi) {

@@ -42,7 +42,7 @@
       <%= render Ui::AgGridComponent.new(
         columns: user_columns,
         row_data: [],
-        page_size: 20,
+        pagination: false,
         row_selection: "multiple",
         height: "calc(100vh - 420px)",
         grid_id: "role-user-left",
@@ -76,7 +76,7 @@
       <%= render Ui::AgGridComponent.new(
         columns: user_columns,
         row_data: [],
-        page_size: 20,
+        pagination: false,
         row_selection: "multiple",
         height: "calc(100vh - 420px)",
         grid_id: "role-user-right",

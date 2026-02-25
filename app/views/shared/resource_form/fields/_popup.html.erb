@@ -8,7 +8,9 @@
   code_width = field[:code_width].presence || "120px"
   button_width = field[:button_width].presence || "32px"
 
-  if display_width
+  if field[:hide_display]
+    grid_template = "#{code_width} #{button_width}"
+  elsif display_width
     grid_template = "#{code_width} #{button_width} calc(#{display_width} - #{code_width} - #{button_width} - 0.5rem)"
   else
     grid_template = "#{code_width} #{button_width} 1fr"
@@ -51,34 +53,33 @@
              action: "blur->resource-form#validateField"
            }.merge(field[:data] || {}) %>
 
+    <%
+      btn_action = []
+      if field[:data] && field[:data][:action_target]
+        btn_action << "click->#{local_assigns[:target_controller]}##{field[:data][:action_target]}"
+      end
+      btn_action << "search-popup#open"
+    %>
     <button type="button"
-            class="rf-popup-btn"
-            data-action="<%= "click->#{local_assigns[:target_controller]}##{field[:data][:action_target]}" if field[:data] && field[:data][:action_target] %>">
-      <i class="fas fa-search"></i>
-    </button>
-
-    <%= f.text_field field[:field].to_sym,
-           id: "#{param_key}_#{field[:field]}", %>"
-           value="<%= field[:value].to_s %>"
-           class="form-grid-input <%= 'rf-field-error' if error_message.present? %>"
-           style="<%= display_style %>"
-           data-search-popup-target="display"
-           data-action="input->search-popup#onDisplayInput blur->resource-form#validateField"
-           placeholder="<%= resolve_placeholder(field) || "#{resolve_label(field)} 선택" %>">
-    <input type="text"
-           value="<%= code_value %>"
-           class="form-grid-input"
-           style="<%= code_style %>"
-           aria-label="<%= resolve_label(field) %> 코드"
-           disabled
-           data-search-popup-target="codeDisplay">
-    <button type="button"
-            class="inline-flex items-center justify-center h-9 border border-border bg-bg-tertiary text-text-primary rounded-md cursor-pointer hover:bg-bg-hover"
+            class="rf-popup-btn inline-flex items-center justify-center h-9 border border-border bg-bg-tertiary text-text-primary rounded-md cursor-pointer hover:bg-bg-hover"
             style="<%= button_style %>"
             aria-label="<%= resolve_label(field) %> 찾기"
-            data-action="search-popup#open">
+            data-action="<%= btn_action.join(' ') %>">
       <%= lucide_icon("search", css_class: "w-4 h-4") %>
     </button>
+
+    <% unless field[:hide_display] %>
+      <%= f.text_field field[:field].to_sym,
+             id: "#{param_key}_#{field[:field]}",
+             value: field[:value].to_s,
+             class: "form-grid-input #{'rf-field-error' if error_message.present?}",
+             style: display_style,
+             data: {
+               search_popup_target: "display",
+               action: "input->search-popup#onDisplayInput blur->resource-form#validateField"
+             },
+             placeholder: resolve_placeholder(field) || "#{resolve_label(field)} 선택" %>
+    <% end %>
   </div>
   <span class="rf-error-msg <%= 'invisible' if error_message.blank? %>"><%= error_message.presence || " " %></span>
 </div>

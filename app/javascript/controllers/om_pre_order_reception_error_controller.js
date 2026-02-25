@@ -1,85 +1,50 @@
-import { Controller } from "@hotwired/stimulus"
-import { fetchJson, getCsrfToken, isApiAlive, setGridRowData } from "controllers/grid/grid_utils"
+import BaseGridController from "controllers/base_grid_controller"
+import { fetchJson, getCsrfToken } from "controllers/grid/grid_utils"
 
-export default class extends Controller {
-  static targets = ["masterGrid", "detailGrid", "fileInput"]
+// 사전오더접수오류 화면 (마스터-디테일 + 재처리/업로드 액션)
+export default class extends BaseGridController {
+  static targets = [
+    ...BaseGridController.targets,
+    "masterGrid",
+    "detailGrid",
+    "fileInput"
+  ]
 
   static values = {
+    ...BaseGridController.values,
     reprocessUrl: String,
     itemsUrl: String,
     downloadUrl: String,
     uploadUrl: String
   }
 
-  connect() {
-    this.masterApi = null
-    this.detailApi = null
-  }
-
-  registerGrid(event) {
-    if (event.target === this.masterGridTarget) {
-      this.masterApi = event.detail.api
-      return
-    }
-
-    if (event.target === this.detailGridTarget) {
-      this.detailApi = event.detail.api
+  gridRoles() {
+    return {
+      master: { target: "masterGrid" },
+      detail: { target: "detailGrid" }
     }
   }
 
   async handleSelectionChanged(event) {
-    if (event.target !== this.masterGridTarget) {
+    if (event.target !== this.masterGridTarget) return
+
+    const selected = event.detail?.api?.getSelectedRows?.() || []
+    if (selected.length === 0) {
+      this.setRows("detail", [])
       return
     }
 
-    const selectedRows = event.detail?.api?.getSelectedRows?.() || []
-    if (selectedRows.length === 0) {
-      this.clearDetailRows()
-      return
-    }
-
-    const selected = selectedRows[0]
-    await this.loadDetailRows(selected.id)
-  }
-
-  async loadDetailRows(errorId) {
-    if (!errorId) {
-      this.clearDetailRows()
-      return
-    }
-
-    try {
-      const rows = await fetchJson(`${this.itemsUrlValue}?error_id=${encodeURIComponent(errorId)}`)
-      this.setDetailRows(rows)
-    } catch {
-      alert("오류 상세를 불러오지 못했습니다.")
-      this.clearDetailRows()
-    }
-  }
-
-  clearDetailRows() {
-    this.setDetailRows([])
-  }
-
-  setDetailRows(rows) {
-    if (!isApiAlive(this.detailApi)) {
-      return
-    }
-    setGridRowData(this.detailApi, rows)
+    await this.#loadDetailRows(selected[0].id)
   }
 
   async reprocess() {
-    if (!isApiAlive(this.masterApi)) {
-      return
-    }
-
-    const selectedRows = this.masterApi.getSelectedRows() || []
-    if (selectedRows.length === 0) {
+    const selected = this.selectedRows("master")
+    if (selected.length === 0) {
       alert("재처리할 오류를 선택해 주세요.")
       return
     }
 
-    const errorIds = selectedRows
+    const errorIds = selected
       .map((row) => Number(row.id))
       .filter((value) => Number.isInteger(value) && value > 0)
 
@@ -88,32 +53,21 @@ export default class extends Controller {
       return
     }
 
-    if (!confirm(`${errorIds.length}건을 재처리하시겠습니까?`)) {
-      return
-    }
-
-    try {
-      const response = await fetch(this.reprocessUrlValue, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": getCsrfToken()
+    await this.postAction(
+      this.reprocessUrlValue,
+      { error_ids: errorIds },
+      {
+        confirmMessage: `${errorIds.length}건을 재처리하시겠습니까?`,
+        onSuccess: (result) => {
+          alert(result.message || "재처리가 완료되었습니다.")
+          this.refreshGrid("master")
+          this.setRows("detail", [])
         },
-        body: JSON.stringify({ error_ids: errorIds })
-      })
-      const result = await response.json()
-
-      if (!response.ok || !result.success) {
-        alert(result.message || "재처리에 실패했습니다.")
-        return
+        onFail: (result) => {
+          alert(result.message || "재처리에 실패했습니다.")
+        }
       }
-
-      alert(result.message || "재처리가 완료되었습니다.")
-      this.refreshMasterRows()
-      this.clearDetailRows()
-    } catch {
-      alert("재처리 중 통신 오류가 발생했습니다.")
-    }
+    )
   }
 
   downloadTemplate() {
@@ -129,9 +83,7 @@ export default class extends Controller {
   async uploadFile(event) {
     const input = event.target
     const file = input.files?.[0]
-    if (!file) {
-      return
-    }
+    if (!file) return
 
     const payload = new FormData()
     payload.append("file", file)
@@ -139,9 +91,7 @@ export default class extends Controller {
     try {
       const response = await fetch(this.uploadUrlValue, {
         method: "POST",
-        headers: {
-          "X-CSRF-Token": getCsrfToken()
-        },
+        headers: { "X-CSRF-Token": getCsrfToken() },
         body: payload
       })
       const result = await response.json()
@@ -152,8 +102,8 @@ export default class extends Controller {
       }
 
       alert(result.message || "오류 업로드가 완료되었습니다.")
-      this.refreshMasterRows()
-      this.clearDetailRows()
+      this.refreshGrid("master")
+      this.setRows("detail", [])
     } catch {
       alert("오류 업로드 중 통신 오류가 발생했습니다.")
     } finally {
@@ -161,10 +111,20 @@ export default class extends Controller {
     }
   }
 
-  refreshMasterRows() {
-    const controller = this.application.getControllerForElementAndIdentifier(this.masterGridTarget, "ag-grid")
-    if (controller?.refresh) {
-      controller.refresh()
+  // ─── Private ───
+
+  async #loadDetailRows(errorId) {
+    if (!errorId) {
+      this.setRows("detail", [])
+      return
+    }
+
+    try {
+      const rows = await fetchJson(`${this.itemsUrlValue}?error_id=${encodeURIComponent(errorId)}`)
+      this.setRows("detail", rows)
+    } catch {
+      alert("오류 상세를 불러오지 못했습니다.")
+      this.setRows("detail", [])
     }
   }
 }

@@ -31,7 +31,7 @@
       row_selection: "multiple",
       data: { 
         om_execution_order_transmission_grid_target: "grid",
-        action: "ag-grid:grid-ready->om-execution-order-transmission-grid#onGridReady search-form:success@window->om-execution-order-transmission-grid#reload"
+        action: "ag-grid:ready->om-execution-order-transmission-grid#registerGrid search-form:success@window->om-execution-order-transmission-grid#reloadRows"
       }
     ) %>
   </div>

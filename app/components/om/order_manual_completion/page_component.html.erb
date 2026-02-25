@@ -35,7 +35,7 @@
     grid_id: "om-order-manual-completion-master",
     data: {
       om_order_manual_completion_target: "masterGrid",
-      action: "ag-grid:ready->om-order-manual-completion#registerMasterGrid ag-grid:rowClicked->om-order-manual-completion#onMasterRowClicked"
+      action: "ag-grid:ready->om-order-manual-completion#registerGrid ag-grid:rowClicked->om-order-manual-completion#onMasterRowClicked"
     }
   ) %>
 
@@ -52,7 +52,7 @@
     grid_id: "om-order-manual-completion-detail",
     data: {
       om_order_manual_completion_target: "detailGrid",
-      action: "ag-grid:ready->om-order-manual-completion#registerDetailGrid"
+      action: "ag-grid:ready->om-order-manual-completion#registerGrid"
     }
   ) %>
 </div>

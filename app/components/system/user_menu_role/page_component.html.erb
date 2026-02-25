@@ -18,7 +18,7 @@
     <%= render Ui::AgGridComponent.new(
       columns: user_columns,
       url: users_grid_url,
-      page_size: 20,
+      pagination: false,
       row_selection: "single",
       height: "calc(100vh - 470px)",
       grid_id: "user-menu-role-user",
@@ -36,7 +36,7 @@
       <%= render Ui::AgGridComponent.new(
         columns: role_columns,
         row_data: [],
-        page_size: 20,
+        pagination: false,
         row_selection: "single",
         height: "calc(100vh - 540px)",
         grid_id: "user-menu-role-role",

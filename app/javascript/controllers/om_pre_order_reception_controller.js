@@ -1,54 +1,46 @@
-import { Controller } from "@hotwired/stimulus"
-import { post } from "@rails/request.js"
+import BaseGridController from "controllers/base_grid_controller"
+import { fetchJson } from "controllers/grid/grid_utils"
 
-export default class extends Controller {
-  static targets = ["masterGrid", "detailGrid"]
+// 사전오더접수 화면 (마스터-디테일 + 오더생성 배치 액션)
+export default class extends BaseGridController {
+  static targets = [
+    ...BaseGridController.targets,
+    "masterGrid",
+    "detailGrid"
+  ]
 
   static values = {
+    ...BaseGridController.values,
     createUrl: String,
     itemsUrl: String
   }
 
-  connect() {
-    this.masterGridController = null
-    this.detailGridController = null
-  }
-
-  registerGrid(event) {
-    const { controller } = event.detail
-    const gridElement = event.target
-
-    if (this.hasMasterGridTarget && gridElement === this.masterGridTarget) {
-      this.masterGridController = controller
-      return
-    }
-
-    if (this.hasDetailGridTarget && gridElement === this.detailGridTarget) {
-      this.detailGridController = controller
+  gridRoles() {
+    return {
+      master: { target: "masterGrid" },
+      detail: { target: "detailGrid" }
     }
   }
 
   handleSelectionChanged(event) {
-    if (!this.hasMasterGridTarget || event.target !== this.masterGridTarget) {
-      return
-    }
+    if (!this.hasMasterGridTarget || event.target !== this.masterGridTarget) return
 
-    const selectedRows = this.selectedMasterRows()
-    if (selectedRows.length > 0) {
-      this.loadDetailRows(selectedRows[0])
+    const selected = this.selectedRows("master")
+    if (selected.length > 0) {
+      this.loadDetailRows(selected[0])
     } else {
-      this.setDetailRows([])
+      this.setRows("detail", [])
     }
   }
 
   async createOrders() {
-    const selectedRows = this.selectedMasterRows()
-    if (selectedRows.length === 0) {
+    const selected = this.selectedRows("master")
+    if (selected.length === 0) {
       alert("오더 생성 대상을 선택하세요.")
       return
     }
 
-    const befOrdNos = selectedRows
+    const befOrdNos = selected
       .map((row) => row.bef_ord_no)
       .filter((value, index, array) => value && array.indexOf(value) === index)
 
@@ -57,85 +49,48 @@ export default class extends Controller {
       return
     }
 
-    const confirmed = window.confirm(`${befOrdNos.length}건을 오더 생성하시겠습니까?`)
-    if (!confirmed) {
-      return
-    }
-
-    try {
-      const response = await post(this.createUrlValue, {
-        body: JSON.stringify({ bef_ord_nos: befOrdNos })
-      })
-      const data = await response.json()
-
-      if (response.ok && data.success) {
-        alert(data.message || "오더 생성이 완료되었습니다.")
-        this.reloadMasterRows()
-        this.setDetailRows([])
-      } else {
-        alert(data.message || "오더 생성에 실패했습니다.")
+    await this.postAction(
+      this.createUrlValue,
+      { bef_ord_nos: befOrdNos },
+      {
+        confirmMessage: `${befOrdNos.length}건을 오더 생성하시겠습니까?`,
+        onSuccess: (result) => {
+          alert(result.message || "오더 생성이 완료되었습니다.")
+          this.refreshGrid("master")
+          this.setRows("detail", [])
+        },
+        onFail: (result) => {
+          alert(result.message || "오더 생성에 실패했습니다.")
+        }
       }
-    } catch (_error) {
-      alert("오더 생성 요청 중 오류가 발생했습니다.")
-    }
+    )
   }
 
-  selectedMasterRows() {
-    if (!this.masterGridController || !this.masterGridController.api) {
-      return []
-    }
-
-    return this.masterGridController.api.getSelectedRows()
-  }
-
-  reloadMasterRows() {
-    if (this.masterGridController && this.masterGridController.refresh) {
-      this.masterGridController.refresh()
-    }
-  }
+  // ─── Private ───
 
   async loadDetailRows(selectedRow) {
     if (!selectedRow) {
-      this.setDetailRows([])
+      this.setRows("detail", [])
       return
     }
 
     const custOrdNo = selectedRow.cust_ord_no || ""
     const befOrdNo = selectedRow.bef_ord_no || ""
     if (custOrdNo === "" && befOrdNo === "") {
-      this.setDetailRows([])
+      this.setRows("detail", [])
       return
     }
 
     const params = new URLSearchParams()
-    if (custOrdNo !== "") {
-      params.set("cust_ord_no", custOrdNo)
-    }
-    if (befOrdNo !== "") {
-      params.set("bef_ord_no", befOrdNo)
-    }
+    if (custOrdNo !== "") params.set("cust_ord_no", custOrdNo)
+    if (befOrdNo !== "") params.set("bef_ord_no", befOrdNo)
 
     try {
-      const response = await fetch(`${this.itemsUrlValue}?${params.toString()}`, {
-        headers: { Accept: "application/json" }
-      })
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
-      }
-
-      const rows = await response.json()
-      this.setDetailRows(Array.isArray(rows) ? rows : [])
-    } catch (_error) {
-      this.setDetailRows([])
+      const rows = await fetchJson(`${this.itemsUrlValue}?${params.toString()}`)
+      this.setRows("detail", Array.isArray(rows) ? rows : [])
+    } catch {
+      this.setRows("detail", [])
       alert("상세 데이터를 불러오지 못했습니다.")
     }
-  }
-
-  setDetailRows(rows) {
-    if (!this.detailGridController || !this.detailGridController.api) {
-      return
-    }
-
-    this.detailGridController.api.setGridOption("rowData", rows)
   }
 }

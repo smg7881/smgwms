@@ -1,21 +1,22 @@
   <div data-controller="om-service-order-form" data-om-service-order-form-url-value="<%= collection_path %>">
     
-    <!-- 검색 조건 및 상단 툴바 영역 -->
-    <div class="flex justify-between items-end mb-4">
-      <!-- 좌측 검색 영역 -->
+    <!-- 검색 조건 영역 -->
+    <div class="mb-5">
       <%= render Ui::SearchFormComponent.new(
         url: collection_path(format: :json),
         fields: search_fields,
-        cols: 3,
+        cols: 4,
         enable_collapse: true
       ) %>
+    </div>
 
-      <!-- 우측 툴바 버튼 영역 -->
+    <!-- 우측 상단 툴바 버튼 영역 -->
+    <div class="flex justify-end mb-2">
       <%= render Ui::GridToolbarComponent.new(
         buttons: [
-          { label: "신규", class: "btn btn-primary", action: "click->om-service-order-form#newOrder" },
-          { label: "저장", class: "btn btn-success", action: "click->om-service-order-form#saveOrder" },
-          { label: "오더취소", class: "btn btn-danger", action: "click->om-service-order-form#cancelOrder" }
+          { label: "신규", class: "btn btn-sm btn-primary", action: "click->om-service-order-form#newOrder" },
+          { label: "저장", class: "btn btn-sm btn-success", action: "click->om-service-order-form#saveOrder" },
+          { label: "오더취소", class: "btn btn-sm btn-danger", action: "click->om-service-order-form#cancelOrder" }
         ]
       ) %>
     </div>
@@ -34,9 +35,9 @@
         form_data: { om_service_order_form_target: "form" },
         fields: [
           # 1 Row
-          { field: "ctrt_no_nm", code_field: "ctrt_no", popup_type: "client", type: "popup", label: "계약번호", required: true, target: "ctrtNo" },
+          { field: "ctrt_no_nm", code_field: "ctrt_no", popup_type: "client", type: "popup", hide_display: true, label: "계약번호", required: true, target: "ctrtNo" },
           { field: "ord_type_cd", type: "select", options: common_code_options("75"), include_blank: "선택", label: "오더유형", required: true, target: "ordTypeCd" },
-          { field: "cust_nm", code_field: "cust_cd", type: "popup", popup_type: "client", label: "고객코드", required: true, target: "custCd", data: { action_target: "custCdSearchBtn", om_service_order_form_target: "custNm" } },
+          { field: "cust_nm", code_field: "cust_cd", type: "popup", popup_type: "client", hide_display: true, label: "고객코드", required: true, target: "custCd", data: { action_target: "custCdSearchBtn", om_service_order_form_target: "custNm" } },
           { field: "bilg_cust_cd", type: "input", label: "청구고객", required: true, disabled: true, target: "bilgCustCd" },
 
           # 2 Row
@@ -50,13 +51,13 @@
           { field: "remark", type: "input", label: "특이사항", col_span: 3, target: "remark" },
 
           # 출발지
-          { field: "dpt_cd_nm", code_field: "dpt_cd", popup_type: "client", type: "popup", label: "출발지코드", target: "dptCd" },
+          { field: "dpt_cd_nm", code_field: "dpt_cd", popup_type: "client", type: "popup", hide_display: true, label: "출발지코드", target: "dptCd" },
           { field: "dpt_type_cd", type: "select", label: "출발지유형", options: common_code_options("75"), include_blank: "선택", target: "dptTypeCd" },
           { field: "dpt_addr", type: "input", label: "출발지주소", disabled: true, target: "dptAddr" },
           { field: "req_start_dt", type: "input", input_type: "date", label: "시작요청일", value: Time.current.strftime("%Y-%m-%d"), target: "reqStartDt" },
 
           # 도착지
-          { field: "arv_cd_nm", code_field: "arv_cd", popup_type: "client", type: "popup", label: "도착지코드", target: "arvCd" },
+          { field: "arv_cd_nm", code_field: "arv_cd", popup_type: "client", type: "popup", hide_display: true, label: "도착지코드", target: "arvCd" },
           { field: "arv_type_cd", type: "select", label: "도착지유형", options: common_code_options("75"), include_blank: "선택", target: "arvTypeCd" },
           { field: "arv_addr", type: "input", label: "도착지주소", disabled: true, target: "arvAddr" },
           { field: "aptd_req_ymd", type: "input", input_type: "datetime-local", label: "납기요청일", value: Time.current.end_of_day.strftime("%Y-%m-%dT%H:%M"), target: "aptdReqYmd" },

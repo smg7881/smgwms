@@ -4,17 +4,18 @@
        data-om-internal-order-update-url-value="<%= update_url %>"
        data-om-internal-order-cancel-url-value="<%= cancel_url %>">
 
-    <!-- 검색 조건 및 상단 툴바 영역 -->
-    <div class="flex justify-between items-end mb-4">
-      <!-- 좌측 검색 영역 -->
+    <!-- 검색 조건 영역 -->
+    <div class="mb-5">
       <%= render Ui::SearchFormComponent.new(
         url: collection_path(format: :json),
         fields: search_fields,
         cols: 4,
         enable_collapse: true
       ) %>
+    </div>
 
-      <!-- 우측 툴바 버튼 영역 -->
+    <!-- 우측 상단 툴바 버튼 영역 -->
+    <div class="flex justify-end mb-2">
       <%= render Ui::GridToolbarComponent.new(
         buttons: [
           { label: "행추가", class: "btn btn-sm btn-primary", action: "click->client-grid#addMasterRow" },
@@ -90,16 +91,16 @@
     </div>
 
     <!-- 탭 영역 : 출도착지상세 / 아이템상세 -->
-    <div class="bg-white rounded shadow-sm border">
+    <div class="mt-2 min-h-[400px]">
       <!-- 탭 헤더 -->
-      <div class="flex border-b">
-        <button type="button" class="px-4 py-2 text-sm font-medium border-b-2 border-blue-500 text-blue-600"
+      <div class="flex border-b border-border">
+        <button type="button" class="px-4 py-2 text-sm font-medium border-b-2 border-accent-primary text-accent-primary"
                 data-action="click->om-internal-order#switchTab"
                 data-om-internal-order-target="tabBtnLocation"
                 data-tab="location">
           출도착지상세
         </button>
-        <button type="button" class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700"
+        <button type="button" class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-text-secondary hover:text-text-primary"
                 data-action="click->om-internal-order#switchTab"
                 data-om-internal-order-target="tabBtnItems"
                 data-tab="items">

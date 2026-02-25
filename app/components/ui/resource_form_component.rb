@@ -12,7 +12,7 @@ class Ui::ResourceFormComponent < ApplicationComponent
     accept multiple max_files max_size_mb
     existing_target selected_target
     disable_file_attachments
-    popup_type code_field
+    popup_type code_field hide_display
     display_width code_width button_width
   ].freeze
 

@@ -1,6 +1,6 @@
   <div data-controller="om-order-work-progress"
        data-action="search-form:success@window->om-order-work-progress#loadData">
-    
+
     <!-- 검색조건 영역 -->
     <%= render Ui::SearchFormComponent.new(
       url: collection_path(format: :json),
@@ -46,12 +46,20 @@
 
     <!-- 상태 상세 그리드 영역 -->
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 h-full min-h-[400px]">
-      
+
       <!-- 1번 그리드: 오더별 아이템 실적 비교 -->
       <div class="flex flex-col h-full bg-white p-2 rounded shadow-sm border">
         <h3 class="text-sm font-bold text-gray-800 mb-2 pl-2">오더 아이템별 실적</h3>
         <div class="flex-1">
-          <div data-controller="ag-grid" class="h-full w-full ag-theme-alpine" data-om-order-work-progress-target="itemGridContainer"></div>
+          <%= render Ui::AgGridComponent.new(
+            columns: item_columns,
+            row_data: [],
+            pagination: false,
+            data: {
+              om_order_work_progress_target: "itemGridContainer",
+              action: "ag-grid:ready->om-order-work-progress#registerGrid"
+            }
+          ) %>
         </div>
       </div>
 
@@ -59,7 +67,15 @@
       <div class="flex flex-col h-full bg-white p-2 rounded shadow-sm border">
         <h3 class="text-sm font-bold text-gray-800 mb-2 pl-2">오더작업진행 상세이력</h3>
         <div class="flex-1">
-          <div data-controller="ag-grid" class="h-full w-full ag-theme-alpine" data-om-order-work-progress-target="progressGridContainer"></div>
+          <%= render Ui::AgGridComponent.new(
+            columns: progress_columns,
+            row_data: [],
+            pagination: false,
+            data: {
+              om_order_work_progress_target: "progressGridContainer",
+              action: "ag-grid:ready->om-order-work-progress#registerGrid"
+            }
+          ) %>
         </div>
       </div>
 

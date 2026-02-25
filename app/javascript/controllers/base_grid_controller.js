@@ -1,62 +1,59 @@
-﻿/**
+/**
  * BaseGridController
  *
- * 단일 AG Grid CRUD 화면에서 공통으로 쓰는 Stimulus 베이스 컨트롤러입니다.
+ * AG Grid 기반 화면에서 공통으로 쓰는 Stimulus 베이스 컨트롤러입니다.
  *
- * 사용 시점:
- * - 화면 모달 없이 하나의 AG Grid 안에서 바로 행의 추가/수정/삭제 조작 후 
- * - 한 번의 '저장(배치 API 등)' 버튼 클릭으로 전체 변경사항을 전송/흐름 처리하는 편집 가능한 그리드 화면.
- * - 화면의 주요 레이스아웃 제어 로직은 동일하지만, 도메인에 따라 검증(Validation) 및 매핑 설정만 다른 경우 
+ * === 단일 그리드 모드 (기존 호환) ===
+ * - configureManager()를 오버라이드하여 GridCrudManager 설정을 반환하면 단일 CRUD 그리드로 동작합니다.
+ * - configureManager()가 null을 반환하면 Manager 없이 읽기 전용 단일 그리드로 동작합니다.
  *
- * 사용 방법:
- * 1) 화면별 컨트롤러(예: code_grid_controller.js)가 BaseGridController를 상속합니다.
- * 2) 하위 컨트롤러에서 컴포넌트 특성에 맞도록 configureManager() 메서드를 오버라이드하여 GridCrudManager 설정을 반환하도록 구현합니다.
- * 3) 뷰 단(erb 파일)에 있는 ag-grid 엘리먼트가 'ag-grid:ready' 이벤트를 발송하면, 기본 registerGrid() 콜백 메서드가 매니저를 그리드와 결합시킵니다.
+ * === 다중 그리드 모드 ===
+ * - gridRoles()를 오버라이드하여 역할(role)-타겟 매핑을 반환하면 다중 그리드를 이름으로 관리합니다.
+ * - 각 그리드는 gridApi(name), selectedRows(name), setRows(name, rows) 등으로 접근합니다.
  *
- * 서브 클래스에서 덮어쓸(Override) 가능성이 높은 메서드 패턴 (오버라이드 포인트):
- * - configureManager() [필수 구현]
- * - buildNewRowOverrides() [선택] 신규로 행이 추가될 때 행에 주입할 기본값을 반환
- * - beforeDeleteRows(nodes) [선택] 삭제 버튼을 누를 때 수행 전 삭제 대상 조건 검증용 (차단할 시 false 등 로직)
- * - afterSaveSuccess() [선택] 공통 저장 로직 성공 후, 단순 refresh 외에 추가 행동(UI 갱신이나 모달 등)이 필요할 때 덮어씀
- * - saveMessage getter [선택] "저장이 완료되었습니다." 라는 기본 알림 문구를 커스터마이징 하고 싶을 시 사용
+ * 서브 클래스 오버라이드 포인트:
+ * - configureManager() [단일 모드 필수, 다중 모드 불필요] CRUD 설정 객체 또는 null 반환
+ * - gridRoles()         [다중 모드 필수] { role: { target: "targetName" } } 반환
+ * - onAllGridsReady()   [다중 모드 선택] 모든 그리드 등록 완료 시 호출
+ * - buildNewRowOverrides() [선택] 신규 행 추가 시 기본값 반환
+ * - beforeDeleteRows(nodes) [선택] 삭제 전 검증
+ * - afterSaveSuccess()  [선택] 저장 성공 후 추가 행동
+ * - saveMessage getter  [선택] 저장 완료 알림 문구 커스터마이징
  */
 import { Controller } from "@hotwired/stimulus"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
-import { postJson, hasChanges } from "controllers/grid/grid_utils"
+import { GridEventManager } from "controllers/grid/grid_event_manager"
+import { isApiAlive, setGridRowData, postJson, hasChanges, getCsrfToken } from "controllers/grid/grid_utils"
 
 export default class BaseGridController extends Controller {
-  // 컴포넌트 내에서 조작/참조할 타겟 정의
   static targets = ["grid"]
 
-  // Stimulus의 data-[controller]-batch-url-value 와 결합되는 내부 변수 (저장 API 경로)
   static values = {
     batchUrl: String
   }
 
-  // Stimulus 생명주기 - 컨트롤러가 DOM에 연결되었을 때 호출됩니다.
-  // connect 시점에는 Grid Manager 참조 변수만 null로 초기화하고, 실제 AG Grid API 체인 연결은 그리드 준비 후 registerGrid에서 수행합니다.
+  // ─── Lifecycle ───
+
   connect() {
+    // 단일 그리드 모드 호환용
     this.manager = null
     this.gridController = null
+
+    // 다중 그리드 레지스트리
+    this.#gridRegistry = new Map()
+    this.#gridEvents = new GridEventManager()
+    this.#expectedRoles = this.gridRoles()
   }
 
-  // ag-grid:ready(detail: { api, controller }) 이벤트를 받아 GridCrudManager를 그리드와 연결합니다.
-  // 이 이벤트는 ag_grid_controller.js 초기화 완료 코드가 발송합니다.
-  registerGrid(event) {
-    const { api, controller } = event.detail
-    this.gridController = controller
-
-    // 자식 클래스에서 구현된 구체적인 환경 설정을 상속/호출하여 Manager를 생성합니다.
-    const config = this.configureManager()
-    this.manager = new GridCrudManager(config)
-
-    // GridCrudManager에 실존하는 AG Grid의 조작 api를 위임하여 부착합니다.
-    this.manager.attach(api)
-  }
-
-  // Stimulus 생명주기 - 페이지 이탈(Turbo 내비게이션 포함) 또는 엘리먼트 제거 시 불려집니다.
-  // 메모리 누수를 방지하기 위해 생성했던 상태를 정리하고 이벤트/모듈 바인딩을 끊어냅니다.
   disconnect() {
+    // 다중 그리드 정리
+    this.#gridEvents.unbindAll()
+    this.#gridRegistry.forEach(({ manager }) => {
+      if (manager) manager.detach()
+    })
+    this.#gridRegistry.clear()
+
+    // 단일 그리드 정리
     if (this.manager) {
       this.manager.detach()
       this.manager = null
@@ -64,47 +61,125 @@ export default class BaseGridController extends Controller {
     this.gridController = null
   }
 
-  // [공통 액션] '행 추가' 버튼을 눌렀을 때 실행됩니다.
+  // ─── 그리드 등록 ───
+
+  registerGrid(event) {
+    const { api, controller } = event.detail
+
+    if (this.#expectedRoles) {
+      this.#registerMultiGrid(event, api, controller)
+    } else {
+      this.#registerSingleGrid(api, controller)
+    }
+  }
+
+  // ─── 서브 클래스 오버라이드 포인트 ───
+
+  // 다중 그리드 모드 시 역할-타겟 매핑 반환. null이면 단일 그리드 모드.
+  gridRoles() { return null }
+
+  // 단일 CRUD 그리드 설정. null 반환 시 Manager 생성 스킵 (읽기 전용 그리드).
+  configureManager() { return null }
+
+  // 다중 그리드 모드에서 모든 그리드 등록이 완료되었을 때 호출되는 훅.
+  onAllGridsReady() {}
+
+  // ─── 다중 그리드 접근 API ───
+
+  gridApi(name) {
+    return this.#gridRegistry.get(name)?.api || null
+  }
+
+  gridCtrl(name) {
+    return this.#gridRegistry.get(name)?.controller || null
+  }
+
+  selectedRows(name) {
+    const api = this.gridApi(name)
+    if (!isApiAlive(api)) return []
+    return api.getSelectedRows()
+  }
+
+  setRows(name, rows) {
+    const api = this.gridApi(name)
+    if (!isApiAlive(api)) return
+    setGridRowData(api, rows)
+  }
+
+  refreshGrid(name) {
+    const ctrl = this.gridCtrl(name)
+    if (ctrl?.refresh) ctrl.refresh()
+  }
+
+  // ─── POST 헬퍼 (배치 액션 패턴) ───
+
+  async postAction(url, body, { confirmMessage, onSuccess, onFail } = {}) {
+    if (confirmMessage && !confirm(confirmMessage)) return false
+
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": getCsrfToken()
+        },
+        body: JSON.stringify(body)
+      })
+
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        if (onSuccess) {
+          onSuccess(result)
+        } else {
+          alert(result.message || "처리가 완료되었습니다.")
+        }
+        return true
+      }
+
+      if (onFail) {
+        onFail(result)
+      } else {
+        alert(result.message || "처리에 실패했습니다.")
+      }
+      return false
+    } catch {
+      alert("요청 중 네트워크 오류가 발생했습니다.")
+      return false
+    }
+  }
+
+  // ─── 단일 그리드 CRUD 액션 (기존 호환) ───
+
   addRow() {
     if (!this.manager) return
-    // 자식 클래스(서브 컨트롤러)가 buildNewRowOverrides()를 구현했다면 호출하여 데이터 초기값을 설정 객체(overrides)로 만듭니다.
     const overrides = this.buildNewRowOverrides?.() || {}
     this.manager.addRow(overrides)
   }
 
-  // [공통 액션] '행 삭제' 버튼을 눌렀을 때 실행됩니다.
   deleteRows() {
     if (!this.manager) return
-    // 삭제 실행의 권한을 manager에게 위임함.
-    // 자식 클래스가 beforeDeleteRows 함수를 구현했다면 manager가 내부 검증 시점 때 호출할 수 있도록 콜백 바인딩을 넘깁니다.
     this.manager.deleteRows({
       beforeDelete: this.beforeDeleteRows?.bind(this)
     })
   }
 
-  // [공통 액션] '저장' 버튼을 눌렀을 때 실행되는 메인 저장 프로세스.
   async saveRows() {
     if (!this.manager) return
 
-    // 1. 현재 사용자(클라이언트측)가 편집 중이었던 셀을 강제로 종료시켜 입력 내용을 Cell 값으로 확정합니다.
     this.manager.stopEditing()
 
-    // 2. 관리 중인 트래커에서 변경분(신규 등록, 데이터 변경 수정, 삭제 표시 등)이 담긴 객체 리스트 연산
     const operations = this.manager.buildOperations()
     if (!hasChanges(operations)) {
-      alert("변경된 데이터가 없습니다.") // 생성되거나 수정된 이력이 전혀 없으면 불필요한 네트워크 송신 중단
+      alert("변경된 데이터가 없습니다.")
       return
     }
 
-    // 3. 변경사항이 담긴 operations 페이로드를 미리 약속한 엔드포인트(batchUrlValue)로 POST 백그라운드 전송
     const ok = await postJson(this.batchUrlValue, operations)
-    if (!ok) return // 오류 발생 등 정상 성공 전송이 아니면 중단
+    if (!ok) return
 
-    // 4. 저장 성공 알림 메시지 출력
     alert(this.saveMessage)
 
-    // 5. 성공 이후의 후처리 
-    // 기본적으로 그리드를 리로드하지만, 서브 클래스가 afterSaveSuccess() 콜백을 지니고 있다면 이를 우선합니다.
     if (this.afterSaveSuccess) {
       this.afterSaveSuccess()
     } else {
@@ -112,22 +187,80 @@ export default class BaseGridController extends Controller {
     }
   }
 
-  // 기본 후처리 액션: ag-grid 컨트롤러에 내정된 refresh 메서드를 다시 호출해 서버로부터 목록 데이터를 다시 갱신하여 받아옵니다.
   reloadRows() {
     if (this.gridController?.refresh) {
       this.gridController.refresh()
     }
   }
 
-  // --- 서브 클래스 계약 구조 (Interface 패턴 유사) ---
-
-  // [필수 구현 강제] 설정 없이 manager가 동작할 수 없으므로 무조건 재정의하여 설정 객체를 반환하도록 강제함.
-  configureManager() {
-    throw new Error("서브클래스에서 configureManager()를 구현해야 합니다.")
-  }
-
-  // [선택 구현] 알림 저장 메시지를 자유롭게 재정의할 수 있도록 getter 패턴 제공
   get saveMessage() {
     return "저장이 완료되었습니다."
+  }
+
+  // ─── Private ───
+
+  #gridRegistry
+  #gridEvents
+  #expectedRoles
+
+  #registerSingleGrid(api, controller) {
+    this.gridController = controller
+
+    const config = this.configureManager()
+    if (config) {
+      this.manager = new GridCrudManager(config)
+      this.manager.attach(api)
+    } else {
+      // Manager 없이 API만 보관 (읽기 전용 그리드)
+      this.manager = null
+      this._singleGridApi = api
+    }
+  }
+
+  #registerMultiGrid(event, api, controller) {
+    const gridElement = event.target?.closest?.("[data-controller='ag-grid']")
+    if (!gridElement) return
+
+    const matchedRole = this.#findRoleForElement(gridElement)
+    if (!matchedRole) return
+
+    // 기존 등록 정리
+    const existing = this.#gridRegistry.get(matchedRole)
+    if (existing?.manager) existing.manager.detach()
+
+    this.#gridRegistry.set(matchedRole, { api, controller, manager: null })
+
+    // 모든 그리드 등록 완료 체크
+    const roleNames = Object.keys(this.#expectedRoles)
+    if (roleNames.every((name) => this.#gridRegistry.has(name))) {
+      this.onAllGridsReady()
+    }
+  }
+
+  #findRoleForElement(gridElement) {
+    if (!this.#expectedRoles) return null
+
+    for (const [role, config] of Object.entries(this.#expectedRoles)) {
+      const targetName = config.target
+      // Stimulus target 속성으로 매칭: data-<controller>-target="targetName"
+      // gridElement 자체 또는 그 부모가 target일 수 있으므로 closest와 querySelector 모두 시도
+      const targetEl = this.#resolveTarget(targetName)
+      if (!targetEl) continue
+
+      if (targetEl === gridElement || targetEl.contains(gridElement)) {
+        return role
+      }
+    }
+    return null
+  }
+
+  #resolveTarget(targetName) {
+    // Stimulus targets 배열에서 해당 타겟 엘리먼트를 가져옴
+    const getter = `${targetName}Target`
+    const hasGetter = `has${targetName.charAt(0).toUpperCase() + targetName.slice(1)}Target`
+    if (this[hasGetter] && this[getter]) {
+      return this[getter]
+    }
+    return null
   }
 }

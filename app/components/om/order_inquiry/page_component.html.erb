@@ -28,7 +28,7 @@
             grid_id: "om-order-inquiry-master-grid",
             data: {
               om_order_inquiry_target: "masterGridContainer",
-              action: "ag-grid:ready->om-order-inquiry#initMasterGrid callback:onRowClicked->om-order-inquiry#onMasterRowClicked"
+              action: "ag-grid:ready->om-order-inquiry#registerGrid callback:onRowClicked->om-order-inquiry#onMasterRowClicked"
             }
           ) %>
         </div>
@@ -52,7 +52,7 @@
             grid_id: "om-order-inquiry-detail-grid",
             data: {
               om_order_inquiry_target: "detailGridContainer",
-              action: "ag-grid:ready->om-order-inquiry#initDetailGrid"
+              action: "ag-grid:ready->om-order-inquiry#registerGrid"
             }
           ) %>
         </div>
