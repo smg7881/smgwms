@@ -344,4 +344,24 @@ export default class extends Controller {
     const result = await response.json()
     return { response, result }
   }
+
+  // ─── Search Form 통합 연동 ───
+
+  /**
+   * 화면 내 search_form_controller 개체를 찾아 특정 필드의 값을 반환합니다.
+   * @param {string} fieldName 찾고자 하는 조건 필드명 (q 태그 제외, 예: 'workpl_cd')
+   * @param {Object} options 옵션 객체 { toUpperCase: true/false }
+   * @returns {string} 찾아낸 값
+   */
+  getSearchFormValue(fieldName, { toUpperCase = true } = {}) {
+    if (!this.application) return ""
+    const formEl = document.querySelector('[data-controller~="search-form"]')
+    if (!formEl) return ""
+
+    const formCtrl = this.application.getControllerForElementAndIdentifier(formEl, "search-form")
+    if (!formCtrl || typeof formCtrl.getSearchFieldValue !== "function") return ""
+
+    const val = String(formCtrl.getSearchFieldValue(`q[${fieldName}]`) || "").trim()
+    return toUpperCase ? val.toUpperCase() : val
+  }
 }

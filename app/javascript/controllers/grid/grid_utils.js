@@ -130,13 +130,6 @@ export function numberOrNull(value) {
   return numeric
 }
 
-// 검색 폼에서 q[fieldName] 입력값을 추출 (기본 대문자 변환)
-export function getSearchFieldValue(element, fieldName, { toUpperCase = true } = {}) {
-  const field = element.querySelector(`[name='q[${fieldName}]']`)
-  const raw = (field?.value ?? "").toString().trim()
-  return toUpperCase ? raw.toUpperCase() : raw
-}
-
 // 그리드 첫 번째 행에 포커스를 설정하고 해당 행 데이터를 반환
 export function focusFirstRow(api, { ensureVisible = false, select = false } = {}) {
   if (!isApiAlive(api)) return null

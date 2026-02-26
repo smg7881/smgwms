@@ -9,7 +9,7 @@ import BaseGridController from "controllers/base_grid_controller"
 import { showAlert, confirmAction } from "components/ui/alert"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
 import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
-import { isApiAlive, postJson, hasChanges, hideNoRowsOverlay, fetchJson, setManagerRowData, setGridRowData, getSearchFieldValue, refreshSelectionLabel, buildCompositeKey } from "controllers/grid/grid_utils"
+import { isApiAlive, postJson, hasChanges, hideNoRowsOverlay, fetchJson, setManagerRowData, setGridRowData, refreshSelectionLabel, buildCompositeKey } from "controllers/grid/grid_utils"
 
 export default class extends BaseGridController {
   static targets = ["areaGrid", "zoneGrid", "selectedAreaLabel"]
@@ -246,10 +246,10 @@ export default class extends BaseGridController {
 
   // 기타 조회조건 필드값 빼오기 유틸 체인
   zoneKeywordFromSearch() {
-    return getSearchFieldValue(this.element, "zone_cd", { toUpperCase: false })
+    return this.getSearchFormValue("zone_cd", { toUpperCase: false })
   }
 
   useYnFromSearch() {
-    return getSearchFieldValue(this.element, "use_yn")
+    return this.getSearchFormValue("use_yn")
   }
 }

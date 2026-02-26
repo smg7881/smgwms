@@ -9,7 +9,11 @@ class Std::BasePageComponent < ApplicationComponent
     def create_url = collection_path
     def update_url = member_path(":id")
     def delete_url = member_path(":id")
-    def grid_url = collection_path(format: :json, q: query_params["q"])
+    def grid_url
+      q_params = query_params["q"]
+      q_params = q_params.to_unsafe_h if q_params.respond_to?(:to_unsafe_h)
+      collection_path(format: :json, q: q_params)
+    end
 
     def common_code_options(code, include_all: false, all_label: "ALL", value_transform: nil)
       AdmCodeDetail.select_options_for(

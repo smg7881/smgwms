@@ -1,5 +1,4 @@
 import BaseCrudController from "controllers/base_crud_controller"
-import { getSearchFieldValue } from "controllers/grid/grid_utils"
 
 export default class extends BaseCrudController {
   static resourceName = "client_item_code"
@@ -133,7 +132,7 @@ export default class extends BaseCrudController {
   }
 
   selectedClientCodeFromSearch() {
-    getSearchFieldValue(this.element, "bzac_cd")
+    return this.getSearchFormValue("bzac_cd")
   }
 
   setFieldValue(fieldName, value) {

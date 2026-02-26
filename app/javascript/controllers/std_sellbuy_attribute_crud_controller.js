@@ -1,6 +1,5 @@
 ﻿import BaseCrudController from "controllers/base_crud_controller"
 import { showAlert, confirmAction } from "components/ui/alert"
-import { getSearchFieldValue } from "controllers/grid/grid_utils"
 
 export default class extends BaseCrudController {
   static resourceName = "sellbuy_attribute"
@@ -112,7 +111,7 @@ export default class extends BaseCrudController {
   }
 
   selectedCorpCodeFromSearch() {
-    getSearchFieldValue(this.element, "corp_cd")
+    return this.getSearchFormValue("corp_cd")
   }
 
   handlePopupSelected = (event) => {

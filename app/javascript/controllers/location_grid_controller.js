@@ -10,7 +10,7 @@
  */
 import BaseGridController from "controllers/base_grid_controller"
 import { showAlert, confirmAction } from "components/ui/alert"
-import { fetchJson, setSelectOptions as setSelectOptionsUtil, clearSelectOptions, getSearchFieldValue } from "controllers/grid/grid_utils"
+import { fetchJson, setSelectOptions as setSelectOptionsUtil, clearSelectOptions } from "controllers/grid/grid_utils"
 
 export default class extends BaseGridController {
   static values = {
@@ -94,9 +94,9 @@ export default class extends BaseGridController {
     if (!this.manager?.api) return
 
     // 현재 상단 검색폼에 유저가 걸어둔 필터값 획득
-    const workplCd = this.selectedWorkplaceCode()
-    const areaCd = this.selectedAreaCode()
-    const zoneCd = this.selectedZoneCode()
+    const workplCd = this.workplKeywordFromSearch()
+    const areaCd = this.areaKeywordFromSearch()
+    const zoneCd = this.zoneKeywordFromSearch()
 
     // 최말단인 Loc(셀 단위)을 만드려면 상위계층 3가지가 미리 지정되어야 함 (복합 PK 방지)
     if (!workplCd || !areaCd || !zoneCd) {
@@ -182,9 +182,9 @@ export default class extends BaseGridController {
 
   // 현재 브라우저의 Select 값 조합을 분석해 필요한 옵션들을 병렬 세팅함
   async hydrateDependentSelects() {
-    const workplCd = this.selectedWorkplaceCode()
-    const areaCd = this.selectedAreaCode()
-    const zoneCd = this.selectedZoneCode()
+    const workplCd = this.workplKeywordFromSearch()
+    const areaCd = this.areaKeywordFromSearch()
+    const zoneCd = this.zoneKeywordFromSearch()
 
     if (!workplCd) {
       // 1뎁스 미달입 시 2/3뎁스 먹통화
@@ -195,8 +195,8 @@ export default class extends BaseGridController {
 
     await this.loadAreaOptions(workplCd, areaCd)
 
-    if (this.selectedAreaCode()) {
-      await this.loadZoneOptions(workplCd, this.selectedAreaCode(), zoneCd)
+    if (this.areaKeywordFromSearch()) {
+      await this.loadZoneOptions(workplCd, this.areaKeywordFromSearch(), zoneCd)
     } else {
       clearSelectOptions(this.zoneField)
     }
@@ -204,7 +204,7 @@ export default class extends BaseGridController {
 
   // 작업장 콤보 변동 핸들러: 하위항목 두 가지 싹슬이 및 Area 재조회
   async handleWorkplaceChange() {
-    const workplCd = this.selectedWorkplaceCode()
+    const workplCd = this.workplKeywordFromSearch()
     clearSelectOptions(this.areaField)
     clearSelectOptions(this.zoneField)
     if (!workplCd) return
@@ -214,8 +214,8 @@ export default class extends BaseGridController {
 
   // Area 콤보 변동 핸들러: 최하위 싹슬이 및 Zone 재조회
   async handleAreaChange() {
-    const workplCd = this.selectedWorkplaceCode()
-    const areaCd = this.selectedAreaCode()
+    const workplCd = this.workplKeywordFromSearch()
+    const areaCd = this.areaKeywordFromSearch()
     clearSelectOptions(this.zoneField)
     if (!workplCd || !areaCd) return
 
@@ -273,16 +273,16 @@ export default class extends BaseGridController {
   }
 
   // Value getter 헬퍼 삼자
-  selectedWorkplaceCode() {
-    return getSearchFieldValue(this.element, "workpl_cd")
+  workplKeywordFromSearch() {
+    return this.getSearchFormValue("workpl_cd")
   }
 
-  selectedAreaCode() {
-    return getSearchFieldValue(this.element, "area_cd")
+  areaKeywordFromSearch() {
+    return this.getSearchFormValue("area_cd")
   }
 
-  selectedZoneCode() {
-    return getSearchFieldValue(this.element, "zone_cd")
+  zoneKeywordFromSearch() {
+    return this.getSearchFormValue("zone_cd")
   }
 
 }

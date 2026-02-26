@@ -1,6 +1,7 @@
 ﻿import BaseGridController from "controllers/base_grid_controller"
 import { showAlert, confirmAction } from "components/ui/alert"
-import { getCsrfToken, getSearchFieldValue } from "controllers/grid/grid_utils"
+import { getCsrfToken } from "controllers/grid/grid_utils"
+import GridCrudManager from "controllers/grid/grid_crud_manager"
 
 export default class extends BaseGridController {
   static values = {
@@ -47,15 +48,15 @@ export default class extends BaseGridController {
 
   buildNewRowOverrides() {
     return {
-      ctry_cd: this.currentCountryCode,
+      ctry_cd: this.ctryCodeFromSearch(),
       ymd: this.defaultYmd
     }
   }
 
   async generateWeekends() {
-    const ctryCd = this.currentCountryCode
-    const year = this.currentYear
-    const month = this.currentMonth
+    const ctryCd = this.ctryCodeFromSearch()
+    const year = this.yearFromSearch()
+    const month = this.monthFromSearch()
 
     if (!ctryCd || !year || !month) {
       showAlert("국가코드/년도/월을 입력해주세요.")
@@ -92,24 +93,25 @@ export default class extends BaseGridController {
     return "공휴일 데이터가 저장되었습니다."
   }
 
-  get currentCountryCode() {
-    return getSearchFieldValue(this.element, "ctry_cd")
+  // 조회조건 추출 헬퍼
+  ctryCodeFromSearch() {
+    return this.getSearchFormValue("ctry_cd")
   }
 
-  get currentYear() {
-    return getSearchFieldValue(this.element, "year", { toUpperCase: false })
+  yearFromSearch() {
+    return this.getSearchFormValue("year", { toUpperCase: false })
   }
 
-  get currentMonth() {
-    return getSearchFieldValue(this.element, "month", { toUpperCase: false })
+  monthFromSearch() {
+    return this.getSearchFormValue("month", { toUpperCase: false })
   }
 
   get defaultYmd() {
-    if (!this.currentYear || !this.currentMonth) {
+    if (!this.yearFromSearch() || !this.monthFromSearch()) {
       return ""
     }
 
     const normalizedMonth = this.currentMonth.padStart(2, "0")
-    return `${this.currentYear}-${normalizedMonth}-01`
+    return `${this.currentYear} -${normalizedMonth}-01`
   }
 }

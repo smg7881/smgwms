@@ -8,7 +8,9 @@ class System::UserMenuRole::PageComponent < System::BasePageComponent
     end
 
     def users_grid_url
-      helpers.users_system_user_menu_role_index_path(format: :json, q: query_params["q"])
+      q_params = query_params["q"]
+      q_params = q_params.to_unsafe_h if q_params.respond_to?(:to_unsafe_h)
+      helpers.users_system_user_menu_role_index_path(format: :json, q: q_params)
     end
 
     def roles_by_user_url

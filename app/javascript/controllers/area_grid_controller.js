@@ -8,7 +8,7 @@
  */
 import BaseGridController from "controllers/base_grid_controller"
 import { showAlert, confirmAction } from "components/ui/alert"
-import { getSearchFieldValue, resolveNameFromMap } from "controllers/grid/grid_utils"
+import { resolveNameFromMap } from "controllers/grid/grid_utils"
 
 export default class extends BaseGridController {
   static values = {
@@ -93,7 +93,7 @@ export default class extends BaseGridController {
 
   // 보조 헬퍼: HTML DOM 트리를 직접 뒤져서 <input name="q[workpl_cd]"> 등의 값을 빼냄
   selectedWorkplaceCodeFromSearch() {
-    return getSearchFieldValue(this.element, "workpl_cd")
+    return this.getSearchFormValue("workpl_cd")
   }
 
   // 성공 시 사용자에게 노출될 토스트/얼럿 텍스트

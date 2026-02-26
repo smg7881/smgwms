@@ -1,5 +1,4 @@
 import BaseGridController from "controllers/base_grid_controller"
-import { getSearchFieldValue } from "controllers/grid/grid_utils"
 
 export default class extends BaseGridController {
   configureManager() {
@@ -44,8 +43,8 @@ export default class extends BaseGridController {
   }
 
   buildNewRowOverrides() {
-    const setupUnit = getSearchFieldValue(this.element, "setup_unit_cd")
-    const customerCode = getSearchFieldValue(this.element, "cust_cd")
+    const setupUnit = this.getSearchFormValue("setup_unit_cd")
+    const customerCode = this.getSearchFormValue("cust_cd")
 
     if (setupUnit === "CUSTOMER") {
       return {

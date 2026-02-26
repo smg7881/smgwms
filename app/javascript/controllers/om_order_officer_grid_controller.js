@@ -1,5 +1,6 @@
 import BaseGridController from "controllers/base_grid_controller"
-import { getCsrfToken, getSearchFieldValue } from "controllers/grid/grid_utils"
+import { getCsrfToken } from "controllers/grid/grid_utils"
+import { showAlert, confirmAction } from "components/ui/alert"
 
 export default class extends BaseGridController {
   configureManager() {
@@ -51,9 +52,9 @@ export default class extends BaseGridController {
   }
 
   buildNewRowOverrides() {
-    const deptCode = getSearchFieldValue(this.element, "dept_cd")
-    const custCode = getSearchFieldValue(this.element, "cust_cd")
-    const expImpDomSctnCd = getSearchFieldValue(this.element, "exp_imp_dom_sctn_cd") || "DOMESTIC"
+    const deptCode = this.getSearchFormValue("dept_cd")
+    const custCode = this.getSearchFormValue("cust_cd")
+    const expImpDomSctnCd = this.getSearchFormValue("exp_imp_dom_sctn_cd") || "DOMESTIC"
 
     return {
       ord_chrg_dept_cd: deptCode,

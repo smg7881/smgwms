@@ -25,7 +25,11 @@ class System::BasePageComponent < ApplicationComponent
 
     # 그리드(Grid) 데이터를 가져오기 위한 URL을 반환합니다.
     # JSON 형식을 요청하며, 현재 검색 조건(q)을 포함시킵니다.
-    def grid_url   = collection_path(format: :json, q: query_params["q"])
+    def grid_url
+      q_params = query_params["q"]
+      q_params = q_params.to_unsafe_h if q_params.respond_to?(:to_unsafe_h)
+      collection_path(format: :json, q: q_params)
+    end
 
     def common_code_options(code, include_all: false, all_label: "전체", value_transform: nil)
       AdmCodeDetail.select_options_for(

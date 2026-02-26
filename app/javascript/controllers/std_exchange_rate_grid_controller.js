@@ -1,6 +1,5 @@
 ﻿import BaseGridController from "controllers/base_grid_controller"
 import { showAlert, confirmAction } from "components/ui/alert"
-import { getSearchFieldValue } from "controllers/grid/grid_utils"
 
 export default class extends BaseGridController {
   configureManager() {
@@ -60,27 +59,28 @@ export default class extends BaseGridController {
 
   buildNewRowOverrides() {
     return {
-      ctry_cd: this.currentCountryCode || "KR",
-      fnc_or_cd: this.currentFinancialOrg,
-      std_ymd: this.currentStandardDate || this.yesterdayDate,
-      anno_dgrcnt: this.currentAnnouncementDegree || "FIRST"
+      ctry_cd: this.ctryCodeFromSearch() || "KR",
+      fnc_or_cd: this.fncOrCdFromSearch(),
+      std_ymd: this.stdYmdFromSearch() || this.yesterdayDate,
+      anno_dgrcnt: this.annoDgrcntFromSearch() || "FIRST"
     }
   }
 
-  get currentCountryCode() {
-    return getSearchFieldValue(this.element, "ctry_cd")
+  // 조회조건 추출 헬퍼
+  ctryCodeFromSearch() {
+    return this.getSearchFormValue("ctry_cd")
   }
 
-  get currentFinancialOrg() {
-    return getSearchFieldValue(this.element, "fnc_or_cd")
+  fncOrCdFromSearch() {
+    return this.getSearchFormValue("fnc_or_cd")
   }
 
-  get currentAnnouncementDegree() {
-    return getSearchFieldValue(this.element, "anno_dgrcnt")
+  annoDgrcntFromSearch() {
+    return this.getSearchFormValue("anno_dgrcnt")
   }
 
-  get currentStandardDate() {
-    return getSearchFieldValue(this.element, "std_ymd", { toUpperCase: false })
+  stdYmdFromSearch() {
+    return this.getSearchFormValue("std_ymd", { toUpperCase: false })
   }
 
   get yesterdayDate() {

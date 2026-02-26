@@ -56,16 +56,15 @@ export default class extends Controller {
 
   // 조회 버튼 Submit 요청
   search(event) {
-    event.preventDefault()
-
-    // HTML5 네이티브 validation 통과하지 못하면 브라우저 말풍선 팝업 호출 후 거절
+    // HTML5 네이티브 validation 통과하지 못하면 브라우저 말풍선 팝업 호출 후 폼 서밋 취소
     if (!this.formTarget.checkValidity()) {
+      event.preventDefault()
       this.formTarget.reportValidity()
       return
     }
 
-    // 문제 없으면 백그라운드로 폼 서밋 요청
-    this.formTarget.requestSubmit()
+    // 문제 없으면 event.preventDefault()를 굳이 호출하지 않습니다.
+    // 브라우저 또는 Turbo가 이벤트를 catch하여 정상 서밋하도록 둡니다.
   }
 
   // 초기화 버튼 클릭
@@ -196,5 +195,104 @@ export default class extends Controller {
         `<i data-lucide="${iconName}" class="w-4 h-4"></i>`
       createIcons({ icons, nodes: [this.collapseBtnIconTarget] })
     }
+  }
+
+  /**
+   * 폼 내 HTML DOM을 검색하여 특정 필드(fieldName)의 값을 반환하는 공통 함수
+   * (input, select, radio, 달력, 팝업 등 지원)
+   * @param {string} fieldName 찾고자 하는 필드의 name 속성 (예: 'q[workpl_cd]')
+   * @returns {any} 필드의 값
+   */
+  getSearchFieldValue(fieldName) {
+    if (!this.hasFormTarget) return null
+
+    const elements = this.formTarget.querySelectorAll(`[name="${fieldName}"]`)
+    if (elements.length === 0) return null
+
+    // 라디오 버튼 처리
+    if (elements[0].type === "radio") {
+      const checkedRadio = Array.from(elements).find(el => el.checked)
+      return checkedRadio ? checkedRadio.value : null
+    }
+
+    // 체크박스 처리 (Rails의 hidden 우선 생성 패턴 대비, 실제 checkbox 요소만 추출)
+    const checkboxes = Array.from(elements).filter(el => el.type === "checkbox")
+    if (checkboxes.length > 0) {
+      const checked = checkboxes.filter(el => el.checked)
+      if (checkboxes.length === 1) {
+        return checked.length > 0 ? checked[0].value : null
+      }
+      return checked.map(el => el.value)
+    }
+
+    // 다중 선택 Select 처리
+    if (elements[0].tagName === "SELECT" && elements[0].multiple) {
+      return Array.from(elements[0].selectedOptions).map(opt => opt.value)
+    }
+
+    // 일반 input (text, hidden, number 등), select(single), textarea 등
+    // (동일 이름이 중복된 경우, 화면 구조상 주로 맨 뒤의 요소가 유효값을 담고 있으므로 마지막 요소를 선택)
+    return elements[elements.length - 1].value
+  }
+
+  /**
+   * 특정 필드(fieldName)에 값을 세팅하는 공통 함수
+   * @param {string} fieldName 세팅하고자 하는 필드의 name 속성
+   * @param {any} value 세팅할 값
+   */
+  setSearchFieldValue(fieldName, value) {
+    if (!this.hasFormTarget) return
+
+    const elements = this.formTarget.querySelectorAll(`[name="${fieldName}"]`)
+    if (elements.length === 0) return
+
+    // 라디오 버튼 값 지정
+    if (elements[0].type === "radio") {
+      let isSet = false
+      elements.forEach(el => {
+        if (el.value === String(value)) {
+          el.checked = true
+          isSet = true
+        } else {
+          el.checked = false
+        }
+      })
+      if (isSet) elements[0].dispatchEvent(new Event("change", { bubbles: true }))
+      return
+    }
+
+    // 체크박스 값 지정
+    const checkboxes = Array.from(elements).filter(el => el.type === "checkbox")
+    if (checkboxes.length > 0) {
+      if (Array.isArray(value)) {
+        checkboxes.forEach(el => {
+          el.checked = value.includes(el.value)
+        })
+      } else {
+        checkboxes.forEach(el => {
+          el.checked = (value === true || el.value === String(value))
+        })
+      }
+      checkboxes[0].dispatchEvent(new Event("change", { bubbles: true }))
+      return
+    }
+
+    // 입력 필드(text, hidden), 달력 등 실제 값 세팅 요소
+    const targetEl = elements[elements.length - 1]
+
+    // 다중 선택 Select 처리
+    if (targetEl.tagName === "SELECT" && targetEl.multiple) {
+      const valArray = Array.isArray(value) ? value : [String(value)]
+      Array.from(targetEl.options).forEach(opt => {
+        opt.selected = valArray.includes(opt.value)
+      })
+    } else {
+      // 일반 단일 입력/선택 값 지정
+      targetEl.value = value
+    }
+
+    // 변경된 값을 UI나 그리드 등 외부에서 알 수 있도록 이벤트 트리거 발생
+    targetEl.dispatchEvent(new Event("input", { bubbles: true }))
+    targetEl.dispatchEvent(new Event("change", { bubbles: true }))
   }
 }

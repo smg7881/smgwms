@@ -2,7 +2,7 @@
 import { showAlert, confirmAction } from "components/ui/alert"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
 import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
-import { isApiAlive, postJson, hasChanges, fetchJson, setManagerRowData, focusFirstRow, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel, setSelectOptions as setSelectOptionsUtil, getSearchFieldValue } from "controllers/grid/grid_utils"
+import { isApiAlive, postJson, hasChanges, fetchJson, setManagerRowData, focusFirstRow, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel, setSelectOptions as setSelectOptionsUtil } from "controllers/grid/grid_utils"
 
 const CODE_FIELDS = [
   "bzac_cd",
@@ -761,8 +761,8 @@ export default class extends BaseGridController {
   }
 
   bindSearchFields() {
-    this.groupField = getSearchFieldValue(this.element, "bzac_sctn_grp_cd")
-    this.sectionField = getSearchFieldValue(this.element, "bzac_sctn_cd")
+    this.groupField = this.getSearchFormValue("bzac_sctn_grp_cd")
+    this.sectionField = this.getSearchFormValue("bzac_sctn_cd")
 
     if (this.groupField) {
       this._onGroupChange = () => this.handleGroupChange()
@@ -816,13 +816,13 @@ export default class extends BaseGridController {
   }
 
   async hydrateSectionSelect() {
-    const groupCode = this.selectedGroupCode()
-    const selectedSectionCode = this.selectedSectionCode()
+    const groupCode = this.groupKeywordFromSearch()
+    const selectedSectionCode = this.sectionKeywordFromSearch()
     await this.loadSectionOptions(groupCode, selectedSectionCode)
   }
 
   async handleGroupChange() {
-    const groupCode = this.selectedGroupCode()
+    const groupCode = this.groupKeywordFromSearch()
     await this.loadSectionOptions(groupCode, "")
   }
 
@@ -843,12 +843,12 @@ export default class extends BaseGridController {
     }
   }
 
-  selectedGroupCode() {
-    return getSearchFieldValue(this.element, "bzac_sctn_grp_cd")
+  groupKeywordFromSearch() {
+    return this.getSearchFormValue("bzac_sctn_grp_cd")
   }
 
-  selectedSectionCode() {
-    return getSearchFieldValue(this.element, "bzac_sctn_cd")
+  sectionKeywordFromSearch() {
+    return this.getSearchFormValue("bzac_sctn_cd")
   }
 
 

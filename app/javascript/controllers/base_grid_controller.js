@@ -83,7 +83,7 @@ export default class BaseGridController extends Controller {
   configureManager() { return null }
 
   // 다중 그리드 모드에서 모든 그리드 등록이 완료되었을 때 호출되는 훅.
-  onAllGridsReady() {}
+  onAllGridsReady() { }
 
   // ─── 다중 그리드 접근 API ───
 
@@ -263,5 +263,25 @@ export default class BaseGridController extends Controller {
       return this[getter]
     }
     return null
+  }
+
+  // ─── Search Form 통합 연동 ───
+
+  /**
+   * 화면 내 search_form_controller 개체를 찾아 특정 필드의 값을 반환합니다.
+   * @param {string} fieldName 찾고자 하는 조건 필드명 (q 태그 제외, 예: 'workpl_cd')
+   * @param {Object} options 옵션 객체 { toUpperCase: true/false }
+   * @returns {string} 찾아낸 값
+   */
+  getSearchFormValue(fieldName, { toUpperCase = true } = {}) {
+    if (!this.application) return ""
+    const formEl = document.querySelector('[data-controller~="search-form"]')
+    if (!formEl) return ""
+
+    const formCtrl = this.application.getControllerForElementAndIdentifier(formEl, "search-form")
+    if (!formCtrl || typeof formCtrl.getSearchFieldValue !== "function") return ""
+
+    const val = String(formCtrl.getSearchFieldValue(`q[${fieldName}]`) || "").trim()
+    return toUpperCase ? val.toUpperCase() : val
   }
 }
