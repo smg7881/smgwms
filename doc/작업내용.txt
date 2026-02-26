@@ -320,8 +320,8 @@ D:\_LOGIS\2.오더\pdf\LogisT-OM-DS02(화면설계서-V1.0)-오더조회.pdf
 6. 메뉴 와 사용자별 메뉴권한도 생성을 해주세요
 
 
-D:\_LOGIS\4.보관\pdf\LogisT-WM-AN13(화면정의서-V1.0)-고객재고속성관리.pdf
-D:\_LOGIS\4.보관\pdf\LogisT-WM-DS02(화면설계서-V1.0)-고객재고속성관리.pdf
+D:\_LOGIS\4.보관\pdf\LogisT-WM-AN13(화면정의서-V1.0)-입고관리.pdf
+D:\_LOGIS\4.보관\pdf\LogisT-WM-DS02(화면설계서-V1.0)-입고관리.pdf
 파일을 읽어서 PRD을 작성후 개발을 해주세요
 1. 이 파일들을 묶어서 분석하여 D:\myProject\smgWms\doc\wm\ 폴더 안에 개발할수 있도록 상세하게
    PRD을 아래과 같이 작성해주세요
@@ -332,9 +332,7 @@ D:\_LOGIS\4.보관\pdf\LogisT-WM-DS02(화면설계서-V1.0)-고객재고속성�
   - 공통코드가 이미 전부 등록이 되었습니다.하드코드 하지 말고 공통코드 master 코드을 세팅해주세요  , 공통코드는 숫자로 되어 있습니다.
   - 생성하는 소스는 wm 만든 후에 생성해주세요 
 2. D:\myProject\smgWms\doc\wm\ 이 폴더 안에 md 파일로 만들어주세요
-3. screen-development-patterns 스킬을 사용 하여 개발 해주세요/ 그리고 필요시 rails-expert , hotwire-patterns , frontend-design , web-design-guidelin 사용하여 개발해주세요
+3. screen-development-patterns 스킬을 사용 하여 개발 해주세요
 4. D:\myProject\smgWms\doc\frontend\STIMULUS_COMPONENTS_GUIDE.md 이 파일일 개발시 참조해주세요
-5. 테스트 시나리오을 작성 후에 개발을 해주세요
 5. 완료시 PRD 파일명에 완료을 추가해주세요
 6. WMS 하위에 메뉴 와 사용자별 메뉴권한도 생성을 해주세요
-7. 개발이 완료 후 테스트 해주세요
