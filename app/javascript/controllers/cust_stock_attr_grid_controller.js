@@ -43,20 +43,17 @@ export default class extends BaseGridController {
 
     addRow(event) {
         if (event) event.preventDefault()
-
-        // 검색 조건 폼에서 입력된 고객 코드 가져오기
-        const custCd = this.getSearchFormValue("cust_cd")
-        const custNm = this.getSearchFormValue("cust_nm")
-
-        if (!custCd) {
+        if (!this.getSearchFormValue("cust_cd")) {
             showAlert("검색조건에서 먼저 고객을 선택해주세요.")
             return
         }
+        super.addRow()
+    }
 
-        // GridCrudManager의 addRow() 메서드에 overrides 객체를 넘겨주면 됩니다.
-        this.manager.addRow({
-            cust_cd: custCd,
-            cust_nm: custNm
-        })
+    buildNewRowOverrides() {
+        return {
+            cust_cd: this.getSearchFormValue("cust_cd"),
+            cust_nm: this.getSearchFormValue("cust_nm")
+        }
     }
 }

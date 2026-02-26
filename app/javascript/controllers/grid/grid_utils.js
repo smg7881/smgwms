@@ -43,7 +43,7 @@ export async function postJson(url, body) {
       return false
     }
 
-    return true
+    return result
   } catch {
     showAlert("저장 실패: 네트워크 오류")
     return false

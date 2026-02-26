@@ -1,6 +1,6 @@
 ﻿import { Controller } from "@hotwired/stimulus"
 import { showAlert, confirmAction } from "components/ui/alert"
-import { isApiAlive, getCsrfToken, fetchJson, setGridRowData, buildCompositeKey, registerGridInstance } from "controllers/grid/grid_utils"
+import { isApiAlive, postJson, fetchJson, setGridRowData, buildCompositeKey, registerGridInstance } from "controllers/grid/grid_utils"
 
 export default class extends Controller {
   static targets = [
@@ -200,31 +200,15 @@ export default class extends Controller {
       sort_seq: index + 1
     }))
 
-    try {
-      const response = await fetch(this.saveUrlValue, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": getCsrfToken()
-        },
-        body: JSON.stringify({
-          corp_cd: this.currentCorpCode,
-          regn_cd: this.currentRegionCode,
-          rows: rows
-        })
-      })
+    const result = await postJson(this.saveUrlValue, {
+      corp_cd: this.currentCorpCode,
+      regn_cd: this.currentRegionCode,
+      rows: rows
+    })
+    if (!result) return
 
-      const result = await response.json()
-      if (!response.ok || !result.success) {
-        showAlert("저장 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
-        return
-      }
-
-      showAlert(result.message || "저장이 완료되었습니다.")
-      await Promise.all([this.searchMapped(), this.searchUnmapped()])
-    } catch {
-      showAlert("저장 실패: 네트워크 오류")
-    }
+    showAlert(result.message || "저장이 완료되었습니다.")
+    await Promise.all([this.searchMapped(), this.searchUnmapped()])
   }
 
   render() {

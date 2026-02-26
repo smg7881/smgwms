@@ -155,7 +155,8 @@ export default class BaseGridController extends Controller {
   addRow() {
     if (!this.manager) return
     const overrides = this.buildNewRowOverrides?.() || {}
-    this.manager.addRow(overrides)
+    const config = this.buildAddRowConfig?.() || {}
+    this.manager.addRow(overrides, config)
   }
 
   deleteRows() {

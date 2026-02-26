@@ -9,7 +9,7 @@
 import BaseGridController from "controllers/base_grid_controller"
 import { showAlert, confirmAction } from "components/ui/alert"
 import { resolveAgGridRegistration } from "controllers/grid/grid_event_manager"
-import { isApiAlive, getCsrfToken, fetchJson, setGridRowData, registerGridInstance } from "controllers/grid/grid_utils"
+import { isApiAlive, postJson, fetchJson, setGridRowData, registerGridInstance } from "controllers/grid/grid_utils"
 
 export default class extends BaseGridController {
   static targets = [
@@ -175,30 +175,14 @@ export default class extends BaseGridController {
     // ※ 백엔드에서는 기존 권한과 상관없이, 여기에 주어진 배열을 해당 Role의 '100% 최신' 상태로 간주(Snapshot)하고 전부 갈아끼우는 트랜잭션을 하거나 비교병합을 칠것임.
     const userIds = this.rightAllUsers.map((user) => user.user_id_code).filter((id) => id)
 
-    try {
-      const response = await fetch(this.saveUrlValue, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": getCsrfToken()
-        },
-        body: JSON.stringify({
-          role_cd: roleCd,
-          user_ids: userIds // 배열 채로 전송
-        })
-      })
+    const result = await postJson(this.saveUrlValue, {
+      role_cd: roleCd,
+      user_ids: userIds // 배열 채로 전송
+    })
+    if (!result) return
 
-      const result = await response.json()
-      if (!response.ok || !result.success) {
-        showAlert("저장 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
-        return
-      }
-
-      showAlert(result.message || "저장되었습니다.")
-      this.loadUsers() // 성공 시 서버 최신화를 위해 재조회
-    } catch {
-      showAlert("저장 실패: 네트워크 오류")
-    }
+    showAlert(result.message || "저장되었습니다.")
+    this.loadUsers() // 성공 시 서버 최신화를 위해 재조회
   }
 
   // 좌우 통합 렌더링 트리거 함수

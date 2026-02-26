@@ -45,14 +45,23 @@ export default class extends BaseGridController {
   }
 
   // "행 추가" 버튼 오버라이드: 호출 시점마다 검색 폼의 작업장 코드를 동적으로 읽어 주입
-  addRow() {
-    const workplCd = this.selectedWorkplaceCodeFromSearch()
-    const startCol = workplCd ? "area_cd" : "workpl_cd"
-    this.manager.addRow(
-      { workpl_cd: workplCd, workpl_nm: this.resolveWorkplaceName(workplCd) },
-      { startCol }
-    )
+  //addRow() {
+  //  const workplCd = this.selectedWorkplaceCodeFromSearch()
+  //  const startCol = workplCd ? "area_cd" : "workpl_cd"
+  //  this.manager.addRow(
+  //    { workpl_cd: workplCd, workpl_nm: this.resolveWorkplaceName(workplCd) },
+  //    { startCol }
+  // )
+  // }
+
+  buildNewRowOverrides() {
+    return {
+      workpl_cd: this.selectedWorkplaceCodeFromSearch(),
+      workpl_nm: this.resolveWorkplaceName(this.selectedWorkplaceCodeFromSearch())
+    }
   }
+
+
 
   // 사용자가 엑셀 붙여넣기나 타이핑으로 그리드 셀(Cell)의 '작업장코드'를 변경 시 트리거됨
   syncWorkplaceName(event) {

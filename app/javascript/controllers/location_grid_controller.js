@@ -94,7 +94,6 @@ export default class extends BaseGridController {
   addRow() {
     if (!this.manager?.api) return
 
-    // 현재 상단 검색폼에 유저가 걸어둔 필터값 획득
     const workplCd = this.workplKeywordFromSearch()
     const areaCd = this.areaKeywordFromSearch()
     const zoneCd = this.zoneKeywordFromSearch()
@@ -105,8 +104,19 @@ export default class extends BaseGridController {
       return
     }
 
-    // 조건 부합시 그리드 맨윗줄에 프리패스 복합키 탑재된 객체 랜딩
-    this.manager.addRow({ workpl_cd: workplCd, area_cd: areaCd, zone_cd: zoneCd }, { startCol: "loc_cd" })
+    super.addRow()
+  }
+
+  buildNewRowOverrides() {
+    return {
+      workpl_cd: this.workplKeywordFromSearch(),
+      area_cd: this.areaKeywordFromSearch(),
+      zone_cd: this.zoneKeywordFromSearch()
+    }
+  }
+
+  buildAddRowConfig() {
+    return { startCol: "loc_cd" }
   }
 
   // Base Controller에서 구현되었던 '삭제 전 검사(Hook)' 실행
