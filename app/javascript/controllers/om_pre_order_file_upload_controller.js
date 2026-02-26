@@ -1,5 +1,6 @@
 ﻿import { Controller } from "@hotwired/stimulus"
 import { showAlert, confirmAction } from "components/ui/alert"
+import { registerGridInstance } from "controllers/grid/grid_utils"
 
 export default class extends Controller {
   static targets = ["grid", "summary", "uploadFileInput"]
@@ -18,10 +19,9 @@ export default class extends Controller {
   }
 
   registerGrid(event) {
-    if (!this.hasGridTarget) return
-    if (event.target !== this.gridTarget) return
-
-    this.gridController = event.detail.controller
+    registerGridInstance(event, this, [
+      { target: this.hasGridTarget ? this.gridTarget : null, controllerKey: "gridController" }
+    ])
   }
 
   preview(event) {

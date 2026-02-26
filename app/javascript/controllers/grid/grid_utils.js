@@ -6,6 +6,8 @@
  */
 
 import { showAlert } from "components/ui/alert"
+import { resolveAgGridRegistration } from "controllers/grid/grid_event_manager"
+import GridCrudManager from "controllers/grid/grid_crud_manager"
 
 
 export function isApiAlive(api) {
@@ -225,4 +227,84 @@ export function resolveNameFromMap(map, code) {
 // 여러 필드 값을 구분자로 결합하여 복합 키 문자열 생성
 export function buildCompositeKey(fields, separator = "::") {
   return fields.join(separator)
+}
+
+/**
+ * registerGridInstance
+ * 
+ * 여러 모듈에 흩어진 `registerGrid(event)` 중복 로직을 제거하기 위한 공통 함수.
+ * grid_crud_manager 와 ag-grid api 들을 연결하고 모두 등록되었을 때 onAllReady 콜백을 실행한다.
+ * 
+ * @param {Event} event - ag-grid:ready 커스텀 이벤트 객체
+ * @param {Object} context - Stimulus Controller (this)
+ * @param {Array} configs - 각 그리드별 설정 배열.
+ *        [
+ *          { 
+ *            target: DOMElement (e.g. this.masterGridTarget), 
+ *            isMaster: boolean, // 마스터의 경우 super.registerGrid(event) 등 자체 처리 함수 위임용
+ *            setup: function(event) // isMaster 일 때 수행할 콜백
+ *          },
+ *          {
+ *            target: DOMElement (e.g. this.detailGridTarget),
+ *            controllerKey: string (e.g. "detailGridController"),
+ *            managerKey: string (e.g. "detailManager"),
+ *            configMethod: string (e.g. "configureDetailManager") - context 내의 GridCrudManager 설정 반환 메서드 이름
+ *          }
+ *        ]
+ * @param {Function} onAllReady - 지정한 모든 그리드의 api가 준비되었을 때 1회 실행되는 콜백
+ */
+export function registerGridInstance(event, context, configs, onAllReady) {
+  const registration = resolveAgGridRegistration(event)
+  if (!registration) return
+
+  const { gridElement, api, controller } = registration
+
+  for (const config of configs) {
+    if (!config.target || gridElement !== config.target) continue
+
+    if (config.isMaster && typeof config.setup === "function") {
+      config.setup(event)
+    } else {
+      const { controllerKey, managerKey, configMethod } = config
+      if (typeof context[managerKey] !== "undefined" && context[managerKey]) {
+        context[managerKey].detach()
+      }
+
+      if (controllerKey) {
+        context[controllerKey] = controller
+      }
+
+      if (managerKey && configMethod && typeof context[configMethod] === "function") {
+        context[managerKey] = new GridCrudManager(context[configMethod]())
+        context[managerKey].attach(api)
+      }
+    }
+    // 루프 내에서 처리된 대상이 있다면 멈춤
+    break
+  }
+
+  // 모든 그리드 API가 확보(할당)되었는지 확인
+  let allManagersReady = true
+  for (const config of configs) {
+    // 마스터인 경우 context.manager.api, 서브인 경우 context[managerKey].api 가 보통 있음
+    // 서브 컨트롤러 속성만 있는 경우 (historyGridController 등)에는 context[controllerKey].api 판별
+    let isReady = false
+
+    if (config.isMaster) {
+      if (context.manager && isApiAlive(context.manager.api)) isReady = true
+      else if (context._singleGridApi) isReady = true // 읽기 전용 단일 그리드
+    } else {
+      if (config.managerKey && context[config.managerKey] && isApiAlive(context[config.managerKey].api)) isReady = true
+      else if (config.controllerKey && context[config.controllerKey] && isApiAlive(context[config.controllerKey].api)) isReady = true
+    }
+
+    if (!isReady) {
+      allManagersReady = false
+      break
+    }
+  }
+
+  if (allManagersReady && typeof onAllReady === "function") {
+    onAllReady()
+  }
 }

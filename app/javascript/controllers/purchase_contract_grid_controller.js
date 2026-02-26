@@ -243,30 +243,17 @@ export default class extends BaseGridController {
   }
 
   registerGrid(event) {
-    const registration = resolveAgGridRegistration(event)
-    if (!registration) return
-
-    const { gridElement, api, controller } = registration
-    if (gridElement === this.masterGridTarget) {
-      super.registerGrid(event)
-    } else if (gridElement === this.settlementGridTarget) {
-      if (this.settlementManager) {
-        this.settlementManager.detach()
-      }
-      this.settlementGridController = controller
-      this.settlementManager = new GridCrudManager(this.configureSettlementManager())
-      this.settlementManager.attach(api)
-    } else if (gridElement === this.historyGridTarget) {
-      this.historyGridController = controller
-    }
-
-    if (this.manager?.api && this.settlementManager?.api && this.historyGridController?.api) {
+    registerGridInstance(event, this, [
+      { target: this.hasMasterGridTarget ? this.masterGridTarget : null, isMaster: true, setup: (e) => super.registerGrid(e) },
+      { target: this.hasSettlementGridTarget ? this.settlementGridTarget : null, controllerKey: "settlementGridController", managerKey: "settlementManager", configMethod: "configureSettlementManager" },
+      { target: this.hasHistoryGridTarget ? this.historyGridTarget : null, controllerKey: "historyGridController" }
+    ], () => {
       this.bindMasterGridEvents()
       if (!this.initialMasterSyncDone) {
         this.initialMasterSyncDone = true
         this.syncMasterSelectionAfterLoad()
       }
-    }
+    })
   }
 
   bindMasterGridEvents() {

@@ -1,6 +1,7 @@
 ﻿import { Controller } from "@hotwired/stimulus"
 import { showAlert, confirmAction } from "components/ui/alert"
-import { GridEventManager, resolveAgGridRegistration } from "controllers/grid/grid_event_manager"
+import { GridEventManager } from "controllers/grid/grid_event_manager"
+import { registerGridInstance } from "controllers/grid/grid_utils"
 
 export default class extends Controller {
   static targets = ["grid", "form", "keyword", "code"]
@@ -33,15 +34,23 @@ export default class extends Controller {
   }
 
   registerGrid(event) {
-    const registration = resolveAgGridRegistration(event)
-    if (!registration) return
-    if (!this.hasGridTarget) return
-    if (registration.gridElement !== this.gridTarget) return
-
-    this.gridApi = registration.api
-    this.gridEvents.unbindAll()
-    this.gridEvents.bind(this.gridApi, "rowDoubleClicked", this.handleRowDoubleClicked)
-    this.gridEvents.bind(this.gridApi, "cellKeyDown", this.handleCellKeyDown)
+    registerGridInstance(event, this, [
+      {
+        target: this.hasGridTarget ? this.gridTarget : null,
+        controllerKey: "gridController",
+        managerKey: "gridApi",
+        setup: () => {
+          this.gridEvents.unbindAll()
+          this.gridEvents.bind(this.gridApi, "rowDoubleClicked", this.handleRowDoubleClicked)
+          this.gridEvents.bind(this.gridApi, "cellKeyDown", this.handleCellKeyDown)
+        }
+      }
+    ], () => {
+      // setup callbacks already handle binding
+      this.gridEvents.unbindAll()
+      this.gridEvents.bind(this.gridApi, "rowDoubleClicked", this.handleRowDoubleClicked)
+      this.gridEvents.bind(this.gridApi, "cellKeyDown", this.handleCellKeyDown)
+    })
   }
 
   submitForm() {

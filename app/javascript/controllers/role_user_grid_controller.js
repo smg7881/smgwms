@@ -9,7 +9,7 @@
 import BaseGridController from "controllers/base_grid_controller"
 import { showAlert, confirmAction } from "components/ui/alert"
 import { resolveAgGridRegistration } from "controllers/grid/grid_event_manager"
-import { isApiAlive, getCsrfToken, fetchJson, setGridRowData } from "controllers/grid/grid_utils"
+import { isApiAlive, getCsrfToken, fetchJson, setGridRowData, registerGridInstance } from "controllers/grid/grid_utils"
 
 export default class extends BaseGridController {
   static targets = [
@@ -54,12 +54,20 @@ export default class extends BaseGridController {
 
   // AG Grid 컨테이너들이 렌더링되면서 차례차례 dispatchEvent를 일으킬 때 캐치.
   registerGrid(event) {
+    registerGridInstance(event, this, [
+      { target: this.hasLeftGridTarget ? this.leftGridTarget : null, controllerKey: "leftGridController", managerKey: "leftApi" },
+      { target: this.hasRightGridTarget ? this.rightGridTarget : null, controllerKey: "rightGridController", managerKey: "rightApi" }
+    ], () => {
+      // grid_utils의 registerGridInstance 특성상 managerKey 에 new GridCrudManager()를 넣으려 시도할 수 있는데,
+      // 역할-사용자 화면은 자체 API만 필요하므로 예외적으로 controllerKey만 매핑하거나, 여기서 api만 직접 매핑.
+      // (registerGridInstance는 Manager 를 생성하지만 configMethod가 없으면 api만 넣지 않으므로 수동할당)
+    })
+
+    // 수동 할당 보정
     const registration = resolveAgGridRegistration(event)
     if (!registration) return
-
     const { gridElement, api, controller } = registration
 
-    // DOM Target을 매칭하여 좌우 그리드 객체를 분리 적재
     if (gridElement === this.leftGridTarget) {
       this.leftGridController = controller
       this.leftApi = api
@@ -68,7 +76,6 @@ export default class extends BaseGridController {
       this.rightApi = api
     }
 
-    // 좌/우 쌍둥이 그리드가 모두 안착되었을 때 비로소 최초 조회 실행
     if (this.leftApi && this.rightApi) {
       this.loadUsers()
     }

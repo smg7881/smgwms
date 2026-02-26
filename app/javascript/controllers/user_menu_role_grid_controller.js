@@ -11,7 +11,7 @@ import BaseGridController from "controllers/base_grid_controller"
 import { showAlert, confirmAction } from "components/ui/alert"
 import { GridEventManager, resolveAgGridRegistration } from "controllers/grid/grid_event_manager"
 import { AbortableRequestTracker, isAbortError } from "controllers/grid/request_tracker"
-import { isApiAlive, fetchJson, setGridRowData, focusFirstRow } from "controllers/grid/grid_utils"
+import { isApiAlive, fetchJson, setGridRowData, focusFirstRow, registerGridInstance } from "controllers/grid/grid_utils"
 
 export default class extends BaseGridController {
   // 타겟 뷰: 1단User, 2단Role, 3단Menu 그리드 DOM
@@ -54,27 +54,26 @@ export default class extends BaseGridController {
 
   // 3가지 그리드가 하나하나 생명력을 얻을 때마다 호출되며 등록을 체크
   registerGrid(event) {
-    const registration = resolveAgGridRegistration(event)
-    if (!registration) return
-
-    const { gridElement, api, controller } = registration
-
-    // DOM Target을 분별하여 객체에 바인딩
-    if (gridElement === this.userGridTarget) {
-      this.userGridController = controller
-      this.userApi = api
-    } else if (gridElement === this.roleGridTarget) {
-      this.roleGridController = controller
-      this.roleApi = api
-    } else if (gridElement === this.menuGridTarget) {
-      this.menuGridController = controller
-      this.menuApi = api
-    }
-
-    // 3가지 장군이 모두 준비완료 되었을 때 드디어 막을 올림 (초기 연계 세팅 시작)
-    if (this.userApi && this.roleApi && this.menuApi) {
+    registerGridInstance(event, this, [
+      { target: this.hasUserGridTarget ? this.userGridTarget : null, controllerKey: "userGridController", managerKey: "userApi" },
+      { target: this.hasRoleGridTarget ? this.roleGridTarget : null, controllerKey: "roleGridController", managerKey: "roleApi" },
+      { target: this.hasMenuGridTarget ? this.menuGridTarget : null, controllerKey: "menuGridController", managerKey: "menuApi" }
+    ], () => {
       this.bindGridEvents()
       this.handleUserGridDataLoaded()
+    })
+
+    // 수동 할당 (registerGridInstance가 configMethod없이 API만 매핑하지는 않으므로)
+    const registration = resolveAgGridRegistration(event)
+    if (!registration) return
+    const { gridElement, api } = registration
+
+    if (gridElement === this.userGridTarget) {
+      this.userApi = api
+    } else if (gridElement === this.roleGridTarget) {
+      this.roleApi = api
+    } else if (gridElement === this.menuGridTarget) {
+      this.menuApi = api
     }
   }
 

@@ -8,8 +8,7 @@
 import BaseGridController from "controllers/base_grid_controller"
 import { showAlert, confirmAction } from "components/ui/alert"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
-import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
-import { isApiAlive, postJson, hasChanges, hideNoRowsOverlay, fetchJson, setManagerRowData, setGridRowData, refreshSelectionLabel, buildCompositeKey } from "controllers/grid/grid_utils"
+import { isApiAlive, postJson, hasChanges, hideNoRowsOverlay, fetchJson, setManagerRowData, setGridRowData, refreshSelectionLabel, buildCompositeKey, registerGridInstance } from "controllers/grid/grid_utils"
 
 export default class extends BaseGridController {
   static targets = ["areaGrid", "zoneGrid", "selectedAreaLabel"]
@@ -49,46 +48,58 @@ export default class extends BaseGridController {
 
   // 양쪽 그리드가 DOM에 렌더링되면서 차례차례 이벤트를 발사할때 식별해서 할당함
   registerGrid(event) {
+    registerGridInstance(event, this, [
+      {
+        target: this.hasAreaGridTarget ? this.areaGridTarget : null,
+        controllerKey: "areaGridController",
+        managerKey: "areaApi",
+        setup: () => {
+          this.areaGridEvents.unbindAll()
+          // 부모(Area) 쪽에서 선택이 넘어갈 때의 트리거들
+          this.areaGridEvents.bind(this.areaApi, "rowClicked", this.handleAreaRowClicked)
+          this.areaGridEvents.bind(this.areaApi, "cellFocused", this.handleAreaCellFocused)
+          // 부모(Area) 그리드 자체가 완전히 데이터가 바뀌었을 때 (예: 검색, 초기조회 등)
+          this.areaGridEvents.bind(this.areaApi, "rowDataUpdated", this.handleAreaRowDataUpdated)
+        }
+      },
+      {
+        target: this.hasZoneGridTarget ? this.zoneGridTarget : null,
+        controllerKey: "zoneGridController",
+        managerKey: "zoneManager",
+        configMethod: "zoneConfig"
+      }
+    ], () => {
+      // setup callbacks handled everything for area. zone is configured using zoneConfig.
+      // just need to refresh label
+      this.refreshSelectedAreaLabel()
+    })
+
+    // 수동 할당 (registerGridInstance가 configMethod없는 경우 managerKey에 api 할당)
     const registration = resolveAgGridRegistration(event)
     if (!registration) return
-
-    const { gridElement, api, controller } = registration
-
-    if (gridElement === this.areaGridTarget) {
-      this.areaApi = api
-      this.areaGridController = controller
-    } else if (gridElement === this.zoneGridTarget) {
-      // Zone 쪽에는 별도의 매니저 인스턴스를 주입시켜줘야 CRUD 연산이 가능함
-      if (this.zoneManager) {
-        this.zoneManager.detach()
-      }
-      this.zoneApi = api
-      this.zoneGridController = controller
-
-      // Zone의 CRUD 규격 정의
-      this.zoneManager = new GridCrudManager({
-        pkFields: ["workpl_cd", "area_cd", "zone_cd"], // 부모 복합키 + 자기키
-        fields: {
-          workpl_cd: "trimUpper",
-          area_cd: "trimUpper",
-          zone_cd: "trimUpper",
-          zone_nm: "trim",
-          zone_desc: "trim",
-          use_yn: "trimUpperDefault:Y"
-        },
-        defaultRow: { workpl_cd: "", area_cd: "", zone_cd: "", zone_nm: "", zone_desc: "", use_yn: "Y" },
-        blankCheckFields: ["zone_cd", "zone_nm"],
-        comparableFields: ["zone_nm", "zone_desc", "use_yn"],
-        firstEditCol: "zone_cd",
-        pkLabels: { zone_cd: "Zone 코드" }
-      })
-      this.zoneManager.attach(api) // Grid 와 Manager 결합
+    if (registration.gridElement === this.areaGridTarget) {
+      this.areaApi = registration.api
+    } else if (registration.gridElement === this.zoneGridTarget) {
+      this.zoneApi = registration.api
     }
+  }
 
-    // 초기화 완료 시 양측 이벤트 릴레이 바인딩 시작
-    if (this.areaApi && this.zoneApi) {
-      this.bindGridEvents()
-      this.refreshSelectedAreaLabel()
+  zoneConfig() {
+    return {
+      pkFields: ["workpl_cd", "area_cd", "zone_cd"], // 부모 복합키 + 자기키
+      fields: {
+        workpl_cd: "trimUpper",
+        area_cd: "trimUpper",
+        zone_cd: "trimUpper",
+        zone_nm: "trim",
+        zone_desc: "trim",
+        use_yn: "trimUpperDefault:Y"
+      },
+      defaultRow: { workpl_cd: "", area_cd: "", zone_cd: "", zone_nm: "", zone_desc: "", use_yn: "Y" },
+      blankCheckFields: ["zone_cd", "zone_nm"],
+      comparableFields: ["zone_nm", "zone_desc", "use_yn"],
+      firstEditCol: "zone_cd",
+      pkLabels: { zone_cd: "Zone 코드" }
     }
   }
 

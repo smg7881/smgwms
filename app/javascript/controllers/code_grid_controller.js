@@ -10,7 +10,7 @@ import BaseGridController from "controllers/base_grid_controller"
 import { showAlert, confirmAction } from "components/ui/alert"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
 import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
-import { isApiAlive, postJson, hasChanges, fetchJson, setManagerRowData, focusFirstRow, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel } from "controllers/grid/grid_utils"
+import { isApiAlive, postJson, hasChanges, fetchJson, setManagerRowData, focusFirstRow, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel, registerGridInstance } from "controllers/grid/grid_utils"
 
 export default class extends BaseGridController {
   // 타겟 확정 (2개의 거대한 그리드 컨테이너 및 텍스트 라벨)
@@ -117,32 +117,16 @@ export default class extends BaseGridController {
 
   // Base의 DOM 연결 이벤트를 가로채서, 마스터냐 디테일이냐에 따라 관리자를 2가닥으로 물 물려줌
   registerGrid(event) {
-    const registration = resolveAgGridRegistration(event)
-    if (!registration) return
-
-    const { gridElement, api, controller } = registration
-
-    if (gridElement === this.masterGridTarget) {
-      // 마스터 영역은 부모단에서 this.manager 로 자동 등록시키도록 위임
-      super.registerGrid(event)
-    } else if (gridElement === this.detailGridTarget) {
-      // 디테일 영역은 자체적으로 독자적인 Manager를 생성하여 부착시킴
-      if (this.detailManager) {
-        this.detailManager.detach()
-      }
-      this.detailGridController = controller
-      this.detailManager = new GridCrudManager(this.configureDetailManager())
-      this.detailManager.attach(api)
-    }
-
-    // 마스터/디테일 렌더링이 양쪽 다 끝나서 두 API가 갖추어졌다면, 연관성 및 이벤트를 바인딩함
-    if (this.manager?.api && this.detailManager?.api) {
+    registerGridInstance(event, this, [
+      { target: this.hasMasterGridTarget ? this.masterGridTarget : null, isMaster: true, setup: (e) => super.registerGrid(e) },
+      { target: this.hasDetailGridTarget ? this.detailGridTarget : null, controllerKey: "detailGridController", managerKey: "detailManager", configMethod: "configureDetailManager" }
+    ], () => {
       this.bindMasterGridEvents()
       if (!this.initialMasterSyncDone) {
         this.initialMasterSyncDone = true
         this.syncMasterSelectionAfterLoad()
       }
-    }
+    })
   }
 
   // 마스터 행 쪼기(클릭)나 방향키 기반 셀 이동 시 항상 감지 

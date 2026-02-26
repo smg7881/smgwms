@@ -2,7 +2,7 @@
 import { showAlert, confirmAction } from "components/ui/alert"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
 import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
-import { isApiAlive, postJson, hasChanges, fetchJson, setManagerRowData, focusFirstRow, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel, setSelectOptions as setSelectOptionsUtil } from "controllers/grid/grid_utils"
+import { isApiAlive, postJson, hasChanges, fetchJson, setManagerRowData, focusFirstRow, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel, setSelectOptions as setSelectOptionsUtil, registerGridInstance } from "controllers/grid/grid_utils"
 
 const CODE_FIELDS = [
   "bzac_cd",
@@ -284,35 +284,17 @@ export default class extends BaseGridController {
 
   // 화면에 AG Grid가 렌더링될 때 각 타겟별로 이벤트를 받아 컨트롤러/매니저 인스턴스를 할당
   registerGrid(event) {
-    const registration = resolveAgGridRegistration(event)
-    if (!registration) return
-
-    const { gridElement, api, controller } = registration
-    if (gridElement === this.masterGridTarget) {
-      super.registerGrid(event)
-    } else if (gridElement === this.contactsGridTarget) {
-      if (this.contactManager) {
-        this.contactManager.detach()
-      }
-      this.contactGridController = controller
-      this.contactManager = new GridCrudManager(this.configureContactManager())
-      this.contactManager.attach(api)
-    } else if (gridElement === this.workplacesGridTarget) {
-      if (this.workplaceManager) {
-        this.workplaceManager.detach()
-      }
-      this.workplaceGridController = controller
-      this.workplaceManager = new GridCrudManager(this.configureWorkplaceManager())
-      this.workplaceManager.attach(api)
-    }
-
-    if (this.manager?.api && this.contactManager?.api && this.workplaceManager?.api) {
+    registerGridInstance(event, this, [
+      { target: this.hasMasterGridTarget ? this.masterGridTarget : null, isMaster: true, setup: (e) => super.registerGrid(e) },
+      { target: this.hasContactsGridTarget ? this.contactsGridTarget : null, controllerKey: "contactGridController", managerKey: "contactManager", configMethod: "configureContactManager" },
+      { target: this.hasWorkplacesGridTarget ? this.workplacesGridTarget : null, controllerKey: "workplaceGridController", managerKey: "workplaceManager", configMethod: "configureWorkplaceManager" }
+    ], () => {
       this.bindMasterGridEvents()
       if (!this.initialMasterSyncDone) {
         this.initialMasterSyncDone = true
         this.syncMasterSelectionAfterLoad()
       }
-    }
+    })
   }
 
   bindMasterGridEvents() {

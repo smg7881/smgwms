@@ -1,7 +1,7 @@
 ﻿import { Controller } from "@hotwired/stimulus"
 import { showAlert, confirmAction } from "components/ui/alert"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
-import { fetchJson, hasChanges, isApiAlive, postJson, setManagerRowData, focusFirstRow, hasPendingChanges, buildTemplateUrl, refreshSelectionLabel } from "controllers/grid/grid_utils"
+import { fetchJson, hasChanges, isApiAlive, postJson, setManagerRowData, focusFirstRow, hasPendingChanges, buildTemplateUrl, refreshSelectionLabel, registerGridInstance } from "controllers/grid/grid_utils"
 
 export default class extends Controller {
   static targets = ["masterGrid", "countryGrid", "selectedCorpLabel"]
@@ -32,27 +32,30 @@ export default class extends Controller {
   }
 
   registerGrid(event) {
-    const { api, controller } = event.detail
-    const gridElement = event.target
-
-    if (gridElement === this.masterGridTarget) {
-      this.masterGridController = controller
-      this.masterManager?.detach()
-      this.masterManager = new GridCrudManager(this.masterConfig)
-      this.masterManager.attach(api)
-      this.bindMasterEvents(api)
-    }
-
-    if (gridElement === this.countryGridTarget) {
-      this.countryManager?.detach()
-      this.countryManager = new GridCrudManager(this.countryConfig)
-      this.countryManager.attach(api)
+    registerGridInstance(event, this, [
+      {
+        target: this.hasMasterGridTarget ? this.masterGridTarget : null,
+        controllerKey: "masterGridController",
+        managerKey: "masterManager",
+        configMethod: "masterConfig",
+        setup: () => {
+          this.bindMasterEvents(this.masterManager.api)
+        }
+      },
+      {
+        target: this.hasCountryGridTarget ? this.countryGridTarget : null,
+        managerKey: "countryManager",
+        configMethod: "countryConfig",
+        setup: () => {
+          this.clearCountryRows()
+        }
+      }
+    ], () => {
+      // setup function is not called for non-isMaster. So I need to do bindMasterEvents/clearCountryRows a bit differently, or just put it in the onAllReady.
+      this.bindMasterEvents(this.masterManager.api)
       this.clearCountryRows()
-    }
-
-    if (this.masterManager?.api && this.countryManager?.api) {
       this.syncMasterSelection()
-    }
+    })
   }
 
   addMasterRow() {
