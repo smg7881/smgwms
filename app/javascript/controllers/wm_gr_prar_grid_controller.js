@@ -2,7 +2,7 @@ import BaseGridController from "controllers/base_grid_controller"
 import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
 import { isApiAlive, postJson, setManagerRowData, buildTemplateUrl } from "controllers/grid/grid_utils"
 import { showAlert, confirmAction } from "components/ui/alert"
-
+import { switchTab, activateTab } from "controllers/ui_utils"
 export default class extends BaseGridController {
     static targets = [
         ...BaseGridController.targets,
@@ -13,25 +13,25 @@ export default class extends BaseGridController {
 
     static values = {
         ...BaseGridController.values,
-        detailListUrlTemplate:    String,
-        execResultUrlTemplate:    String,
-        saveUrlTemplate:          String,
-        confirmUrlTemplate:       String,
-        cancelUrlTemplate:        String,
-        stagedLocationsUrl:       String,
-        selectedMaster:           String
+        detailListUrlTemplate: String,
+        execResultUrlTemplate: String,
+        saveUrlTemplate: String,
+        confirmUrlTemplate: String,
+        cancelUrlTemplate: String,
+        stagedLocationsUrl: String,
+        selectedMaster: String
     }
 
     connect() {
         super.connect()
-        this.#activeTab = "detail"
+        this.activeTab = "detail"
         this.#masterGridEvents = new GridEventManager()
         this.#detailGridController = null
         this.#execRsltGridController = null
         this.#stagedLocations = []
         this.#selectedMasterData = null
         this.#loadStagedLocations()
-        this.#activateTab("detail")
+        this.activateTab("detail")
     }
 
     disconnect() {
@@ -47,9 +47,9 @@ export default class extends BaseGridController {
         return {
             pkFields: ["gr_prar_no"],
             fields: {
-                car_no:       "trim",
+                car_no: "trim",
                 driver_telno: "trim",
-                rmk:          "trim"
+                rmk: "trim"
             },
             defaultRow: {},
             blankCheckFields: [],
@@ -225,23 +225,21 @@ export default class extends BaseGridController {
     // --- 탭 전환 ---
 
     switchTab(event) {
-        const tab = event.currentTarget?.dataset?.tab
-        if (!tab || tab === this.#activeTab) return
-        this.#activateTab(tab)
+        switchTab(event, this)
+        const tab = this.activeTab
+
+        // AG Grid resize (숨겨진 상태에서 나타날 때 필요)
+        setTimeout(() => {
+            if (tab === "detail") {
+                this.#detailGridController?.api?.sizeColumnsToFit()
+            } else if (tab === "exec") {
+                this.#execRsltGridController?.api?.sizeColumnsToFit()
+            }
+        }, 50)
     }
 
-    #activateTab(tab) {
-        this.#activeTab = tab
-
-        this.tabButtonTargets.forEach(btn => {
-            const isActive = btn.dataset.tab === tab
-            btn.classList.toggle("is-active", isActive)
-            btn.setAttribute("aria-selected", isActive ? "true" : "false")
-        })
-
-        this.tabPanelTargets.forEach(panel => {
-            panel.classList.toggle("hidden", panel.dataset.tabPanel !== tab)
-        })
+    activateTab(tab) {
+        activateTab(tab, this)
 
         // AG Grid resize (숨겨진 상태에서 나타날 때 필요)
         setTimeout(() => {
@@ -358,7 +356,7 @@ export default class extends BaseGridController {
     }
 
     // --- Private fields ---
-    #activeTab = "detail"
+    activeTab = "detail"
     #masterGridEvents = null
     #detailGridController = null
     #execRsltGridController = null

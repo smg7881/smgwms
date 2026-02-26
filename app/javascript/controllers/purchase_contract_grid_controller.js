@@ -3,7 +3,7 @@ import { showAlert, confirmAction } from "components/ui/alert"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
 import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
 import { isApiAlive, postJson, hasChanges, fetchJson, setManagerRowData, focusFirstRow, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel } from "controllers/grid/grid_utils"
-
+import { switchTab, activateTab } from "controllers/ui_utils"
 const CODE_FIELDS = [
   "corp_cd",
   "bzac_cd",
@@ -479,26 +479,11 @@ export default class extends BaseGridController {
   }
 
   switchTab(event) {
-    event.preventDefault()
-    const tab = event.currentTarget?.dataset?.tab
-    if (!tab) return
-
-    this.activateTab(tab)
+    switchTab(event, this)
   }
 
   activateTab(tab) {
-    this.activeTab = tab
-
-    this.tabButtonTargets.forEach((button) => {
-      const isActive = button.dataset.tab === tab
-      button.classList.toggle("is-active", isActive)
-      button.setAttribute("aria-selected", isActive ? "true" : "false")
-    })
-    this.tabPanelTargets.forEach((panel) => {
-      const isActive = panel.dataset.tabPanel === tab
-      panel.classList.toggle("is-active", isActive)
-      panel.hidden = !isActive
-    })
+    activateTab(tab, this)
   }
 
   fillDetailForm(rowData) {

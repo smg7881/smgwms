@@ -3,7 +3,7 @@ import { showAlert, confirmAction } from "components/ui/alert"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
 import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
 import { isApiAlive, postJson, hasChanges, fetchJson, setManagerRowData, focusFirstRow, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel, setSelectOptions as setSelectOptionsUtil, registerGridInstance } from "controllers/grid/grid_utils"
-
+import { switchTab, activateTab } from "controllers/ui_utils"
 const CODE_FIELDS = [
   "bzac_cd",
   "mngt_corp_cd",
@@ -555,26 +555,11 @@ export default class extends BaseGridController {
 
   // 탭 전환 처리 (기본정보, 담당자, 작업장)
   switchTab(event) {
-    event.preventDefault()
-    const tab = event.currentTarget?.dataset?.tab
-    if (!tab) return
-
-    this.activateTab(tab)
+    switchTab(event, this)
   }
 
   activateTab(tab) {
-    this.activeTab = tab
-
-    this.tabButtonTargets.forEach((button) => {
-      const isActive = button.dataset.tab === tab
-      button.classList.toggle("is-active", isActive)
-      button.setAttribute("aria-selected", isActive ? "true" : "false")
-    })
-    this.tabPanelTargets.forEach((panel) => {
-      const isActive = panel.dataset.tabPanel === tab
-      panel.classList.toggle("is-active", isActive)
-      panel.hidden = !isActive
-    })
+    activateTab(tab, this)
   }
 
   // 선택된 마스터 행 데이터를 기반으로 우측 상세 폼 입력창들의 값을 채움

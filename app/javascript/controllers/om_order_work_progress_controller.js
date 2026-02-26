@@ -1,6 +1,6 @@
 ﻿import BaseGridController from "controllers/base_grid_controller"
 import { showAlert, confirmAction } from "components/ui/alert"
-
+import { switchTab, activateTab } from "controllers/ui_utils"
 // 작업진행현황 화면 (폼 + 2개 그리드)
 export default class extends BaseGridController {
   static targets = [
@@ -45,27 +45,21 @@ export default class extends BaseGridController {
   }
 
   switchTab(event) {
-    event.preventDefault()
-    const tabId = event.currentTarget?.dataset?.tab
-    if (!tabId) return
+    switchTab(event, this)
 
-    this.activateTab(tabId)
+    const tabId = this.activeTab
+    // 숨겨져 있던 그리드가 표시될 때 크기 재조정 필요
+    setTimeout(() => {
+      if (tabId === "items" && this.grids.items) {
+        this.resizeGridIfNecessary(this.grids.items)
+      } else if (tabId === "progress" && this.grids.progresses) {
+        this.resizeGridIfNecessary(this.grids.progresses)
+      }
+    }, 10)
   }
 
   activateTab(tabId) {
-    // 탭 버튼 스타일 변경
-    this.tabButtonTargets.forEach((btn) => {
-      const isActive = btn.dataset.tab === tabId
-      btn.classList.toggle("is-active", isActive)
-      btn.setAttribute("aria-selected", isActive ? "true" : "false")
-    })
-
-    // 탭 컨텐츠 표시/숨김
-    this.tabPanelTargets.forEach((pane) => {
-      const isActive = pane.dataset.tabPanel === tabId
-      pane.classList.toggle("is-active", isActive)
-      pane.hidden = !isActive
-    })
+    activateTab(tabId, this)
 
     // 숨겨져 있던 그리드가 표시될 때 크기 재조정 필요
     setTimeout(() => {

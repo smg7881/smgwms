@@ -1,6 +1,6 @@
 ﻿import { Controller } from "@hotwired/stimulus"
 import { showAlert, confirmAction } from "components/ui/alert"
-
+import { switchTab, activateTab } from "controllers/ui_utils"
 export default class extends Controller {
   static values = {
     searchUrl: String,
@@ -134,32 +134,21 @@ export default class extends Controller {
   }
 
   switchTab(event) {
-    const tab = event.currentTarget.dataset.tab
+    switchTab(event, this)
 
-    if (this.hasTabButtonTarget) {
-      this.tabButtonTargets.forEach((btn) => {
-        if (btn.dataset.tab === tab) {
-          btn.classList.add("is-active")
-          btn.setAttribute("aria-selected", "true")
-        } else {
-          btn.classList.remove("is-active")
-          btn.setAttribute("aria-selected", "false")
-        }
-      })
-    }
-
-    if (this.hasTabPanelTarget) {
-      this.tabPanelTargets.forEach((panel) => {
-        if (panel.dataset.tabPanel === tab) {
-          panel.classList.remove("hidden")
-        } else {
-          panel.classList.add("hidden")
-        }
-      })
-    }
-
+    const tab = this.activeTab
     if (tab === "items") {
       // AG Grid는 hidden 상태에서 사이즈를 못 잡으므로 refresh
+      if (this.#itemGridApi) {
+        setTimeout(() => this.#itemGridApi.sizeColumnsToFit(), 100)
+      }
+    }
+  }
+
+  activateTab(tab) {
+    activateTab(tab, this)
+
+    if (tab === "items") {
       if (this.#itemGridApi) {
         setTimeout(() => this.#itemGridApi.sizeColumnsToFit(), 100)
       }
