@@ -96,12 +96,12 @@ class Std::Client::PageComponent < Std::BasePageComponent
           cellRenderer: "rowStatusCellRenderer"
         },
         { field: "bzac_cd", headerName: "거래처코드", minWidth: 110, editable: false },
-        { field: "bzac_nm", headerName: "거래처명", minWidth: 180, editable: true },
+        { field: "bzac_nm", headerName: "거래처명", minWidth: 180, editable: false },
         {
           field: "bzac_sctn_grp_cd",
           headerName: "거래처구분그룹",
           minWidth: 140,
-          editable: true,
+          editable: false,
           cellEditor: "agSelectCellEditor",
           cellEditorParams: { values: section_group_code_values }
         },
@@ -109,19 +109,19 @@ class Std::Client::PageComponent < Std::BasePageComponent
           field: "bzac_sctn_cd",
           headerName: "거래처구분",
           minWidth: 130,
-          editable: true,
+          editable: false,
           cellEditor: "agSelectCellEditor",
           cellEditorParams: { values: section_code_values }
         },
-        { field: "bizman_no", headerName: "사업자번호", minWidth: 120, editable: true },
-        { field: "rpt_sales_emp_cd", headerName: "대표영업사원", minWidth: 120, editable: true },
-        { field: "mngt_corp_cd", headerName: "관리법인", minWidth: 120, editable: true },
-        { field: "ctry_cd", headerName: "국가", maxWidth: 90, editable: true },
+        { field: "bizman_no", headerName: "사업자번호", minWidth: 120, editable: false },
+        { field: "rpt_sales_emp_cd", headerName: "대표영업사원", minWidth: 120, editable: false },
+        { field: "mngt_corp_cd", headerName: "관리법인", minWidth: 120, editable: false },
+        { field: "ctry_cd", headerName: "국가", maxWidth: 90, editable: false },
         {
           field: "use_yn_cd",
           headerName: "사용여부",
           maxWidth: 95,
-          editable: true,
+          editable: false,
           cellEditor: "agSelectCellEditor",
           cellEditorParams: { values: common_code_values("CMM_USE_YN") },
           cellRenderer: "codeUseYnCellRenderer"
