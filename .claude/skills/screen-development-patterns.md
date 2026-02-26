@@ -2499,6 +2499,8 @@ bin/rails runner db/seeds/wm_some_menu.rb
 - [ ] **Stimulus private 필드**: `#activeTab`, `#selectedMasterData` 등 `#` 접두사 사용
 - [ ] **뷰 파일 turbo_frame 래퍼 필수**: `index.html.erb`에 반드시 `turbo_frame_tag "main-content"` 래퍼 추가
 - [ ] **메뉴 시드 실행**: `bin/rails runner db/seeds/wm_xxx_menu.rb`
+- [ ] **Stimulus 컨트롤러 등록**: `app/javascript/controllers/index.js`의 CONTROLLERS 배열에 새 컨트롤러 추가 (누락 시 모든 JS 기능 무응답)
+- [ ] **Tailwind CSS 빌드**: 새 JIT 클래스 사용 시 `bin/rails tailwindcss:build` 실행 (또는 `tailwindcss:watch` 상시 실행)
 
 ---
 
@@ -2858,3 +2860,148 @@ export default class extends BaseGridController {
 | 섹션 높이 | `flex flex-col` (min-h-0 없음) | `min-h-0 flex flex-col` |
 
 **적용 범위:** 탭 시스템으로 열리는 모든 화면 (`wm/`, `system/`, `std/`, `om/` 등 전 네임스페이스)
+
+---
+
+### ❌ Stimulus 컨트롤러가 index.js에 미등록되어 JS 기능 전체 무응답
+
+**증상:**
+
+- 그리드 헤더는 보이지만 탭 클릭, 버튼 클릭 등 **모든 JS 기능이 무응답**
+- 브라우저 콘솔에 에러가 **없음** (Stimulus가 해당 컨트롤러를 인식하지 못해 바인딩 자체가 일어나지 않음)
+- `data-controller="my-grid"` 속성이 HTML에 있지만 실제 Stimulus 인스턴스가 생성되지 않음
+
+**원인:**
+
+`app/javascript/controllers/index.js`의 `CONTROLLERS` 배열에 새 컨트롤러가 등록되지 않았습니다.
+이 프로젝트는 Importmap 기반으로, Stimulus 컨트롤러를 자동 탐색하지 않고 **수동 등록**합니다.
+
+**해결법:**
+
+`index.js`의 CONTROLLERS 배열에 `["컨트롤러-식별자", "controllers/파일명"]` 쌍을 추가합니다.
+
+```javascript
+// app/javascript/controllers/index.js
+const CONTROLLERS = [
+  // ... 기존 항목들 ...
+  ["om-order-manual-completion", "controllers/om_order_manual_completion_controller"],
+  // ↓ 새로 추가
+  ["wm-cust-rule-grid", "controllers/wm_cust_rule_grid_controller"],
+  ["wm-pur-fee-rt-grid", "controllers/wm_pur_fee_rt_grid_controller"],
+  ["wm-gr-prar-grid", "controllers/wm_gr_prar_grid_controller"]
+]
+```
+
+**확인 방법:**
+
+```bash
+# JS 파일은 존재하지만 index.js에 미등록된 컨트롤러 찾기
+# 1) 모든 컨트롤러 JS 파일 목록
+ls app/javascript/controllers/*_controller.js
+
+# 2) index.js에 등록된 컨트롤러 목록
+grep -oP '"\K[^"]+(?=_controller")' app/javascript/controllers/index.js
+
+# 3) 브라우저에서 확인 (DevTools 콘솔)
+# Stimulus.router.modulesByIdentifier  ← 등록된 컨트롤러 목록
+```
+
+**영향 범위 (미등록 시):**
+
+| 기능 | 영향 |
+|------|------|
+| `data-action="click->my-grid#switchTab"` | 탭 전환 불가 |
+| `data-action="ag-grid:ready->my-grid#registerGrid"` | 마스터-디테일 연동 불가 |
+| `data-action="click->my-grid#saveGr"` | 저장/확정/취소 버튼 무응답 |
+| `data-my-grid-target="..."` | 모든 타겟 바인딩 무효 |
+
+---
+
+### ❌ Tailwind CSS JIT 클래스가 빌드에 포함되지 않아 레이아웃 붕괴
+
+**증상:**
+
+- 그리드 영역이 **높이 0px**로 축소되어 컬럼 헤더와 데이터가 보이지 않음
+- 스크린샷에서 검색 폼과 툴바만 보이고 그리드 영역이 비어있음
+- 탭 버튼은 보이지만 탭 패널(그리드)이 납작하게 축소됨
+- 브라우저 DevTools에서 `h-[calc(100vh-220px)]` 클래스에 **매칭되는 CSS 규칙 없음**
+
+**원인:**
+
+Tailwind CSS v4 (이 프로젝트: `tailwindcss-rails ~> 4.2`)는 JIT 모드로 소스 파일을 스캔하여
+사용된 클래스만 CSS에 포함합니다. 새 ERB 파일에서 사용한 Tailwind JIT 클래스(`h-[calc(...)]`,
+`grid-rows-[40%_1fr]` 등)가 **CSS 빌드 이후에 추가**되면 빌드된 CSS에 포함되지 않습니다.
+
+**영향 범위:**
+
+| 미포함 클래스 | 결과 |
+|--------------|------|
+| `h-[calc(100vh-220px)]` | 레이아웃 컨테이너 높이 0 → 모든 그리드 높이 0 |
+| `grid-rows-[40%_1fr]` | CSS Grid 행 분할 미적용 → 콘텐츠 크기로 축소 |
+| `min-h-0` | Flex 자식 축소 불가 → 오버플로우 |
+
+**해결법:**
+
+```bash
+# 수동 빌드 (1회성)
+bin/rails tailwindcss:build
+
+# 개발 시 자동 감시 모드 (권장 — 파일 변경 시 자동 재빌드)
+bin/rails tailwindcss:watch
+```
+
+**예방 방법:**
+
+개발 서버 실행 시 `bin/dev`를 사용하면 `Procfile.dev`에 의해 Rails 서버와 Tailwind watch가
+동시에 실행됩니다. 또는 터미널 두 개를 열어 각각 실행합니다:
+
+```bash
+# 터미널 1: Rails 서버
+bin/rails server
+
+# 터미널 2: Tailwind 감시 (별도 터미널)
+bin/rails tailwindcss:watch
+```
+
+**진단 방법:**
+
+```bash
+# 빌드된 CSS에 특정 클래스가 포함되었는지 확인
+grep "100vh" app/assets/builds/tailwind.css
+grep "grid-rows" app/assets/builds/tailwind.css
+
+# 또는 브라우저 DevTools에서:
+# 1. 해당 요소 선택 → Computed 탭 → height 값 확인 (0px이면 문제)
+# 2. Elements 탭에서 클래스명에 취소선이 그어져 있으면 CSS 규칙 미존재
+```
+
+**Tailwind v4 `@source` 설정 (참고):**
+
+```css
+/* app/assets/tailwind/application.css */
+@import "tailwindcss";
+@source "../../views";       /* ERB 뷰 파일 스캔 */
+@source "../../components";  /* ViewComponent 파일 스캔 */
+@source "../../helpers";     /* 헬퍼 파일 스캔 */
+@source "../../javascript";  /* Stimulus 컨트롤러 스캔 */
+```
+
+`@source` 경로에 포함된 파일만 JIT 스캔 대상입니다. 새 디렉토리를 추가한 경우
+`application.css`에 `@source` 경로를 추가해야 합니다.
+
+---
+
+### 새 화면 추가 시 필수 확인 사항 (Quick Checklist)
+
+새 화면을 추가한 후 **반드시** 아래 3가지를 확인합니다:
+
+```
+1. ✅ Stimulus 컨트롤러 등록 — app/javascript/controllers/index.js CONTROLLERS 배열
+2. ✅ Tailwind CSS 빌드 — bin/rails tailwindcss:build (또는 watch 실행 중 확인)
+3. ✅ turbo_frame_tag 래퍼 — app/views/<namespace>/<module>/index.html.erb
+```
+
+이 3가지 중 하나라도 누락되면:
+- (1) 누락: 탭/버튼/그리드 연동 등 모든 JS 기능 무응답
+- (2) 누락: 레이아웃 붕괴 (그리드 높이 0, 비율 분할 미적용)
+- (3) 누락: 탭 메뉴 클릭 시 "turbo-frame main-content" 오류

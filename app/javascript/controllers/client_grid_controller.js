@@ -4,6 +4,7 @@ import GridCrudManager from "controllers/grid/grid_crud_manager"
 import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
 import { isApiAlive, postJson, hasChanges, fetchJson, setManagerRowData, focusFirstRow, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel, setSelectOptions as setSelectOptionsUtil, registerGridInstance } from "controllers/grid/grid_utils"
 import { switchTab, activateTab } from "controllers/ui_utils"
+import * as GridFormUtils from "controllers/grid/grid_form_utils"
 const CODE_FIELDS = [
   "bzac_cd",
   "mngt_corp_cd",
@@ -564,54 +565,28 @@ export default class extends BaseGridController {
 
   // 선택된 마스터 행 데이터를 기반으로 우측 상세 폼 입력창들의 값을 채움
   fillDetailForm(rowData) {
-    this.toggleDetailFields(false)
-    this.updateDetailSectionOptions(rowData.bzac_sctn_grp_cd, rowData.bzac_sctn_cd)
-
-    this.detailFieldTargets.forEach((field) => {
-      const key = this.detailFieldKey(field)
-      if (!key) return
-
-      const normalized = this.normalizeValueForInput(key, rowData[key])
-      field.value = normalized
-      this.syncPopupFieldPresentation(field, key, normalized, rowData)
+    GridFormUtils.fillDetailForm(this, rowData, {
+      beforeFill: (data) => this.updateDetailSectionOptions(data.bzac_sctn_grp_cd, data.bzac_sctn_cd),
+      onFieldFill: (field, key, normalized, data) => this.syncPopupFieldPresentation(field, key, normalized, data)
     })
   }
 
   clearDetailForm() {
-    this.detailFieldTargets.forEach((field) => {
-      field.value = ""
-      this.syncPopupFieldPresentation(field, this.detailFieldKey(field), "")
+    GridFormUtils.clearDetailForm(this, {
+      afterClear: () => this.updateDetailSectionOptions("", ""),
+      onFieldClear: (field, key) => this.syncPopupFieldPresentation(field, key, "")
     })
-    this.updateDetailSectionOptions("", "")
-    this.toggleDetailFields(true)
   }
 
   toggleDetailFields(disabled) {
-    this.detailFieldTargets.forEach((field) => {
-      field.disabled = disabled
-      this.togglePopupFieldDisabled(field, disabled)
-    })
-    this.lookupButtonTargets.forEach((button) => {
-      button.disabled = disabled
+    GridFormUtils.toggleDetailFields(this, disabled, {
+      onFieldToggle: (field, d) => this.togglePopupFieldDisabled(field, d)
     })
   }
 
   // 상세 폼의 입력값이 변경될 때 마스터 그리드의 해당 행 데이터를 업데이트
   syncDetailField(event) {
-    if (!this.currentMasterRow) return
-
-    const fieldEl = event.currentTarget
-    const key = this.detailFieldKey(fieldEl)
-    if (!key) return
-
-    const normalized = this.normalizeDetailFieldValue(key, fieldEl.value)
-    if (fieldEl.value !== normalized) {
-      fieldEl.value = normalized
-    }
-
-    this.currentMasterRow[key] = normalized
-    this.markCurrentMasterRowUpdated()
-    this.refreshMasterRowCells([key, "__row_status"])
+    GridFormUtils.syncDetailField(event, this)
   }
 
   openQuickLookup(event) {
@@ -730,35 +705,15 @@ export default class extends BaseGridController {
   }
 
   markCurrentMasterRowUpdated() {
-    if (!this.currentMasterRow) return
-    if (this.currentMasterRow.__is_new || this.currentMasterRow.__is_deleted) return
-
-    this.currentMasterRow.__is_updated = true
+    GridFormUtils.markCurrentMasterRowUpdated(this)
   }
 
   refreshMasterRowCells(columns = []) {
-    if (!isApiAlive(this.manager?.api) || !this.currentMasterRow) return
-
-    const node = this.findMasterNodeByData(this.currentMasterRow)
-    if (!node) return
-
-    this.manager.api.refreshCells({
-      rowNodes: [node],
-      columns,
-      force: true
-    })
+    GridFormUtils.refreshMasterRowCells(this, columns)
   }
 
   findMasterNodeByData(rowData) {
-    if (!isApiAlive(this.manager?.api) || !rowData) return null
-
-    let found = null
-    this.manager.api.forEachNode((node) => {
-      if (node.data === rowData) {
-        found = node
-      }
-    })
-    return found
+    return GridFormUtils.findMasterNodeByData(this, rowData)
   }
 
   bindSearchFields() {
@@ -774,40 +729,21 @@ export default class extends BaseGridController {
   }
 
   bindDetailFieldEvents() {
-    this.unbindDetailFieldEvents()
-
-    this._onDetailInput = (event) => {
-      this.syncDetailField(event)
-    }
-    this._onDetailChange = (event) => {
-      this.syncDetailField(event)
+    GridFormUtils.bindDetailFieldEvents(this, null, (event) => {
+      GridFormUtils.syncDetailField(event, this)
 
       const key = this.detailFieldKey(event.currentTarget)
+      if (key === "fnc_or_cd") {
+        this.syncPopupFieldPresentation(event.currentTarget, key, event.currentTarget.value)
+      }
       if (key === "bzac_sctn_grp_cd") {
         this.handleDetailGroupChange(event)
       }
-    }
-
-    this.detailFieldTargets.forEach((field) => {
-      field.addEventListener("input", this._onDetailInput)
-      field.addEventListener("change", this._onDetailChange)
     })
   }
 
   unbindDetailFieldEvents() {
-    if (!this._onDetailInput && !this._onDetailChange) return
-
-    this.detailFieldTargets.forEach((field) => {
-      if (this._onDetailInput) {
-        field.removeEventListener("input", this._onDetailInput)
-      }
-      if (this._onDetailChange) {
-        field.removeEventListener("change", this._onDetailChange)
-      }
-    })
-
-    this._onDetailInput = null
-    this._onDetailChange = null
+    GridFormUtils.unbindDetailFieldEvents(this)
   }
 
   unbindSearchFields() {
@@ -854,20 +790,7 @@ export default class extends BaseGridController {
 
 
   detailFieldKey(fieldEl) {
-    if (!fieldEl) return ""
-
-    const keyFromDataset = fieldEl.dataset.field
-    if (keyFromDataset) return keyFromDataset
-
-    const nameAttr = fieldEl.getAttribute("name") || ""
-    const matchFromName = nameAttr.match(/\[([^\]]+)\]$/)
-    if (matchFromName) return matchFromName[1]
-
-    const idAttr = fieldEl.getAttribute("id") || ""
-    const matchFromId = idAttr.match(/_([a-z0-9_]+)$/i)
-    if (matchFromId) return matchFromId[1]
-
-    return ""
+    return GridFormUtils.detailFieldKey(fieldEl)
   }
 
   syncPopupFieldPresentation(fieldEl, key, value, rowData = null) {

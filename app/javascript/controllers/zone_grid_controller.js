@@ -9,6 +9,7 @@ import BaseGridController from "controllers/base_grid_controller"
 import { showAlert, confirmAction } from "components/ui/alert"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
 import { isApiAlive, postJson, hasChanges, hideNoRowsOverlay, fetchJson, setManagerRowData, setGridRowData, refreshSelectionLabel, buildCompositeKey, registerGridInstance } from "controllers/grid/grid_utils"
+import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
 
 export default class extends BaseGridController {
   static targets = ["areaGrid", "zoneGrid", "selectedAreaLabel"]

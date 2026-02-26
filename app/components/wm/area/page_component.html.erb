@@ -1,7 +1,7 @@
 <div data-controller="area-grid"
      data-action="ag-grid:ready->area-grid#registerGrid"
      data-area-grid-batch-url-value="<%= batch_save_url %>"
-     data-area-grid-workplace-map-value="<%= workplace_name_map.to_json %>">
+     data-area-grid-workplace-map-value="<%= record_map(WmWorkplace, code_field: :workpl_cd, name_field: :workpl_nm).to_json %>">
   <%= render Ui::SearchFormComponent.new(
     url: create_url,
     fields: search_fields,
@@ -11,7 +11,6 @@
 
   <%= render Ui::GridHeaderComponent.new(
     icon: "map", title: "AREA 목록", grid_id: "wm-area",
-    class: "flex items-center justify-between gap-3 mb-3 mt-6",
     buttons: [
       { label: "행추가", class: "btn btn-sm btn-primary", action: "click->area-grid#addRow" },
       { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->area-grid#deleteRows" },

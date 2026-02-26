@@ -33,8 +33,8 @@ export default class extends BaseGridController {
         area_desc: "trim",
         use_yn: "trimUpperDefault:Y"
       },
-      // 신규 행이 추가될 때 기본 뼈대가 될 row 객체
-      defaultRow: { workpl_cd: "", workpl_nm: "", area_cd: "", area_nm: "", area_desc: "", use_yn: "Y" },
+      // 신규 행이 추가될 때 기본 뼈대가 될 row 객체 (workpl_cd/workpl_nm은 addRow()에서 동적으로 주입)
+      defaultRow: { area_cd: "", area_nm: "", area_desc: "", use_yn: "Y" },
       // 이 세가지가 모두 빈칸이면, 사용자가 + 기호 누르고 입력안한 "빈 줄" 로 판별하여 DB 전송 안함
       blankCheckFields: ["workpl_cd", "area_cd", "area_nm"],
       comparableFields: ["area_nm", "area_desc", "use_yn"],
@@ -44,17 +44,10 @@ export default class extends BaseGridController {
     }
   }
 
-  // "행 추가" 버튼 오버라이드
+  // "행 추가" 버튼 오버라이드: 호출 시점마다 검색 폼의 작업장 코드를 동적으로 읽어 주입
   addRow() {
-    if (!this.manager) return
-
-    // 화면 어딘가에 위치한 검색창(조회 폼)에서 현재 선택되어 있는 작업장의 코드를 빼옴
     const workplCd = this.selectedWorkplaceCodeFromSearch()
-
-    // 만약 이미 검색창에서 작업장이 선택되어 있으면 구역코드부터 쓰고, 없으면 작업장부터 치게 커서 유도
     const startCol = workplCd ? "area_cd" : "workpl_cd"
-
-    // 매니저(GridCrudManager)를 통해 그리드에 행을 뿌리되, 작업장 기본 정보를 얹어줌
     this.manager.addRow(
       { workpl_cd: workplCd, workpl_nm: this.resolveWorkplaceName(workplCd) },
       { startCol }

@@ -4,6 +4,7 @@ import GridCrudManager from "controllers/grid/grid_crud_manager"
 import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
 import { isApiAlive, postJson, hasChanges, fetchJson, setManagerRowData, focusFirstRow, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel } from "controllers/grid/grid_utils"
 import { switchTab, activateTab } from "controllers/ui_utils"
+import * as GridFormUtils from "controllers/grid/grid_form_utils"
 const CODE_FIELDS = [
   "corp_cd",
   "bzac_cd",
@@ -487,44 +488,19 @@ export default class extends BaseGridController {
   }
 
   fillDetailForm(rowData) {
-    this.toggleDetailFields(false)
-
-    this.detailFieldTargets.forEach((field) => {
-      const key = this.detailFieldKey(field)
-      if (!key) return
-
-      field.value = this.normalizeValueForInput(key, rowData[key])
-    })
+    GridFormUtils.fillDetailForm(this, rowData)
   }
 
   clearDetailForm() {
-    this.detailFieldTargets.forEach((field) => {
-      field.value = ""
-    })
-    this.toggleDetailFields(true)
+    GridFormUtils.clearDetailForm(this)
   }
 
   toggleDetailFields(disabled) {
-    this.detailFieldTargets.forEach((field) => {
-      field.disabled = disabled
-    })
+    GridFormUtils.toggleDetailFields(this, disabled)
   }
 
   syncDetailField(event) {
-    if (!this.currentMasterRow) return
-
-    const fieldEl = event.currentTarget
-    const key = this.detailFieldKey(fieldEl)
-    if (!key) return
-
-    const normalized = this.normalizeDetailFieldValue(key, fieldEl.value)
-    if (fieldEl.value !== normalized) {
-      fieldEl.value = normalized
-    }
-
-    this.currentMasterRow[key] = normalized
-    this.markCurrentMasterRowUpdated()
-    this.refreshMasterRowCells([key, "__row_status"])
+    GridFormUtils.syncDetailField(event, this)
   }
 
   normalizeValueForInput(fieldName, rawValue) {
@@ -574,80 +550,27 @@ export default class extends BaseGridController {
   }
 
   markCurrentMasterRowUpdated() {
-    if (!this.currentMasterRow) return
-    if (this.currentMasterRow.__is_new || this.currentMasterRow.__is_deleted) return
-
-    this.currentMasterRow.__is_updated = true
+    GridFormUtils.markCurrentMasterRowUpdated(this)
   }
 
   refreshMasterRowCells(columns = []) {
-    if (!isApiAlive(this.manager?.api) || !this.currentMasterRow) return
-
-    const node = this.findMasterNodeByData(this.currentMasterRow)
-    if (!node) return
-
-    this.manager.api.refreshCells({
-      rowNodes: [node],
-      columns,
-      force: true
-    })
+    GridFormUtils.refreshMasterRowCells(this, columns)
   }
 
   findMasterNodeByData(rowData) {
-    if (!isApiAlive(this.manager?.api) || !rowData) return null
-
-    let found = null
-    this.manager.api.forEachNode((node) => {
-      if (node.data === rowData) {
-        found = node
-      }
-    })
-    return found
+    return GridFormUtils.findMasterNodeByData(this, rowData)
   }
 
   bindDetailFieldEvents() {
-    this.unbindDetailFieldEvents()
-
-    this._onDetailInput = (event) => this.syncDetailField(event)
-    this._onDetailChange = (event) => this.syncDetailField(event)
-
-    this.detailFieldTargets.forEach((field) => {
-      field.addEventListener("input", this._onDetailInput)
-      field.addEventListener("change", this._onDetailChange)
-    })
+    GridFormUtils.bindDetailFieldEvents(this)
   }
 
   unbindDetailFieldEvents() {
-    if (!this._onDetailInput && !this._onDetailChange) return
-
-    this.detailFieldTargets.forEach((field) => {
-      if (this._onDetailInput) {
-        field.removeEventListener("input", this._onDetailInput)
-      }
-      if (this._onDetailChange) {
-        field.removeEventListener("change", this._onDetailChange)
-      }
-    })
-
-    this._onDetailInput = null
-    this._onDetailChange = null
+    GridFormUtils.unbindDetailFieldEvents(this)
   }
 
   detailFieldKey(fieldEl) {
-    if (!fieldEl) return ""
-
-    const keyFromDataset = fieldEl.dataset.field
-    if (keyFromDataset) return keyFromDataset
-
-    const nameAttr = fieldEl.getAttribute("name") || ""
-    const matchFromName = nameAttr.match(/\[([^\]]+)\]$/)
-    if (matchFromName) return matchFromName[1]
-
-    const idAttr = fieldEl.getAttribute("id") || ""
-    const matchFromId = idAttr.match(/_([a-z0-9_]+)$/i)
-    if (matchFromId) return matchFromId[1]
-
-    return ""
+    return GridFormUtils.detailFieldKey(fieldEl)
   }
 
   normalizeMasterField(event) {

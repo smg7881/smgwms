@@ -1,22 +1,23 @@
-﻿/**
+/**
  * location_grid_controller.js
- * 
+ *
  * [공통] BaseGridController 상속체로서 "로케이션(Location, 창고 셀) 관리"를 담당합니다.
  * 주요 확장 사양:
  * - 작업장 -> AREA -> ZONE 이라는 3Depth 계층형 물리 구조를 가지고 있어,
- *   조회 필터단(검색폼 영역)에 위치한 Select 박스들의 변경 이벤트(change)를 가로채 
+ *   조회 필터단(검색폼 영역)에 위치한 Select 박스들의 변경 이벤트(change)를 가로채
  *   동적으로 하위 Select의 옵션을 Fetch해옵니다(hydrateDependentSelects).
  * - "재고가 존재하는 로케이션(has_stock: Y)"의 경우 삭제 트랜잭션 진행 전에 방어(block) 시킵니다.
  */
 import BaseGridController from "controllers/base_grid_controller"
-import { showAlert, confirmAction } from "components/ui/alert"
-import { fetchJson, setSelectOptions as setSelectOptionsUtil, clearSelectOptions } from "controllers/grid/grid_utils"
+import { showAlert } from "components/ui/alert"
+import { setSelectOptions as setSelectOptionsUtil, clearSelectOptions } from "controllers/grid/grid_utils"
+import { bindDependentSelects, unbindDependentSelects, loadSelectOptions } from "controllers/grid/grid_dependent_select_utils"
 
 export default class extends BaseGridController {
   static values = {
     ...BaseGridController.values,
     areasUrl: String,  // 작업장에 종속된 area 정보들을 fetch 해올 URL
-    zonesUrl: String   // area에 종속된 zone 정보들을 fetch 해올 URL 
+    zonesUrl: String   // area에 종속된 zone 정보들을 fetch 해올 URL
   }
 
   connect() {
@@ -145,88 +146,25 @@ export default class extends BaseGridController {
   }
 
   // ----------------------------------------------------
-  // 다단계 의존 콤보박스(Select) 제어 코어부 
+  // 다단계 의존 콤보박스(Select) 제어 코어부
   // ----------------------------------------------------
 
   async bindSearchFields() {
-    // DOM에서 네임 속성으로 탐색
-    this.workplField = this.searchField("workpl_cd")
-    this.areaField = this.searchField("area_cd")
-    this.zoneField = this.searchField("zone_cd")
-
-    // 작업장이 바뀌었을 때
-    if (this.workplField) {
-      this._onWorkplChange = () => this.handleWorkplaceChange()
-      this.workplField.addEventListener("change", this._onWorkplChange)
-    }
-
-    // 영역(area)가 바뀌었을 때
-    if (this.areaField) {
-      this._onAreaChange = () => this.handleAreaChange()
-      this.areaField.addEventListener("change", this._onAreaChange)
-    }
-
-    // 페이지 진입 초기 렌더링을 위해 서버요청 시작
-    await this.hydrateDependentSelects()
+    await bindDependentSelects(this, this.#dependentSelectConfig())
   }
 
   unbindSearchFields() {
-    if (this.workplField && this._onWorkplChange) {
-      this.workplField.removeEventListener("change", this._onWorkplChange)
-    }
-
-    if (this.areaField && this._onAreaChange) {
-      this.areaField.removeEventListener("change", this._onAreaChange)
-    }
-  }
-
-  // 현재 브라우저의 Select 값 조합을 분석해 필요한 옵션들을 병렬 세팅함
-  async hydrateDependentSelects() {
-    const workplCd = this.workplKeywordFromSearch()
-    const areaCd = this.areaKeywordFromSearch()
-    const zoneCd = this.zoneKeywordFromSearch()
-
-    if (!workplCd) {
-      // 1뎁스 미달입 시 2/3뎁스 먹통화
-      clearSelectOptions(this.areaField)
-      clearSelectOptions(this.zoneField)
-      return
-    }
-
-    await this.loadAreaOptions(workplCd, areaCd)
-
-    if (this.areaKeywordFromSearch()) {
-      await this.loadZoneOptions(workplCd, this.areaKeywordFromSearch(), zoneCd)
-    } else {
-      clearSelectOptions(this.zoneField)
-    }
-  }
-
-  // 작업장 콤보 변동 핸들러: 하위항목 두 가지 싹슬이 및 Area 재조회
-  async handleWorkplaceChange() {
-    const workplCd = this.workplKeywordFromSearch()
-    clearSelectOptions(this.areaField)
-    clearSelectOptions(this.zoneField)
-    if (!workplCd) return
-
-    await this.loadAreaOptions(workplCd, "")
-  }
-
-  // Area 콤보 변동 핸들러: 최하위 싹슬이 및 Zone 재조회
-  async handleAreaChange() {
-    const workplCd = this.workplKeywordFromSearch()
-    const areaCd = this.areaKeywordFromSearch()
-    clearSelectOptions(this.zoneField)
-    if (!workplCd || !areaCd) return
-
-    await this.loadZoneOptions(workplCd, areaCd, "")
+    unbindDependentSelects(this)
   }
 
   // 백엔드 API (areasUrl) 호출 및 드롭다운 HTML 렌더
   async loadAreaOptions(workplCd, selectedAreaCd) {
-    if (!this.hasAreasUrlValue || !this.areaField) return
+    if (!this.hasAreasUrlValue) return
+    const areaField = this.getSearchFieldElement("area_cd")
+    if (!areaField) return
 
-    const rows = await this.loadOptions(
+    const rows = await loadSelectOptions(
+      this,
       this.areasUrlValue,
       { workpl_cd: workplCd },
       "AREA 목록 조회에 실패했습니다."
@@ -238,14 +176,17 @@ export default class extends BaseGridController {
       label: `${row.area_cd} - ${row.area_nm || ""}`
     }))
 
-    setSelectOptionsUtil(this.areaField, options, selectedAreaCd)
+    setSelectOptionsUtil(areaField, options, selectedAreaCd)
   }
 
-  // 백엔드 API (zonesUrl) 호출 및 드롭다운 HTML 렌더  
+  // 백엔드 API (zonesUrl) 호출 및 드롭다운 HTML 렌더
   async loadZoneOptions(workplCd, areaCd, selectedZoneCd) {
-    if (!this.hasZonesUrlValue || !this.zoneField) return
+    if (!this.hasZonesUrlValue) return
+    const zoneField = this.getSearchFieldElement("zone_cd")
+    if (!zoneField) return
 
-    const rows = await this.loadOptions(
+    const rows = await loadSelectOptions(
+      this,
       this.zonesUrlValue,
       { workpl_cd: workplCd, area_cd: areaCd, use_yn: "Y" },
       "ZONE 목록 조회에 실패했습니다."
@@ -257,19 +198,7 @@ export default class extends BaseGridController {
       label: `${row.zone_cd} - ${row.zone_nm || ""}`
     }))
 
-    setSelectOptionsUtil(this.zoneField, options, selectedZoneCd)
-  }
-
-  // 순수 JSON Fetch 헬퍼 유틸
-  async loadOptions(baseUrl, params, errorMessage) {
-    const query = new URLSearchParams(params)
-
-    try {
-      return await fetchJson(`${baseUrl}?${query.toString()}`)
-    } catch {
-      showAlert(errorMessage)
-      return null
-    }
+    setSelectOptionsUtil(zoneField, options, selectedZoneCd)
   }
 
   // Value getter 헬퍼 삼자
@@ -285,4 +214,48 @@ export default class extends BaseGridController {
     return this.getSearchFormValue("zone_cd")
   }
 
+  // --- Private ---
+
+  #dependentSelectConfig() {
+    return {
+      fields: ["workpl_cd", "area_cd", "zone_cd"],
+      onChange: [
+        // 작업장 변경 시: area/zone 초기화 후 area 재조회
+        async (controller, fields) => {
+          const workplCd = controller.workplKeywordFromSearch()
+          clearSelectOptions(fields[1])
+          clearSelectOptions(fields[2])
+          if (!workplCd) return
+          await controller.loadAreaOptions(workplCd, "")
+        },
+        // area 변경 시: zone 초기화 후 zone 재조회
+        async (controller, fields) => {
+          const workplCd = controller.workplKeywordFromSearch()
+          const areaCd = controller.areaKeywordFromSearch()
+          clearSelectOptions(fields[2])
+          if (!workplCd || !areaCd) return
+          await controller.loadZoneOptions(workplCd, areaCd, "")
+        }
+      ],
+      hydrate: async (controller, fields) => {
+        const workplCd = controller.workplKeywordFromSearch()
+        const areaCd = controller.areaKeywordFromSearch()
+        const zoneCd = controller.zoneKeywordFromSearch()
+
+        if (!workplCd) {
+          clearSelectOptions(fields[1])
+          clearSelectOptions(fields[2])
+          return
+        }
+
+        await controller.loadAreaOptions(workplCd, areaCd)
+
+        if (controller.areaKeywordFromSearch()) {
+          await controller.loadZoneOptions(workplCd, controller.areaKeywordFromSearch(), zoneCd)
+        } else {
+          clearSelectOptions(fields[2])
+        }
+      }
+    }
+  }
 }

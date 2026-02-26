@@ -13,7 +13,7 @@ class Wm::Area::PageComponent < Wm::BasePageComponent
           field: "workpl_cd",
           type: "select",
           label: "작업장",
-          options: workplace_search_options,
+          options: record_options(WmWorkplace, code_field: :workpl_cd, name_field: :workpl_nm, include_all: true),
           include_blank: false
         },
         { field: "area_nm", type: "input", label: "AREA명", placeholder: "AREA명 검색.." },
@@ -48,7 +48,7 @@ class Wm::Area::PageComponent < Wm::BasePageComponent
           minWidth: 140,
           editable: true,
           cellEditor: "agSelectCellEditor",
-          cellEditorParams: { values: workplace_codes }
+          cellEditorParams: { values: record_values(WmWorkplace, code_field: :workpl_cd) }
         },
         { field: "workpl_nm", headerName: "작업장명", minWidth: 180, editable: false },
         { field: "area_cd", headerName: "AREA코드", minWidth: 140, editable: true },
@@ -70,24 +70,4 @@ class Wm::Area::PageComponent < Wm::BasePageComponent
       ]
     end
 
-    def workplace_search_options
-      [ { label: "전체", value: "" } ] + workplace_records.map do |workplace|
-        {
-          label: "#{workplace.workpl_cd} - #{workplace.workpl_nm}",
-          value: workplace.workpl_cd
-        }
-      end
-    end
-
-    def workplace_name_map
-      workplace_records.to_h { |workplace| [ workplace.workpl_cd, workplace.workpl_nm ] }
-    end
-
-    def workplace_codes
-      workplace_records.map(&:workpl_cd)
-    end
-
-    def workplace_records
-      @workplace_records ||= WmWorkplace.ordered.to_a
-    end
 end

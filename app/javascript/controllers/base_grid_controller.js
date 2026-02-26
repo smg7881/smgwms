@@ -284,4 +284,16 @@ export default class BaseGridController extends Controller {
     const val = String(formCtrl.getSearchFieldValue(`q[${fieldName}]`) || "").trim()
     return toUpperCase ? val.toUpperCase() : val
   }
+
+  /**
+   * 화면 내 search_form 컨테이너에서 특정 필드의 DOM 엘리먼트를 반환합니다.
+   * @param {string} fieldName - q 태그 제외 필드명 (예: 'workpl_cd')
+   * @returns {Element|null}
+   */
+  getSearchFieldElement(fieldName) {
+    const formEl = document.querySelector('[data-controller~="search-form"]')
+    if (!formEl) return null
+    const elements = formEl.querySelectorAll(`[name="q[${fieldName}]"]`)
+    return elements.length > 0 ? elements[elements.length - 1] : null
+  }
 }
