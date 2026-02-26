@@ -42,18 +42,21 @@
   <section class="std-client-detail">
     <div class="std-client-selected" data-client-grid-target="selectedClientLabel"><%= selected_client_label %></div>
 
-    <div class="std-client-tabs">
-      <button type="button" class="std-client-tab is-active" aria-selected="true" data-client-grid-target="tabButton" data-tab="basic" data-action="click->client-grid#switchTab">거래처기본정보</button>
-      <button type="button" class="std-client-tab" aria-selected="false" data-client-grid-target="tabButton" data-tab="additional" data-action="click->client-grid#switchTab">거래처추가정보</button>
-      <button type="button" class="std-client-tab" aria-selected="false" data-client-grid-target="tabButton" data-tab="contacts" data-action="click->client-grid#switchTab">거래처담당자</button>
-      <button type="button" class="std-client-tab" aria-selected="false" data-client-grid-target="tabButton" data-tab="workplaces" data-action="click->client-grid#switchTab">거래처작업장</button>
-    </div>
+    <%= render Ui::TabsComponent.new(
+      target_controller: "client-grid",
+      tabs: [
+        { id: "basic", label: "거래처기본정보" },
+        { id: "additional", label: "거래처추가정보" },
+        { id: "contacts", label: "거래처담당자" },
+        { id: "workplaces", label: "거래처작업장" }
+      ]
+    ) %>
 
     <div class="std-client-panel is-active" data-client-grid-target="tabPanel" data-tab-panel="basic">
       <%= render Ui::ResourceFormComponent.new(
         model: detail_form_model,
         url: "#",
-        cols: 2,
+        cols: 3,
         show_buttons: false,
         target_controller: "client_grid",
         fields: basic_form_fields,
@@ -71,7 +74,7 @@
       <%= render Ui::ResourceFormComponent.new(
         model: detail_form_model,
         url: "#",
-        cols: 2,
+        cols: 3,
         show_buttons: false,
         target_controller: "client_grid",
         fields: additional_form_fields,

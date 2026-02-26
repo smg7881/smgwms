@@ -47,22 +47,13 @@
 
       <%# 탭 헤더 + 액션 버튼 %>
       <div class="flex items-center justify-between border-b border-border px-1 pb-0">
-        <div class="std-client-tabs" role="tablist">
-          <button type="button" role="tab" aria-selected="true"
-                  class="std-client-tab is-active"
-                  data-wm-gr-prar-grid-target="tabButton"
-                  data-action="click->wm-gr-prar-grid#switchTab"
-                  data-tab="detail">
-            입고예정상세
-          </button>
-          <button type="button" role="tab" aria-selected="false"
-                  class="std-client-tab"
-                  data-wm-gr-prar-grid-target="tabButton"
-                  data-action="click->wm-gr-prar-grid#switchTab"
-                  data-tab="exec">
-            입고처리내역
-          </button>
-        </div>
+        <%= render Ui::TabsComponent.new(
+          target_controller: "wm-gr-prar-grid",
+          tabs: [
+            { id: "detail", label: "입고예정상세" },
+            { id: "exec", label: "입고처리내역" }
+          ]
+        ) %>
 
         <%# 선택 마스터 라벨 %>
         <p class="text-xs text-text-secondary px-2"

@@ -1,0 +1,13 @@
+<div class="<%= @container_class %>">
+  <% @tabs.each do |tab| %>
+    <% is_active = (tab[:id].to_s == @active_tab.to_s) %>
+    <button type="button" 
+            class="<%= @tab_class %> <%= 'is-active' if is_active %>" 
+            aria-selected="<%= is_active ? 'true' : 'false' %>" 
+            data-<%= @target_controller %>-target="<%= @target_name %>" 
+            data-tab="<%= tab[:id] %>" 
+            data-action="click-><%= @target_controller %>#<%= @action %>">
+      <%= tab[:label] %>
+    </button>
+  <% end %>
+</div>

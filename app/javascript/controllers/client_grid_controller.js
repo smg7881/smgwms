@@ -27,6 +27,18 @@ const CODE_FIELDS = [
 
 const DATE_FIELDS = ["aply_strt_day_cd", "aply_end_day_cd"]
 
+/**
+ * client_grid_controller.js
+ * 
+ * [공통] 거래처(Client/Business Contact) 관리 화면용 Stimulus 컨트롤러
+ * BaseGridController를 상속하여 마스터(거래처 목록) - 디테일(상세 폼, 담당자 그리드, 작업장 그리드)
+ * 구조의 화면을 제어합니다.
+ * 
+ * 주요 기능:
+ * - 마스터 그리드(거래처) 선택 시 우측 상세 폼 및 하단 탭(담당자, 작업장) 데이터 연동
+ * - 상세 폼 수정 시 마스터 그리드의 데이터 실시간 동기화
+ * - 각 그리드별 개별 CRUD 관리 (GridCrudManager 사용)
+ */
 export default class extends BaseGridController {
   static targets = [
     ...BaseGridController.targets,
@@ -56,19 +68,33 @@ export default class extends BaseGridController {
 
   connect() {
     super.connect()
+
+    // 초기 마스터 데이터 동기화 완료 여부 플래그
     this.initialMasterSyncDone = false
+    // 팝업 등에서 조회된 금융기관명을 캐싱하여 불필요한 API 호출 방지
     this.financialInstitutionNameCache = new Map()
+
+    // 마스터 그리드 이벤트 관리자
     this.masterGridEvents = new GridEventManager()
+
+    // 각 탭별 그리드 컨트롤러 및 매니저 초기화
     this.contactGridController = null
     this.contactManager = null
     this.workplaceGridController = null
     this.workplaceManager = null
+
+    // 현재 선택된 마스터 행 데이터
     this.currentMasterRow = null
+    // 현재 활성화된 탭 상태
     this.activeTab = "basic"
 
+    // 검색 조건 이벤트 바인딩 (거래처구분그룹 -> 거래처구분 연동)
     this.bindSearchFields()
+    // 상세 폼 입력 이벤트 바인딩 (입력 시 그리드 실시간 반영)
     this.bindDetailFieldEvents()
+    // 초기 탭(기본정보) 활성화
     this.activateTab("basic")
+    // 상세 폼 초기화
     this.clearDetailForm()
   }
 
@@ -93,6 +119,7 @@ export default class extends BaseGridController {
     super.disconnect()
   }
 
+  // 마스터(거래처) 그리드의 CRUD 및 컬럼 속성을 정의하는 설정 반환
   configureManager() {
     return {
       pkFields: ["bzac_cd"],
@@ -201,6 +228,7 @@ export default class extends BaseGridController {
     }
   }
 
+  // 담당자(Contact) 그리드의 CRUD 및 컬럼 속성을 정의하는 설정 반환
   configureContactManager() {
     return {
       pkFields: ["seq_cd"],
@@ -229,6 +257,7 @@ export default class extends BaseGridController {
     }
   }
 
+  // 작업장(Workplace) 그리드의 CRUD 및 컬럼 속성을 정의하는 설정 반환
   configureWorkplaceManager() {
     return {
       pkFields: ["seq_cd"],
@@ -253,6 +282,7 @@ export default class extends BaseGridController {
     }
   }
 
+  // 화면에 AG Grid가 렌더링될 때 각 타겟별로 이벤트를 받아 컨트롤러/매니저 인스턴스를 할당
   registerGrid(event) {
     const registration = resolveAgGridRegistration(event)
     if (!registration) return
@@ -303,6 +333,7 @@ export default class extends BaseGridController {
     await this.handleMasterRowChange(rowData)
   }
 
+  // 마스터 행이 변경(선택)되었을 때 상세 폼 데이터 바인딩 및 서브 그리드 데이터 재조회
   async handleMasterRowChange(rowData) {
     if (!rowData) {
       this.currentMasterRow = null
@@ -540,6 +571,7 @@ export default class extends BaseGridController {
     return blockIfPendingChanges(this.manager, "마스터 거래처")
   }
 
+  // 탭 전환 처리 (기본정보, 담당자, 작업장)
   switchTab(event) {
     event.preventDefault()
     const tab = event.currentTarget?.dataset?.tab
@@ -563,6 +595,7 @@ export default class extends BaseGridController {
     })
   }
 
+  // 선택된 마스터 행 데이터를 기반으로 우측 상세 폼 입력창들의 값을 채움
   fillDetailForm(rowData) {
     this.toggleDetailFields(false)
     this.updateDetailSectionOptions(rowData.bzac_sctn_grp_cd, rowData.bzac_sctn_cd)
@@ -596,6 +629,7 @@ export default class extends BaseGridController {
     })
   }
 
+  // 상세 폼의 입력값이 변경될 때 마스터 그리드의 해당 행 데이터를 업데이트
   syncDetailField(event) {
     if (!this.currentMasterRow) return
 

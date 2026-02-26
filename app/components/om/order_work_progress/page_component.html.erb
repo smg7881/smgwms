@@ -50,22 +50,13 @@
     <!-- 상태 상세 그리드 영역 -->
     <div class="std-client-detail mt-0 flex-1 flex flex-col min-h-[450px]">
       <!-- 탭 헤더 영역 -->
-      <div class="std-client-tabs">
-        <button type="button" 
-                class="std-client-tab is-active" aria-selected="true"
-                data-om-order-work-progress-target="tabButton"
-                data-action="click->om-order-work-progress#switchTab"
-                data-tab="items">
-          오더 아이템별 실적
-        </button>
-        <button type="button"
-                class="std-client-tab" aria-selected="false"
-                data-om-order-work-progress-target="tabButton"
-                data-action="click->om-order-work-progress#switchTab"
-                data-tab="progress">
-          오더작업진행 상세이력
-        </button>
-      </div>
+      <%= render Ui::TabsComponent.new(
+        target_controller: "om-order-work-progress",
+        tabs: [
+          { id: "items", label: "오더 아이템별 실적" },
+          { id: "progress", label: "오더작업진행 상세이력" }
+        ]
+      ) %>
 
       <!-- 탭 컨텐츠 영역 -->
       <div class="std-client-panel is-active flex-1 min-h-0 relative" data-om-order-work-progress-target="tabPanel" data-tab-panel="items">

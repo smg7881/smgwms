@@ -39,12 +39,15 @@
   <section class="std-client-detail">
     <div class="std-client-selected" data-sell-contract-grid-target="selectedContractLabel"><%= selected_contract_label %></div>
 
-    <div class="std-client-tabs">
-      <button type="button" class="std-client-tab is-active" aria-selected="true" data-sell-contract-grid-target="tabButton" data-tab="basic" data-action="click->sell-contract-grid#switchTab">매출계약기본정보</button>
-      <button type="button" class="std-client-tab" aria-selected="false" data-sell-contract-grid-target="tabButton" data-tab="additional" data-action="click->sell-contract-grid#switchTab">매출계약추가정보</button>
-      <button type="button" class="std-client-tab" aria-selected="false" data-sell-contract-grid-target="tabButton" data-tab="settlement" data-action="click->sell-contract-grid#switchTab">매출계약정산정보</button>
-      <button type="button" class="std-client-tab" aria-selected="false" data-sell-contract-grid-target="tabButton" data-tab="history" data-action="click->sell-contract-grid#switchTab">매출계약변경이력</button>
-    </div>
+    <%= render Ui::TabsComponent.new(
+      target_controller: "sell-contract-grid",
+      tabs: [
+        { id: "basic", label: "매출계약기본정보" },
+        { id: "additional", label: "매출계약추가정보" },
+        { id: "settlement", label: "매출계약정산정보" },
+        { id: "history", label: "매출계약변경이력" }
+      ]
+    ) %>
 
     <div class="std-client-panel is-active" data-sell-contract-grid-target="tabPanel" data-tab-panel="basic">
       <%= render Ui::ResourceFormComponent.new(

@@ -45,11 +45,8 @@ export default class extends BaseGridController {
         if (event) event.preventDefault()
 
         // 검색 조건 폼에서 입력된 고객 코드 가져오기
-        const custCdInput = document.querySelector('input[name="q[cust_cd]"]')
-        const custNmInput = document.querySelector('input[name="q[cust_nm]"]')
-
-        const custCd = custCdInput ? custCdInput.value.trim() : ""
-        const custNm = custNmInput ? custNmInput.value.trim() : ""
+        const custCd = this.getSearchFormValue("cust_cd")
+        const custNm = this.getSearchFormValue("cust_nm")
 
         if (!custCd) {
             showAlert("검색조건에서 먼저 고객을 선택해주세요.")

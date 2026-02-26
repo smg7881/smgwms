@@ -21,8 +21,7 @@ export default class extends Controller {
     "bilgCustSearchBtn", "ctrtCustSearchBtn",
     "fieldDptTypeCd", "fieldDptCd", "fieldDptZipCd", "fieldDptAddr", "fieldStrtReqYmd",
     "fieldArvTypeCd", "fieldArvCd", "fieldArvZipCd", "fieldArvAddr", "fieldAptdReqDtm",
-    "tabBtnLocation", "tabBtnItems",
-    "tabLocation", "tabItems",
+    "tabButton", "tabPanel",
     "itemGrid"
   ]
 
@@ -137,21 +136,29 @@ export default class extends Controller {
   switchTab(event) {
     const tab = event.currentTarget.dataset.tab
 
-    if (tab === "location") {
-      this.tabLocationTarget.classList.remove("hidden")
-      this.tabItemsTarget.classList.add("hidden")
-      this.tabBtnLocationTarget.classList.add("border-accent-primary", "text-accent-primary")
-      this.tabBtnLocationTarget.classList.remove("border-transparent", "text-text-secondary")
-      this.tabBtnItemsTarget.classList.remove("border-accent-primary", "text-accent-primary")
-      this.tabBtnItemsTarget.classList.add("border-transparent", "text-text-secondary")
-    } else {
-      this.tabItemsTarget.classList.remove("hidden")
-      this.tabLocationTarget.classList.add("hidden")
-      this.tabBtnItemsTarget.classList.add("border-accent-primary", "text-accent-primary")
-      this.tabBtnItemsTarget.classList.remove("border-transparent", "text-text-secondary")
-      this.tabBtnLocationTarget.classList.remove("border-accent-primary", "text-accent-primary")
-      this.tabBtnLocationTarget.classList.add("border-transparent", "text-text-secondary")
+    if (this.hasTabButtonTarget) {
+      this.tabButtonTargets.forEach((btn) => {
+        if (btn.dataset.tab === tab) {
+          btn.classList.add("is-active")
+          btn.setAttribute("aria-selected", "true")
+        } else {
+          btn.classList.remove("is-active")
+          btn.setAttribute("aria-selected", "false")
+        }
+      })
+    }
 
+    if (this.hasTabPanelTarget) {
+      this.tabPanelTargets.forEach((panel) => {
+        if (panel.dataset.tabPanel === tab) {
+          panel.classList.remove("hidden")
+        } else {
+          panel.classList.add("hidden")
+        }
+      })
+    }
+
+    if (tab === "items") {
       // AG Grid는 hidden 상태에서 사이즈를 못 잡으므로 refresh
       if (this.#itemGridApi) {
         setTimeout(() => this.#itemGridApi.sizeColumnsToFit(), 100)
