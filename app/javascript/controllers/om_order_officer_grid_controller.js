@@ -1,4 +1,5 @@
 import BaseGridController from "controllers/base_grid_controller"
+import { getCsrfToken, getSearchFieldValue } from "controllers/grid/grid_utils"
 
 export default class extends BaseGridController {
   configureManager() {
@@ -50,9 +51,9 @@ export default class extends BaseGridController {
   }
 
   buildNewRowOverrides() {
-    const deptCode = this.readFilterValue("q[dept_cd]")
-    const custCode = this.readFilterValue("q[cust_cd]")
-    const expImpDomSctnCd = this.readFilterValue("q[exp_imp_dom_sctn_cd]") || "DOMESTIC"
+    const deptCode = getSearchFieldValue(this.element, "dept_cd")
+    const custCode = getSearchFieldValue(this.element, "cust_cd")
+    const expImpDomSctnCd = getSearchFieldValue(this.element, "exp_imp_dom_sctn_cd") || "DOMESTIC"
 
     return {
       ord_chrg_dept_cd: deptCode,
@@ -102,11 +103,6 @@ export default class extends BaseGridController {
     }
     rowNode.setDataValue("tel_no", selectedPhone)
     rowNode.setDataValue("mbp_no", selectedMobile)
-  }
-
-  readFilterValue(name) {
-    const field = this.element.querySelector(`[name='${name}']`)
-    return String(field?.value || "").trim()
   }
 
   get saveMessage() {

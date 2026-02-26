@@ -1,4 +1,5 @@
-import BaseGridController from "controllers/base_grid_controller"
+﻿import BaseGridController from "controllers/base_grid_controller"
+import { showAlert, confirmAction } from "components/ui/alert"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
 import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
 import { isApiAlive, postJson, hasChanges, fetchJson, setManagerRowData, focusFirstRow, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel, setSelectOptions as setSelectOptionsUtil, getSearchFieldValue } from "controllers/grid/grid_utils"
@@ -353,14 +354,14 @@ export default class extends BaseGridController {
     this.manager.stopEditing()
     const operations = this.manager.buildOperations()
     if (!hasChanges(operations)) {
-      alert("변경된 데이터가 없습니다.")
+      showAlert("변경된 데이터가 없습니다.")
       return
     }
 
     const ok = await postJson(this.masterBatchUrlValue, operations)
     if (!ok) return
 
-    alert("거래처 데이터가 저장되었습니다.")
+    showAlert("거래처 데이터가 저장되었습니다.")
     await this.reloadMasterRows()
   }
 
@@ -373,7 +374,7 @@ export default class extends BaseGridController {
       setManagerRowData(this.manager, rows)
       await this.syncMasterSelectionAfterLoad()
     } catch {
-      alert("거래처 목록 조회에 실패했습니다.")
+      showAlert("거래처 목록 조회에 실패했습니다.")
     }
   }
 
@@ -399,7 +400,7 @@ export default class extends BaseGridController {
     if (this.blockDetailActionIfMasterChanged()) return
 
     if (!this.selectedClientValue) {
-      alert("거래처를 먼저 선택해주세요.")
+      showAlert("거래처를 먼저 선택해주세요.")
       return
     }
 
@@ -418,14 +419,14 @@ export default class extends BaseGridController {
     if (this.blockDetailActionIfMasterChanged()) return
 
     if (!this.selectedClientValue) {
-      alert("거래처를 먼저 선택해주세요.")
+      showAlert("거래처를 먼저 선택해주세요.")
       return
     }
 
     this.contactManager.stopEditing()
     const operations = this.contactManager.buildOperations()
     if (!hasChanges(operations)) {
-      alert("변경된 데이터가 없습니다.")
+      showAlert("변경된 데이터가 없습니다.")
       return
     }
 
@@ -433,7 +434,7 @@ export default class extends BaseGridController {
     const ok = await postJson(batchUrl, operations)
     if (!ok) return
 
-    alert("거래처 담당자 데이터가 저장되었습니다.")
+    showAlert("거래처 담당자 데이터가 저장되었습니다.")
     await this.loadContactRows(this.selectedClientValue)
   }
 
@@ -442,7 +443,7 @@ export default class extends BaseGridController {
     if (this.blockDetailActionIfMasterChanged()) return
 
     if (!this.selectedClientValue) {
-      alert("거래처를 먼저 선택해주세요.")
+      showAlert("거래처를 먼저 선택해주세요.")
       return
     }
 
@@ -461,14 +462,14 @@ export default class extends BaseGridController {
     if (this.blockDetailActionIfMasterChanged()) return
 
     if (!this.selectedClientValue) {
-      alert("거래처를 먼저 선택해주세요.")
+      showAlert("거래처를 먼저 선택해주세요.")
       return
     }
 
     this.workplaceManager.stopEditing()
     const operations = this.workplaceManager.buildOperations()
     if (!hasChanges(operations)) {
-      alert("변경된 데이터가 없습니다.")
+      showAlert("변경된 데이터가 없습니다.")
       return
     }
 
@@ -476,7 +477,7 @@ export default class extends BaseGridController {
     const ok = await postJson(batchUrl, operations)
     if (!ok) return
 
-    alert("거래처 작업장 데이터가 저장되었습니다.")
+    showAlert("거래처 작업장 데이터가 저장되었습니다.")
     await this.loadWorkplaceRows(this.selectedClientValue)
   }
 
@@ -493,7 +494,7 @@ export default class extends BaseGridController {
       const rows = await fetchJson(url)
       setManagerRowData(this.contactManager, rows)
     } catch {
-      alert("담당자 목록 조회에 실패했습니다.")
+      showAlert("담당자 목록 조회에 실패했습니다.")
     }
   }
 
@@ -510,7 +511,7 @@ export default class extends BaseGridController {
       const rows = await fetchJson(url)
       setManagerRowData(this.workplaceManager, rows)
     } catch {
-      alert("작업장 목록 조회에 실패했습니다.")
+      showAlert("작업장 목록 조회에 실패했습니다.")
     }
   }
 
@@ -616,7 +617,7 @@ export default class extends BaseGridController {
     event.preventDefault()
 
     if (!this.currentMasterRow) {
-      alert("거래처를 먼저 선택해주세요.")
+      showAlert("거래처를 먼저 선택해주세요.")
       return
     }
 
@@ -760,8 +761,8 @@ export default class extends BaseGridController {
   }
 
   bindSearchFields() {
-    this.groupField = this.searchField("bzac_sctn_grp_cd")
-    this.sectionField = this.searchField("bzac_sctn_cd")
+    this.groupField = getSearchFieldValue(this.element, "bzac_sctn_grp_cd")
+    this.sectionField = getSearchFieldValue(this.element, "bzac_sctn_cd")
 
     if (this.groupField) {
       this._onGroupChange = () => this.handleGroupChange()
@@ -838,7 +839,7 @@ export default class extends BaseGridController {
       }))
       setSelectOptionsUtil(this.sectionField, options, selectedSectionCode)
     } catch {
-      alert("거래처구분 목록 조회에 실패했습니다.")
+      showAlert("거래처구분 목록 조회에 실패했습니다.")
     }
   }
 
@@ -850,9 +851,6 @@ export default class extends BaseGridController {
     return getSearchFieldValue(this.element, "bzac_sctn_cd")
   }
 
-  searchField(name) {
-    return this.element.querySelector(`[name='q[${name}]']`)
-  }
 
   detailFieldKey(fieldEl) {
     if (!fieldEl) return ""

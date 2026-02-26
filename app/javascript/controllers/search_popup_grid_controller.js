@@ -1,4 +1,5 @@
-import { Controller } from "@hotwired/stimulus"
+﻿import { Controller } from "@hotwired/stimulus"
+import { showAlert, confirmAction } from "components/ui/alert"
 import { GridEventManager, resolveAgGridRegistration } from "controllers/grid/grid_event_manager"
 
 export default class extends Controller {
@@ -15,7 +16,7 @@ export default class extends Controller {
           if (rows && rows.length > 0) {
             this.selectRow(rows[0])
           } else {
-            alert("조회된 목록에서 항목을 먼저 선택하세요.")
+            showAlert("조회된 목록에서 항목을 먼저 선택하세요.")
           }
         }
       }

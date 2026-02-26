@@ -1,4 +1,5 @@
-import BaseGridController from "controllers/base_grid_controller"
+﻿import BaseGridController from "controllers/base_grid_controller"
+import { showAlert, confirmAction } from "components/ui/alert"
 
 // 작업진행현황 화면 (폼 + 2개 그리드)
 export default class extends BaseGridController {
@@ -38,7 +39,7 @@ export default class extends BaseGridController {
       this.setRows("progresses", [])
 
       if (response && response.length === 0) {
-        alert("오더 번호를 정확히 넣고 검색하십시오.")
+        showAlert("오더 번호를 정확히 넣고 검색하십시오.")
       }
     }
   }

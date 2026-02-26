@@ -7,6 +7,7 @@
  * - Master, Detail 각각 독립적인 C/U/D 행위를 할 수 있으며 저장 API도 각각 나뉩니다.
  */
 import BaseGridController from "controllers/base_grid_controller"
+import { showAlert, confirmAction } from "components/ui/alert"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
 import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
 import { isApiAlive, postJson, hasChanges, fetchJson, setManagerRowData, focusFirstRow, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel } from "controllers/grid/grid_utils"
@@ -207,14 +208,14 @@ export default class extends BaseGridController {
     this.manager.stopEditing()
     const operations = this.manager.buildOperations()
     if (!hasChanges(operations)) {
-      alert("변경된 데이터가 없습니다.")
+      showAlert("변경된 데이터가 없습니다.")
       return
     }
 
     const ok = await postJson(this.masterBatchUrlValue, operations)
     if (!ok) return
 
-    alert("코드 데이터가 저장되었습니다.")
+    showAlert("코드 데이터가 저장되었습니다.")
     await this.reloadMasterRows()
   }
 
@@ -228,7 +229,7 @@ export default class extends BaseGridController {
       setManagerRowData(this.manager, rows)
       await this.syncMasterSelectionAfterLoad()
     } catch {
-      alert("코드 목록 조회에 실패했습니다.")
+      showAlert("코드 목록 조회에 실패했습니다.")
     }
   }
 
@@ -254,7 +255,7 @@ export default class extends BaseGridController {
     if (this.blockDetailActionIfMasterChanged()) return // 마스터가 저장되어 결함없는 상태인지 확인
 
     if (!this.selectedCodeValue) {
-      alert("코드를 먼저 선택해주세요.")
+      showAlert("코드를 먼저 선택해주세요.")
       return
     }
 
@@ -274,14 +275,14 @@ export default class extends BaseGridController {
     if (this.blockDetailActionIfMasterChanged()) return
 
     if (!this.selectedCodeValue) {
-      alert("코드를 먼저 선택해주세요.")
+      showAlert("코드를 먼저 선택해주세요.")
       return
     }
 
     this.detailManager.stopEditing()
     const operations = this.detailManager.buildOperations()
     if (!hasChanges(operations)) {
-      alert("변경된 데이터가 없습니다.")
+      showAlert("변경된 데이터가 없습니다.")
       return
     }
 
@@ -290,7 +291,7 @@ export default class extends BaseGridController {
     const ok = await postJson(batchUrl, operations)
     if (!ok) return
 
-    alert("상세코드 데이터가 저장되었습니다.")
+    showAlert("상세코드 데이터가 저장되었습니다.")
     await this.loadDetailRows(this.selectedCodeValue)
   }
 
@@ -307,7 +308,7 @@ export default class extends BaseGridController {
       const rows = await fetchJson(url)
       setManagerRowData(this.detailManager, rows)
     } catch {
-      alert("상세코드 목록 조회에 실패했습니다.")
+      showAlert("상세코드 목록 조회에 실패했습니다.")
     }
   }
 

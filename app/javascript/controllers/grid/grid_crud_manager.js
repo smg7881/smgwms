@@ -18,6 +18,7 @@
  * }
  */
 import { isApiAlive, uuid, collectRows, refreshStatusCells, hideNoRowsOverlay } from "controllers/grid/grid_utils"
+import { showAlert } from "components/ui/alert"
 
 // 입력값을 백엔드 DB 저장 규격에 맞게 변환하는 정규화(Normalizer) 함수 모음
 const NORMALIZERS = {
@@ -115,7 +116,7 @@ export default class GridCrudManager {
     // 선택된 노드 가져오기
     const selectedNodes = this.#api.getSelectedNodes()
     if (!selectedNodes.length) {
-      alert("삭제할 행을 선택하세요.")
+      showAlert("삭제할 행을 선택하세요.")
       return false
     }
 
@@ -273,7 +274,7 @@ export default class GridCrudManager {
     })
 
     const label = this.#config.pkLabels?.[field] || field
-    alert(`기존 ${label}는 수정할 수 없습니다.`)
+    showAlert(`기존 ${label}는 수정할 수 없습니다.`)
     return true
   }
 

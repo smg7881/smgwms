@@ -1,4 +1,5 @@
-import BaseGridController from "controllers/base_grid_controller"
+﻿import BaseGridController from "controllers/base_grid_controller"
+import { showAlert, confirmAction } from "components/ui/alert"
 import { fetchJson } from "controllers/grid/grid_utils"
 
 // 오더수동완료 화면 (마스터-디테일 + 수동완료 배치 액션)
@@ -40,13 +41,13 @@ export default class extends BaseGridController {
   async completeSelectedOrders() {
     const selected = this.selectedRows("master")
     if (selected.length === 0) {
-      alert("수동완료할 오더를 선택하세요.")
+      showAlert("수동완료할 오더를 선택하세요.")
       return
     }
 
     const reason = this.reasonInputTarget.value.toString().trim()
     if (reason === "") {
-      alert("수동완료 사유를 입력하세요.")
+      showAlert("수동완료 사유를 입력하세요.")
       this.reasonInputTarget.focus()
       return
     }
@@ -56,7 +57,7 @@ export default class extends BaseGridController {
       .filter((value, index, array) => value && array.indexOf(value) === index)
 
     if (orderNos.length === 0) {
-      alert("선택한 행에서 오더번호를 찾을 수 없습니다.")
+      showAlert("선택한 행에서 오더번호를 찾을 수 없습니다.")
       return
     }
 
@@ -66,16 +67,16 @@ export default class extends BaseGridController {
       {
         confirmMessage: `${orderNos.length}건을 수동완료 처리하시겠습니까?`,
         onSuccess: (result) => {
-          alert(result.message || "수동완료 처리가 완료되었습니다.")
+          showAlert(result.message || "수동완료 처리가 완료되었습니다.")
           this.reasonInputTarget.value = ""
           this.refreshGrid("master")
           this.setRows("detail", [])
         },
         onFail: (result) => {
-          alert(result.message || "수동완료 처리에 실패했습니다.")
+          showAlert(result.message || "수동완료 처리에 실패했습니다.")
           if (Array.isArray(result.failures) && result.failures.length > 0) {
             const detailMessage = result.failures.map((row) => `${row.ord_no}: ${row.reason}`).join("\n")
-            alert(detailMessage)
+            showAlert(detailMessage)
           }
           this.refreshGrid("master")
         }
@@ -93,7 +94,7 @@ export default class extends BaseGridController {
       this.setRows("detail", Array.isArray(rows) ? rows : [])
     } catch {
       this.setRows("detail", [])
-      alert("상세 데이터를 불러오지 못했습니다.")
+      showAlert("상세 데이터를 불러오지 못했습니다.")
     }
   }
 }

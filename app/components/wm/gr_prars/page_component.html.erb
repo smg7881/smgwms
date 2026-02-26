@@ -27,16 +27,18 @@
         title: "입고예정목록",
         grid_id: "gr-prar-master"
       ) %>
-      <div class="flex-1 min-h-0">
-        <%= render Ui::AgGridComponent.new(
-          columns: master_columns,
-          url: collection_path(format: :json),
-          height: "100%",
-          pagination: true,
-          row_selection: "single",
-          grid_id: "gr-prar-master",
-          data: { wm_gr_prar_grid_target: "masterGrid" }
-        ) %>
+      <div class="flex-1 min-h-0 relative">
+        <div class="absolute inset-0">
+          <%= render Ui::AgGridComponent.new(
+            columns: master_columns,
+            url: collection_path(format: :json),
+            height: "100%",
+            pagination: true,
+            row_selection: "single",
+            grid_id: "gr-prar-master",
+            data: { wm_gr_prar_grid_target: "masterGrid" }
+          ) %>
+        </div>
       </div>
     </section>
 

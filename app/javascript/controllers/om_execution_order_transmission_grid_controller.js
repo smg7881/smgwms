@@ -1,4 +1,5 @@
-import BaseGridController from "controllers/base_grid_controller"
+﻿import BaseGridController from "controllers/base_grid_controller"
+import { showAlert, confirmAction } from "components/ui/alert"
 
 // 실행오더전송 화면 전용 그리드 컨트롤러 (단일 그리드 + 재전송 액션)
 export default class extends BaseGridController {
@@ -14,14 +15,14 @@ export default class extends BaseGridController {
 
     const selectedRows = api.getSelectedRows()
     if (selectedRows.length === 0) {
-      alert("재전송할 항목을 체크해주세요.")
+      showAlert("재전송할 항목을 체크해주세요.")
       return
     }
 
     // 전송여부가 'E' (에러) 인 항목만 필터
     const errorRows = selectedRows.filter((row) => row.trms_yn === "E")
     if (errorRows.length === 0) {
-      alert("선택된 항목 중 재전송 대상(전송 여부: E)이 없습니다.")
+      showAlert("선택된 항목 중 재전송 대상(전송 여부: E)이 없습니다.")
       api.deselectAll()
       return
     }
@@ -39,7 +40,7 @@ export default class extends BaseGridController {
       {
         confirmMessage,
         onSuccess: (result) => {
-          alert(result.message || "재전송 큐(N 상태 대기)에 등록되었습니다.")
+          showAlert(result.message || "재전송 큐(N 상태 대기)에 등록되었습니다.")
           this.reloadRows()
         }
       }

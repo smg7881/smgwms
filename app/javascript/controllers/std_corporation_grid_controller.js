@@ -1,4 +1,5 @@
-import { Controller } from "@hotwired/stimulus"
+﻿import { Controller } from "@hotwired/stimulus"
+import { showAlert, confirmAction } from "components/ui/alert"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
 import { fetchJson, hasChanges, isApiAlive, postJson, setManagerRowData, focusFirstRow, hasPendingChanges, buildTemplateUrl, refreshSelectionLabel } from "controllers/grid/grid_utils"
 
@@ -77,25 +78,25 @@ export default class extends Controller {
     this.masterManager.stopEditing()
     const operations = this.masterManager.buildOperations()
     if (!hasChanges(operations)) {
-      alert("변경된 데이터가 없습니다.")
+      showAlert("변경된 데이터가 없습니다.")
       return
     }
 
     const ok = await postJson(this.masterBatchUrlValue, operations)
     if (!ok) return
 
-    alert("법인 정보가 저장되었습니다.")
+    showAlert("법인 정보가 저장되었습니다.")
     await this.reloadMasterRows()
   }
 
   addCountryRow() {
     if (!this.countryManager) return
     if (!this.selectedCorpCode) {
-      alert("법인을 먼저 선택하세요.")
+      showAlert("법인을 먼저 선택하세요.")
       return
     }
     if (hasPendingChanges(this.masterManager)) {
-      alert("법인 정보를 먼저 저장하세요.")
+      showAlert("법인 정보를 먼저 저장하세요.")
       return
     }
     this.countryManager.addRow({ ctry_cd: "KR", use_yn_cd: "Y", rpt_yn_cd: "N" })
@@ -110,18 +111,18 @@ export default class extends Controller {
   async saveCountryRows() {
     if (!this.countryManager) return
     if (!this.selectedCorpCode) {
-      alert("법인을 먼저 선택하세요.")
+      showAlert("법인을 먼저 선택하세요.")
       return
     }
     if (hasPendingChanges(this.masterManager)) {
-      alert("법인 정보를 먼저 저장하세요.")
+      showAlert("법인 정보를 먼저 저장하세요.")
       return
     }
 
     this.countryManager.stopEditing()
     const operations = this.countryManager.buildOperations()
     if (!hasChanges(operations)) {
-      alert("변경된 데이터가 없습니다.")
+      showAlert("변경된 데이터가 없습니다.")
       return
     }
 
@@ -129,7 +130,7 @@ export default class extends Controller {
     const ok = await postJson(url, operations)
     if (!ok) return
 
-    alert("법인 국가 정보가 저장되었습니다.")
+    showAlert("법인 국가 정보가 저장되었습니다.")
     await this.loadCountryRows(this.selectedCorpCode)
   }
 
@@ -308,7 +309,7 @@ export default class extends Controller {
       setManagerRowData(this.masterManager, rows)
       await this.syncMasterSelection()
     } catch {
-      alert("법인 목록을 다시 불러오지 못했습니다.")
+      showAlert("법인 목록을 다시 불러오지 못했습니다.")
     }
   }
 
@@ -344,7 +345,7 @@ export default class extends Controller {
       const rows = await fetchJson(url)
       setManagerRowData(this.countryManager, rows)
     } catch {
-      alert("법인 국가 정보를 불러오지 못했습니다.")
+      showAlert("법인 국가 정보를 불러오지 못했습니다.")
     }
   }
 

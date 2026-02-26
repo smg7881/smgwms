@@ -1,4 +1,5 @@
-import BaseGridController from "controllers/base_grid_controller"
+﻿import BaseGridController from "controllers/base_grid_controller"
+import { showAlert, confirmAction } from "components/ui/alert"
 import { fetchJson, getCsrfToken } from "controllers/grid/grid_utils"
 
 // 사전오더접수오류 화면 (마스터-디테일 + 재처리/업로드 액션)
@@ -40,7 +41,7 @@ export default class extends BaseGridController {
   async reprocess() {
     const selected = this.selectedRows("master")
     if (selected.length === 0) {
-      alert("재처리할 오류를 선택해 주세요.")
+      showAlert("재처리할 오류를 선택해 주세요.")
       return
     }
 
@@ -49,7 +50,7 @@ export default class extends BaseGridController {
       .filter((value) => Number.isInteger(value) && value > 0)
 
     if (errorIds.length === 0) {
-      alert("재처리 대상 식별값이 없습니다.")
+      showAlert("재처리 대상 식별값이 없습니다.")
       return
     }
 
@@ -59,12 +60,12 @@ export default class extends BaseGridController {
       {
         confirmMessage: `${errorIds.length}건을 재처리하시겠습니까?`,
         onSuccess: (result) => {
-          alert(result.message || "재처리가 완료되었습니다.")
+          showAlert(result.message || "재처리가 완료되었습니다.")
           this.refreshGrid("master")
           this.setRows("detail", [])
         },
         onFail: (result) => {
-          alert(result.message || "재처리에 실패했습니다.")
+          showAlert(result.message || "재처리에 실패했습니다.")
         }
       }
     )
@@ -97,15 +98,15 @@ export default class extends BaseGridController {
       const result = await response.json()
 
       if (!response.ok || !result.success) {
-        alert(result.message || "오류 업로드에 실패했습니다.")
+        showAlert(result.message || "오류 업로드에 실패했습니다.")
         return
       }
 
-      alert(result.message || "오류 업로드가 완료되었습니다.")
+      showAlert(result.message || "오류 업로드가 완료되었습니다.")
       this.refreshGrid("master")
       this.setRows("detail", [])
     } catch {
-      alert("오류 업로드 중 통신 오류가 발생했습니다.")
+      showAlert("오류 업로드 중 통신 오류가 발생했습니다.")
     } finally {
       input.value = ""
     }
@@ -123,7 +124,7 @@ export default class extends BaseGridController {
       const rows = await fetchJson(`${this.itemsUrlValue}?error_id=${encodeURIComponent(errorId)}`)
       this.setRows("detail", rows)
     } catch {
-      alert("오류 상세를 불러오지 못했습니다.")
+      showAlert("오류 상세를 불러오지 못했습니다.")
       this.setRows("detail", [])
     }
   }

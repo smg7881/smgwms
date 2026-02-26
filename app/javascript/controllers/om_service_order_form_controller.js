@@ -1,4 +1,5 @@
-import { Controller } from "@hotwired/stimulus"
+﻿import { Controller } from "@hotwired/stimulus"
+import { showAlert, confirmAction } from "components/ui/alert"
 import { get, post, put } from "@rails/request.js"
 
 export default class extends Controller {
@@ -107,7 +108,7 @@ export default class extends Controller {
         if (method === "put") {
             submitUrl = `${this.urlValue}/${this.idInputTarget.value}`
             if (!this.changeReasonTarget.value) {
-                alert("수정 사유를 기입해주세요.")
+                showAlert("수정 사유를 기입해주세요.")
                 this.changeReasonTarget.focus()
                 return
             }
@@ -118,7 +119,7 @@ export default class extends Controller {
             const data = await response.json()
 
             if (response.ok && data.success) {
-                alert(data.message)
+                showAlert(data.message)
                 if (method === "post") {
                     this.ordNoDisplayTarget.value = data.ord_no // 채번된 번호 매핑
                     this.methodInputTarget.value = "put"
@@ -129,18 +130,18 @@ export default class extends Controller {
                     }
                 }
             } else {
-                alert(data.message || "오류가 발생했습니다.")
+                showAlert(data.message || "오류가 발생했습니다.")
             }
         } catch (error) {
             console.error(error)
-            alert("서버 연결에 실패했습니다.")
+            showAlert("서버 연결에 실패했습니다.")
         }
     }
 
     async cancelOrder() {
         const ordNo = this.idInputTarget.value
         if (!ordNo) {
-            alert("취소할 오더가 선택되지 않았습니다.")
+            showAlert("취소할 오더가 선택되지 않았습니다.")
             return
         }
 
@@ -157,13 +158,13 @@ export default class extends Controller {
 
             const data = await response.json()
             if (response.ok && data.success) {
-                alert(data.message)
+                showAlert(data.message)
             } else {
-                alert(data.message || "취소에 실패했습니다.")
+                showAlert(data.message || "취소에 실패했습니다.")
             }
         } catch (e) {
             console.error(e)
-            alert("오류가 발생했습니다.")
+            showAlert("오류가 발생했습니다.")
         }
     }
 
@@ -178,7 +179,7 @@ export default class extends Controller {
         if (this.agGridController) {
             const selected = this.agGridController.gridOptions.api.getSelectedRows()
             if (selected.length === 0) {
-                alert("삭제할 대상을 선택해주세요.")
+                showAlert("삭제할 대상을 선택해주세요.")
                 return
             }
             this.agGridController.gridOptions.api.applyTransaction({ remove: selected })

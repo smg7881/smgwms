@@ -8,6 +8,7 @@
  * 연속 빠른 클릭/조회에 의한 'Race Condition(API 교차충돌)' 방지를 위한 Request Tracker 통제를 핵심으로 합니다.
  */
 import BaseGridController from "controllers/base_grid_controller"
+import { showAlert, confirmAction } from "components/ui/alert"
 import { GridEventManager, resolveAgGridRegistration } from "controllers/grid/grid_event_manager"
 import { AbortableRequestTracker, isAbortError } from "controllers/grid/request_tracker"
 import { isApiAlive, fetchJson, setGridRowData, focusFirstRow } from "controllers/grid/grid_utils"
@@ -145,7 +146,7 @@ export default class extends BaseGridController {
     } catch (error) {
       // Aborter 에 의해 강제로 Connection Drop 된 에러는 조용히 무시함. (에러가 아님)
       if (isAbortError(error) || !this.rolesRequestTracker.isLatest(requestId)) return
-      alert("사용자 역할 조회에 실패했습니다.") // 진짜배기 500에러 등
+      showAlert("사용자 역할 조회에 실패했습니다.") // 진짜배기 500에러 등
     } finally {
       this.rolesRequestTracker.finish(requestId) // 상태 종결
     }
@@ -184,7 +185,7 @@ export default class extends BaseGridController {
       setGridRowData(this.menuApi, menus)
     } catch (error) {
       if (isAbortError(error) || !this.menusRequestTracker.isLatest(requestId)) return
-      alert("메뉴 조회에 실패했습니다.")
+      showAlert("메뉴 조회에 실패했습니다.")
     } finally {
       this.menusRequestTracker.finish(requestId)
     }

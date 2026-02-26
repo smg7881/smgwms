@@ -1,4 +1,5 @@
-import { Controller } from "@hotwired/stimulus"
+﻿import { Controller } from "@hotwired/stimulus"
+import { showAlert, confirmAction } from "components/ui/alert"
 
 export default class extends Controller {
   static targets = ["grid", "summary", "uploadFileInput"]
@@ -36,7 +37,7 @@ export default class extends Controller {
   save(event) {
     event.preventDefault()
     if (!this.canSave) {
-      alert("필수항목체크를 먼저 완료해주세요.")
+      showAlert("필수항목체크를 먼저 완료해주세요.")
       return
     }
 
@@ -53,7 +54,7 @@ export default class extends Controller {
   async submitFile(url, actionName) {
     const fileInput = this.fileInputElement()
     if (!fileInput || fileInput.files.length === 0) {
-      alert("업로드 파일을 선택해주세요.")
+      showAlert("업로드 파일을 선택해주세요.")
       return
     }
 
@@ -80,15 +81,15 @@ export default class extends Controller {
       this.updateSaveButtonState()
 
       if (!response.ok && data.message) {
-        alert(data.message)
+        showAlert(data.message)
       } else if (actionName === "save" && data.message) {
-        alert(data.message)
+        showAlert(data.message)
       }
     } catch (_error) {
       this.canSave = false
       this.updateSaveButtonState()
       this.setSummaryText("요청 처리 중 오류가 발생했습니다.")
-      alert("요청 처리 중 오류가 발생했습니다.")
+      showAlert("요청 처리 중 오류가 발생했습니다.")
     }
   }
 

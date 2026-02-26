@@ -1,4 +1,5 @@
-import BaseCrudController from "controllers/base_crud_controller"
+﻿import BaseCrudController from "controllers/base_crud_controller"
+import { showAlert, confirmAction } from "components/ui/alert"
 
 export default class extends BaseCrudController {
   static resourceName = "workplace"
@@ -131,7 +132,7 @@ export default class extends BaseCrudController {
     if (!selectedCode || !workplCd) return
 
     if (selectedCode === workplCd) {
-      alert("상위작업장은 현재 작업장과 동일하게 선택할 수 없습니다.")
+      showAlert("상위작업장은 현재 작업장과 동일하게 선택할 수 없습니다.")
       this.clearUpperWorkplaceField(fieldGroup)
     }
   }
@@ -140,7 +141,7 @@ export default class extends BaseCrudController {
     const workplCd = this.normalizeCode(this.fieldWorkplCdTarget?.value)
     const upperWorkplCd = this.normalizeCode(this.fieldUpperWorkplCdTarget?.value)
     if (workplCd && upperWorkplCd && workplCd === upperWorkplCd) {
-      alert("상위작업장은 현재 작업장과 동일하게 저장할 수 없습니다.")
+      showAlert("상위작업장은 현재 작업장과 동일하게 저장할 수 없습니다.")
       this.clearUpperWorkplaceField()
       return
     }

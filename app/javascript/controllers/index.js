@@ -74,7 +74,10 @@ const CONTROLLERS = [
   ["om-pre-order-reception-error", "controllers/om_pre_order_reception_error_controller"],
   ["om-pre-order-reception", "controllers/om_pre_order_reception_controller"],
   ["om-internal-order", "controllers/om_internal_order_controller"],
-  ["om-order-manual-completion", "controllers/om_order_manual_completion_controller"]
+  ["om-order-manual-completion", "controllers/om_order_manual_completion_controller"],
+  ["wm-cust-rule-grid", "controllers/wm_cust_rule_grid_controller"],
+  ["wm-pur-fee-rt-grid", "controllers/wm_pur_fee_rt_grid_controller"],
+  ["wm-gr-prar-grid", "controllers/wm_gr_prar_grid_controller"]
 ]
 
 CONTROLLERS.forEach(([identifier, modulePath]) => {

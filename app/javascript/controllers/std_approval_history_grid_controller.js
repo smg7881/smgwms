@@ -1,4 +1,5 @@
 ﻿import BaseGridController from "controllers/base_grid_controller"
+import { showAlert, confirmAction } from "components/ui/alert"
 import { getCsrfToken } from "controllers/grid/grid_utils"
 
 export default class extends BaseGridController {
@@ -100,7 +101,7 @@ export default class extends BaseGridController {
 
     const selectedRows = this.manager.api.getSelectedRows()
     if (!selectedRows.length) {
-      alert("처리할 행을 선택해주세요.")
+      showAlert("처리할 행을 선택해주세요.")
       return
     }
 
@@ -126,7 +127,7 @@ export default class extends BaseGridController {
 
     const selectedRows = this.manager.api.getSelectedRows()
     if (!selectedRows.length) {
-      alert("처리할 행을 선택해주세요.")
+      showAlert("처리할 행을 선택해주세요.")
       return
     }
 
@@ -152,12 +153,12 @@ export default class extends BaseGridController {
 
     const reqNo = this.selectedRequestNoTarget.value
     if (!reqNo) {
-      alert("결재요청번호를 확인해주세요.")
+      showAlert("결재요청번호를 확인해주세요.")
       return
     }
 
     if (this.mode !== "requester") {
-      alert("요청 처리 권한이 없습니다.")
+      showAlert("요청 처리 권한이 없습니다.")
       return
     }
 
@@ -176,12 +177,12 @@ export default class extends BaseGridController {
 
     const reqNo = this.selectedRequestNoTarget.value
     if (!reqNo) {
-      alert("결재요청번호를 확인해주세요.")
+      showAlert("결재요청번호를 확인해주세요.")
       return
     }
 
     if (this.mode !== "approver") {
-      alert("승인 처리 권한이 없습니다.")
+      showAlert("승인 처리 권한이 없습니다.")
       return
     }
 
@@ -254,17 +255,17 @@ export default class extends BaseGridController {
       })
       const result = await response.json()
       if (!response.ok || !result.success) {
-        alert("처리 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
+        showAlert("처리 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
         return
       }
 
-      alert(result.message || "처리가 완료되었습니다.")
+      showAlert(result.message || "처리가 완료되었습니다.")
       if (options.closeModal) {
         this.closeModal()
       }
       this.reloadRows()
     } catch {
-      alert("처리 실패: 네트워크 오류")
+      showAlert("처리 실패: 네트워크 오류")
     }
   }
 

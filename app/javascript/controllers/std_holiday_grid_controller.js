@@ -1,4 +1,5 @@
-import BaseGridController from "controllers/base_grid_controller"
+﻿import BaseGridController from "controllers/base_grid_controller"
+import { showAlert, confirmAction } from "components/ui/alert"
 import { getCsrfToken, getSearchFieldValue } from "controllers/grid/grid_utils"
 
 export default class extends BaseGridController {
@@ -57,7 +58,7 @@ export default class extends BaseGridController {
     const month = this.currentMonth
 
     if (!ctryCd || !year || !month) {
-      alert("국가코드/년도/월을 입력해주세요.")
+      showAlert("국가코드/년도/월을 입력해주세요.")
       return
     }
 
@@ -76,14 +77,14 @@ export default class extends BaseGridController {
       })
       const result = await response.json()
       if (!response.ok || !result.success) {
-        alert("토/일 생성 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
+        showAlert("토/일 생성 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
         return
       }
 
-      alert(result.message || "토/일 생성이 완료되었습니다.")
+      showAlert(result.message || "토/일 생성이 완료되었습니다.")
       this.reloadRows()
     } catch {
-      alert("토/일 생성 실패: 네트워크 오류")
+      showAlert("토/일 생성 실패: 네트워크 오류")
     }
   }
 

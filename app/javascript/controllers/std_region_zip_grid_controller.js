@@ -1,4 +1,5 @@
-import { Controller } from "@hotwired/stimulus"
+﻿import { Controller } from "@hotwired/stimulus"
+import { showAlert, confirmAction } from "components/ui/alert"
 import { resolveAgGridRegistration } from "controllers/grid/grid_event_manager"
 import { isApiAlive, getCsrfToken, fetchJson, setGridRowData, buildCompositeKey } from "controllers/grid/grid_utils"
 
@@ -109,7 +110,7 @@ export default class extends Controller {
       this.rebuildMappedSortOrder()
       this.render()
     } catch {
-      alert("할당 우편번호 조회에 실패했습니다.")
+      showAlert("할당 우편번호 조회에 실패했습니다.")
     }
   }
 
@@ -117,7 +118,7 @@ export default class extends Controller {
     if (!isApiAlive(this.unmappedApi)) return
 
     if (!this.currentRegionCode) {
-      alert("권역을 먼저 선택해 주세요.")
+      showAlert("권역을 먼저 선택해 주세요.")
       return
     }
 
@@ -135,7 +136,7 @@ export default class extends Controller {
       this.unmappedRows = fetchedRows.filter((row) => !mappedKeySet.has(this.rowKey(row)))
       this.render()
     } catch {
-      alert("미할당 우편번호 조회에 실패했습니다.")
+      showAlert("미할당 우편번호 조회에 실패했습니다.")
     }
   }
 
@@ -185,7 +186,7 @@ export default class extends Controller {
 
   async save() {
     if (!this.currentRegionCode) {
-      alert("권역을 먼저 선택해 주세요.")
+      showAlert("권역을 먼저 선택해 주세요.")
       return
     }
 
@@ -212,14 +213,14 @@ export default class extends Controller {
 
       const result = await response.json()
       if (!response.ok || !result.success) {
-        alert("저장 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
+        showAlert("저장 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
         return
       }
 
-      alert(result.message || "저장이 완료되었습니다.")
+      showAlert(result.message || "저장이 완료되었습니다.")
       await Promise.all([this.searchMapped(), this.searchUnmapped()])
     } catch {
-      alert("저장 실패: 네트워크 오류")
+      showAlert("저장 실패: 네트워크 오류")
     }
   }
 

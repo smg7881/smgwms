@@ -1,4 +1,4 @@
-/**
+﻿/**
  * BaseGridController
  *
  * AG Grid 기반 화면에서 공통으로 쓰는 Stimulus 베이스 컨트롤러입니다.
@@ -21,6 +21,7 @@
  * - saveMessage getter  [선택] 저장 완료 알림 문구 커스터마이징
  */
 import { Controller } from "@hotwired/stimulus"
+import { showAlert, confirmAction } from "components/ui/alert"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
 import { GridEventManager } from "controllers/grid/grid_event_manager"
 import { isApiAlive, setGridRowData, postJson, hasChanges, getCsrfToken } from "controllers/grid/grid_utils"
@@ -114,7 +115,7 @@ export default class BaseGridController extends Controller {
   // ─── POST 헬퍼 (배치 액션 패턴) ───
 
   async postAction(url, body, { confirmMessage, onSuccess, onFail } = {}) {
-    if (confirmMessage && !confirm(confirmMessage)) return false
+    if (confirmMessage && !confirmAction(confirmMessage)) return false
 
     try {
       const response = await fetch(url, {
@@ -132,7 +133,7 @@ export default class BaseGridController extends Controller {
         if (onSuccess) {
           onSuccess(result)
         } else {
-          alert(result.message || "처리가 완료되었습니다.")
+          showAlert(result.message || "처리가 완료되었습니다.")
         }
         return true
       }
@@ -140,11 +141,11 @@ export default class BaseGridController extends Controller {
       if (onFail) {
         onFail(result)
       } else {
-        alert(result.message || "처리에 실패했습니다.")
+        showAlert(result.message || "처리에 실패했습니다.")
       }
       return false
     } catch {
-      alert("요청 중 네트워크 오류가 발생했습니다.")
+      showAlert("요청 중 네트워크 오류가 발생했습니다.")
       return false
     }
   }
@@ -171,14 +172,14 @@ export default class BaseGridController extends Controller {
 
     const operations = this.manager.buildOperations()
     if (!hasChanges(operations)) {
-      alert("변경된 데이터가 없습니다.")
+      showAlert("변경된 데이터가 없습니다.")
       return
     }
 
     const ok = await postJson(this.batchUrlValue, operations)
     if (!ok) return
 
-    alert(this.saveMessage)
+    showAlert(this.saveMessage)
 
     if (this.afterSaveSuccess) {
       this.afterSaveSuccess()

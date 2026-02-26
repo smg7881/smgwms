@@ -9,6 +9,7 @@
  * - 그리드 다중 선택을 통한 일괄 삭제(Bulk Delete) 기능 지원
  */
 import BaseCrudController from "controllers/base_crud_controller"
+import { showAlert, confirmAction } from "components/ui/alert"
 
 export default class extends BaseCrudController {
   static resourceName = "notice"      // 폼 데이터 생성 시 네임스페이스 (ex: notice[title])
@@ -68,7 +69,7 @@ export default class extends BaseCrudController {
       // 공지사항은 내용(content)이 크기 때문에, 그리드 셀 데이터에 안 넣고 서버에서 상세 Data를 별도로 Fetch 함.
       const response = await fetch(url, { headers: { Accept: "application/json" } })
       if (!response.ok) {
-        alert("상세 조회에 실패했습니다.")
+        showAlert("상세 조회에 실패했습니다.")
         return
       }
 
@@ -78,7 +79,7 @@ export default class extends BaseCrudController {
       this.mode = "update"
       this.openModal()
     } catch {
-      alert("상세 조회에 실패했습니다.")
+      showAlert("상세 조회에 실패했습니다.")
     }
   }
 
@@ -184,7 +185,7 @@ export default class extends BaseCrudController {
 
     // 파일 갯수 초과 커트
     if (Number.isFinite(maxFiles) && maxFiles > 0 && files.length > maxFiles) {
-      alert(`첨부 파일은 최대 ${maxFiles}개까지 업로드할 수 있습니다.`)
+      showAlert(`첨부 파일은 최대 ${maxFiles}개까지 업로드할 수 있습니다.`)
       files = files.slice(0, maxFiles)
     }
 
@@ -194,7 +195,7 @@ export default class extends BaseCrudController {
       const oversizedFiles = files.filter((file) => file.size > maxBytes)
 
       if (oversizedFiles.length > 0) {
-        alert(`파일 최대 용량은 ${maxSizeMb}MB입니다.`)
+        showAlert(`파일 최대 용량은 ${maxSizeMb}MB입니다.`)
         files = files.filter((file) => file.size <= maxBytes)
       }
     }
@@ -334,15 +335,15 @@ export default class extends BaseCrudController {
       })
 
       if (!response.ok || !result.success) {
-        alert("저장 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
+        showAlert("저장 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
         return
       }
 
-      alert(result.message || "저장되었습니다.")
+      showAlert(result.message || "저장되었습니다.")
       this.closeModal()
       this.refreshGrid()
     } catch {
-      alert("저장 실패: 네트워크 오류")
+      showAlert("저장 실패: 네트워크 오류")
     }
   }
 
@@ -352,17 +353,17 @@ export default class extends BaseCrudController {
   async deleteSelected() {
     const selectedRows = this.selectedRows()
     if (selectedRows.length === 0) {
-      alert("삭제할 공지사항을 선택해주세요.")
+      showAlert("삭제할 공지사항을 선택해주세요.")
       return
     }
 
-    if (!confirm(`선택한 ${selectedRows.length}건을 삭제하시겠습니까?`)) {
+    if (!confirmAction(`선택한 ${selectedRows.length}건을 삭제하시겠습니까?`)) {
       return
     }
 
     const ids = selectedRows.map((row) => row.id).filter((id) => Boolean(id))
     if (ids.length === 0) {
-      alert("삭제할 공지사항을 선택해주세요.")
+      showAlert("삭제할 공지사항을 선택해주세요.")
       return
     }
 
@@ -373,14 +374,14 @@ export default class extends BaseCrudController {
       })
 
       if (!response.ok || !result.success) {
-        alert("삭제 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
+        showAlert("삭제 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
         return
       }
 
-      alert(result.message || "삭제되었습니다.")
+      showAlert(result.message || "삭제되었습니다.")
       this.refreshGrid()
     } catch {
-      alert("삭제 실패: 네트워크 오류")
+      showAlert("삭제 실패: 네트워크 오류")
     }
   }
 
@@ -477,7 +478,7 @@ export default class extends BaseCrudController {
   // 사용자가 Trix 본문으로 직접 드래그앤드랍 시 가로채서 못하게 막음
   preventTrixFileAttach(event) {
     event.preventDefault()
-    alert("본문에는 파일을 첨부할 수 없습니다. 하단 첨부파일 영역을 사용해주세요.")
+    showAlert("본문에는 파일을 첨부할 수 없습니다. 하단 첨부파일 영역을 사용해주세요.")
   }
 
   // ===================== [UI 렌더링용 헬퍼 구역] =========================

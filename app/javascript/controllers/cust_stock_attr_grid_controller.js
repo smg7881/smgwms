@@ -1,4 +1,5 @@
-import BaseGridController from "controllers/base_grid_controller"
+﻿import BaseGridController from "controllers/base_grid_controller"
+import { showAlert, confirmAction } from "components/ui/alert"
 
 export default class extends BaseGridController {
     static targets = [...BaseGridController.targets]
@@ -51,7 +52,7 @@ export default class extends BaseGridController {
         const custNm = custNmInput ? custNmInput.value.trim() : ""
 
         if (!custCd) {
-            alert("검색조건에서 먼저 고객을 선택해주세요.")
+            showAlert("검색조건에서 먼저 고객을 선택해주세요.")
             return
         }
 

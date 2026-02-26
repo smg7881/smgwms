@@ -1,4 +1,5 @@
-import BaseGridController from "controllers/base_grid_controller"
+﻿import BaseGridController from "controllers/base_grid_controller"
+import { showAlert, confirmAction } from "components/ui/alert"
 import { getCsrfToken } from "controllers/grid/grid_utils"
 
 export default class extends BaseGridController {
@@ -60,7 +61,7 @@ export default class extends BaseGridController {
 
     const selectedRows = this.manager.api.getSelectedRows()
     if (!selectedRows.length) {
-      alert("처리할 행을 선택해주세요.")
+      showAlert("처리할 행을 선택해주세요.")
       return
     }
 
@@ -81,7 +82,7 @@ export default class extends BaseGridController {
 
     const selectedRows = this.manager.api.getSelectedRows()
     if (!selectedRows.length) {
-      alert("처리할 행을 선택해주세요.")
+      showAlert("처리할 행을 선택해주세요.")
       return
     }
 
@@ -109,14 +110,14 @@ export default class extends BaseGridController {
       })
       const result = await response.json()
       if (!response.ok || !result.success) {
-        alert("처리 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
+        showAlert("처리 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
         return
       }
 
-      alert(result.message || successMessage)
+      showAlert(result.message || successMessage)
       this.reloadRows()
     } catch {
-      alert("처리 실패: 네트워크 오류")
+      showAlert("처리 실패: 네트워크 오류")
     }
   }
 

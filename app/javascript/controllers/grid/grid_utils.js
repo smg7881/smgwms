@@ -5,7 +5,9 @@
  * 상태를 갖지 않으며, 모든 함수는 named export로 제공된다.
  */
 
-// AG Grid API 인스턴스가 생성되어 있고 유효한지(파괴되지 않았는지) 확인
+import { showAlert } from "components/ui/alert"
+
+
 export function isApiAlive(api) {
   return Boolean(api) && !(typeof api.isDestroyed === "function" && api.isDestroyed())
 }
@@ -35,13 +37,13 @@ export async function postJson(url, body) {
     const result = await response.json()
     // HTTP OK 상태 코드가 아니거나 비즈니스 로직(success 플래그) 실패 시 얼럿
     if (!response.ok || !result.success) {
-      alert("저장 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
+      showAlert("저장 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
       return false
     }
 
     return true
   } catch {
-    alert("저장 실패: 네트워크 오류")
+    showAlert("저장 실패: 네트워크 오류")
     return false
   }
 }
@@ -160,7 +162,7 @@ export function hasPendingChanges(manager) {
 // 미저장 변경사항이 있으면 얼럿 후 true 반환 (호출부에서 차단용)
 export function blockIfPendingChanges(manager, entityLabel = "마스터") {
   if (!hasPendingChanges(manager)) return false
-  alert(`${entityLabel}에 저장되지 않은 변경이 있습니다.`)
+  showAlert(`${entityLabel}에 저장되지 않은 변경이 있습니다.`)
   return true
 }
 

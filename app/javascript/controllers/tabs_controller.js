@@ -1,4 +1,4 @@
-/**
+﻿/**
  * tabs_controller.js
  * 
  * 애플리케이션의 메인 네비게이션 탭(다중 창 형태)을 관리하는 핵심 컨트롤러입니다.
@@ -8,6 +8,7 @@
  * - 상단 브레드크럼(Breadcrumb) 경로 텍스트를 현재 탭에 맞춰 갱신합니다.
  */
 import { Controller } from "@hotwired/stimulus"
+import { showAlert, confirmAction } from "components/ui/alert"
 import { Turbo } from "@hotwired/turbo-rails"
 
 export default class extends Controller {
@@ -50,7 +51,7 @@ export default class extends Controller {
     // 신규 생성이고, 최대 개수 제한에 걸린다면 경고 후 중단
     if (!isAlreadyOpen && this.tabIds.length >= this.maxOpenTabsValue) {
       console.warn(`[tabs] maximum open tabs (${this.maxOpenTabsValue}) reached`)
-      alert(`탭메뉴는 ${this.maxOpenTabsValue}개까지 가능합니다.`)
+      showAlert(`탭메뉴는 ${this.maxOpenTabsValue}개까지 가능합니다.`)
       return
     }
 

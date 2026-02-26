@@ -7,6 +7,7 @@
  * - 필터링(검색어) 기능을 자바스크립트 레벨에서 즉각(In-Memory) 지원합니다.
  */
 import BaseGridController from "controllers/base_grid_controller"
+import { showAlert, confirmAction } from "components/ui/alert"
 import { resolveAgGridRegistration } from "controllers/grid/grid_event_manager"
 import { isApiAlive, getCsrfToken, fetchJson, setGridRowData } from "controllers/grid/grid_utils"
 
@@ -104,7 +105,7 @@ export default class extends BaseGridController {
       this.rightAllUsers = assignedUsers
       this.renderFilteredRows() // 가져온 배열을 AG Grid 에 밀어넣기
     } catch {
-      alert("역할 사용자 조회에 실패했습니다.")
+      showAlert("역할 사용자 조회에 실패했습니다.")
     }
   }
 
@@ -159,7 +160,7 @@ export default class extends BaseGridController {
   async save() {
     const roleCd = this.currentRoleCode
     if (!roleCd) {
-      alert("역할을 먼저 선택해주세요")
+      showAlert("역할을 먼저 선택해주세요")
       return
     }
 
@@ -182,14 +183,14 @@ export default class extends BaseGridController {
 
       const result = await response.json()
       if (!response.ok || !result.success) {
-        alert("저장 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
+        showAlert("저장 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
         return
       }
 
-      alert(result.message || "저장되었습니다.")
+      showAlert(result.message || "저장되었습니다.")
       this.loadUsers() // 성공 시 서버 최신화를 위해 재조회
     } catch {
-      alert("저장 실패: 네트워크 오류")
+      showAlert("저장 실패: 네트워크 오류")
     }
   }
 

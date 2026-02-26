@@ -6,6 +6,7 @@
  * - 우측(디테일): ZoneGrid (독자적인 CRUD 매니저를 생성하여 할당하고, Area에 종속된 Zone을 저장함)
  */
 import BaseGridController from "controllers/base_grid_controller"
+import { showAlert, confirmAction } from "components/ui/alert"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
 import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
 import { isApiAlive, postJson, hasChanges, hideNoRowsOverlay, fetchJson, setManagerRowData, setGridRowData, getSearchFieldValue, refreshSelectionLabel, buildCompositeKey } from "controllers/grid/grid_utils"
@@ -175,7 +176,7 @@ export default class extends BaseGridController {
       setManagerRowData(this.zoneManager, rows)
       hideNoRowsOverlay(this.zoneApi)
     } catch {
-      alert("보관 Zone 조회에 실패했습니다.")
+      showAlert("보관 Zone 조회에 실패했습니다.")
     }
   }
 
@@ -206,14 +207,14 @@ export default class extends BaseGridController {
 
     // 바뀐게 있는지 확인
     if (!hasChanges(operations)) {
-      alert("변경된 데이터가 없습니다.")
+      showAlert("변경된 데이터가 없습니다.")
       return
     }
 
     const ok = await postJson(this.batchUrlValue, operations)
     if (!ok) return
 
-    alert("보관 Zone 데이터가 저장되었습니다.")
+    showAlert("보관 Zone 데이터가 저장되었습니다.")
     await this.loadZoneRows() // 성공 시 신규 PK/상태 갱신을 위해 데이터 통째로 리프레시
   }
 
@@ -229,7 +230,7 @@ export default class extends BaseGridController {
   ensureSelectedArea() {
     if (this.selectedArea) return true
 
-    alert("좌측 목록에서 구역을 먼저 선택해주세요")
+    showAlert("좌측 목록에서 구역을 먼저 선택해주세요")
     return false
   }
 

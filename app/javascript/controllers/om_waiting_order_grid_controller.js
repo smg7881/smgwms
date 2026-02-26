@@ -1,4 +1,5 @@
-import BaseGridController from "controllers/base_grid_controller"
+﻿import BaseGridController from "controllers/base_grid_controller"
+import { showAlert, confirmAction } from "components/ui/alert"
 import { isApiAlive } from "controllers/grid/grid_utils"
 
 // 대기오더관리 화면 전용 그리드 컨트롤러 (단일 그리드 + 배치 액션)
@@ -11,7 +12,7 @@ export default class extends BaseGridController {
   // 가용재고조회 버튼 클릭
   checkAvailableStock() {
     this.reloadRows()
-    alert("가용재고 조회가 완료되었습니다. (조회 결과가 그리드에 반영됨)")
+    showAlert("가용재고 조회가 완료되었습니다. (조회 결과가 그리드에 반영됨)")
   }
 
   // 오더분배 버튼 클릭
@@ -21,7 +22,7 @@ export default class extends BaseGridController {
 
     const selectedRows = api?.getSelectedRows() || []
     if (selectedRows.length === 0) {
-      alert("분배할 오더를 선택해주세요.")
+      showAlert("분배할 오더를 선택해주세요.")
       return
     }
 
@@ -35,7 +36,7 @@ export default class extends BaseGridController {
       .filter((d) => d.dist_qty > 0)
 
     if (distributions.length === 0) {
-      alert("선택된 오더 중 분배 수량이 입력된 건이 없습니다. (분배 수량을 입력해주세요)")
+      showAlert("선택된 오더 중 분배 수량이 입력된 건이 없습니다. (분배 수량을 입력해주세요)")
       return
     }
 
@@ -45,7 +46,7 @@ export default class extends BaseGridController {
       {
         confirmMessage: `${distributions.length}건의 오더를 분배하시겠습니까?`,
         onSuccess: (result) => {
-          alert(result.message || "오더 분배가 완료되었습니다.")
+          showAlert(result.message || "오더 분배가 완료되었습니다.")
           this.reloadRows()
         }
       }

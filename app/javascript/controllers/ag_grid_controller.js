@@ -154,6 +154,8 @@ export default class extends Controller {
     }
 
     // 그리드의 물리적 크기 높/너비를 적용
+    // height: "100%" 사용 시 외부 wrapper에도 height를 적용해야 내부 grid div의 100%가 올바르게 계산됨
+    this.element.style.height = this.heightValue
     this.gridTarget.style.height = this.heightValue
     this.gridTarget.style.width = "100%"
 

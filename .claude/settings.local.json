@@ -62,7 +62,8 @@
       "Bash(python:*)",
       "mcp__serena__check_onboarding_performed",
       "mcp__serena__list_memories",
-      "mcp__serena__list_dir"
+      "mcp__serena__list_dir",
+      "mcp__playwright__browser_take_screenshot"
     ]
   }
 }

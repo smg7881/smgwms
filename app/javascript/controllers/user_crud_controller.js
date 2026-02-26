@@ -8,6 +8,7 @@
  * - FormData를 사용해 Multipart로 사진과 함께 사용자 정보를 쏘는 액션 커스텀 오버라이딩.
  */
 import BaseCrudController from "controllers/base_crud_controller"
+import { showAlert, confirmAction } from "components/ui/alert"
 
 export default class extends BaseCrudController {
   static resourceName = "user"
@@ -121,15 +122,15 @@ export default class extends BaseCrudController {
       })
 
       if (!response.ok || !result.success) {
-        alert("저장 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
+        showAlert("저장 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
         return
       }
 
-      alert(result.message || "저장되었습니다.")
+      showAlert(result.message || "저장되었습니다.")
       this.closeModal()
       this.refreshGrid()
     } catch {
-      alert("저장 실패: 네트워크 오류")
+      showAlert("저장 실패: 네트워크 오류")
     }
   }
 

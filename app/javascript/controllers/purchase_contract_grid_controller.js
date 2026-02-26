@@ -1,4 +1,5 @@
-import BaseGridController from "controllers/base_grid_controller"
+﻿import BaseGridController from "controllers/base_grid_controller"
+import { showAlert, confirmAction } from "components/ui/alert"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
 import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
 import { isApiAlive, postJson, hasChanges, fetchJson, setManagerRowData, focusFirstRow, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel } from "controllers/grid/grid_utils"
@@ -335,14 +336,14 @@ export default class extends BaseGridController {
     this.manager.stopEditing()
     const operations = this.manager.buildOperations()
     if (!hasChanges(operations)) {
-      alert("변경된 데이터가 없습니다.")
+      showAlert("변경된 데이터가 없습니다.")
       return
     }
 
     const ok = await postJson(this.masterBatchUrlValue, operations)
     if (!ok) return
 
-    alert("매입계약 데이터가 저장되었습니다.")
+    showAlert("매입계약 데이터가 저장되었습니다.")
     await this.reloadMasterRows()
   }
 
@@ -355,7 +356,7 @@ export default class extends BaseGridController {
       setManagerRowData(this.manager, rows)
       await this.syncMasterSelectionAfterLoad()
     } catch {
-      alert("매입계약 목록 조회에 실패했습니다.")
+      showAlert("매입계약 목록 조회에 실패했습니다.")
     }
   }
 
@@ -381,7 +382,7 @@ export default class extends BaseGridController {
     if (this.blockDetailActionIfMasterChanged()) return
 
     if (!this.selectedContractValue) {
-      alert("매입계약을 먼저 선택해주세요.")
+      showAlert("매입계약을 먼저 선택해주세요.")
       return
     }
 
@@ -400,14 +401,14 @@ export default class extends BaseGridController {
     if (this.blockDetailActionIfMasterChanged()) return
 
     if (!this.selectedContractValue) {
-      alert("매입계약을 먼저 선택해주세요.")
+      showAlert("매입계약을 먼저 선택해주세요.")
       return
     }
 
     this.settlementManager.stopEditing()
     const operations = this.settlementManager.buildOperations()
     if (!hasChanges(operations)) {
-      alert("변경된 데이터가 없습니다.")
+      showAlert("변경된 데이터가 없습니다.")
       return
     }
 
@@ -415,7 +416,7 @@ export default class extends BaseGridController {
     const ok = await postJson(batchUrl, operations)
     if (!ok) return
 
-    alert("매입계약 정산정보가 저장되었습니다.")
+    showAlert("매입계약 정산정보가 저장되었습니다.")
     await Promise.all([
       this.loadSettlementRows(this.selectedContractValue),
       this.loadHistoryRows(this.selectedContractValue)
@@ -435,7 +436,7 @@ export default class extends BaseGridController {
       const rows = await fetchJson(url)
       setManagerRowData(this.settlementManager, rows)
     } catch {
-      alert("정산정보 목록 조회에 실패했습니다.")
+      showAlert("정산정보 목록 조회에 실패했습니다.")
     }
   }
 
@@ -452,13 +453,13 @@ export default class extends BaseGridController {
       const rows = await fetchJson(url)
       this.historyGridController.api.setGridOption("rowData", rows)
     } catch {
-      alert("변경이력 조회에 실패했습니다.")
+      showAlert("변경이력 조회에 실패했습니다.")
     }
   }
 
   async reloadHistoryRows() {
     if (!this.selectedContractValue) {
-      alert("매입계약을 먼저 선택해주세요.")
+      showAlert("매입계약을 먼저 선택해주세요.")
       return
     }
     await this.loadHistoryRows(this.selectedContractValue)

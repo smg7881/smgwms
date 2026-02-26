@@ -9,6 +9,7 @@
  * - "재고가 존재하는 로케이션(has_stock: Y)"의 경우 삭제 트랜잭션 진행 전에 방어(block) 시킵니다.
  */
 import BaseGridController from "controllers/base_grid_controller"
+import { showAlert, confirmAction } from "components/ui/alert"
 import { fetchJson, setSelectOptions as setSelectOptionsUtil, clearSelectOptions, getSearchFieldValue } from "controllers/grid/grid_utils"
 
 export default class extends BaseGridController {
@@ -99,7 +100,7 @@ export default class extends BaseGridController {
 
     // 최말단인 Loc(셀 단위)을 만드려면 상위계층 3가지가 미리 지정되어야 함 (복합 PK 방지)
     if (!workplCd || !areaCd || !zoneCd) {
-      alert("작업장, AREA, ZONE을 모두 선택해야 입력할 수 있습니다.")
+      showAlert("작업장, AREA, ZONE을 모두 선택해야 입력할 수 있습니다.")
       return
     }
 
@@ -116,7 +117,7 @@ export default class extends BaseGridController {
 
     if (hasStockRows.length > 0) {
       // Alert 브레이크 (무결성 및 치명적 에러 방지)
-      alert(`재고가 있는 로케이션은 삭제할 수 없습니다. (${hasStockRows.length}건)`)
+      showAlert(`재고가 있는 로케이션은 삭제할 수 없습니다. (${hasStockRows.length}건)`)
       return true // True면 작업 스탑
     }
 
@@ -266,7 +267,7 @@ export default class extends BaseGridController {
     try {
       return await fetchJson(`${baseUrl}?${query.toString()}`)
     } catch {
-      alert(errorMessage)
+      showAlert(errorMessage)
       return null
     }
   }
@@ -284,8 +285,4 @@ export default class extends BaseGridController {
     return getSearchFieldValue(this.element, "zone_cd")
   }
 
-  // name 속성으로 DOM 빼오기용
-  searchField(name) {
-    return this.element.querySelector(`[name='q[${name}]']`)
-  }
 }

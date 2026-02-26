@@ -1,4 +1,5 @@
 ﻿import { Controller } from "@hotwired/stimulus"
+import { showAlert, confirmAction } from "components/ui/alert"
 
 /**
  * BaseCrudController
@@ -253,7 +254,7 @@ export default class extends Controller {
     const displayName = event.detail[this.constructor.deleteConfirmKey] || id
 
     // 삭제 의도 확인 창
-    if (!confirm(`"${displayName}" ${this.constructor.entityLabel}를 삭제하시겠습니까?`)) return
+    if (!confirmAction(`"${displayName}" ${this.constructor.entityLabel}를 삭제하시겠습니까?`)) return
 
     try {
       // deleteUrlValue에서 대상 레코드의 ':id' 텍스트를 실제 id 값으로 파싱해 요청
@@ -263,15 +264,15 @@ export default class extends Controller {
 
       // 정상 삭제 실패 시 에러 알림.
       if (!response.ok || !result.success) {
-        alert("삭제 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
+        showAlert("삭제 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
         return
       }
 
       // 정상 처리 시 알림 후 그리드 목록 자동 갱신
-      alert(result.message || "삭제되었습니다")
+      showAlert(result.message || "삭제되었습니다")
       this.refreshGrid()
     } catch {
-      alert("삭제 실패: 네트워크 오류")
+      showAlert("삭제 실패: 네트워크 오류")
     }
   }
 
@@ -302,16 +303,16 @@ export default class extends Controller {
       })
 
       if (!response.ok || !result.success) {
-        alert("저장 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
+        showAlert("저장 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
         return
       }
 
       // 성공 시 알림, 모달창 끄기, 그리드 갱신 처리
-      alert(result.message || "저장되었습니다")
+      showAlert(result.message || "저장되었습니다")
       this.closeModal()
       this.refreshGrid()
     } catch {
-      alert("저장 실패: 네트워크 오류")
+      showAlert("저장 실패: 네트워크 오류")
     }
   }
 

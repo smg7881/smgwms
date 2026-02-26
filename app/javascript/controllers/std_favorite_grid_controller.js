@@ -1,4 +1,5 @@
-import { Controller } from "@hotwired/stimulus"
+﻿import { Controller } from "@hotwired/stimulus"
+import { showAlert, confirmAction } from "components/ui/alert"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
 import { fetchJson, hasChanges, isApiAlive, postJson, setManagerRowData, getSearchFieldValue, focusFirstRow } from "controllers/grid/grid_utils"
 
@@ -71,7 +72,7 @@ export default class extends Controller {
     const favOperations = this.buildFavoriteOperations()
 
     if (!hasChanges(groupOperations) && !hasChanges(favOperations)) {
-      alert("변경된 데이터가 없습니다.")
+      showAlert("변경된 데이터가 없습니다.")
       return
     }
 
@@ -85,7 +86,7 @@ export default class extends Controller {
       if (!ok) return
     }
 
-    alert("즐겨찾기 그룹 및 메뉴 정보가 저장되었습니다.")
+    showAlert("즐겨찾기 그룹 및 메뉴 정보가 저장되었습니다.")
     this.dirtyFavorites = {}
     await this.reloadGroups()
     await this.reloadFavorites()
@@ -129,7 +130,7 @@ export default class extends Controller {
       this._activeGroup = firstRow
       this.renderStars()
     } catch {
-      alert("즐겨찾기 그룹을 불러오지 못했습니다.")
+      showAlert("즐겨찾기 그룹을 불러오지 못했습니다.")
     }
   }
 
@@ -140,7 +141,7 @@ export default class extends Controller {
       this.dirtyFavorites = {}
       this.renderStars()
     } catch {
-      alert("즐겨찾기 목록을 재조회하지 못했습니다.")
+      showAlert("즐겨찾기 목록을 재조회하지 못했습니다.")
     }
   }
 
@@ -211,18 +212,18 @@ export default class extends Controller {
     }
 
     if (!group) {
-      alert("즐겨찾기 그룹을 생성할 수 없습니다.")
+      showAlert("즐겨찾기 그룹을 생성할 수 없습니다.")
       return
     }
 
     if (group.__is_deleted || group._status === 'deleted') {
-      alert("삭제 중인 그룹에는 메뉴를 추가할 수 없습니다.")
+      showAlert("삭제 중인 그룹에는 메뉴를 추가할 수 없습니다.")
       return
     }
 
     const groupNm = group.group_nm
     if (!groupNm || groupNm.trim() === '') {
-      alert("그룹명을 입력한 뒤에 메뉴를 즐겨찾기 할 수 있습니다.")
+      showAlert("그룹명을 입력한 뒤에 메뉴를 즐겨찾기 할 수 있습니다.")
       return
     }
 

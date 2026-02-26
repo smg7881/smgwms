@@ -7,6 +7,7 @@
  * - 사용자가 그리드 상에서 작업장 코드를 변경했을 때, 서버나 Map을 참조하여 '작업장 명칭'을 즉결 동기화.
  */
 import BaseGridController from "controllers/base_grid_controller"
+import { showAlert, confirmAction } from "components/ui/alert"
 import { getSearchFieldValue, resolveNameFromMap } from "controllers/grid/grid_utils"
 
 export default class extends BaseGridController {
@@ -74,7 +75,7 @@ export default class extends BaseGridController {
     if (row.__is_new && row.workpl_cd && !row.workpl_nm) {
       row.workpl_cd = ""
       row.workpl_nm = ""
-      alert("유효한 작업장코드를 선택해주세요.")
+      showAlert("유효한 작업장코드를 선택해주세요.")
     }
 
     // 변경된 Name값을 사용자 눈에 보이게 그리드 갱신

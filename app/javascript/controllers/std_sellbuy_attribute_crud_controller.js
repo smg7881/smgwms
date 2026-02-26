@@ -1,4 +1,6 @@
-import BaseCrudController from "controllers/base_crud_controller"
+﻿import BaseCrudController from "controllers/base_crud_controller"
+import { showAlert, confirmAction } from "components/ui/alert"
+import { getSearchFieldValue } from "controllers/grid/grid_utils"
 
 export default class extends BaseCrudController {
   static resourceName = "sellbuy_attribute"
@@ -110,10 +112,7 @@ export default class extends BaseCrudController {
   }
 
   selectedCorpCodeFromSearch() {
-    const input = this.element.querySelector("input[name='q[corp_cd]']")
-    if (!input) return ""
-
-    return String(input.value || "").trim().toUpperCase()
+    getSearchFieldValue(this.element, "corp_cd")
   }
 
   handlePopupSelected = (event) => {
@@ -131,7 +130,7 @@ export default class extends BaseCrudController {
     }
 
     if (selectedCode === currentCode) {
-      alert("상위매출입항목은 자기 자신을 선택할 수 없습니다.")
+      showAlert("상위매출입항목은 자기 자신을 선택할 수 없습니다.")
       this.clearUpperSellbuyAttrField(fieldGroup)
       return
     }
@@ -148,7 +147,7 @@ export default class extends BaseCrudController {
     }
 
     if (sellbuyAttrCd && upperSellbuyAttrCd && sellbuyAttrCd === upperSellbuyAttrCd) {
-      alert("상위매출입항목코드는 자기 자신과 같을 수 없습니다.")
+      showAlert("상위매출입항목코드는 자기 자신과 같을 수 없습니다.")
       this.clearUpperSellbuyAttrField()
       return
     }

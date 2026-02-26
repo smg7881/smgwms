@@ -1,4 +1,5 @@
-import BaseGridController from "controllers/base_grid_controller"
+﻿import BaseGridController from "controllers/base_grid_controller"
+import { showAlert, confirmAction } from "components/ui/alert"
 import { getSearchFieldValue } from "controllers/grid/grid_utils"
 
 export default class extends BaseGridController {
@@ -97,7 +98,7 @@ export default class extends BaseGridController {
   }
 
   async fetchRates() {
-    if (!confirm("외부 API에서 환율 정보를 강제로 수집하시겠습니까? (최대 1~3초 소요)")) return
+    if (!confirmAction("외부 API에서 환율 정보를 강제로 수집하시겠습니까? (최대 1~3초 소요)")) return
 
     try {
       const url = this.fetchUrlValue
@@ -110,13 +111,13 @@ export default class extends BaseGridController {
       })
       const data = await response.json()
       if (data.success) {
-        alert(data.message || "환율 정보가 성공적으로 수집/갱신되었습니다.")
+        showAlert(data.message || "환율 정보가 성공적으로 수집/갱신되었습니다.")
         this.fetchData() // 그리드 새로 데이터 로드
       } else {
-        alert(data.message || "환율 정보 수집 중 오류가 발생했습니다.")
+        showAlert(data.message || "환율 정보 수집 중 오류가 발생했습니다.")
       }
     } catch (e) {
-      alert("서버와 통신 중 문제가 발생했습니다.")
+      showAlert("서버와 통신 중 문제가 발생했습니다.")
     }
   }
 

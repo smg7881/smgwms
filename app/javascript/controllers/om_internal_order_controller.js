@@ -1,4 +1,5 @@
-import { Controller } from "@hotwired/stimulus"
+﻿import { Controller } from "@hotwired/stimulus"
+import { showAlert, confirmAction } from "components/ui/alert"
 
 export default class extends Controller {
   static values = {
@@ -45,7 +46,7 @@ export default class extends Controller {
   async search() {
     const ordNo = this.searchOrdNoTarget.value.trim()
     if (!ordNo) {
-      alert("오더번호를 입력하세요.")
+      showAlert("오더번호를 입력하세요.")
       this.searchOrdNoTarget.focus()
       return
     }
@@ -60,11 +61,11 @@ export default class extends Controller {
       if (response.ok && result.success) {
         this.#loadOrderData(result.data)
       } else {
-        alert(result.message || "오더를 찾을 수 없습니다.")
+        showAlert(result.message || "오더를 찾을 수 없습니다.")
       }
     } catch (error) {
       console.error("[om-internal-order] search error:", error)
-      alert("서버 연결에 실패했습니다.")
+      showAlert("서버 연결에 실패했습니다.")
     }
   }
 
@@ -94,25 +95,25 @@ export default class extends Controller {
       const result = await response.json()
 
       if (response.ok && result.success) {
-        alert(result.message)
+        showAlert(result.message)
         this.#loadOrderData(result.data)
       } else {
         const errors = result.errors ? result.errors.join("\n") : (result.message || "저장에 실패했습니다.")
-        alert(errors)
+        showAlert(errors)
       }
     } catch (error) {
       console.error("[om-internal-order] save error:", error)
-      alert("서버 연결에 실패했습니다.")
+      showAlert("서버 연결에 실패했습니다.")
     }
   }
 
   async cancelOrder() {
     if (!this.#currentOrderId) {
-      alert("취소할 오더가 선택되지 않았습니다.")
+      showAlert("취소할 오더가 선택되지 않았습니다.")
       return
     }
 
-    if (!confirm("이 오더를 취소하시겠습니까?")) {
+    if (!confirmAction("이 오더를 취소하시겠습니까?")) {
       return
     }
 
@@ -122,14 +123,14 @@ export default class extends Controller {
       const result = await response.json()
 
       if (response.ok && result.success) {
-        alert(result.message)
+        showAlert(result.message)
         this.#loadOrderData(result.data)
       } else {
-        alert(result.message || "취소에 실패했습니다.")
+        showAlert(result.message || "취소에 실패했습니다.")
       }
     } catch (error) {
       console.error("[om-internal-order] cancel error:", error)
-      alert("오류가 발생했습니다.")
+      showAlert("오류가 발생했습니다.")
     }
   }
 
@@ -165,7 +166,7 @@ export default class extends Controller {
     this.#itemGridApi.forEachNode(node => allRows.push(node.data))
 
     if (allRows.length >= 20) {
-      alert("아이템은 최대 20건까지 등록 가능합니다.")
+      showAlert("아이템은 최대 20건까지 등록 가능합니다.")
       return
     }
 
@@ -180,7 +181,7 @@ export default class extends Controller {
 
     const selected = this.#itemGridApi.getSelectedRows()
     if (selected.length === 0) {
-      alert("삭제할 행을 선택하세요.")
+      showAlert("삭제할 행을 선택하세요.")
       return
     }
 
