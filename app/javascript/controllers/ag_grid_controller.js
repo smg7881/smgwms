@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ag_grid_controller.js
  * 
  * 프로젝트 전반에서 AG-Grid를 생성하고 제어하는 메인 Stimulus 컨트롤러입니다.
@@ -14,8 +14,11 @@ import {
   darkTheme,
   registerAgGridCommunityModules
 } from "controllers/ag_grid/grid_defaults"
+import { buildColumnDefs as buildAgGridColumnDefs } from "controllers/ag_grid/column_builder"
+import { loadClientGridData, loadServerGridPage } from "controllers/ag_grid/data_loader"
 import { RENDERER_REGISTRY } from "controllers/ag_grid/renderers"
 import { openLookupPopup } from "controllers/lookup_popup_modal"
+import { isApiAlive } from "controllers/grid/core/api_guard"
 
 // 커뮤니티 전역 모듈 등록 (최초 1회만 동작하도록 내부 방어 로직 있음)
 registerAgGridCommunityModules()
@@ -69,7 +72,7 @@ export default class extends Controller {
 
   // 부모 컨트롤러나 외부에서 강제로 최신 데이터를 재조회할 때 부르는 공용 메서드
   refresh() {
-    if (!this.isApiAlive(this.gridApi)) return // 이미 파괴된 객체라면 중단
+    if (!isApiAlive(this.gridApi)) return // 이미 파괴된 객체라면 중단
 
     if (this.serverPaginationValue) {
       // 서버사이드 페이징: 1페이지부터 다시 Fetch
@@ -88,7 +91,7 @@ export default class extends Controller {
 
   // 화면에 렌더링 된 리스트 전체를 CSV 형태로 내보냅니다. (커뮤니티 내장 플러그인 사용)
   exportCsv() {
-    if (!this.isApiAlive(this.gridApi)) return
+    if (!isApiAlive(this.gridApi)) return
     this.gridApi.exportDataAsCsv()
   }
 
@@ -172,7 +175,7 @@ export default class extends Controller {
       this.fetchServerPage() // 서버 API(Page/perPage param 부착) 호출
     } else if (this.hasUrlValue && this.urlValue) {
       this.fetchData() // 통 API 로드
-    } else if (this.rowDataValue.length > 0 && this.isApiAlive(this.gridApi)) {
+    } else if (this.rowDataValue.length > 0 && isApiAlive(this.gridApi)) {
       this.focusedRowNode = null
       this.gridApi.setGridOption("rowData", this.rowDataValue) // 하드코딩된 초깃값 배열 주입
     }
@@ -191,7 +194,7 @@ export default class extends Controller {
   // 클라이언트의 로컬 스토리지에 현재 설정된 컬럼 너비/순서 등의 뷰 상태를 저장합니다.
   saveColumnState(gridId) {
     const id = gridId || this.gridIdValue
-    if (!id || !this.isApiAlive(this.gridApi)) return
+    if (!id || !isApiAlive(this.gridApi)) return
 
     const state = this.gridApi.getColumnState()
     localStorage.setItem(this.#storageKey(id), JSON.stringify(state))
@@ -201,7 +204,7 @@ export default class extends Controller {
   // 레이아웃이 꼬였거나 기본값 화면으로 되돌리고 싶을 때 저장된 기록을 삭제하고 원복합니다.
   resetColumnState(gridId) {
     const id = gridId || this.gridIdValue
-    if (!id || !this.isApiAlive(this.gridApi)) return
+    if (!id || !isApiAlive(this.gridApi)) return
 
     localStorage.removeItem(this.#storageKey(id))
     this.gridApi.resetColumnState()
@@ -211,7 +214,7 @@ export default class extends Controller {
   // DOM을 말끔히 치우고 인스턴스(API)를 강제 제거(destroy)하여 메모리를 확보합니다.
   teardown() {
     if (!this.gridApi) return
-    if (this.isApiAlive(this.gridApi)) this.gridApi.destroy()
+    if (isApiAlive(this.gridApi)) this.gridApi.destroy()
     this.gridApi = null
     this.gridTarget.innerHTML = "" // 남아있는 찌꺼기 돔 방지
   }
@@ -219,49 +222,10 @@ export default class extends Controller {
   // HTML 속성으로 부터 넘겨받은 { field: 'name', type: 'text',... } JSON 배열에 대해서 
   // 실제 AGGrid가 읽어들일 수 있는 colDef 스펙으로 변환(Render, Formatter 삽입) 해주는 파서(parser) 역할
   buildColumnDefs() {
-    return this.columnsValue.map((column) => {
-      const def = { ...column }
-
-      // Move AG Grid invalid custom properties (lookup_*) into `colDef.context`
-      def.context = def.context || {}
-      Object.keys(def).forEach(key => {
-        if (key.startsWith('lookup_')) {
-          def.context[key] = def[key]
-          delete def[key]
-        }
-      })
-
-      const hasLookupPopup = this.isLookupColumn(def)
-
-      if (hasLookupPopup) {
-        if (!def.context.lookup_name_field && def.field) {
-          def.context.lookup_name_field = def.field
-        }
-        if (!def.cellRenderer) {
-          def.cellRenderer = "lookupPopupCellRenderer"
-        }
-        // lookup 컬럼은 렌더러 내부 입력창으로 편집하므로 AG Grid 기본 편집모드는 비활성화
-        def.editable = false
-      }
-
-      // "formatter: 'date'" 등 문자열 포맷터 호출에 맞는 실제 함수 할당
-      if (def.formatter && FORMATTER_REGISTRY[def.formatter]) {
-        def.valueFormatter = FORMATTER_REGISTRY[def.formatter]
-        delete def.formatter
-      }
-
-      // "cellRenderer: 'link'" 등 텍스트를 해당하는 컴포넌트 함수 렌더러로 변경 연결
-      if (def.cellRenderer && RENDERER_REGISTRY[def.cellRenderer]) {
-        def.cellRenderer = RENDERER_REGISTRY[def.cellRenderer]
-      }
-
-      // 수정(Edit) 진입 가능 여부를 관리형태로 처리
-      // 이미 삭제 처리(소프트삭제)된 행의 락업(Lock-up)을 구현하기 위해 함수화 (data.__is_deleted 여부 참조)
-      if (def.editable === true) {
-        def.editable = (params) => !params?.data?.__is_deleted
-      }
-
-      return def
+    return buildAgGridColumnDefs(this.columnsValue, {
+      formatterRegistry: FORMATTER_REGISTRY,
+      rendererRegistry: RENDERER_REGISTRY,
+      isLookupColumn: (colDef) => this.isLookupColumn(colDef)
     })
   }
 
@@ -282,48 +246,22 @@ export default class extends Controller {
   // 일반 API Fetch. 1차원적으로 모든 데이터를 JSON으로 다 가져오는 방식.
   fetchData() {
     const api = this.gridApi
-    if (!this.isApiAlive(api)) return
+    if (!isApiAlive(api)) return
 
-    api.setGridOption("loading", true) // 조회중 상태 UI On
-
-    fetch(this.urlValue, { headers: { Accept: "application/json" } })
-      .then((response) => {
-        if (!response.ok) throw new Error(`HTTP ${response.status}`)
-        return response.json()
-      })
-      .then((data) => {
-        if (!this.isApiAlive(api) || api !== this.gridApi) return // 중간 통신 응답 대기 시점에 소멸 시 방어
-
-        api.setGridOption("loading", false)
-        api.setGridOption("overlayNoRowsTemplate", this.defaultNoRowsTemplate)
-        this.focusedRowNode = null // 이전 포커스 흔적 삭제 
-
-        api.setGridOption("rowData", data) // 가져온 전체 데이터를 채움
-
-        // 0건일 시 텅 빈 표시(No rows) 수행
-        if (data.length === 0) api.showNoRowsOverlay()
-        else api.hideOverlay()
-      })
-      .catch((error) => {
-        console.error("[ag-grid] data load failed:", error)
-        if (!this.isApiAlive(api) || api !== this.gridApi) return
-
-        api.setGridOption("loading", false)
-        // 에러 스켈레톤 UI
-        api.setGridOption(
-          "overlayNoRowsTemplate",
-          '<div style="padding:20px;text-align:center;">' +
-          '<div style="color:#f85149;font-weight:600;margin-bottom:4px;">데이터 로딩 실패</div>' +
-          '<div style="color:#8b949e;font-size:12px;">네트워크 상태를 확인해주세요</div>' +
-          "</div>"
-        )
-        api.showNoRowsOverlay()
-      })
+    loadClientGridData({
+      api,
+      url: this.urlValue,
+      defaultNoRowsTemplate: this.defaultNoRowsTemplate,
+      isCurrentApi: () => api === this.gridApi,
+      beforeApply: () => {
+        this.focusedRowNode = null
+      }
+    })
   }
 
   // 검색 폼 등에서 초기화 시 그리드에 할당된 뷰 필터 및 숨김상태, 퀵 서치(Quick Search)까지 말끔히 해제
   clearFilter() {
-    if (!this.isApiAlive(this.gridApi)) return
+    if (!isApiAlive(this.gridApi)) return
 
     // 모든 컬럼의 필터 인스턴스를 초기화
     this.gridApi.setFilterModel(null)
@@ -353,7 +291,7 @@ export default class extends Controller {
   // 다음 페이지 <a> 태그나 번호를 누를 경우 새 페이지 번호 정보를 따와 URL에 연결합니다.
   #handleServerPaginationChanged(event) {
     if (this.#suppressPaginationEvent) return
-    if (!this.isApiAlive(this.gridApi)) return
+    if (!isApiAlive(this.gridApi)) return
 
     const newPage = this.gridApi.paginationGetCurrentPage() + 1
     if (newPage !== this.#serverPage) {
@@ -365,50 +303,22 @@ export default class extends Controller {
   // 서버에 현재 페이지/RowLimit 값을 전달하여 1페이지분씩 가져오는 동작 처리 부분.
   fetchServerPage() {
     const api = this.gridApi
-    if (!this.isApiAlive(api)) return
+    if (!isApiAlive(api)) return
 
-    api.setGridOption("loading", true)
-
-    // URL URL 인스턴스화 후 query params(page, per_page) 강제 바인딩
-    const url = new URL(this.urlValue, window.location.origin)
-    url.searchParams.set("page", this.#serverPage)
-    url.searchParams.set("per_page", this.pageSizeValue)
-
-    fetch(url.toString(), { headers: { Accept: "application/json" } })
-      .then((response) => {
-        if (!response.ok) throw new Error(`HTTP ${response.status}`)
-        return response.json()
-      })
-      .then((data) => {
-        if (!this.isApiAlive(api) || api !== this.gridApi) return
-
-        api.setGridOption("loading", false)
-        api.setGridOption("overlayNoRowsTemplate", this.defaultNoRowsTemplate)
+    loadServerGridPage({
+      api,
+      url: this.urlValue,
+      page: this.#serverPage,
+      perPage: this.pageSizeValue,
+      defaultNoRowsTemplate: this.defaultNoRowsTemplate,
+      isCurrentApi: () => api === this.gridApi,
+      beforeApply: () => {
         this.focusedRowNode = null
-        this.#serverTotal = data.total || 0 // (서버 응답값 컨벤션: { rows: [...], total: 숫자 } 기반 처리)
-
-        // 페이징된 배열 데이터만 꽂음
-        api.setGridOption("rowData", data.rows || [])
-        // 사이즈가 동적으로 바뀌는 경우 대비, 1P 사이즈 강제 주입
-        api.setGridOption("paginationPageSize", this.pageSizeValue)
-
-        if ((data.rows || []).length === 0) api.showNoRowsOverlay()
-        else api.hideOverlay()
-      })
-      .catch((error) => {
-        console.error("[ag-grid] server page load failed:", error)
-        if (!this.isApiAlive(api) || api !== this.gridApi) return
-
-        api.setGridOption("loading", false)
-        api.setGridOption(
-          "overlayNoRowsTemplate",
-          '<div style="padding:20px;text-align:center;">' +
-          '<div style="color:#f85149;font-weight:600;margin-bottom:4px;">데이터 로딩 실패</div>' +
-          '<div style="color:#8b949e;font-size:12px;">네트워크 상태를 확인해주세요</div>' +
-          "</div>"
-        )
-        api.showNoRowsOverlay()
-      })
+      },
+      onTotal: (total) => {
+        this.#serverTotal = total
+      }
+    })
   }
 
   // [키보드 이동 및 셀 포커스 디자인 담당 핸들러]
@@ -420,7 +330,7 @@ export default class extends Controller {
     // 버튼, 액션 박스, 체크박스 컬럼을 누르는 경우는 보통 독립 프로세스가 진행되므로 행 하이라이팅 무시함.
     if (this.isSelectionCheckboxColumn(event)) return
     if (this.isActionColumn(event)) return
-    if (!this.isApiAlive(this.gridApi)) return
+    if (!isApiAlive(this.gridApi)) return
 
     const nextFocusedNode = this.gridApi.getDisplayedRowAtIndex(event.rowIndex)
     if (!nextFocusedNode) return
@@ -434,7 +344,7 @@ export default class extends Controller {
     if (prevFocusedNode) rowNodes.push(prevFocusedNode)
     rowNodes.push(nextFocusedNode)
 
-    if (rowNodes.length > 0 && this.isApiAlive(this.gridApi)) {
+    if (rowNodes.length > 0 && isApiAlive(this.gridApi)) {
       // 행 다시 그리기 => getRowClass() 함수가 호출됨
       this.gridApi.redrawRows({ rowNodes })
     }
@@ -451,7 +361,7 @@ export default class extends Controller {
 
     const colDef = event?.column?.getColDef?.()
     if (!this.isLookupColumn(colDef)) return
-    if (!this.isApiAlive(this.gridApi)) return
+    if (!isApiAlive(this.gridApi)) return
 
     event.event.preventDefault()
     event.event.stopPropagation()
@@ -469,7 +379,7 @@ export default class extends Controller {
 
   handleLookupOpenEvent(event) {
     event.stopPropagation()
-    if (!this.isApiAlive(this.gridApi)) return
+    if (!isApiAlive(this.gridApi)) return
 
     const detail = event.detail || {}
     const colDef = detail.colDef
@@ -590,7 +500,7 @@ export default class extends Controller {
   // 초기 로딩 후 컬럼 이동(moveColumns) 명령을 비동기(Microtask & timeout)로 강제하는 함수.
   ensureStatusColumnOrder() {
     const reposition = () => {
-      if (!this.isApiAlive(this.gridApi)) return
+      if (!isApiAlive(this.gridApi)) return
       if (!this.gridApi?.moveColumns || !this.gridApi?.getAllGridColumns) return
 
       const columns = this.gridApi.getAllGridColumns()
@@ -618,16 +528,11 @@ export default class extends Controller {
     setTimeout(reposition, 0)
   }
 
-  // 객체 생명주기 검증 함수. AG-Grid API가 null이거나 강제 할당해제(destroy)되지 않았는지 판별.
-  isApiAlive(api) {
-    return Boolean(api) && !(typeof api.isDestroyed === "function" && api.isDestroyed())
-  }
-
   // 브라우저 localStorage에서 커스텀 컬럼 정보를 추출하여 파싱하고 
   // 실제 Grid Api 객체에 재적용시키는 기능.
   #restoreColumnState() {
     const id = this.gridIdValue
-    if (!id || !this.isApiAlive(this.gridApi)) return // 고유 ID가 부여된 그리드만 복원 가능
+    if (!id || !isApiAlive(this.gridApi)) return // 고유 ID가 부여된 그리드만 복원 가능
 
     const saved = localStorage.getItem(this.#storageKey(id))
     if (!saved) return // 저장된 스냅샷 없음
@@ -670,3 +575,4 @@ export default class extends Controller {
     }, 2000)
   }
 }
+

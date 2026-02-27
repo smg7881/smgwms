@@ -24,7 +24,12 @@ import { Controller } from "@hotwired/stimulus"
 import { showAlert, confirmAction } from "components/ui/alert"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
 import { GridEventManager } from "controllers/grid/grid_event_manager"
-import { isApiAlive, setGridRowData, postJson, hasChanges, getCsrfToken } from "controllers/grid/grid_utils"
+import { isApiAlive, setGridRowData, postJson, hasChanges } from "controllers/grid/grid_utils"
+import { requestJson } from "controllers/grid/core/http_client"
+import {
+  getSearchFormValue as getSearchFormValueFromBridge,
+  getSearchFieldElement as getSearchFieldElementFromBridge
+} from "controllers/grid/core/search_form_bridge"
 
 export default class BaseGridController extends Controller {
   static targets = ["grid"]
@@ -118,16 +123,7 @@ export default class BaseGridController extends Controller {
     if (confirmMessage && !confirmAction(confirmMessage)) return false
 
     try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": getCsrfToken()
-        },
-        body: JSON.stringify(body)
-      })
-
-      const result = await response.json()
+      const { response, result } = await requestJson(url, { method: "POST", body })
 
       if (response.ok && result.success) {
         if (onSuccess) {
@@ -165,28 +161,38 @@ export default class BaseGridController extends Controller {
       beforeDelete: this.beforeDeleteRows?.bind(this)
     })
   }
+  async saveRowsWith({
+    manager,
+    batchUrl,
+    saveMessage = this.saveMessage,
+    emptyMessage = "변경된 데이터가 없습니다.",
+    onSuccess = null
+  } = {}) {
+    if (!manager) return false
 
-  async saveRows() {
-    if (!this.manager) return
+    manager.stopEditing?.()
 
-    this.manager.stopEditing()
+    const operations = manager.buildOperations
+      ? manager.buildOperations()
+      : manager.getChanges?.()
 
-    const operations = this.manager.buildOperations()
-    if (!hasChanges(operations)) {
-      showAlert("변경된 데이터가 없습니다.")
-      return
+    if (!operations || !hasChanges(operations)) {
+      showAlert(emptyMessage)
+      return false
     }
 
-    const ok = await postJson(this.batchUrlValue, operations)
-    if (!ok) return
+    const ok = await postJson(batchUrl, operations)
+    if (!ok) return false
 
-    showAlert(this.saveMessage)
-
-    if (this.afterSaveSuccess) {
-      this.afterSaveSuccess()
-    } else {
-      this.reloadRows()
+    if (saveMessage) {
+      showAlert(saveMessage)
     }
+
+    if (onSuccess) {
+      await onSuccess()
+    }
+
+    return true
   }
 
   reloadRows() {
@@ -275,15 +281,7 @@ export default class BaseGridController extends Controller {
    * @returns {string} 찾아낸 값
    */
   getSearchFormValue(fieldName, { toUpperCase = true } = {}) {
-    if (!this.application) return ""
-    const formEl = document.querySelector('[data-controller~="search-form"]')
-    if (!formEl) return ""
-
-    const formCtrl = this.application.getControllerForElementAndIdentifier(formEl, "search-form")
-    if (!formCtrl || typeof formCtrl.getSearchFieldValue !== "function") return ""
-
-    const val = String(formCtrl.getSearchFieldValue(`q[${fieldName}]`) || "").trim()
-    return toUpperCase ? val.toUpperCase() : val
+    return getSearchFormValueFromBridge(this.application, fieldName, { toUpperCase })
   }
 
   /**
@@ -292,9 +290,6 @@ export default class BaseGridController extends Controller {
    * @returns {Element|null}
    */
   getSearchFieldElement(fieldName) {
-    const formEl = document.querySelector('[data-controller~="search-form"]')
-    if (!formEl) return null
-    const elements = formEl.querySelectorAll(`[name="q[${fieldName}]"]`)
-    return elements.length > 0 ? elements[elements.length - 1] : null
+    return getSearchFieldElementFromBridge(fieldName)
   }
 }

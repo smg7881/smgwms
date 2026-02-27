@@ -1,4 +1,4 @@
-﻿/**
+/**
  * user_menu_role_grid_controller.js
  * 
  * [공통] BaseGridController 상속: 한 화면에 그리드가 "3개(사용자/권한/메뉴)"인 다중(3 Tiered) 조망 뷰의 사령탑.
@@ -11,7 +11,8 @@ import BaseGridController from "controllers/base_grid_controller"
 import { showAlert, confirmAction } from "components/ui/alert"
 import { GridEventManager, resolveAgGridRegistration } from "controllers/grid/grid_event_manager"
 import { AbortableRequestTracker, isAbortError } from "controllers/grid/request_tracker"
-import { isApiAlive, fetchJson, setGridRowData, focusFirstRow, registerGridInstance } from "controllers/grid/grid_utils"
+import { isApiAlive, fetchJson, setGridRowData, focusFirstRow } from "controllers/grid/grid_utils"
+import { registerGridInstance } from "controllers/grid/core/grid_registration"
 
 export default class extends BaseGridController {
   // 타겟 뷰: 1단User, 2단Role, 3단Menu 그리드 DOM

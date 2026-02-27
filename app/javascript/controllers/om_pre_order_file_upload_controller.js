@@ -1,6 +1,6 @@
 ﻿import { Controller } from "@hotwired/stimulus"
 import { showAlert, confirmAction } from "components/ui/alert"
-import { registerGridInstance } from "controllers/grid/grid_utils"
+import { registerGridInstance } from "controllers/grid/core/grid_registration"
 
 export default class extends Controller {
   static targets = ["grid", "summary", "uploadFileInput"]

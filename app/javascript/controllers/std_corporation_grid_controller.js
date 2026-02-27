@@ -1,6 +1,6 @@
 import MasterDetailGridController from "controllers/master_detail_grid_controller"
 import { showAlert } from "components/ui/alert"
-import { fetchJson, hasChanges, isApiAlive, postJson, setManagerRowData, hasPendingChanges, buildTemplateUrl, refreshSelectionLabel } from "controllers/grid/grid_utils"
+import { fetchJson, isApiAlive, setManagerRowData, hasPendingChanges, buildTemplateUrl, refreshSelectionLabel } from "controllers/grid/grid_utils"
 
 export default class extends MasterDetailGridController {
   static targets = [...MasterDetailGridController.targets, "countryGrid", "selectedCorpLabel"]
@@ -99,19 +99,23 @@ export default class extends MasterDetailGridController {
   }
 
   async saveMasterRows() {
-    if (!this.manager) return
+    await this.saveRowsWith({
+      manager: this.manager,
+      batchUrl: this.batchUrlValue,
+      saveMessage: this.saveMessage,
+      onSuccess: () => this.afterSaveSuccess()
+    })
+  }
 
-    this.manager.stopEditing()
-    const operations = this.manager.buildOperations()
-    if (!hasChanges(operations)) {
-      showAlert("변경된 데이터가 없습니다.")
-      return
-    }
+  get batchUrlValue() {
+    return this.masterBatchUrlValue
+  }
 
-    const ok = await postJson(this.masterBatchUrlValue, operations)
-    if (!ok) return
+  get saveMessage() {
+    return "법인 정보가 저장되었습니다."
+  }
 
-    showAlert("법인 정보가 저장되었습니다.")
+  async afterSaveSuccess() {
     await this.reloadMasterRows()
   }
 
@@ -146,19 +150,13 @@ export default class extends MasterDetailGridController {
       return
     }
 
-    this.countryManager.stopEditing()
-    const operations = this.countryManager.buildOperations()
-    if (!hasChanges(operations)) {
-      showAlert("변경된 데이터가 없습니다.")
-      return
-    }
-
-    const url = buildTemplateUrl(this.countryBatchUrlTemplateValue, ":id", this.selectedCorpCode)
-    const ok = await postJson(url, operations)
-    if (!ok) return
-
-    showAlert("법인 국가 정보가 저장되었습니다.")
-    await this.loadCountryRows(this.selectedCorpCode)
+    const batchUrl = buildTemplateUrl(this.countryBatchUrlTemplateValue, ":id", this.selectedCorpCode)
+    await this.saveRowsWith({
+      manager: this.countryManager,
+      batchUrl,
+      saveMessage: "법인 국가 정보가 저장되었습니다.",
+      onSuccess: () => this.loadCountryRows(this.selectedCorpCode)
+    })
   }
 
   get countryConfig() {

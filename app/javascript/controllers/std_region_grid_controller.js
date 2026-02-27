@@ -1,5 +1,5 @@
 import BaseGridController from "controllers/base_grid_controller"
-import { fetchJson, isApiAlive, registerGridInstance } from "controllers/grid/grid_utils"
+import { fetchJson, isApiAlive } from "controllers/grid/grid_utils"
 
 export default class extends BaseGridController {
   connect() {
@@ -62,7 +62,7 @@ export default class extends BaseGridController {
       blankCheckFields: ["regn_nm_cd"],
       comparableFields: ["corp_cd", "regn_nm_cd", "regn_eng_nm_cd", "upper_regn_cd", "rmk_cd", "use_yn_cd"],
       firstEditCol: "regn_cd",
-      pkLabels: { regn_cd: "권역코드" }
+      pkLabels: { regn_cd: "沅뚯뿭肄붾뱶" }
     }
   }
 
@@ -155,6 +155,6 @@ export default class extends BaseGridController {
   }
 
   get saveMessage() {
-    return "권역 데이터가 저장되었습니다."
+    return "沅뚯뿭 ?곗씠?곌? ??λ릺?덉뒿?덈떎."
   }
 }

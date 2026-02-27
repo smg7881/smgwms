@@ -1,5 +1,7 @@
-﻿import { Controller } from "@hotwired/stimulus"
+import { Controller } from "@hotwired/stimulus"
 import { showAlert, confirmAction } from "components/ui/alert"
+import { getCsrfToken, requestJson as requestJsonCore } from "controllers/grid/core/http_client"
+import { getSearchFormValue as getSearchFormValueFromBridge } from "controllers/grid/core/search_form_bridge"
 
 /**
  * BaseCrudController
@@ -70,7 +72,7 @@ export default class extends Controller {
 
   // HTML 메타 태그에서 CSRF 토큰을 추출합니다. AJAX 요청 시 헤더에 첨부하여 Rails 보안 에러를 막습니다.
   get csrfToken() {
-    return document.querySelector("[name='csrf-token']")?.content || ""
+    return getCsrfToken()
   }
 
   // 모달 내부의 특정 액션 버튼(예: 취소)을 위임 패턴으로 잡기 위한 선택자
@@ -327,22 +329,7 @@ export default class extends Controller {
   // - Rails 보안 체계를 위한 CSRF 헤더를 자동 추가합니다.
   // - JSON 통신 모드와 multipart 방식(isMultipart 변수) 모두를 대응할 수 있도록 합니다.
   async requestJson(url, { method, body, isMultipart = false }) {
-    const headers = { "X-CSRF-Token": this.csrfToken }
-
-    // 멀티파트가 아닌 기본 요청의 경우 Content-Type 명시
-    if (!isMultipart) headers["Content-Type"] = "application/json"
-
-    // URL을 향해 실제 fetch 비동기 통신. 
-    // JSON일시에는 stringify, 멀티파트 폼데이터는 그대로 전송
-    const response = await fetch(url, {
-      method,
-      headers,
-      body: isMultipart ? body : JSON.stringify(body)
-    })
-
-    // 응답 결과를 JSON 파싱하여 반환합니다.
-    const result = await response.json()
-    return { response, result }
+    return requestJsonCore(url, { method, body, isMultipart })
   }
 
   // ─── Search Form 통합 연동 ───
@@ -354,14 +341,6 @@ export default class extends Controller {
    * @returns {string} 찾아낸 값
    */
   getSearchFormValue(fieldName, { toUpperCase = true } = {}) {
-    if (!this.application) return ""
-    const formEl = document.querySelector('[data-controller~="search-form"]')
-    if (!formEl) return ""
-
-    const formCtrl = this.application.getControllerForElementAndIdentifier(formEl, "search-form")
-    if (!formCtrl || typeof formCtrl.getSearchFieldValue !== "function") return ""
-
-    const val = String(formCtrl.getSearchFieldValue(`q[${fieldName}]`) || "").trim()
-    return toUpperCase ? val.toUpperCase() : val
+    return getSearchFormValueFromBridge(this.application, fieldName, { toUpperCase })
   }
 }

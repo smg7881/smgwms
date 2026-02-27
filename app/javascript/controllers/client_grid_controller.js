@@ -1,6 +1,6 @@
 ﻿import MasterDetailGridController from "controllers/master_detail_grid_controller"
 import { showAlert } from "components/ui/alert"
-import { isApiAlive, postJson, hasChanges, fetchJson, setManagerRowData, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel, setSelectOptions as setSelectOptionsUtil } from "controllers/grid/grid_utils"
+import { isApiAlive, fetchJson, setManagerRowData, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel, setSelectOptions as setSelectOptionsUtil } from "controllers/grid/grid_utils"
 import { switchTab, activateTab } from "controllers/ui_utils"
 import * as GridFormUtils from "controllers/grid/grid_form_utils"
 const CODE_FIELDS = [
@@ -333,19 +333,23 @@ export default class extends MasterDetailGridController {
   }
 
   async saveMasterRows() {
-    if (!this.manager) return
+    await this.saveRowsWith({
+      manager: this.manager,
+      batchUrl: this.batchUrlValue,
+      saveMessage: this.saveMessage,
+      onSuccess: () => this.afterSaveSuccess()
+    })
+  }
 
-    this.manager.stopEditing()
-    const operations = this.manager.buildOperations()
-    if (!hasChanges(operations)) {
-      showAlert("변경된 데이터가 없습니다.")
-      return
-    }
+  get batchUrlValue() {
+    return this.masterBatchUrlValue
+  }
 
-    const ok = await postJson(this.masterBatchUrlValue, operations)
-    if (!ok) return
+  get saveMessage() {
+    return "거래처 데이터가 저장되었습니다."
+  }
 
-    showAlert("거래처 데이터가 저장되었습니다.")
+  async afterSaveSuccess() {
     await this.reloadMasterRows()
   }
 
@@ -381,19 +385,13 @@ export default class extends MasterDetailGridController {
       return
     }
 
-    this.contactManager.stopEditing()
-    const operations = this.contactManager.buildOperations()
-    if (!hasChanges(operations)) {
-      showAlert("변경된 데이터가 없습니다.")
-      return
-    }
-
     const batchUrl = buildTemplateUrl(this.contactBatchUrlTemplateValue, ":id", this.selectedClientValue)
-    const ok = await postJson(batchUrl, operations)
-    if (!ok) return
-
-    showAlert("거래처 담당자 데이터가 저장되었습니다.")
-    await this.loadContactRows(this.selectedClientValue)
+    await this.saveRowsWith({
+      manager: this.contactManager,
+      batchUrl,
+      saveMessage: "거래처 담당자 데이터가 저장되었습니다.",
+      onSuccess: () => this.loadContactRows(this.selectedClientValue)
+    })
   }
 
   addWorkplaceRow() {
@@ -424,19 +422,13 @@ export default class extends MasterDetailGridController {
       return
     }
 
-    this.workplaceManager.stopEditing()
-    const operations = this.workplaceManager.buildOperations()
-    if (!hasChanges(operations)) {
-      showAlert("변경된 데이터가 없습니다.")
-      return
-    }
-
     const batchUrl = buildTemplateUrl(this.workplaceBatchUrlTemplateValue, ":id", this.selectedClientValue)
-    const ok = await postJson(batchUrl, operations)
-    if (!ok) return
-
-    showAlert("거래처 작업장 데이터가 저장되었습니다.")
-    await this.loadWorkplaceRows(this.selectedClientValue)
+    await this.saveRowsWith({
+      manager: this.workplaceManager,
+      batchUrl,
+      saveMessage: "거래처 작업장 데이터가 저장되었습니다.",
+      onSuccess: () => this.loadWorkplaceRows(this.selectedClientValue)
+    })
   }
 
   async loadContactRows(clientCode) {

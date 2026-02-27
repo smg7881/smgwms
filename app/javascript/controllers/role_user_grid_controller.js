@@ -9,7 +9,8 @@
 import BaseGridController from "controllers/base_grid_controller"
 import { showAlert, confirmAction } from "components/ui/alert"
 import { resolveAgGridRegistration } from "controllers/grid/grid_event_manager"
-import { isApiAlive, postJson, fetchJson, setGridRowData, registerGridInstance } from "controllers/grid/grid_utils"
+import { isApiAlive, postJson, fetchJson, setGridRowData } from "controllers/grid/grid_utils"
+import { registerGridInstance } from "controllers/grid/core/grid_registration"
 
 export default class extends BaseGridController {
   static targets = [
@@ -58,7 +59,7 @@ export default class extends BaseGridController {
       { target: this.hasLeftGridTarget ? this.leftGridTarget : null, controllerKey: "leftGridController", managerKey: "leftApi" },
       { target: this.hasRightGridTarget ? this.rightGridTarget : null, controllerKey: "rightGridController", managerKey: "rightApi" }
     ], () => {
-      // grid_utils의 registerGridInstance 특성상 managerKey 에 new GridCrudManager()를 넣으려 시도할 수 있는데,
+      // 공통 registerGridInstance 특성상 managerKey 에 new GridCrudManager()를 넣으려 시도할 수 있는데,
       // 역할-사용자 화면은 자체 API만 필요하므로 예외적으로 controllerKey만 매핑하거나, 여기서 api만 직접 매핑.
       // (registerGridInstance는 Manager 를 생성하지만 configMethod가 없으면 api만 넣지 않으므로 수동할당)
     })

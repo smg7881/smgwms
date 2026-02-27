@@ -1,7 +1,8 @@
-﻿import { Controller } from "@hotwired/stimulus"
+import { Controller } from "@hotwired/stimulus"
 import { showAlert, confirmAction } from "components/ui/alert"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
-import { fetchJson, hasChanges, isApiAlive, postJson, setManagerRowData, focusFirstRow, registerGridInstance } from "controllers/grid/grid_utils"
+import { fetchJson, hasChanges, isApiAlive, postJson, setManagerRowData, focusFirstRow } from "controllers/grid/grid_utils"
+import { registerGridInstance } from "controllers/grid/core/grid_registration"
 
 export default class extends Controller {
   static targets = ["groupGrid", "star"]

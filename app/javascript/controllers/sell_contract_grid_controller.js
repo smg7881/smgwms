@@ -1,6 +1,6 @@
 ﻿import MasterDetailGridController from "controllers/master_detail_grid_controller"
 import { showAlert } from "components/ui/alert"
-import { isApiAlive, postJson, hasChanges, fetchJson, setManagerRowData, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel } from "controllers/grid/grid_utils"
+import { isApiAlive, fetchJson, setManagerRowData, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel } from "controllers/grid/grid_utils"
 import { switchTab, activateTab } from "controllers/ui_utils"
 import * as GridFormUtils from "controllers/grid/grid_form_utils"
 const CODE_FIELDS = [
@@ -293,19 +293,23 @@ export default class extends MasterDetailGridController {
   }
 
   async saveMasterRows() {
-    if (!this.manager) return
+    await this.saveRowsWith({
+      manager: this.manager,
+      batchUrl: this.batchUrlValue,
+      saveMessage: this.saveMessage,
+      onSuccess: () => this.afterSaveSuccess()
+    })
+  }
 
-    this.manager.stopEditing()
-    const operations = this.manager.buildOperations()
-    if (!hasChanges(operations)) {
-      showAlert("변경된 데이터가 없습니다.")
-      return
-    }
+  get batchUrlValue() {
+    return this.masterBatchUrlValue
+  }
 
-    const ok = await postJson(this.masterBatchUrlValue, operations)
-    if (!ok) return
+  get saveMessage() {
+    return "매출계약 데이터가 저장되었습니다."
+  }
 
-    showAlert("매출계약 데이터가 저장되었습니다.")
+  async afterSaveSuccess() {
     await this.reloadMasterRows()
   }
 
@@ -341,22 +345,16 @@ export default class extends MasterDetailGridController {
       return
     }
 
-    this.settlementManager.stopEditing()
-    const operations = this.settlementManager.buildOperations()
-    if (!hasChanges(operations)) {
-      showAlert("변경된 데이터가 없습니다.")
-      return
-    }
-
     const batchUrl = buildTemplateUrl(this.settlementBatchUrlTemplateValue, ":id", this.selectedContractValue)
-    const ok = await postJson(batchUrl, operations)
-    if (!ok) return
-
-    showAlert("매출계약 정산정보가 저장되었습니다.")
-    await Promise.all([
-      this.loadSettlementRows(this.selectedContractValue),
-      this.loadHistoryRows(this.selectedContractValue)
-    ])
+    await this.saveRowsWith({
+      manager: this.settlementManager,
+      batchUrl,
+      saveMessage: "매출계약 정산정보가 저장되었습니다.",
+      onSuccess: () => Promise.all([
+        this.loadSettlementRows(this.selectedContractValue),
+        this.loadHistoryRows(this.selectedContractValue)
+      ])
+    })
   }
 
   async loadSettlementRows(contractNo) {

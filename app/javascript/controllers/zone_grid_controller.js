@@ -8,7 +8,8 @@
 import BaseGridController from "controllers/base_grid_controller"
 import { showAlert, confirmAction } from "components/ui/alert"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
-import { isApiAlive, postJson, hasChanges, hideNoRowsOverlay, fetchJson, setManagerRowData, setGridRowData, refreshSelectionLabel, buildCompositeKey, registerGridInstance } from "controllers/grid/grid_utils"
+import { isApiAlive, hideNoRowsOverlay, fetchJson, setManagerRowData, setGridRowData, refreshSelectionLabel, buildCompositeKey } from "controllers/grid/grid_utils"
+import { registerGridInstance } from "controllers/grid/core/grid_registration"
 import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
 
 export default class extends BaseGridController {
@@ -214,20 +215,13 @@ export default class extends BaseGridController {
     if (!this.zoneManager) return
     if (!this.ensureSelectedArea()) return // 부모 무결성 검증
 
-    this.zoneManager.stopEditing() // 수정창 닫기
-    const operations = this.zoneManager.buildOperations() // C/U/D 커밋 뭉치 추출
-
-    // 바뀐게 있는지 확인
-    if (!hasChanges(operations)) {
-      showAlert("변경된 데이터가 없습니다.")
-      return
-    }
-
-    const ok = await postJson(this.batchUrlValue, operations)
-    if (!ok) return
-
-    showAlert("보관 Zone 데이터가 저장되었습니다.")
-    await this.loadZoneRows() // 성공 시 신규 PK/상태 갱신을 위해 데이터 통째로 리프레시
+    const batchUrl = this.batchUrlValue
+    await this.saveRowsWith({
+      manager: this.zoneManager,
+      batchUrl,
+      saveMessage: "보관 Zone 데이터가 저장되었습니다.",
+      onSuccess: () => this.loadZoneRows()
+    }) // 성공 후 최신 PK/상태 갱신을 위해 데이터 재조회
   }
 
   // 자식 Data Clear

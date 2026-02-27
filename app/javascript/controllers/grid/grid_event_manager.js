@@ -4,7 +4,7 @@
  * AG Grid에서 발생하는 이벤트를 관리하고, Stimulus 컨트롤러나 DOM 간의 이벤트 전달을 
  * 돕는 유틸리티 클래스/함수들의 모음입니다.
  */
-import { isApiAlive } from "controllers/grid/grid_utils"
+import { isApiAlive } from "controllers/grid/core/api_guard"
 
 // 메인 AG Grid 컨트롤러가 바인딩되는 CSS 선택자
 const AG_GRID_SELECTOR = "[data-controller='ag-grid']"

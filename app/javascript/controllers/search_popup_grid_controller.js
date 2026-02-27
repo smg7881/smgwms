@@ -1,7 +1,7 @@
 ﻿import { Controller } from "@hotwired/stimulus"
 import { showAlert, confirmAction } from "components/ui/alert"
 import { GridEventManager } from "controllers/grid/grid_event_manager"
-import { registerGridInstance } from "controllers/grid/grid_utils"
+import { registerGridInstance } from "controllers/grid/core/grid_registration"
 
 export default class extends Controller {
   static targets = ["grid", "form", "keyword", "code"]

@@ -1,6 +1,7 @@
 import BaseGridController from "controllers/base_grid_controller"
 import { GridEventManager, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
-import { isApiAlive, focusFirstRow, fetchJson, setManagerRowData, registerGridInstance } from "controllers/grid/grid_utils"
+import { isApiAlive, focusFirstRow, fetchJson, setManagerRowData } from "controllers/grid/grid_utils"
+import { registerGridInstance } from "controllers/grid/core/grid_registration"
 import { showAlert } from "components/ui/alert"
 
 export default class MasterDetailGridController extends BaseGridController {

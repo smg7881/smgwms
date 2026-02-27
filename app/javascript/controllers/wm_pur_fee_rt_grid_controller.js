@@ -1,6 +1,6 @@
 import MasterDetailGridController from "controllers/master_detail_grid_controller"
 import { rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
-import { isApiAlive, postJson, hasChanges, setManagerRowData, focusFirstRow, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl } from "controllers/grid/grid_utils"
+import { isApiAlive, setManagerRowData, focusFirstRow, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl } from "controllers/grid/grid_utils"
 import { showAlert } from "components/ui/alert"
 
 export default class extends MasterDetailGridController {
@@ -239,29 +239,24 @@ export default class extends MasterDetailGridController {
 
     async saveMasterRows(event) {
         event?.preventDefault()
-        if (!this.manager) return
+        await this.saveRowsWith({
+            manager: this.manager,
+            batchUrl: this.batchUrlValue,
+            saveMessage: this.saveMessage,
+            onSuccess: () => this.afterSaveSuccess()
+        })
+    }
 
-        // Master 저장 시 Detail 이 하나라도 있어야만 저장이 가능한지 여부는 UI/UX 편의에 따라 
-        // 서버 Validation으로 떨어지도록 하거나 (현재 서버로직상 그렇지만)
-        // Master-Detail 폼이 하나의 화면이므로 우선 Master 변경사항을 서버로 전파.
+    get batchUrlValue() {
+        return this.masterBatchUrlValue
+    }
 
-        const result = this.manager.getChanges()
-        if (!hasChanges(result)) {
-            showAlert("Info", "저장할 매입요율 변경사항이 없습니다.", "info")
-            return
-        }
+    get saveMessage() {
+        return "매입요율이 성공적으로 저장되었습니다."
+    }
 
-        // 서버로 일괄 저장
-        const response = await postJson(this.masterBatchUrlValue, result)
-        if (response) {
-            if (response.success) {
-                showAlert("Success", "매입요율이 성공적으로 저장되었습니다.", "success")
-                this.manager.resetTracking()
-                this.dispatch("search", { target: document.querySelector('[data-controller="search-form"]') })
-            } else {
-                showAlert("Error", response.errors?.join("\n") || "저장 중 오류가 발생했습니다.", "error")
-            }
-        }
+    async afterSaveSuccess() {
+        this.dispatch("search", { target: document.querySelector('[data-controller="search-form"]') })
     }
 
     // --- Detail CRUD Actions ---
@@ -284,7 +279,6 @@ export default class extends MasterDetailGridController {
         if (!this.detailManager) return
         this.detailManager.deleteSelectedRows("매입요율 상세정보")
     }
-
     async saveDetailRows(event) {
         event?.preventDefault()
         if (!this.detailManager) return
@@ -293,23 +287,12 @@ export default class extends MasterDetailGridController {
             return
         }
 
-        const result = this.detailManager.getChanges()
-        if (!hasChanges(result)) {
-            showAlert("Info", "저장할 매입요율 상세 변경사항이 없습니다.", "info")
-            return
-        }
-
-        const url = buildTemplateUrl(this.detailBatchUrlTemplateValue, { pur_fee_rt_mng_id: this.selectedMasterValue })
-        const response = await postJson(url, result)
-
-        if (response) {
-            if (response.success) {
-                showAlert("Success", "매입요율 상세가 성공적으로 저장되었습니다.", "success")
-                this.detailManager.resetTracking()
-                this.loadDetailData(this.selectedMasterValue)
-            } else {
-                showAlert("Error", response.errors?.join("\n") || "상세 저장 중 오류가 발생했습니다.", "error")
-            }
-        }
+        const batchUrl = buildTemplateUrl(this.detailBatchUrlTemplateValue, { pur_fee_rt_mng_id: this.selectedMasterValue })
+        await this.saveRowsWith({
+            manager: this.detailManager,
+            batchUrl,
+            saveMessage: "매입요율 상세가 성공적으로 저장되었습니다.",
+            onSuccess: () => this.loadDetailData(this.selectedMasterValue)
+        })
     }
 }
