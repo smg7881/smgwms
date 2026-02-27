@@ -13,6 +13,28 @@ function createActionButton({ text, title, classes = [], onClick }) {
   return button
 }
 
+function createStatusBadge(value, options = {}) {
+  const {
+    trueValue = "Y",
+    trueLabel,
+    falseLabel = "N",
+    trueColor = "#18a058",
+    falseColor = "#d03050",
+    fontSize,
+  } = options
+
+  const isMatch = typeof trueValue === "boolean"
+    ? value === trueValue
+    : String(value ?? "").toUpperCase() === String(trueValue).toUpperCase()
+
+  const span = document.createElement("span")
+  span.style.fontWeight = "bold"
+  span.style.color = isMatch ? trueColor : falseColor
+  span.textContent = isMatch ? (trueLabel ?? String(trueValue)) : falseLabel
+  if (fontSize) span.style.fontSize = fontSize
+  return span
+}
+
 const SEARCH_ICON_SVG = `
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -51,6 +73,11 @@ export const COMMON_RENDERER_REGISTRY = {
     return anchor
   },
 
+  createStatusBadge: (params) => {
+    const options = params.colDef?.cellRendererParams || {}
+    return createStatusBadge(params.value, options)
+  },
+
   treeMenuCellRenderer: (params) => {
     const level = Number(params.data?.menu_level || 1)
     const indent = Math.max(level - 1, 0) * 20
@@ -64,19 +91,6 @@ export const COMMON_RENDERER_REGISTRY = {
     return span
   },
 
-  workStatusCellRenderer: (params) => {
-    const span = document.createElement("span")
-    span.style.fontWeight = "bold"
-    if (params.value === "ACTIVE") {
-      span.style.color = "#18a058"
-      span.textContent = "ACTIVE"
-    } else {
-      span.style.color = "#d03050"
-      span.textContent = "RESIGNED"
-    }
-    return span
-  },
-
   deptTreeCellRenderer: (params) => {
     const level = Number(params.data?.dept_level || 1)
     const indent = Math.max(level - 1, 0) * 20
@@ -85,61 +99,6 @@ export const COMMON_RENDERER_REGISTRY = {
     const span = document.createElement("span")
     span.style.paddingLeft = `${indent}px`
     span.textContent = `${icon} ${params.value ?? ""}`
-    return span
-  },
-
-  loginSuccessCellRenderer: (params) => {
-    const span = document.createElement("span")
-    span.style.fontWeight = "bold"
-    if (params.value === true) {
-      span.style.color = "#18a058"
-      span.textContent = "성공"
-    } else {
-      span.style.color = "#d03050"
-      span.textContent = "실패"
-    }
-    return span
-  },
-
-  deptUseYnCellRenderer: (params) => {
-    const span = document.createElement("span")
-    span.style.fontWeight = "bold"
-    if (params.value === "Y") {
-      span.style.color = "#18a058"
-      span.textContent = "Y"
-    } else {
-      span.style.color = "#d03050"
-      span.textContent = "N"
-    }
-    return span
-  },
-
-  codeUseYnCellRenderer: (params) => {
-    const span = document.createElement("span")
-    span.style.fontWeight = "bold"
-    if (params.value === "Y") {
-      span.style.color = "#18a058"
-      span.textContent = "Y"
-    } else {
-      span.style.color = "#d03050"
-      span.textContent = "N"
-    }
-    return span
-  },
-
-  stockYnCellRenderer: (params) => {
-    const span = document.createElement("span")
-    const value = (params.value || "").toString().toUpperCase()
-    span.style.fontWeight = "bold"
-
-    if (value === "Y") {
-      span.style.color = "#d03050"
-      span.textContent = "Y"
-    } else {
-      span.style.color = "#18a058"
-      span.textContent = "N"
-    }
-
     return span
   },
 
@@ -281,33 +240,6 @@ export const COMMON_RENDERER_REGISTRY = {
     container.appendChild(button)
 
     return container
-  },
-
-  noticeTopFixedCellRenderer: (params) => {
-    const span = document.createElement("span")
-    span.style.fontWeight = "bold"
-    span.style.fontSize = "12px"
-    if (params.value === "Y") {
-      span.style.color = "#d03050"
-      span.textContent = "공지"
-    } else {
-      span.style.color = "#8b949e"
-      span.textContent = "일반"
-    }
-    return span
-  },
-
-  noticePublishedCellRenderer: (params) => {
-    const span = document.createElement("span")
-    span.style.fontWeight = "bold"
-    if (params.value === "Y") {
-      span.style.color = "#18a058"
-      span.textContent = "게시"
-    } else {
-      span.style.color = "#d08700"
-      span.textContent = "미게시"
-    }
-    return span
   },
 
   noticeTitleCellRenderer: (params) => {

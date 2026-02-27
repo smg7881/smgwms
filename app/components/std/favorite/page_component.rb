@@ -71,7 +71,7 @@ class Std::Favorite::PageComponent < Std::BasePageComponent
           editable: true,
           cellEditor: "agSelectCellEditor",
           cellEditorParams: { values: common_code_values("CMM_USE_YN") },
-          cellRenderer: "codeUseYnCellRenderer"
+          cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" }
         },
         { field: "update_by", headerName: "수정자", minWidth: 100, editable: false },
         { field: "update_time", headerName: "수정일시", minWidth: 160, formatter: "datetime", editable: false }
@@ -101,7 +101,7 @@ class Std::Favorite::PageComponent < Std::BasePageComponent
           editable: true,
           cellEditor: "agSelectCellEditor",
           cellEditorParams: { values: common_code_values("CMM_USE_YN") },
-          cellRenderer: "codeUseYnCellRenderer"
+          cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" }
         },
         { field: "update_by", headerName: "수정자", minWidth: 100, editable: false },
         { field: "update_time", headerName: "수정일시", minWidth: 160, formatter: "datetime", editable: false }

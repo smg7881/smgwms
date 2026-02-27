@@ -91,7 +91,7 @@ class Std::SellContract::PageComponent < Std::BasePageComponent
           headerName: "사용여부",
           maxWidth: 95,
           editable: false,
-          cellRenderer: "codeUseYnCellRenderer"
+          cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" }
         },
         { field: "update_by", headerName: "수정자", minWidth: 95, editable: false },
         { field: "update_time", headerName: "수정일시", minWidth: 160, formatter: "datetime", editable: false }
@@ -145,7 +145,7 @@ class Std::SellContract::PageComponent < Std::BasePageComponent
           editable: true,
           cellEditor: "agSelectCellEditor",
           cellEditorParams: { values: common_code_values("CMM_USE_YN") },
-          cellRenderer: "codeUseYnCellRenderer"
+          cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" }
         },
         { field: "exca_ofcr_cd", headerName: "정산담당자코드", minWidth: 140, editable: true },
         { field: "exca_ofcr_nm", headerName: "정산담당자명", minWidth: 140, editable: true },
@@ -156,7 +156,7 @@ class Std::SellContract::PageComponent < Std::BasePageComponent
           editable: true,
           cellEditor: "agSelectCellEditor",
           cellEditorParams: { values: common_code_values("CMM_USE_YN") },
-          cellRenderer: "codeUseYnCellRenderer"
+          cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" }
         },
         { field: "remk", headerName: "비고", minWidth: 200, editable: true }
       ]

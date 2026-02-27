@@ -87,7 +87,7 @@ class Om::PreOrderReceptionError::PageComponent < Om::BasePageComponent
           headerName: "처리여부",
           minWidth: 100,
           editable: false,
-          cellRenderer: "codeUseYnCellRenderer"
+          cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" }
         },
         { field: "ord_no", headerName: "생성오더번호", minWidth: 150, editable: false },
         { field: "line_no", headerName: "라인번호", hide: true, editable: false },

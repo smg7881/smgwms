@@ -38,7 +38,7 @@ class Wm::CustStockAttr::PageComponent < System::BasePageComponent
           editable: true,
           cellEditor: "agSelectCellEditor",
           cellEditorParams: { values: common_code_values("82") },
-          cellRenderer: "codeUseYnCellRenderer" # 공통코드 렌더러
+          cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" } # 공통코드 렌더러
         },
         {
           field: "stock_attr_sctn",
@@ -47,7 +47,7 @@ class Wm::CustStockAttr::PageComponent < System::BasePageComponent
           editable: true,
           cellEditor: "agSelectCellEditor",
           cellEditorParams: { values: common_code_values("101") },
-          cellRenderer: "codeUseYnCellRenderer" # 공통코드 렌더러
+          cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" } # 공통코드 렌더러
         },
         { field: "attr_desc", headerName: "속성설명", minWidth: 200, editable: true },
         { field: "rel_tbl", headerName: "관련테이블", minWidth: 150, editable: true },
@@ -59,7 +59,7 @@ class Wm::CustStockAttr::PageComponent < System::BasePageComponent
           editable: true,
           cellEditor: "agSelectCellEditor",
           cellEditorParams: { values: common_code_values("06") },
-          cellRenderer: "codeUseYnCellRenderer"
+          cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" }
         }
       ]
     end

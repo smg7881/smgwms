@@ -40,7 +40,7 @@ class System::Dept::PageComponent < System::BasePageComponent
         { field: "parent_dept_code", headerName: "상위부서코드", minWidth: 140 },
         { field: "dept_type", headerName: "부서유형", minWidth: 110 },
         { field: "dept_order", headerName: "부서순서", maxWidth: 110 },
-        { field: "use_yn", headerName: "사용여부", maxWidth: 100, cellRenderer: "deptUseYnCellRenderer" },
+        { field: "use_yn", headerName: "사용여부", maxWidth: 100, cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" } },
         { field: "update_by", headerName: "수정자", minWidth: 100 },
         { field: "update_time", headerName: "수정일시", minWidth: 170, formatter: "datetime" },
         { field: "create_by", headerName: "생성자", minWidth: 100 },

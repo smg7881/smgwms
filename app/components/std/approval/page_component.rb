@@ -53,7 +53,7 @@ class Std::Approval::PageComponent < Std::BasePageComponent
           editable: true,
           cellEditor: "agSelectCellEditor",
           cellEditorParams: { values: common_code_values("CMM_USE_YN") },
-          cellRenderer: "codeUseYnCellRenderer"
+          cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" }
         },
         { field: "chrg_apver", headerName: "담당결재자", minWidth: 110, editable: true },
         {
@@ -79,7 +79,7 @@ class Std::Approval::PageComponent < Std::BasePageComponent
           editable: true,
           cellEditor: "agSelectCellEditor",
           cellEditorParams: { values: common_code_values("CMM_USE_YN") },
-          cellRenderer: "codeUseYnCellRenderer"
+          cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" }
         },
         { field: "apv_delegate", headerName: "결재위임자", minWidth: 110, editable: true },
         { field: "rmk", headerName: "비고", minWidth: 180, editable: true },
@@ -90,7 +90,7 @@ class Std::Approval::PageComponent < Std::BasePageComponent
           editable: true,
           cellEditor: "agSelectCellEditor",
           cellEditorParams: { values: common_code_values("CMM_USE_YN") },
-          cellRenderer: "codeUseYnCellRenderer"
+          cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" }
         }
       ]
     end

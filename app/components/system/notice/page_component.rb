@@ -30,9 +30,9 @@ class System::Notice::PageComponent < System::BasePageComponent
     def columns
       [
         { field: "category_code", headerName: "분류", minWidth: 130, maxWidth: 150 },
-        { field: "is_top_fixed", headerName: "상단고정", minWidth: 90, maxWidth: 110, cellRenderer: "noticeTopFixedCellRenderer" },
+        { field: "is_top_fixed", headerName: "상단고정", minWidth: 90, maxWidth: 110, cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "공지", falseLabel: "일반", trueColor: "#d03050", falseColor: "#8b949e", fontSize: "12px" } },
         { field: "title", headerName: "제목", minWidth: 280, cellRenderer: "noticeTitleCellRenderer" },
-        { field: "is_published", headerName: "게시여부", minWidth: 100, maxWidth: 120, cellRenderer: "noticePublishedCellRenderer" },
+        { field: "is_published", headerName: "게시여부", minWidth: 100, maxWidth: 120, cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "게시", falseLabel: "미게시", falseColor: "#d08700" } },
         { field: "create_time", headerName: "등록일시", minWidth: 160, formatter: "datetime" },
         { field: "view_count", headerName: "조회수", minWidth: 90, maxWidth: 100 },
         { field: "create_by", headerName: "등록자", minWidth: 100, maxWidth: 130 },

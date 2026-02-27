@@ -59,9 +59,9 @@ class Wm::PurFeeRtMngs::PageComponent < System::BasePageComponent
         { field: "ctrt_cprtco_cd", headerName: "계약협력사", minWidth: 150, editable: false },
         { field: "sell_buy_attr_cd", headerName: "매입항목", minWidth: 130, editable: false },
         { field: "pur_dept_cd", headerName: "매입부서", minWidth: 130, editable: false },
-        { field: "pur_item_type", headerName: "매입아이템유형", minWidth: 150, editable: true, cellEditor: "agSelectCellEditor", cellEditorParams: { values: common_code_values("69") }, cellRenderer: "codeUseYnCellRenderer" },
+        { field: "pur_item_type", headerName: "매입아이템유형", minWidth: 150, editable: true, cellEditor: "agSelectCellEditor", cellEditorParams: { values: common_code_values("69") }, cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" } },
         { field: "pur_item_cd", headerName: "매입아이템", minWidth: 130, editable: true },
-        { field: "pur_unit_clas_cd", headerName: "매입단위분류", minWidth: 130, editable: true, cellEditor: "agSelectCellEditor", cellEditorParams: { values: common_code_values("20") }, cellRenderer: "codeUseYnCellRenderer" },
+        { field: "pur_unit_clas_cd", headerName: "매입단위분류", minWidth: 130, editable: true, cellEditor: "agSelectCellEditor", cellEditorParams: { values: common_code_values("20") }, cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" } },
         { field: "pur_unit_cd", headerName: "매입단위", minWidth: 130, editable: true },
         {
           field: "use_yn",
@@ -70,7 +70,7 @@ class Wm::PurFeeRtMngs::PageComponent < System::BasePageComponent
           editable: true,
           cellEditor: "agSelectCellEditor",
           cellEditorParams: { values: common_code_values("CMM_USE_YN") },
-          cellRenderer: "codeUseYnCellRenderer"
+          cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" }
         },
         {
           field: "auto_yn",
@@ -79,7 +79,7 @@ class Wm::PurFeeRtMngs::PageComponent < System::BasePageComponent
           editable: true,
           cellEditor: "agSelectCellEditor",
           cellEditorParams: { values: common_code_values("CMM_USE_YN") },
-          cellRenderer: "codeUseYnCellRenderer"
+          cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" }
         },
         { field: "rmk", headerName: "비고", minWidth: 200, editable: true },
         { field: "update_by", headerName: "수정자", minWidth: 100, editable: false },
@@ -107,12 +107,12 @@ class Wm::PurFeeRtMngs::PageComponent < System::BasePageComponent
           editable: true,
           cellEditor: "agSelectCellEditor",
           cellEditorParams: { values: common_code_values("CMM_USE_YN") },
-          cellRenderer: "codeUseYnCellRenderer"
+          cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" }
         },
         { field: "aply_strt_ymd", headerName: "적용시작일자", minWidth: 150, editable: true },
         { field: "aply_end_ymd", headerName: "적용종료일자", minWidth: 150, editable: true },
         { field: "aply_uprice", headerName: "적용단가", minWidth: 120, editable: true, type: "numericColumn" },
-        { field: "cur_cd", headerName: "통화코드", minWidth: 100, editable: true, cellEditor: "agSelectCellEditor", cellEditorParams: { values: common_code_values("27") }, cellRenderer: "codeUseYnCellRenderer" },
+        { field: "cur_cd", headerName: "통화코드", minWidth: 100, editable: true, cellEditor: "agSelectCellEditor", cellEditorParams: { values: common_code_values("27") }, cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" } },
         { field: "std_work_qty", headerName: "기준작업물량", minWidth: 130, editable: true, type: "numericColumn" },
         { field: "aply_strt_qty", headerName: "적용시작물량", minWidth: 130, editable: true, type: "numericColumn" },
         { field: "aply_end_qty", headerName: "적용종료물량", minWidth: 130, editable: true, type: "numericColumn" },

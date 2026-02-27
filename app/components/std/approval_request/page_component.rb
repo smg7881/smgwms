@@ -80,7 +80,7 @@ class Std::ApprovalRequest::PageComponent < Std::BasePageComponent
           editable: true,
           cellEditor: "agSelectCellEditor",
           cellEditorParams: { values: common_code_values("CMM_USE_YN") },
-          cellRenderer: "codeUseYnCellRenderer"
+          cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" }
         }
       ]
     end

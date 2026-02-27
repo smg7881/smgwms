@@ -39,9 +39,9 @@ class Std::SellbuyAttribute::PageComponent < Std::BasePageComponent
         { field: "sellbuy_attr_eng_nm", headerName: "매출입항목영문명", minWidth: 180 },
         { field: "upper_sellbuy_attr_cd", headerName: "상위매출입항목코드", minWidth: 140 },
         { field: "upper_sellbuy_attr_nm", headerName: "상위매출입항목명", minWidth: 150 },
-        { field: "tran_yn_cd", headerName: "운송여부", maxWidth: 90, cellRenderer: "codeUseYnCellRenderer" },
-        { field: "strg_yn_cd", headerName: "보관여부", maxWidth: 90, cellRenderer: "codeUseYnCellRenderer" },
-        { field: "use_yn_cd", headerName: "사용여부", maxWidth: 90, cellRenderer: "codeUseYnCellRenderer" },
+        { field: "tran_yn_cd", headerName: "운송여부", maxWidth: 90, cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" } },
+        { field: "strg_yn_cd", headerName: "보관여부", maxWidth: 90, cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" } },
+        { field: "use_yn_cd", headerName: "사용여부", maxWidth: 90, cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" } },
         { field: "update_by", headerName: "수정자", minWidth: 90 },
         { field: "update_time", headerName: "수정일시", minWidth: 160, formatter: "datetime" },
         {

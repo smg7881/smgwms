@@ -43,7 +43,7 @@ class System::Users::PageComponent < System::BasePageComponent
         { field: "user_nm", headerName: "사원명", minWidth: 120 },
         { field: "dept_nm", headerName: "부서", minWidth: 150 },
         { field: "phone", headerName: "연락처", minWidth: 130 },
-        { field: "work_status", headerName: "재직상태", maxWidth: 100, cellRenderer: "workStatusCellRenderer" },
+        { field: "work_status", headerName: "재직상태", maxWidth: 100, cellRenderer: "createStatusBadge", cellRendererParams: { trueValue: "ACTIVE", trueLabel: "ACTIVE", falseLabel: "RESIGNED" } },
         { field: "hire_date", headerName: "입사일", minWidth: 120, formatter: "date" },
         { field: "resign_date", headerName: "퇴사일", minWidth: 120, formatter: "date" },
         { field: "email_address", headerName: "이메일", minWidth: 200 },

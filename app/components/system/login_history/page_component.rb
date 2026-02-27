@@ -24,7 +24,7 @@ class System::LoginHistory::PageComponent < System::BasePageComponent
         { field: "user_nm", headerName: "사원명", minWidth: 100, maxWidth: 130 },
         { field: "login_time", headerName: "로그인 시간", minWidth: 170, formatter: "datetime" },
         { field: "login_success", headerName: "결과", minWidth: 90, maxWidth: 100,
-          cellRenderer: "loginSuccessCellRenderer" },
+          cellRenderer: "createStatusBadge", cellRendererParams: { trueValue: true, trueLabel: "성공", falseLabel: "실패" } },
         { field: "ip_address", headerName: "IP 주소", minWidth: 130, maxWidth: 160 },
         { field: "browser", headerName: "브라우저", minWidth: 150 },
         { field: "os", headerName: "OS", minWidth: 150 },

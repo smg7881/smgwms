@@ -59,7 +59,7 @@ class Std::BusinessCertificate::PageComponent < Std::BasePageComponent
           editable: true,
           cellEditor: "agSelectCellEditor",
           cellEditorParams: { values: common_code_values("CMM_USE_YN") },
-          cellRenderer: "codeUseYnCellRenderer"
+          cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" }
         },
         { field: "zip_cd", headerName: "우편번호", maxWidth: 100, editable: true },
         { field: "zipaddr_cd", headerName: "주소", minWidth: 180, editable: true },
@@ -74,7 +74,7 @@ class Std::BusinessCertificate::PageComponent < Std::BasePageComponent
           editable: true,
           cellEditor: "agSelectCellEditor",
           cellEditorParams: { values: common_code_values("CMM_USE_YN") },
-          cellRenderer: "codeUseYnCellRenderer"
+          cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" }
         },
         { field: "update_by", headerName: "수정자", minWidth: 100, editable: false },
         { field: "update_time", headerName: "수정일시", minWidth: 160, formatter: "datetime", editable: false }

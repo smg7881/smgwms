@@ -36,13 +36,13 @@ class Std::Workplace::PageComponent < Std::BasePageComponent
           field: "wm_yn_cd",
           headerName: "창고관리",
           maxWidth: 100,
-          cellRenderer: "codeUseYnCellRenderer"
+          cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" }
         },
         {
           field: "use_yn_cd",
           headerName: "사용여부",
           maxWidth: 95,
-          cellRenderer: "codeUseYnCellRenderer"
+          cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" }
         },
         { field: "update_by", headerName: "수정자", minWidth: 95 },
         { field: "update_time", headerName: "수정일시", minWidth: 160, formatter: "datetime" },
