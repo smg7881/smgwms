@@ -54,7 +54,7 @@ export default class extends MasterDetailGridController {
             firstEditCol: "car_no",
             pkLabels: { gr_prar_no: "입고예정번호" },
             onRowDataUpdated: () => {
-                this.handleMasterRowDataUpdated()
+                this.selectFirstMasterRow()
             }
         }
     }
@@ -94,12 +94,11 @@ export default class extends MasterDetailGridController {
         this.#selectMaster(rowData)
     }
 
-    async syncMasterSelectionAfterLoad() {
+    selectFirstMasterRow() {
         if (!this.manager?.api) return
 
         const displayedCount = this.manager.api.getDisplayedRowCount()
         if (displayedCount === 0) {
-            this.lastMasterRowRef = null
             this.#clearMasterSelection()
             return
         }
@@ -119,9 +118,8 @@ export default class extends MasterDetailGridController {
 
         if (nodeToSelect) {
             nodeToSelect.setSelected(true)
-            await this.handleMasterRowChangeOnce(nodeToSelect.data, { force: true })
+            this.handleMasterRowChange(nodeToSelect.data)
         } else {
-            this.lastMasterRowRef = null
             this.#clearMasterSelection()
         }
     }
@@ -196,6 +194,12 @@ export default class extends MasterDetailGridController {
         if (isApiAlive(this.execRsltGridController?.api)) {
             this.execRsltGridController.api.setGridOption("rowData", rows)
         }
+    }
+
+    // 조회 직전 상세 그리드를 비웁니다.
+    clearAllDetails() {
+        this.#setDetailRowData([])
+        this.#setExecRsltRowData([])
     }
 
     // --- STAGED 로케이션 로드 ---

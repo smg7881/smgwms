@@ -210,7 +210,9 @@ export default class extends MasterDetailGridController {
       pkLabels: { bzac_cd: "거래처코드" },
       onCellValueChanged: (event) => this.normalizeMasterField(event),
       onRowDataUpdated: () => {
-        this.handleMasterRowDataUpdated({ resetTrackingManagers: [this.contactManager, this.workplaceManager] })
+        this.contactManager?.resetTracking?.()
+        this.workplaceManager?.resetTracking?.()
+        this.selectFirstMasterRow()
       }
     }
   }
@@ -292,27 +294,25 @@ export default class extends MasterDetailGridController {
 
   // 마스터 행이 변경(선택)되었을 때 상세 폼 데이터 바인딩 및 서브 그리드 데이터 재조회
   async handleMasterRowChange(rowData) {
-    await this.syncMasterDetailByCode(rowData, {
-      codeField: "bzac_cd",
-      beforeSync: (masterRow) => {
-        this.currentMasterRow = masterRow || null
-        if (!masterRow) {
-          this.clearDetailForm()
-          return
-        }
+    if (!this.isDetailReady()) return
 
-        this.fillDetailForm(masterRow)
-      },
-      setSelectedCode: (code) => { this.selectedClientValue = code },
-      refreshLabel: () => this.refreshSelectedClientLabel(),
-      clearDetails: () => {
-        this.clearContactRows()
-        this.clearWorkplaceRows()
-      },
-      loadDetails: async (clientCode) => {
-        await Promise.all([this.loadContactRows(clientCode), this.loadWorkplaceRows(clientCode)])
-      }
-    })
+    this.currentMasterRow = rowData || null
+    if (!rowData) {
+      this.clearDetailForm()
+    } else {
+      this.fillDetailForm(rowData)
+    }
+
+    this.selectedClientValue = rowData?.bzac_cd || ""
+    this.refreshSelectedClientLabel()
+    this.clearContactRows()
+    this.clearWorkplaceRows()
+
+    const code = rowData?.bzac_cd
+    const hasLoadableCode = Boolean(code) && !rowData?.__is_deleted && !rowData?.__is_new
+    if (!hasLoadableCode) return
+
+    await Promise.all([this.loadContactRows(code), this.loadWorkplaceRows(code)])
   }
 
   addMasterRow() {
@@ -321,7 +321,7 @@ export default class extends MasterDetailGridController {
       config: { startCol: "bzac_nm" },
       onAdded: (rowData) => {
         this.activateTab("basic")
-        this.handleMasterRowChangeOnce(rowData, { force: true })
+        this.handleMasterRowChange(rowData)
       }
     })
   }
@@ -348,11 +348,14 @@ export default class extends MasterDetailGridController {
   }
 
   async afterSaveSuccess() {
-    await this.reloadMasterRows()
-  }
-
-  async reloadMasterRows() {
-    await super.reloadMasterRows({ errorMessage: "거래처 목록 조회에 실패했습니다." })
+    if (!isApiAlive(this.manager?.api) || !this.gridController?.urlValue) return
+    try {
+      const rows = await fetchJson(this.gridController.urlValue)
+      setManagerRowData(this.manager, rows)
+      this.selectFirstMasterRow()
+    } catch {
+      // 마스터 재조회 실패 시 무시
+    }
   }
 
   addContactRow() {
@@ -469,6 +472,12 @@ export default class extends MasterDetailGridController {
 
   clearWorkplaceRows() {
     setManagerRowData(this.workplaceManager, [])
+  }
+
+  // 조회 직전 상세 그리드를 비웁니다.
+  clearAllDetails() {
+    this.clearContactRows()
+    this.clearWorkplaceRows()
   }
 
   preventDetailSubmit(event) {

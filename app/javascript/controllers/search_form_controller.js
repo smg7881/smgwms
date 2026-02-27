@@ -63,6 +63,10 @@ export default class extends Controller {
       return
     }
 
+    // 조회 직전에 마스터/디테일 그리드 clear를 위한 커스텀 이벤트를 발행합니다.
+    // MasterDetailGridController 등에서 수신하여 그리드 데이터를 비울 수 있습니다.
+    document.dispatchEvent(new CustomEvent("grid:before-search", { bubbles: false }))
+
     // 문제 없으면 event.preventDefault()를 굳이 호출하지 않습니다.
     // 브라우저 또는 Turbo가 이벤트를 catch하여 정상 서밋하도록 둡니다.
   }

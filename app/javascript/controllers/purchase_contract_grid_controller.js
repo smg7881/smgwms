@@ -1,6 +1,6 @@
 ﻿import MasterDetailGridController from "controllers/master_detail_grid_controller"
 import { showAlert } from "components/ui/alert"
-import { isApiAlive, fetchJson, setManagerRowData, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel } from "controllers/grid/grid_utils"
+import { isApiAlive, fetchJson, setManagerRowData, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel, focusFirstRow } from "controllers/grid/grid_utils"
 import { switchTab, activateTab } from "controllers/ui_utils"
 import * as GridFormUtils from "controllers/grid/grid_form_utils"
 const CODE_FIELDS = [
@@ -180,7 +180,8 @@ export default class extends MasterDetailGridController {
       pkLabels: { pur_ctrt_no: "매입계약번호" },
       onCellValueChanged: (event) => this.normalizeMasterField(event),
       onRowDataUpdated: () => {
-        this.handleMasterRowDataUpdated({ resetTrackingManagers: [this.settlementManager] })
+        this.settlementManager?.resetTracking?.()
+        this.selectFirstMasterRow()
       }
     }
   }
@@ -253,27 +254,25 @@ export default class extends MasterDetailGridController {
   }
 
   async handleMasterRowChange(rowData) {
-    await this.syncMasterDetailByCode(rowData, {
-      codeField: "pur_ctrt_no",
-      beforeSync: (masterRow) => {
-        this.currentMasterRow = masterRow || null
-        if (!masterRow) {
-          this.clearDetailForm()
-          return
-        }
+    if (!this.isDetailReady()) return
 
-        this.fillDetailForm(masterRow)
-      },
-      setSelectedCode: (code) => { this.selectedContractValue = code },
-      refreshLabel: () => this.refreshSelectedContractLabel(),
-      clearDetails: () => {
-        this.clearSettlementRows()
-        this.clearHistoryRows()
-      },
-      loadDetails: async (contractNo) => {
-        await Promise.all([this.loadSettlementRows(contractNo), this.loadHistoryRows(contractNo)])
-      }
-    })
+    this.currentMasterRow = rowData || null
+    if (!rowData) {
+      this.clearDetailForm()
+    } else {
+      this.fillDetailForm(rowData)
+    }
+
+    this.selectedContractValue = rowData?.pur_ctrt_no || ""
+    this.refreshSelectedContractLabel()
+    this.clearSettlementRows()
+    this.clearHistoryRows()
+
+    const code = rowData?.pur_ctrt_no
+    const hasLoadableCode = Boolean(code) && !rowData?.__is_deleted && !rowData?.__is_new
+    if (!hasLoadableCode) return
+
+    await Promise.all([this.loadSettlementRows(code), this.loadHistoryRows(code)])
   }
 
   addMasterRow() {
@@ -282,7 +281,7 @@ export default class extends MasterDetailGridController {
       config: { startCol: "pur_ctrt_nm" },
       onAdded: (rowData) => {
         this.activateTab("basic")
-        this.handleMasterRowChangeOnce(rowData, { force: true })
+        this.handleMasterRowChange(rowData)
       }
     })
   }
@@ -309,11 +308,14 @@ export default class extends MasterDetailGridController {
   }
 
   async afterSaveSuccess() {
-    await this.reloadMasterRows()
-  }
-
-  async reloadMasterRows() {
-    await super.reloadMasterRows({ errorMessage: "매입계약 목록 조회에 실패했습니다." })
+    if (!isApiAlive(this.manager?.api) || !this.gridController?.urlValue) return
+    try {
+      const rows = await fetchJson(this.gridController.urlValue)
+      setManagerRowData(this.manager, rows)
+      this.selectFirstMasterRow()
+    } catch {
+      // 마스터 재조회 실패 시 무시
+    }
   }
 
   addSettlementRow() {
@@ -405,6 +407,12 @@ export default class extends MasterDetailGridController {
   clearHistoryRows() {
     if (!isApiAlive(this.historyGridController?.api)) return
     this.historyGridController.api.setGridOption("rowData", [])
+  }
+
+  // 조회 직전 상세 그리드를 비웁니다.
+  clearAllDetails() {
+    this.clearSettlementRows()
+    this.clearHistoryRows()
   }
 
   preventDetailSubmit(event) {

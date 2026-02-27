@@ -1,6 +1,6 @@
 import MasterDetailGridController from "controllers/master_detail_grid_controller"
 import { showAlert } from "components/ui/alert"
-import { fetchJson, isApiAlive, setManagerRowData, hasPendingChanges, buildTemplateUrl, refreshSelectionLabel } from "controllers/grid/grid_utils"
+import { fetchJson, isApiAlive, setManagerRowData, hasPendingChanges, buildTemplateUrl, refreshSelectionLabel, focusFirstRow } from "controllers/grid/grid_utils"
 
 export default class extends MasterDetailGridController {
   static targets = [...MasterDetailGridController.targets, "countryGrid", "selectedCorpLabel"]
@@ -64,7 +64,8 @@ export default class extends MasterDetailGridController {
       firstEditCol: "corp_cd",
       pkLabels: { corp_cd: "법인코드" },
       onRowDataUpdated: () => {
-        this.handleMasterRowDataUpdated({ resetTrackingManagers: [this.countryManager] })
+        this.countryManager?.resetTracking?.()
+        this.selectFirstMasterRow()
       }
     }
   }
@@ -87,7 +88,7 @@ export default class extends MasterDetailGridController {
     this.addRow({
       manager: this.manager,
       onAdded: (rowData) => {
-        this.handleMasterRowChangeOnce(rowData, { force: true })
+        this.handleMasterRowChange(rowData)
       }
     })
   }
@@ -114,7 +115,14 @@ export default class extends MasterDetailGridController {
   }
 
   async afterSaveSuccess() {
-    await this.reloadMasterRows()
+    if (!isApiAlive(this.manager?.api) || !this.gridController?.urlValue) return
+    try {
+      const rows = await fetchJson(this.gridController.urlValue)
+      setManagerRowData(this.manager, rows)
+      this.selectFirstMasterRow()
+    } catch {
+      // 마스터 재조회 실패 시 무시
+    }
   }
 
   addCountryRow() {
@@ -199,18 +207,20 @@ export default class extends MasterDetailGridController {
   }
 
   async handleMasterRowChange(rowData) {
-    await this.syncMasterDetailByCode(rowData, {
-      codeField: "corp_cd",
-      setSelectedCode: (code) => { this.selectedCorpCode = code },
-      refreshLabel: () => this.refreshSelectedCorpLabel(),
-      clearDetails: () => this.clearCountryRows(),
-      loadDetails: (corpCode) => this.loadCountryRows(corpCode)
-    })
+    if (!this.isDetailReady()) return
+
+    this.selectedCorpCode = rowData?.corp_cd || ""
+    this.refreshSelectedCorpLabel()
+    this.clearCountryRows()
+
+    const code = rowData?.corp_cd
+    const hasLoadableCode = Boolean(code) && !rowData?.__is_deleted && !rowData?.__is_new
+    if (!hasLoadableCode) return
+
+    await this.loadCountryRows(code)
   }
 
-  async reloadMasterRows() {
-    await super.reloadMasterRows({ errorMessage: "법인 목록을 다시 불러오지 못했습니다." })
-  }
+
 
   handleCountryCellChanged(event) {
     const field = event?.colDef?.field
@@ -275,6 +285,11 @@ export default class extends MasterDetailGridController {
 
   clearCountryRows() {
     setManagerRowData(this.countryManager, [])
+  }
+
+  // 조회 직전 상세 그리드를 비웁니다.
+  clearAllDetails() {
+    this.clearCountryRows()
   }
 
   refreshSelectedCorpLabel() {

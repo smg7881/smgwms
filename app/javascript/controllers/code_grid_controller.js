@@ -57,7 +57,8 @@ export default class extends MasterDetailGridController {
       pkLabels: { code: "코드" },
       // 마스터 그리드가 Ajax로 확 새로 그려졌을 때 진입되는 콜백
       onRowDataUpdated: () => {
-        this.handleMasterRowDataUpdated({ resetTrackingManagers: [this.detailManager] })
+        this.detailManager?.resetTracking?.()
+        this.selectFirstMasterRow()
       }
     }
   }
@@ -104,6 +105,7 @@ export default class extends MasterDetailGridController {
     }
   }
 
+  // 등록 설정을 구성합니다
   detailGridConfigs() {
     return [
       {
@@ -121,13 +123,17 @@ export default class extends MasterDetailGridController {
 
   // 마스터 포커스가 바뀔 때 연쇄동작의 심볼
   async handleMasterRowChange(rowData) {
-    await this.syncMasterDetailByCode(rowData, {
-      codeField: "code",
-      setSelectedCode: (code) => { this.selectedCodeValue = code },
-      refreshLabel: () => this.refreshSelectedCodeLabel(),
-      clearDetails: () => this.clearDetailRows(),
-      loadDetails: (code) => this.loadDetailRows(code)
-    })
+    if (!this.isDetailReady()) return
+
+    this.selectedCodeValue = rowData?.code || ""
+    this.refreshSelectedCodeLabel()
+    this.clearDetailRows()
+
+    const code = rowData?.code
+    const hasLoadableCode = Boolean(code) && !rowData?.__is_deleted && !rowData?.__is_new
+    if (!hasLoadableCode) return
+
+    await this.loadDetailRows(code)
   }
 
   // --- HTML 버튼 바인딩 파트 --- 
@@ -137,7 +143,7 @@ export default class extends MasterDetailGridController {
       manager: this.manager,
       onAdded: (rowData) => {
         // 행 추가되자마자 포커스를 그쪽으로 옮기고, 내부적으로 디테일은 백지화 됨
-        this.handleMasterRowChangeOnce(rowData, { force: true })
+        this.handleMasterRowChange(rowData)
       }
     })
   }
@@ -156,7 +162,14 @@ export default class extends MasterDetailGridController {
   }
 
   async afterSaveSuccess() {
-    await super.reloadMasterRows({ errorMessage: "코드 목록 조회에 실패했습니다." })
+    if (!isApiAlive(this.manager?.api) || !this.gridController?.urlValue) return
+    try {
+      const rows = await fetchJson(this.gridController.urlValue)
+      setManagerRowData(this.manager, rows)
+      this.selectFirstMasterRow()
+    } catch {
+      // 마스터 재조회 실패 시 무시
+    }
   }
 
   // ===================== [Detail Area] =========================
@@ -221,6 +234,11 @@ export default class extends MasterDetailGridController {
 
   clearDetailRows() {
     setManagerRowData(this.detailManager, [])
+  }
+
+  // 조회 직전 상세코드 그리드를 비웁니다.
+  clearAllDetails() {
+    this.clearDetailRows()
   }
 
   // 상단 부제목 영역에 가시화용

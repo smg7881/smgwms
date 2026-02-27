@@ -65,7 +65,8 @@ export default class extends MasterDetailGridController {
             firstEditCol: "pur_item_type",
             pkLabels: { wrhs_exca_fee_rt_no: "창고정산요율번호" },
             onRowDataUpdated: () => {
-                this.handleMasterRowDataUpdated({ resetTrackingManagers: [this.detailManager] })
+                this.detailManager?.resetTracking?.()
+                this.selectFirstMasterRow()
             }
         }
     }
@@ -132,7 +133,7 @@ export default class extends MasterDetailGridController {
         }
     }
 
-    syncMasterSelectionAfterLoad() {
+    selectFirstMasterRow() {
         if (!this.manager?.api) return
 
         if (this.manager.api.getDisplayedRowCount() === 0) {

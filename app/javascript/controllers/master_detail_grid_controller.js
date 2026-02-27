@@ -1,90 +1,50 @@
 import BaseGridController from "controllers/base_grid_controller"
 import { GridEventManager, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
-import { isApiAlive, focusFirstRow, fetchJson, setManagerRowData } from "controllers/grid/grid_utils"
+import { isApiAlive, focusFirstRow, setManagerRowData } from "controllers/grid/grid_utils"
 import { registerGridInstance } from "controllers/grid/core/grid_registration"
-import { showAlert } from "components/ui/alert"
 
 /**
  * MasterDetailGridController
  *
- * Shared base controller for screens that use a Master grid and one or more Detail grids.
+ * 마스터-디테일 구조 화면의 공통 베이스 컨트롤러입니다.
  *
- * Responsibilities:
- * - Register master/detail grids in a unified way.
- * - Listen to master selection events and route them into a single change pipeline.
- * - Prevent duplicate detail reloads when the same row is selected repeatedly.
- * - Run one-time initial sync after first data load.
- * - Provide a reusable code-based sync utility for subclass controllers.
+ * 핵심 동작:
+ * 1. 조회 버튼 클릭 시 → 마스터/디테일 그리드 clear
+ *    → 서버 조회 후 마스터 데이터 로드
+ *    → onRowDataUpdated 콜백에서 첫 행 선택 + 디테일 조회
+ * 2. 마스터 행 클릭/이동/키보드 → 해당 행으로 디테일 조회
+ *
+ * 하위 컨트롤러 오버라이드 포인트:
+ * - detailGridConfigs()   디테일 그리드 등록 설정
+ * - isDetailReady()       디테일 영역 준비 상태 확인
+ * - handleMasterRowChange(rowData) 마스터 행 변경 시 디테일 처리
+ * - clearAllDetails()     상세 그리드 데이터 전체 비우기
  */
 export default class MasterDetailGridController extends BaseGridController {
-  // Initialize sync state and event manager for master grid selection events.
+
   connect() {
     super.connect()
-    // Guards one-time initial sync flow.
-    this.initialMasterSyncDone = false
-    // Handles bind/unbind of rowClicked/cellFocused listeners.
     this.masterGridEvents = new GridEventManager()
-    // Keeps the last processed row reference to avoid duplicate work.
-    this.lastMasterRowRef = null
+    // 조회 직전 clear를 위해 search_form_controller가 발행하는 이벤트를 수신합니다.
+    this._beforeSearchHandler = () => this.handleBeforeSearch()
+    document.addEventListener("grid:before-search", this._beforeSearchHandler)
   }
 
-  // Clean up listeners and references before delegating to parent cleanup.
   disconnect() {
+    document.removeEventListener("grid:before-search", this._beforeSearchHandler)
+    this._beforeSearchHandler = null
     this.masterGridEvents?.unbindAll()
-    this.lastMasterRowRef = null
     super.disconnect()
   }
 
-  // Bind master-grid selection related events to a single handler.
-  bindMasterGridEvents() {
-    this.masterGridEvents.unbindAll()
-    this.masterGridEvents.bind(this.manager?.api, "rowClicked", this.handleMasterGridEvent)
-    this.masterGridEvents.bind(this.manager?.api, "cellFocused", this.handleMasterGridEvent)
-  }
+  // ─── 그리드 등록 ───
 
-  // Register all master/detail grids and run post-ready hook once everything is attached.
   registerGrid(event) {
     registerGridInstance(event, this, this.masterDetailGridConfigs(), () => {
       this.onMasterDetailGridsReady()
     })
   }
 
-  // Normalize a master-grid event into row data, then process it via duplicate-safe handler.
-  handleMasterGridEvent = async (event) => {
-    const rowData = rowDataFromGridEvent(this.manager?.api, event)
-    if (!rowData) return
-
-    await this.handleMasterRowChangeOnce(rowData)
-  }
-
-  // After master rows are loaded, sync detail state from the first visible row.
-  async syncMasterSelectionAfterLoad({ ensureVisible = true, select = false } = {}) {
-    if (!isApiAlive(this.manager?.api) || !this.isDetailReady()) return
-
-    const firstData = focusFirstRow(this.manager.api, { ensureVisible, select })
-    if (!firstData) {
-      // If master is empty, propagate null so subclass can clear detail state.
-      this.lastMasterRowRef = null
-      await this.handleMasterRowChange(null)
-      return
-    }
-
-    await this.handleMasterRowChangeOnce(firstData, { force: true })
-  }
-
-  // Process master-row change only when needed (or always when force=true).
-  async handleMasterRowChangeOnce(rowData, { force = false } = {}) {
-    if (!force && this.lastMasterRowRef === rowData) return
-    this.lastMasterRowRef = rowData
-    await this.handleMasterRowChange(rowData)
-  }
-
-  // Overridable readiness gate for detail area (default: always ready).
-  isDetailReady() {
-    return true
-  }
-
-  // Build registration config: one master grid + optional detail grids from subclass.
   masterDetailGridConfigs() {
     return [
       {
@@ -96,81 +56,78 @@ export default class MasterDetailGridController extends BaseGridController {
     ]
   }
 
-  // Subclass hook: return detail-grid registration configs.
+  // 하위 클래스 훅: 디테일 그리드 등록 설정을 반환합니다.
   detailGridConfigs() {
     return []
   }
 
-  // Called when all master/detail grids are ready.
+  // ─── 마스터/디테일 준비 완료 ───
+
   onMasterDetailGridsReady() {
     this.bindMasterGridEvents()
-    this.tryInitialMasterSync()
+    // 그리드에 이미 데이터가 있으면 첫 행으로 디테일 조회
+    this.selectFirstMasterRow()
   }
 
-  // Trigger initial sync exactly once during screen lifecycle.
-  tryInitialMasterSync() {
-    if (this.initialMasterSyncDone) return
-    this.initialMasterSyncDone = true
-    this.syncMasterSelectionAfterLoad()
+  // ─── 마스터 이벤트 바인딩 ───
+
+  bindMasterGridEvents() {
+    this.masterGridEvents.unbindAll()
+    this.masterGridEvents.bind(this.manager?.api, "rowClicked", this.handleMasterGridEvent)
+    this.masterGridEvents.bind(this.manager?.api, "cellFocused", this.handleMasterGridEvent)
   }
 
-  // Handle post-update flow after master rowData refresh.
-  // 1) Reset tracking for dependent managers.
-  // 2) Run initial sync if not done yet and detail is ready.
-  handleMasterRowDataUpdated({ resetTrackingManagers = [] } = {}) {
-    resetTrackingManagers.forEach((manager) => manager?.resetTracking?.())
-    if (this.initialMasterSyncDone) return
-    if (!this.isDetailReady()) return
-
-    this.initialMasterSyncDone = true
-    this.syncMasterSelectionAfterLoad()
+  // 마스터 그리드 이벤트(rowClicked, cellFocused)를 처리합니다.
+  handleMasterGridEvent = async (event) => {
+    const rowData = rowDataFromGridEvent(this.manager?.api, event)
+    if (!rowData) return
+    await this.handleMasterRowChange(rowData)
   }
 
-  // Reload master rows from URL and re-sync selection/detail on success.
-  async reloadMasterRows({ url = this.gridController?.urlValue, errorMessage = "목록 조회에 실패했습니다." } = {}) {
-    if (!isApiAlive(this.manager?.api)) return false
-    if (!url) return false
+  // ─── 핵심 로직 ───
 
-    try {
-      const rows = await fetchJson(url)
-      setManagerRowData(this.manager, rows)
-      await this.syncMasterSelectionAfterLoad()
-      return true
-    } catch {
-      if (errorMessage) showAlert(errorMessage)
-      return false
-    }
-  }
+  // 마스터 그리드에서 첫 번째 행을 선택하고 디테일을 조회합니다.
+  // onRowDataUpdated 콜백, 그리드 준비 완료 시점에서 호출합니다.
+  selectFirstMasterRow() {
+    if (!isApiAlive(this.manager?.api) || !this.isDetailReady()) return
 
-  // Generic utility to sync master/detail by a code field.
-  // - If code is missing/new/deleted, clear detail side.
-  // - Otherwise, update selected-code state/label and load details.
-  async syncMasterDetailByCode(rowData, {
-    codeField = "code",
-    setSelectedCode,
-    refreshLabel,
-    clearDetails,
-    loadDetails,
-    beforeSync
-  } = {}) {
-    if (!this.isDetailReady()) return
-
-    if (beforeSync) {
-      beforeSync(rowData)
-    }
-
-    const code = rowData?.[codeField]
-    const hasLoadableCode = Boolean(code) && !rowData?.__is_deleted && !rowData?.__is_new
-
-    if (!hasLoadableCode) {
-      if (setSelectedCode) setSelectedCode(code || "")
-      if (refreshLabel) refreshLabel()
-      if (clearDetails) clearDetails()
+    const firstData = focusFirstRow(this.manager.api, { ensureVisible: true, select: false })
+    if (!firstData) {
+      // 마스터가 비어 있으면 디테일도 비웁니다.
+      this.handleMasterRowChange(null)
       return
     }
+    this.handleMasterRowChange(firstData)
+  }
 
-    if (setSelectedCode) setSelectedCode(code)
-    if (refreshLabel) refreshLabel()
-    if (loadDetails) await loadDetails(code)
+  // 하위 클래스 훅: 마스터 행 변경 시 디테일 처리를 구현합니다.
+  // rowData가 null이면 디테일을 비워야 합니다.
+  async handleMasterRowChange(rowData) {
+    // 하위 컨트롤러에서 오버라이드
+  }
+
+  // ─── 조회 직전 clear ───
+
+  // 조회 버튼 클릭 직전(grid:before-search) 이벤트 처리
+  handleBeforeSearch() {
+    this.clearMasterGrid()
+    this.clearAllDetails()
+  }
+
+  // 마스터 그리드 데이터를 비웁니다.
+  clearMasterGrid() {
+    if (isApiAlive(this.manager?.api)) {
+      setManagerRowData(this.manager, [])
+    }
+  }
+
+  // 하위 클래스 훅: 모든 상세 그리드 데이터를 비웁니다.
+  clearAllDetails() { }
+
+  // ─── 하위 클래스 오버라이드 포인트 ───
+
+  // 디테일 영역 준비 상태 확인 (기본값: 항상 준비됨)
+  isDetailReady() {
+    return true
   }
 }
