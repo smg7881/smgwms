@@ -277,7 +277,10 @@ export default class extends MasterDetailGridController {
     deleteDetailRows(event) {
         event?.preventDefault()
         if (!this.detailManager) return
-        this.detailManager.deleteSelectedRows("매입요율 상세정보")
+        this.deleteRows({
+            manager: this.detailManager,
+            deleteLabel: "매입요율 상세정보"
+        })
     }
     async saveDetailRows(event) {
         event?.preventDefault()

@@ -84,18 +84,16 @@ export default class extends MasterDetailGridController {
   }
 
   addMasterRow() {
-    if (!this.manager) return
-
-    const txResult = this.manager.addRow()
-    const rowNode = txResult?.add?.[0]
-    if (!rowNode?.data) return
-
-    this.handleMasterRowChangeOnce(rowNode.data, { force: true })
+    this.addRow({
+      manager: this.manager,
+      onAdded: (rowData) => {
+        this.handleMasterRowChangeOnce(rowData, { force: true })
+      }
+    })
   }
 
   deleteMasterRows() {
-    if (!this.manager) return
-    this.manager.deleteRows()
+    this.deleteRows()
   }
 
   async saveMasterRows() {
@@ -130,13 +128,16 @@ export default class extends MasterDetailGridController {
       return
     }
 
-    this.countryManager.addRow({ ctry_cd: "KR", use_yn_cd: "Y", rpt_yn_cd: "N" })
+    this.addRow({
+      manager: this.countryManager,
+      overrides: { ctry_cd: "KR", use_yn_cd: "Y", rpt_yn_cd: "N" }
+    })
   }
 
   deleteCountryRows() {
     if (!this.countryManager) return
     if (!this.selectedCorpCode) return
-    this.countryManager.deleteRows()
+    this.deleteRows({ manager: this.countryManager })
   }
 
   async saveCountryRows() {

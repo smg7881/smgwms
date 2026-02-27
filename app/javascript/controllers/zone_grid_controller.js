@@ -198,9 +198,12 @@ export default class extends BaseGridController {
     if (!this.ensureSelectedArea()) return
 
     // 행 추가 시, 현재 활성화된 마스터(Area)의 복합 프라이머리키를 미리 강제로 주입해줌
-    this.zoneManager.addRow({
-      workpl_cd: this.selectedArea.workpl_cd,
-      area_cd: this.selectedArea.area_cd
+    this.addRow({
+      manager: this.zoneManager,
+      overrides: {
+        workpl_cd: this.selectedArea.workpl_cd,
+        area_cd: this.selectedArea.area_cd
+      }
     })
   }
 
@@ -208,7 +211,7 @@ export default class extends BaseGridController {
     if (!this.zoneManager) return
     if (!this.ensureSelectedArea()) return
 
-    this.zoneManager.deleteRows()
+    this.deleteRows({ manager: this.zoneManager })
   }
 
   async saveZoneRows() {

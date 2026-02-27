@@ -48,11 +48,29 @@ export default class extends Controller {
     })
   }
 
+  addRowWith({
+    manager,
+    overrides = {},
+    config = {},
+    onAdded = null
+  } = {}) {
+    if (!manager) return null
+    const txResult = manager.addRow(overrides || {}, config || {})
+    const addedNode = txResult?.add?.[0]
+    if (onAdded && addedNode?.data) {
+      onAdded(addedNode.data, { addedNode, txResult })
+    }
+    return txResult
+  }
+
   // --- Group Grid Methods ---
 
   addGroupRow() {
     if (!this.groupManager) return
-    this.groupManager.addRow({ use_yn: "Y" })
+    this.addRowWith({
+      manager: this.groupManager,
+      overrides: { use_yn: "Y" }
+    })
   }
 
   deleteGroupRows() {
@@ -192,7 +210,10 @@ export default class extends Controller {
         validNodes[0].setSelected(true)
         group = validNodes[0].data
       } else {
-        this.groupManager.addRow({ group_nm: "기본 그룹", use_yn: "Y" })
+        this.addRowWith({
+          manager: this.groupManager,
+          overrides: { group_nm: "기본 그룹", use_yn: "Y" }
+        })
 
         let newNode = null
         this.groupManager.api.forEachNode(node => {

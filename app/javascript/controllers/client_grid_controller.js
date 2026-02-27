@@ -316,20 +316,18 @@ export default class extends MasterDetailGridController {
   }
 
   addMasterRow() {
-    if (!this.manager) return
-
-    const txResult = this.manager.addRow({}, { startCol: "bzac_nm" })
-    const addedNode = txResult?.add?.[0]
-    if (addedNode?.data) {
-      this.activateTab("basic")
-      this.handleMasterRowChangeOnce(addedNode.data, { force: true })
-    }
+    this.addRow({
+      manager: this.manager,
+      config: { startCol: "bzac_nm" },
+      onAdded: (rowData) => {
+        this.activateTab("basic")
+        this.handleMasterRowChangeOnce(rowData, { force: true })
+      }
+    })
   }
 
   deleteMasterRows() {
-    if (!this.manager) return
-
-    this.manager.deleteRows()
+    this.deleteRows()
   }
 
   async saveMasterRows() {
@@ -366,14 +364,14 @@ export default class extends MasterDetailGridController {
       return
     }
 
-    this.contactManager.addRow()
+    this.addRow({ manager: this.contactManager })
   }
 
   deleteContactRows() {
     if (!this.contactManager) return
     if (this.blockDetailActionIfMasterChanged()) return
 
-    this.contactManager.deleteRows()
+    this.deleteRows({ manager: this.contactManager })
   }
 
   async saveContactRows() {
@@ -403,14 +401,14 @@ export default class extends MasterDetailGridController {
       return
     }
 
-    this.workplaceManager.addRow()
+    this.addRow({ manager: this.workplaceManager })
   }
 
   deleteWorkplaceRows() {
     if (!this.workplaceManager) return
     if (this.blockDetailActionIfMasterChanged()) return
 
-    this.workplaceManager.deleteRows()
+    this.deleteRows({ manager: this.workplaceManager })
   }
 
   async saveWorkplaceRows() {

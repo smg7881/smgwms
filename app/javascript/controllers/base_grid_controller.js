@@ -148,19 +148,36 @@ export default class BaseGridController extends Controller {
 
   // ─── 단일 그리드 CRUD 액션 (기존 호환) ───
 
-  addRow() {
-    if (!this.manager) return
-    const overrides = this.buildNewRowOverrides?.() || {}
-    const config = this.buildAddRowConfig?.() || {}
-    this.manager.addRow(overrides, config)
+  addRow({
+    manager = this.manager,
+    overrides = this.buildNewRowOverrides?.() || {},
+    config = this.buildAddRowConfig?.() || {},
+    onAdded = null
+  } = {}) {
+    if (!manager) return null
+    const txResult = manager.addRow(overrides || {}, config || {})
+    const addedNode = txResult?.add?.[0]
+    if (onAdded && addedNode?.data) {
+      onAdded(addedNode.data, { addedNode, txResult })
+    }
+    return txResult
   }
 
-  deleteRows() {
-    if (!this.manager) return
-    this.manager.deleteRows({
-      beforeDelete: this.beforeDeleteRows?.bind(this)
-    })
+  deleteRows({
+    manager = this.manager,
+    beforeDelete = this.beforeDeleteRows?.bind(this),
+    deleteLabel = null
+  } = {}) {
+    if (!manager) return false
+    if (typeof manager.deleteRows === "function") {
+      return manager.deleteRows({ beforeDelete })
+    }
+    if (typeof manager.deleteSelectedRows === "function") {
+      return manager.deleteSelectedRows(deleteLabel)
+    }
+    return false
   }
+
   async saveRowsWith({
     manager,
     batchUrl,

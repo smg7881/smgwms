@@ -133,44 +133,29 @@ export default class extends MasterDetailGridController {
   // --- HTML 버튼 바인딩 파트 --- 
 
   addMasterRow() {
-    if (!this.manager) return
-
-    const txResult = this.manager.addRow()
-    const addedNode = txResult?.add?.[0]
-    if (addedNode?.data) {
-      // 행 추가되자마자 포커스를 그쪽으로 옮기고, 내부적으로 디테일은 백지화 됨
-      this.handleMasterRowChangeOnce(addedNode.data, { force: true })
-    }
+    this.addRow({
+      manager: this.manager,
+      onAdded: (rowData) => {
+        // 행 추가되자마자 포커스를 그쪽으로 옮기고, 내부적으로 디테일은 백지화 됨
+        this.handleMasterRowChangeOnce(rowData, { force: true })
+      }
+    })
   }
 
   deleteMasterRows() {
-    if (!this.manager) return
-    this.manager.deleteRows()
+    this.deleteRows()
   }
 
   async saveMasterRows() {
     await this.saveRowsWith({
       manager: this.manager,
-      batchUrl: this.batchUrlValue,
-      saveMessage: this.saveMessage,
+      batchUrl: this.masterBatchUrlValue,
+      saveMessage: "코드 데이터가 저장되었습니다.",
       onSuccess: () => this.afterSaveSuccess()
     })
   }
 
-  get batchUrlValue() {
-    return this.masterBatchUrlValue
-  }
-
-  get saveMessage() {
-    return "코드 데이터가 저장되었습니다."
-  }
-
   async afterSaveSuccess() {
-    await this.reloadMasterRows()
-  }
-
-  // 마스터 저장 성공시 화면 리셋 후 첫줄 오토포커스
-  async reloadMasterRows() {
     await super.reloadMasterRows({ errorMessage: "코드 목록 조회에 실패했습니다." })
   }
 
@@ -186,14 +171,17 @@ export default class extends MasterDetailGridController {
     }
 
     // 그룹코드를 강제할당하여 추가
-    this.detailManager.addRow({ code: this.selectedCodeValue })
+    this.addRow({
+      manager: this.detailManager,
+      overrides: { code: this.selectedCodeValue }
+    })
   }
 
   deleteDetailRows() {
     if (!this.detailManager) return
     if (this.blockDetailActionIfMasterChanged()) return
 
-    this.detailManager.deleteRows()
+    this.deleteRows({ manager: this.detailManager })
   }
 
   async saveDetailRows() {

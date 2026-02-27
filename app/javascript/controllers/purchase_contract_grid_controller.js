@@ -277,19 +277,18 @@ export default class extends MasterDetailGridController {
   }
 
   addMasterRow() {
-    if (!this.manager) return
-
-    const txResult = this.manager.addRow({}, { startCol: "pur_ctrt_nm" })
-    const addedNode = txResult?.add?.[0]
-    if (addedNode?.data) {
-      this.activateTab("basic")
-      this.handleMasterRowChangeOnce(addedNode.data, { force: true })
-    }
+    this.addRow({
+      manager: this.manager,
+      config: { startCol: "pur_ctrt_nm" },
+      onAdded: (rowData) => {
+        this.activateTab("basic")
+        this.handleMasterRowChangeOnce(rowData, { force: true })
+      }
+    })
   }
 
   deleteMasterRows() {
-    if (!this.manager) return
-    this.manager.deleteRows()
+    this.deleteRows()
   }
 
   async saveMasterRows() {
@@ -326,14 +325,14 @@ export default class extends MasterDetailGridController {
       return
     }
 
-    this.settlementManager.addRow()
+    this.addRow({ manager: this.settlementManager })
   }
 
   deleteSettlementRows() {
     if (!this.settlementManager) return
     if (this.blockDetailActionIfMasterChanged()) return
 
-    this.settlementManager.deleteRows()
+    this.deleteRows({ manager: this.settlementManager })
   }
 
   async saveSettlementRows() {
