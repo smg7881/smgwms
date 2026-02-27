@@ -52,7 +52,11 @@ class Std::SellbuyAttribute::PageComponent < Std::BasePageComponent
           filter: false,
           sortable: false,
           cellClass: "ag-cell-actions",
-          cellRenderer: "stdSellbuyAttrActionCellRenderer"
+          cellRenderer: "actionCellRenderer",
+          cellRendererParams: { actions: [
+            { type: "edit",   eventName: "std-sellbuy-attribute-crud:edit",   dataKeys: { sellbuyAttrData: nil } },
+            { type: "delete", eventName: "std-sellbuy-attribute-crud:delete", dataKeys: { id: "id||sellbuy_attr_cd", sellbuyAttrNm: "sellbuy_attr_nm||sellbuy_attr_cd" } }
+          ] }
         }
       ]
     end

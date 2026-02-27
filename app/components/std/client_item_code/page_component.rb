@@ -58,7 +58,11 @@ class Std::ClientItemCode::PageComponent < Std::BasePageComponent
           filter: false,
           sortable: false,
           cellClass: "ag-cell-actions",
-          cellRenderer: "stdClientItemCodeActionCellRenderer"
+          cellRenderer: "actionCellRenderer",
+          cellRendererParams: { actions: [
+            { type: "edit",   eventName: "std-client-item-code-crud:edit",   dataKeys: { clientItemCodeData: nil } },
+            { type: "delete", eventName: "std-client-item-code-crud:delete", dataKeys: { id: "id", itemCd: "item_cd||id" } }
+          ] }
         }
       ]
     end

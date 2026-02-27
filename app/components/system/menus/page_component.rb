@@ -26,7 +26,14 @@ class System::Menus::PageComponent < System::BasePageComponent
         { field: "menu_type", headerName: "타입", maxWidth: 100 },
         { field: "use_yn", headerName: "사용", maxWidth: 70 },
         { field: "tab_id", headerName: "탭ID", minWidth: 120 },
-        { field: "actions", headerName: "작업", minWidth: 130, maxWidth: 130, filter: false, sortable: false, cellRenderer: "actionCellRenderer" }
+        { field: "actions", headerName: "작업", minWidth: 130, maxWidth: 130, filter: false, sortable: false,
+          cellRenderer: "actionCellRenderer",
+          cellRendererParams: { actions: [
+            { type: "add_child", title: "하위메뉴추가", eventName: "menu-crud:add-child", dataKeys: { parentCd: "menu_cd", parentLevel: "menu_level" } },
+            { type: "edit",      eventName: "menu-crud:edit",   dataKeys: { menuData: nil } },
+            { type: "delete",    eventName: "menu-crud:delete", dataKeys: { id: "id", menuCd: "menu_cd" } }
+          ] }
+        }
       ]
     end
 

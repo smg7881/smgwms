@@ -22,7 +22,11 @@
         end
         opt_id = "#{param_key}_#{field[:field]}_#{value}"
       %>
-              } %>
+      <label class="flex items-center gap-1.5 cursor-pointer text-sm text-text-primary">
+        <%= f.radio_button field[:field], value,
+              id: opt_id,
+              checked: current_value.to_s == value.to_s,
+              class: "radio-input" %>
         <span><%= label %></span>
       </label>
     <% end %>

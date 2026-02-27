@@ -48,7 +48,13 @@ class System::Users::PageComponent < System::BasePageComponent
         { field: "resign_date", headerName: "퇴사일", minWidth: 120, formatter: "date" },
         { field: "email_address", headerName: "이메일", minWidth: 200 },
         { field: "address", headerName: "주소", minWidth: 200 },
-        { field: "actions", headerName: "작업", minWidth: 120, maxWidth: 120, filter: false, sortable: false, cellClass: "ag-cell-actions", cellRenderer: "userActionCellRenderer" }
+        { field: "actions", headerName: "작업", minWidth: 120, maxWidth: 120, filter: false, sortable: false, cellClass: "ag-cell-actions",
+          cellRenderer: "actionCellRenderer",
+          cellRendererParams: { actions: [
+            { type: "edit",   eventName: "user-crud:edit",   dataKeys: { userData: nil } },
+            { type: "delete", eventName: "user-crud:delete", dataKeys: { id: "id", userNm: "user_nm" } }
+          ] }
+        }
       ]
     end
 

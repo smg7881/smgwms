@@ -54,7 +54,11 @@ class Std::Workplace::PageComponent < Std::BasePageComponent
           filter: false,
           sortable: false,
           cellClass: "ag-cell-actions",
-          cellRenderer: "stdWorkplaceActionCellRenderer"
+          cellRenderer: "actionCellRenderer",
+          cellRendererParams: { actions: [
+            { type: "edit",   eventName: "std-workplace-crud:edit",   dataKeys: { workplaceData: nil } },
+            { type: "delete", eventName: "std-workplace-crud:delete", dataKeys: { id: "id||workpl_cd", workplNm: "workpl_nm||workpl_cd" } }
+          ] }
         }
       ]
     end

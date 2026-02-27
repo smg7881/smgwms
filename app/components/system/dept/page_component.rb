@@ -45,7 +45,14 @@ class System::Dept::PageComponent < System::BasePageComponent
         { field: "update_time", headerName: "수정일시", minWidth: 170, formatter: "datetime" },
         { field: "create_by", headerName: "생성자", minWidth: 100 },
         { field: "create_time", headerName: "생성일시", minWidth: 170, formatter: "datetime" },
-        { field: "actions", headerName: "작업", minWidth: 140, maxWidth: 140, filter: false, sortable: false, cellClass: "ag-cell-actions", cellRenderer: "deptActionCellRenderer" }
+        { field: "actions", headerName: "작업", minWidth: 140, maxWidth: 140, filter: false, sortable: false, cellClass: "ag-cell-actions",
+          cellRenderer: "actionCellRenderer",
+          cellRendererParams: { actions: [
+            { type: "add_child", title: "하위부서추가", eventName: "dept-crud:add-child", dataKeys: { parentCode: "dept_code" } },
+            { type: "edit",      eventName: "dept-crud:edit",   dataKeys: { deptData: nil } },
+            { type: "delete",    eventName: "dept-crud:delete", dataKeys: { id: "id", deptNm: "dept_nm" } }
+          ] }
+        }
       ]
     end
 

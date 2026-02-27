@@ -36,7 +36,13 @@ class System::Notice::PageComponent < System::BasePageComponent
         { field: "create_time", headerName: "등록일시", minWidth: 160, formatter: "datetime" },
         { field: "view_count", headerName: "조회수", minWidth: 90, maxWidth: 100 },
         { field: "create_by", headerName: "등록자", minWidth: 100, maxWidth: 130 },
-        { field: "actions", headerName: "작업", minWidth: 110, maxWidth: 110, filter: false, sortable: false, cellClass: "ag-cell-actions", cellRenderer: "noticeActionCellRenderer" }
+        { field: "actions", headerName: "작업", minWidth: 110, maxWidth: 110, filter: false, sortable: false, cellClass: "ag-cell-actions",
+          cellRenderer: "actionCellRenderer",
+          cellRendererParams: { actions: [
+            { type: "edit",   eventName: "notice-crud:edit",   dataKeys: { id: "id" } },
+            { type: "delete", eventName: "notice-crud:delete", dataKeys: { id: "id", title: "title" } }
+          ] }
+        }
       ]
     end
 

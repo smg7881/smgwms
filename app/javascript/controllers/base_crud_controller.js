@@ -256,7 +256,7 @@ export default class extends Controller {
     const displayName = event.detail[this.constructor.deleteConfirmKey] || id
 
     // 삭제 의도 확인 창
-    if (!confirmAction(`"${displayName}" ${this.constructor.entityLabel}를 삭제하시겠습니까?`)) return
+    if (!await confirmAction(`"${displayName}" ${this.constructor.entityLabel}를 삭제하시겠습니까?`)) return
 
     try {
       // deleteUrlValue에서 대상 레코드의 ':id' 텍스트를 실제 id 값으로 파싱해 요청
