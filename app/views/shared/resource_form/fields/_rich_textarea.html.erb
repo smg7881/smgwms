@@ -43,13 +43,16 @@
     <%= resolve_label(field) %>
     <% if field[:required] %><span class="text-accent-rose ml-0.5 font-semibold">*</span><% end %>
   </label>
-  <div class="border rounded-md group focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all duration-200">
-    <%= f.hidden_field field[:field].to_sym,
-          id: "#{param_key}_#{field[:field]}",
-          class: "form-grid-input min-h-[220px] #{'rf-field-error' if error_message.present?}",
-          required: field[:required],
-          disabled: field[:disabled],
-          data: editor_data %>
+  <% input_id = "#{param_key}_#{field[:field]}" %>
+  <div class="border border-[#374151] rounded-md overflow-hidden group focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all duration-200 #{'rf-field-error' if error_message.present?}">
+    <%# hidden input: 폼 제출 시 value를 서버로 전송 (Trix가 자동 동기화) %>
+    <%= f.hidden_field field[:field].to_sym, id: input_id %>
+
+    <%# trix-editor: 실제 에디터 UI — target, action, 옵션 속성 모두 여기에 설정 %>
+    <%= content_tag("trix-editor", "",
+          input: input_id,
+          class: "trix-content min-h-[220px]",
+          data: editor_data) %>
   </div>
   <span class="rf-error-msg <%= 'invisible' if error_message.blank? %>"><%= error_message.presence || " " %></span>
   <% if field[:help].present? %>

@@ -868,6 +868,11 @@ a:hover {
 }
 
 /* Trix / ActionText */
+trix-toolbar {
+  background-color: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border);
+}
+
 trix-toolbar .trix-button-group,
 trix-toolbar .trix-dialog {
   border-color: var(--color-border);
@@ -907,17 +912,11 @@ trix-toolbar .trix-input--dialog {
 trix-editor {
   width: 100%;
   min-height: 220px;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--color-border);
-  border-radius: 0.375rem;
+  padding: 0.75rem;
+  border: none;
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
-}
-
-trix-editor:focus {
   outline: none;
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.2);
 }
 
 /* STD Client screen (dark mode) */
