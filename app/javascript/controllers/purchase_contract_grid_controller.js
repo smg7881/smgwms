@@ -1,8 +1,6 @@
-﻿import BaseGridController from "controllers/base_grid_controller"
-import { showAlert, confirmAction } from "components/ui/alert"
-import GridCrudManager from "controllers/grid/grid_crud_manager"
-import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
-import { isApiAlive, postJson, hasChanges, fetchJson, setManagerRowData, focusFirstRow, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel } from "controllers/grid/grid_utils"
+﻿import MasterDetailGridController from "controllers/master_detail_grid_controller"
+import { showAlert } from "components/ui/alert"
+import { isApiAlive, postJson, hasChanges, fetchJson, setManagerRowData, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel } from "controllers/grid/grid_utils"
 import { switchTab, activateTab } from "controllers/ui_utils"
 import * as GridFormUtils from "controllers/grid/grid_form_utils"
 const CODE_FIELDS = [
@@ -38,9 +36,9 @@ const DATE_FIELDS = [
   "ctrt_cnctr_ymd"
 ]
 
-export default class extends BaseGridController {
+export default class extends MasterDetailGridController {
   static targets = [
-    ...BaseGridController.targets,
+    ...MasterDetailGridController.targets,
     "masterGrid",
     "settlementGrid",
     "historyGrid",
@@ -51,7 +49,7 @@ export default class extends BaseGridController {
   ]
 
   static values = {
-    ...BaseGridController.values,
+    ...MasterDetailGridController.values,
     masterBatchUrl: String,
     settlementBatchUrlTemplate: String,
     settlementListUrlTemplate: String,
@@ -61,8 +59,6 @@ export default class extends BaseGridController {
 
   connect() {
     super.connect()
-    this.initialMasterSyncDone = false
-    this.masterGridEvents = new GridEventManager()
     this.settlementGridController = null
     this.settlementManager = null
     this.historyGridController = null
@@ -76,7 +72,6 @@ export default class extends BaseGridController {
 
   disconnect() {
     this.unbindDetailFieldEvents()
-    this.masterGridEvents.unbindAll()
 
     if (this.settlementManager) {
       this.settlementManager.detach()
@@ -185,12 +180,7 @@ export default class extends BaseGridController {
       pkLabels: { pur_ctrt_no: "매입계약번호" },
       onCellValueChanged: (event) => this.normalizeMasterField(event),
       onRowDataUpdated: () => {
-        this.settlementManager?.resetTracking()
-
-        if (!this.initialMasterSyncDone && isApiAlive(this.settlementManager?.api) && isApiAlive(this.historyGridController?.api)) {
-          this.initialMasterSyncDone = true
-          this.syncMasterSelectionAfterLoad()
-        }
+        this.handleMasterRowDataUpdated({ resetTrackingManagers: [this.settlementManager] })
       }
     }
   }
@@ -243,63 +233,47 @@ export default class extends BaseGridController {
     }
   }
 
-  registerGrid(event) {
-    registerGridInstance(event, this, [
-      { target: this.hasMasterGridTarget ? this.masterGridTarget : null, isMaster: true, setup: (e) => super.registerGrid(e) },
-      { target: this.hasSettlementGridTarget ? this.settlementGridTarget : null, controllerKey: "settlementGridController", managerKey: "settlementManager", configMethod: "configureSettlementManager" },
-      { target: this.hasHistoryGridTarget ? this.historyGridTarget : null, controllerKey: "historyGridController" }
-    ], () => {
-      this.bindMasterGridEvents()
-      if (!this.initialMasterSyncDone) {
-        this.initialMasterSyncDone = true
-        this.syncMasterSelectionAfterLoad()
+  detailGridConfigs() {
+    return [
+      {
+        target: this.hasSettlementGridTarget ? this.settlementGridTarget : null,
+        controllerKey: "settlementGridController",
+        managerKey: "settlementManager",
+        configMethod: "configureSettlementManager"
+      },
+      {
+        target: this.hasHistoryGridTarget ? this.historyGridTarget : null,
+        controllerKey: "historyGridController"
       }
-    })
+    ]
   }
 
-  bindMasterGridEvents() {
-    this.masterGridEvents.unbindAll()
-    this.masterGridEvents.bind(this.manager?.api, "rowClicked", this.handleMasterRowClicked)
-    this.masterGridEvents.bind(this.manager?.api, "cellFocused", this.handleMasterCellFocused)
-  }
-
-  handleMasterRowClicked = async (event) => {
-    const rowData = rowDataFromGridEvent(this.manager?.api, event)
-    await this.handleMasterRowChange(rowData)
-  }
-
-  handleMasterCellFocused = async (event) => {
-    const rowData = rowDataFromGridEvent(this.manager?.api, event)
-    if (!rowData) return
-    await this.handleMasterRowChange(rowData)
+  isDetailReady() {
+    return isApiAlive(this.settlementManager?.api) && isApiAlive(this.historyGridController?.api)
   }
 
   async handleMasterRowChange(rowData) {
-    if (!rowData) {
-      this.currentMasterRow = null
-      this.selectedContractValue = ""
-      this.refreshSelectedContractLabel()
-      this.clearDetailForm()
-      this.clearSettlementRows()
-      this.clearHistoryRows()
-      return
-    }
+    await this.syncMasterDetailByCode(rowData, {
+      codeField: "pur_ctrt_no",
+      beforeSync: (masterRow) => {
+        this.currentMasterRow = masterRow || null
+        if (!masterRow) {
+          this.clearDetailForm()
+          return
+        }
 
-    this.currentMasterRow = rowData
-    this.fillDetailForm(rowData)
-
-    const contractNo = rowData?.pur_ctrt_no
-    this.selectedContractValue = contractNo || ""
-    this.refreshSelectedContractLabel()
-
-    if (!isApiAlive(this.settlementManager?.api) || !isApiAlive(this.historyGridController?.api)) return
-    if (!contractNo || rowData?.__is_deleted || rowData?.__is_new) {
-      this.clearSettlementRows()
-      this.clearHistoryRows()
-      return
-    }
-
-    await Promise.all([this.loadSettlementRows(contractNo), this.loadHistoryRows(contractNo)])
+        this.fillDetailForm(masterRow)
+      },
+      setSelectedCode: (code) => { this.selectedContractValue = code },
+      refreshLabel: () => this.refreshSelectedContractLabel(),
+      clearDetails: () => {
+        this.clearSettlementRows()
+        this.clearHistoryRows()
+      },
+      loadDetails: async (contractNo) => {
+        await Promise.all([this.loadSettlementRows(contractNo), this.loadHistoryRows(contractNo)])
+      }
+    })
   }
 
   addMasterRow() {
@@ -309,7 +283,7 @@ export default class extends BaseGridController {
     const addedNode = txResult?.add?.[0]
     if (addedNode?.data) {
       this.activateTab("basic")
-      this.handleMasterRowChange(addedNode.data)
+      this.handleMasterRowChangeOnce(addedNode.data, { force: true })
     }
   }
 
@@ -336,33 +310,7 @@ export default class extends BaseGridController {
   }
 
   async reloadMasterRows() {
-    if (!isApiAlive(this.manager?.api)) return
-    if (!this.gridController?.urlValue) return
-
-    try {
-      const rows = await fetchJson(this.gridController.urlValue)
-      setManagerRowData(this.manager, rows)
-      await this.syncMasterSelectionAfterLoad()
-    } catch {
-      showAlert("매입계약 목록 조회에 실패했습니다.")
-    }
-  }
-
-  async syncMasterSelectionAfterLoad() {
-    if (!isApiAlive(this.manager?.api)) return
-
-    const firstData = focusFirstRow(this.manager.api)
-    if (!firstData) {
-      this.currentMasterRow = null
-      this.selectedContractValue = ""
-      this.refreshSelectedContractLabel()
-      this.clearDetailForm()
-      this.clearSettlementRows()
-      this.clearHistoryRows()
-      return
-    }
-
-    await this.handleMasterRowChange(firstData)
+    await super.reloadMasterRows({ errorMessage: "매입계약 목록 조회에 실패했습니다." })
   }
 
   addSettlementRow() {

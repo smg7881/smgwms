@@ -6,19 +6,17 @@
  * - 마스터 행을 클릭하면 하위 디테일 그리드가 Ajax로 재로딩됩니다.
  * - Master, Detail 각각 독립적인 C/U/D 행위를 할 수 있으며 저장 API도 각각 나뉩니다.
  */
-import BaseGridController from "controllers/base_grid_controller"
-import { showAlert, confirmAction } from "components/ui/alert"
-import GridCrudManager from "controllers/grid/grid_crud_manager"
-import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
-import { isApiAlive, postJson, hasChanges, fetchJson, setManagerRowData, focusFirstRow, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel, registerGridInstance } from "controllers/grid/grid_utils"
+import MasterDetailGridController from "controllers/master_detail_grid_controller"
+import { showAlert } from "components/ui/alert"
+import { isApiAlive, postJson, hasChanges, setManagerRowData, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel } from "controllers/grid/grid_utils"
 
-export default class extends BaseGridController {
+export default class extends MasterDetailGridController {
   // 타겟 확정 (2개의 거대한 그리드 컨테이너 및 텍스트 라벨)
-  static targets = [...BaseGridController.targets, "masterGrid", "detailGrid", "selectedCodeLabel"]
+  static targets = [...MasterDetailGridController.targets, "masterGrid", "detailGrid", "selectedCodeLabel"]
 
   // 백엔드 엔드포인트 세팅
   static values = {
-    ...BaseGridController.values,
+    ...MasterDetailGridController.values,
     masterBatchUrl: String,             // 거시적인 1단계 그룹코드 저장 URL
     detailBatchUrlTemplate: String,     // 하위 상세코드 배열 저장 URL 템플릿 (':code' 가 치환됨)
     detailListUrlTemplate: String,      // 특정 부모를 선택했을때 긁어올 상세코드 조회 URL 템플릿
@@ -27,15 +25,11 @@ export default class extends BaseGridController {
 
   connect() {
     super.connect()
-    this.initialMasterSyncDone = false  // 화면 최초 진입 시, 맨 첫째 행을 강제로 포커싱하기 위한 락 
-    this.masterGridEvents = new GridEventManager() // AG Grid의 각종 이벤트리스너 안전 해제 관리용
     this.detailGridController = null    // 디테일 쪽 네이티브 컨트롤러 캐싱용
     this.detailManager = null           // 디테일 쪽 독립 CRUD 매니저 캐싱용
   }
 
   disconnect() {
-    this.masterGridEvents.unbindAll()
-
     if (this.detailManager) {
       this.detailManager.detach()
       this.detailManager = null
@@ -63,12 +57,7 @@ export default class extends BaseGridController {
       pkLabels: { code: "코드" },
       // 마스터 그리드가 Ajax로 확 새로 그려졌을 때 진입되는 콜백
       onRowDataUpdated: () => {
-        this.detailManager?.resetTracking()
-
-        if (!this.initialMasterSyncDone && isApiAlive(this.detailManager?.api)) {
-          this.initialMasterSyncDone = true
-          this.syncMasterSelectionAfterLoad() // 최상단 행 오토 포커스 호출
-        }
+        this.handleMasterRowDataUpdated({ resetTrackingManagers: [this.detailManager] })
       }
     }
   }
@@ -115,57 +104,30 @@ export default class extends BaseGridController {
     }
   }
 
-  // Base의 DOM 연결 이벤트를 가로채서, 마스터냐 디테일이냐에 따라 관리자를 2가닥으로 물 물려줌
-  registerGrid(event) {
-    registerGridInstance(event, this, [
-      { target: this.hasMasterGridTarget ? this.masterGridTarget : null, isMaster: true, setup: (e) => super.registerGrid(e) },
-      { target: this.hasDetailGridTarget ? this.detailGridTarget : null, controllerKey: "detailGridController", managerKey: "detailManager", configMethod: "configureDetailManager" }
-    ], () => {
-      this.bindMasterGridEvents()
-      if (!this.initialMasterSyncDone) {
-        this.initialMasterSyncDone = true
-        this.syncMasterSelectionAfterLoad()
+  detailGridConfigs() {
+    return [
+      {
+        target: this.hasDetailGridTarget ? this.detailGridTarget : null,
+        controllerKey: "detailGridController",
+        managerKey: "detailManager",
+        configMethod: "configureDetailManager"
       }
-    })
+    ]
   }
 
-  // 마스터 행 쪼기(클릭)나 방향키 기반 셀 이동 시 항상 감지 
-  bindMasterGridEvents() {
-    this.masterGridEvents.unbindAll()
-    this.masterGridEvents.bind(this.manager?.api, "rowClicked", this.handleMasterRowClicked)
-    this.masterGridEvents.bind(this.manager?.api, "cellFocused", this.handleMasterCellFocused)
-  }
-
-  handleMasterRowClicked = async (event) => {
-    const rowData = rowDataFromGridEvent(this.manager?.api, event)
-    await this.handleMasterRowChange(rowData)
-  }
-
-  handleMasterCellFocused = async (event) => {
-    const rowData = rowDataFromGridEvent(this.manager?.api, event)
-    if (!rowData) return
-
-    await this.handleMasterRowChange(rowData)
+  isDetailReady() {
+    return isApiAlive(this.detailManager?.api)
   }
 
   // 마스터 포커스가 바뀔 때 연쇄동작의 심볼
   async handleMasterRowChange(rowData) {
-    if (!isApiAlive(this.detailManager?.api)) return
-
-    const code = rowData?.code
-    // 아직 작성중인 새 그룹이거나 삭제대기, 값이 없는 상태라면 
-    // 하위조회가 불가능하므로 빈 디테일 그리드로 비워둠
-    if (!code || rowData?.__is_deleted || rowData?.__is_new) {
-      this.selectedCodeValue = code || ""
-      this.refreshSelectedCodeLabel()
-      this.clearDetailRows()
-      return
-    }
-
-    // 정상적으로 DB기존재하는 코드를 짚었다면 디테일 비동기 조회
-    this.selectedCodeValue = code
-    this.refreshSelectedCodeLabel()
-    await this.loadDetailRows(code)
+    await this.syncMasterDetailByCode(rowData, {
+      codeField: "code",
+      setSelectedCode: (code) => { this.selectedCodeValue = code },
+      refreshLabel: () => this.refreshSelectedCodeLabel(),
+      clearDetails: () => this.clearDetailRows(),
+      loadDetails: (code) => this.loadDetailRows(code)
+    })
   }
 
   // --- HTML 버튼 바인딩 파트 --- 
@@ -177,7 +139,7 @@ export default class extends BaseGridController {
     const addedNode = txResult?.add?.[0]
     if (addedNode?.data) {
       // 행 추가되자마자 포커스를 그쪽으로 옮기고, 내부적으로 디테일은 백지화 됨
-      this.handleMasterRowChange(addedNode.data)
+      this.handleMasterRowChangeOnce(addedNode.data, { force: true })
     }
   }
 
@@ -205,31 +167,7 @@ export default class extends BaseGridController {
 
   // 마스터 저장 성공시 화면 리셋 후 첫줄 오토포커스
   async reloadMasterRows() {
-    if (!isApiAlive(this.manager?.api)) return
-    if (!this.gridController?.urlValue) return
-
-    try {
-      const rows = await fetchJson(this.gridController.urlValue)
-      setManagerRowData(this.manager, rows)
-      await this.syncMasterSelectionAfterLoad()
-    } catch {
-      showAlert("코드 목록 조회에 실패했습니다.")
-    }
-  }
-
-  // 0번째 행 강제 포커스
-  async syncMasterSelectionAfterLoad() {
-    if (!isApiAlive(this.manager?.api) || !isApiAlive(this.detailManager?.api)) return
-
-    const firstData = focusFirstRow(this.manager.api)
-    if (!firstData) {
-      this.selectedCodeValue = ""
-      this.refreshSelectedCodeLabel()
-      this.clearDetailRows()
-      return
-    }
-
-    await this.handleMasterRowChange(firstData)
+    await super.reloadMasterRows({ errorMessage: "코드 목록 조회에 실패했습니다." })
   }
 
   // ===================== [Detail Area] =========================

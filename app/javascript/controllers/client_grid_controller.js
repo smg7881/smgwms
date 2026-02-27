@@ -1,8 +1,6 @@
-﻿import BaseGridController from "controllers/base_grid_controller"
-import { showAlert, confirmAction } from "components/ui/alert"
-import GridCrudManager from "controllers/grid/grid_crud_manager"
-import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
-import { isApiAlive, postJson, hasChanges, fetchJson, setManagerRowData, focusFirstRow, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel, setSelectOptions as setSelectOptionsUtil, registerGridInstance } from "controllers/grid/grid_utils"
+﻿import MasterDetailGridController from "controllers/master_detail_grid_controller"
+import { showAlert } from "components/ui/alert"
+import { isApiAlive, postJson, hasChanges, fetchJson, setManagerRowData, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel, setSelectOptions as setSelectOptionsUtil } from "controllers/grid/grid_utils"
 import { switchTab, activateTab } from "controllers/ui_utils"
 import * as GridFormUtils from "controllers/grid/grid_form_utils"
 const CODE_FIELDS = [
@@ -40,9 +38,9 @@ const DATE_FIELDS = ["aply_strt_day_cd", "aply_end_day_cd"]
  * - 상세 폼 수정 시 마스터 그리드의 데이터 실시간 동기화
  * - 각 그리드별 개별 CRUD 관리 (GridCrudManager 사용)
  */
-export default class extends BaseGridController {
+export default class extends MasterDetailGridController {
   static targets = [
-    ...BaseGridController.targets,
+    ...MasterDetailGridController.targets,
     "masterGrid",
     "contactsGrid",
     "workplacesGrid",
@@ -56,7 +54,7 @@ export default class extends BaseGridController {
   ]
 
   static values = {
-    ...BaseGridController.values,
+    ...MasterDetailGridController.values,
     masterBatchUrl: String,
     contactBatchUrlTemplate: String,
     contactListUrlTemplate: String,
@@ -70,13 +68,8 @@ export default class extends BaseGridController {
   connect() {
     super.connect()
 
-    // 초기 마스터 데이터 동기화 완료 여부 플래그
-    this.initialMasterSyncDone = false
     // 팝업 등에서 조회된 금융기관명을 캐싱하여 불필요한 API 호출 방지
     this.financialInstitutionNameCache = new Map()
-
-    // 마스터 그리드 이벤트 관리자
-    this.masterGridEvents = new GridEventManager()
 
     // 각 탭별 그리드 컨트롤러 및 매니저 초기화
     this.contactGridController = null
@@ -102,7 +95,6 @@ export default class extends BaseGridController {
   disconnect() {
     this.unbindSearchFields()
     this.unbindDetailFieldEvents()
-    this.masterGridEvents.unbindAll()
 
     if (this.contactManager) {
       this.contactManager.detach()
@@ -218,13 +210,7 @@ export default class extends BaseGridController {
       pkLabels: { bzac_cd: "거래처코드" },
       onCellValueChanged: (event) => this.normalizeMasterField(event),
       onRowDataUpdated: () => {
-        this.contactManager?.resetTracking()
-        this.workplaceManager?.resetTracking()
-
-        if (!this.initialMasterSyncDone && isApiAlive(this.contactManager?.api) && isApiAlive(this.workplaceManager?.api)) {
-          this.initialMasterSyncDone = true
-          this.syncMasterSelectionAfterLoad()
-        }
+        this.handleMasterRowDataUpdated({ resetTrackingManagers: [this.contactManager, this.workplaceManager] })
       }
     }
   }
@@ -283,66 +269,50 @@ export default class extends BaseGridController {
     }
   }
 
-  // 화면에 AG Grid가 렌더링될 때 각 타겟별로 이벤트를 받아 컨트롤러/매니저 인스턴스를 할당
-  registerGrid(event) {
-    registerGridInstance(event, this, [
-      { target: this.hasMasterGridTarget ? this.masterGridTarget : null, isMaster: true, setup: (e) => super.registerGrid(e) },
-      { target: this.hasContactsGridTarget ? this.contactsGridTarget : null, controllerKey: "contactGridController", managerKey: "contactManager", configMethod: "configureContactManager" },
-      { target: this.hasWorkplacesGridTarget ? this.workplacesGridTarget : null, controllerKey: "workplaceGridController", managerKey: "workplaceManager", configMethod: "configureWorkplaceManager" }
-    ], () => {
-      this.bindMasterGridEvents()
-      if (!this.initialMasterSyncDone) {
-        this.initialMasterSyncDone = true
-        this.syncMasterSelectionAfterLoad()
+  detailGridConfigs() {
+    return [
+      {
+        target: this.hasContactsGridTarget ? this.contactsGridTarget : null,
+        controllerKey: "contactGridController",
+        managerKey: "contactManager",
+        configMethod: "configureContactManager"
+      },
+      {
+        target: this.hasWorkplacesGridTarget ? this.workplacesGridTarget : null,
+        controllerKey: "workplaceGridController",
+        managerKey: "workplaceManager",
+        configMethod: "configureWorkplaceManager"
       }
-    })
+    ]
   }
 
-  bindMasterGridEvents() {
-    this.masterGridEvents.unbindAll()
-    this.masterGridEvents.bind(this.manager?.api, "rowClicked", this.handleMasterRowClicked)
-    this.masterGridEvents.bind(this.manager?.api, "cellFocused", this.handleMasterCellFocused)
-  }
-
-  handleMasterRowClicked = async (event) => {
-    const rowData = rowDataFromGridEvent(this.manager?.api, event)
-    await this.handleMasterRowChange(rowData)
-  }
-
-  handleMasterCellFocused = async (event) => {
-    const rowData = rowDataFromGridEvent(this.manager?.api, event)
-    if (!rowData) return
-
-    await this.handleMasterRowChange(rowData)
+  isDetailReady() {
+    return isApiAlive(this.contactManager?.api) && isApiAlive(this.workplaceManager?.api)
   }
 
   // 마스터 행이 변경(선택)되었을 때 상세 폼 데이터 바인딩 및 서브 그리드 데이터 재조회
   async handleMasterRowChange(rowData) {
-    if (!rowData) {
-      this.currentMasterRow = null
-      this.selectedClientValue = ""
-      this.refreshSelectedClientLabel()
-      this.clearDetailForm()
-      this.clearContactRows()
-      this.clearWorkplaceRows()
-      return
-    }
+    await this.syncMasterDetailByCode(rowData, {
+      codeField: "bzac_cd",
+      beforeSync: (masterRow) => {
+        this.currentMasterRow = masterRow || null
+        if (!masterRow) {
+          this.clearDetailForm()
+          return
+        }
 
-    this.currentMasterRow = rowData
-    this.fillDetailForm(rowData)
-
-    const clientCode = rowData?.bzac_cd
-    this.selectedClientValue = clientCode || ""
-    this.refreshSelectedClientLabel()
-
-    if (!isApiAlive(this.contactManager?.api) || !isApiAlive(this.workplaceManager?.api)) return
-    if (!clientCode || rowData?.__is_deleted || rowData?.__is_new) {
-      this.clearContactRows()
-      this.clearWorkplaceRows()
-      return
-    }
-
-    await Promise.all([this.loadContactRows(clientCode), this.loadWorkplaceRows(clientCode)])
+        this.fillDetailForm(masterRow)
+      },
+      setSelectedCode: (code) => { this.selectedClientValue = code },
+      refreshLabel: () => this.refreshSelectedClientLabel(),
+      clearDetails: () => {
+        this.clearContactRows()
+        this.clearWorkplaceRows()
+      },
+      loadDetails: async (clientCode) => {
+        await Promise.all([this.loadContactRows(clientCode), this.loadWorkplaceRows(clientCode)])
+      }
+    })
   }
 
   addMasterRow() {
@@ -352,7 +322,7 @@ export default class extends BaseGridController {
     const addedNode = txResult?.add?.[0]
     if (addedNode?.data) {
       this.activateTab("basic")
-      this.handleMasterRowChange(addedNode.data)
+      this.handleMasterRowChangeOnce(addedNode.data, { force: true })
     }
   }
 
@@ -380,33 +350,7 @@ export default class extends BaseGridController {
   }
 
   async reloadMasterRows() {
-    if (!isApiAlive(this.manager?.api)) return
-    if (!this.gridController?.urlValue) return
-
-    try {
-      const rows = await fetchJson(this.gridController.urlValue)
-      setManagerRowData(this.manager, rows)
-      await this.syncMasterSelectionAfterLoad()
-    } catch {
-      showAlert("거래처 목록 조회에 실패했습니다.")
-    }
-  }
-
-  async syncMasterSelectionAfterLoad() {
-    if (!isApiAlive(this.manager?.api)) return
-
-    const firstData = focusFirstRow(this.manager.api)
-    if (!firstData) {
-      this.currentMasterRow = null
-      this.selectedClientValue = ""
-      this.refreshSelectedClientLabel()
-      this.clearDetailForm()
-      this.clearContactRows()
-      this.clearWorkplaceRows()
-      return
-    }
-
-    await this.handleMasterRowChange(firstData)
+    await super.reloadMasterRows({ errorMessage: "거래처 목록 조회에 실패했습니다." })
   }
 
   addContactRow() {

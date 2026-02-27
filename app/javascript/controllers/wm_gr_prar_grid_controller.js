@@ -1,18 +1,17 @@
-import BaseGridController from "controllers/base_grid_controller"
-import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
+﻿import MasterDetailGridController from "controllers/master_detail_grid_controller"
 import { isApiAlive, postJson, setManagerRowData, buildTemplateUrl } from "controllers/grid/grid_utils"
 import { showAlert, confirmAction } from "components/ui/alert"
 import { switchTab, activateTab } from "controllers/ui_utils"
-export default class extends BaseGridController {
+export default class extends MasterDetailGridController {
     static targets = [
-        ...BaseGridController.targets,
+        ...MasterDetailGridController.targets,
         "masterGrid", "detailGrid", "execRsltGrid",
         "selectedMasterLabel",
         "tabButton", "tabPanel"
     ]
 
     static values = {
-        ...BaseGridController.values,
+        ...MasterDetailGridController.values,
         detailListUrlTemplate: String,
         execResultUrlTemplate: String,
         saveUrlTemplate: String,
@@ -25,19 +24,17 @@ export default class extends BaseGridController {
     connect() {
         super.connect()
         this.activeTab = "detail"
-        this.#masterGridEvents = new GridEventManager()
-        this.#detailGridController = null
-        this.#execRsltGridController = null
-        this.#stagedLocations = []
-        this.#selectedMasterData = null
+        this.detailGridController = null
+        this.execRsltGridController = null
+        this.stagedLocations = []
+        this.selectedMasterData = null
         this.#loadStagedLocations()
         this.activateTab("detail")
     }
 
     disconnect() {
-        this.#masterGridEvents.unbindAll()
-        this.#detailGridController = null
-        this.#execRsltGridController = null
+        this.detailGridController = null
+        this.execRsltGridController = null
         super.disconnect()
     }
 
@@ -55,47 +52,54 @@ export default class extends BaseGridController {
             blankCheckFields: [],
             comparableFields: ["car_no", "driver_telno", "rmk"],
             firstEditCol: "car_no",
-            pkLabels: { gr_prar_no: "입고예정번호" }
+            pkLabels: { gr_prar_no: "입고예정번호" },
+            onRowDataUpdated: () => {
+                this.handleMasterRowDataUpdated()
+            }
         }
     }
 
     // --- 그리드 등록 분기 ---
 
-    registerGrid(event) {
-        const registration = resolveAgGridRegistration(event)
-        if (!registration) return
+    detailGridConfigs() {
+        return [
+            {
+                target: this.hasDetailGridTarget ? this.detailGridTarget : null,
+                controllerKey: "detailGridController"
+            },
+            {
+                target: this.hasExecRsltGridTarget ? this.execRsltGridTarget : null,
+                controllerKey: "execRsltGridController"
+            }
+        ]
+    }
 
-        const { gridElement, api, controller } = registration
-
-        if (gridElement === this.masterGridTarget) {
-            super.registerGrid(event)
-            this.#bindMasterRowClick()
-            this.#syncMasterSelectionAfterLoad()
-        } else if (gridElement === this.detailGridTarget) {
-            this.#detailGridController = controller
-        } else if (gridElement === this.execRsltGridTarget) {
-            this.#execRsltGridController = controller
-        }
+    isDetailReady() {
+        return isApiAlive(this.detailGridController?.api) && isApiAlive(this.execRsltGridController?.api)
     }
 
     // --- 마스터 행 선택 ---
 
-    #bindMasterRowClick() {
-        this.#masterGridEvents.unbindAll()
-        this.#masterGridEvents.bind(this.manager?.api, "rowClicked", this.#handleMasterRowClicked)
+    bindMasterGridEvents() {
+        this.masterGridEvents.unbindAll()
+        this.masterGridEvents.bind(this.manager?.api, "rowClicked", this.handleMasterGridEvent)
     }
 
-    #handleMasterRowClicked = (event) => {
-        const rowData = rowDataFromGridEvent(event)
-        if (!rowData || rowData.gr_prar_no === this.selectedMasterValue) return
+    async handleMasterRowChange(rowData) {
+        if (!rowData) {
+            this.#clearMasterSelection()
+            return
+        }
+        if (rowData.gr_prar_no === this.selectedMasterValue) return
         this.#selectMaster(rowData)
     }
 
-    #syncMasterSelectionAfterLoad() {
+    async syncMasterSelectionAfterLoad() {
         if (!this.manager?.api) return
 
         const displayedCount = this.manager.api.getDisplayedRowCount()
         if (displayedCount === 0) {
+            this.lastMasterRowRef = null
             this.#clearMasterSelection()
             return
         }
@@ -115,8 +119,9 @@ export default class extends BaseGridController {
 
         if (nodeToSelect) {
             nodeToSelect.setSelected(true)
-            this.#selectMaster(nodeToSelect.data)
+            await this.handleMasterRowChangeOnce(nodeToSelect.data, { force: true })
         } else {
+            this.lastMasterRowRef = null
             this.#clearMasterSelection()
         }
     }
@@ -128,7 +133,7 @@ export default class extends BaseGridController {
         }
 
         this.selectedMasterValue = rowData.gr_prar_no
-        this.#selectedMasterData = rowData
+        this.selectedMasterData = rowData
         this.#updateSelectedMasterLabel()
         this.#loadDetailData(rowData.gr_prar_no)
         this.#loadExecResultData(rowData.gr_prar_no)
@@ -141,7 +146,7 @@ export default class extends BaseGridController {
 
     #clearMasterSelection() {
         this.selectedMasterValue = ""
-        this.#selectedMasterData = null
+        this.selectedMasterData = null
         this.#updateSelectedMasterLabel()
         this.#setDetailRowData([])
         this.#setExecRsltRowData([])
@@ -158,11 +163,11 @@ export default class extends BaseGridController {
     // --- 상세 데이터 로드 ---
 
     async #loadDetailData(grPrarNo) {
-        if (!grPrarNo || !this.#detailGridController) return
+        if (!grPrarNo || !this.detailGridController) return
 
         const url = buildTemplateUrl(this.detailListUrlTemplateValue, { gr_prar_id: grPrarNo })
         try {
-            await this.#detailGridController.loadData(url)
+            await this.detailGridController.loadData(url)
             // 로케이션 컬럼 옵션 업데이트
             this.#updateLocationColumn()
         } catch (e) {
@@ -171,25 +176,25 @@ export default class extends BaseGridController {
     }
 
     async #loadExecResultData(grPrarNo) {
-        if (!grPrarNo || !this.#execRsltGridController) return
+        if (!grPrarNo || !this.execRsltGridController) return
 
         const url = buildTemplateUrl(this.execResultUrlTemplateValue, { gr_prar_id: grPrarNo })
         try {
-            await this.#execRsltGridController.loadData(url)
+            await this.execRsltGridController.loadData(url)
         } catch (e) {
-            console.error("[입고처리내역] 로드 오류:", e)
+            console.error("[입고처리이력] 로드 오류:", e)
         }
     }
 
     #setDetailRowData(rows) {
-        if (isApiAlive(this.#detailGridController?.api)) {
-            this.#detailGridController.api.setGridOption("rowData", rows)
+        if (isApiAlive(this.detailGridController?.api)) {
+            this.detailGridController.api.setGridOption("rowData", rows)
         }
     }
 
     #setExecRsltRowData(rows) {
-        if (isApiAlive(this.#execRsltGridController?.api)) {
-            this.#execRsltGridController.api.setGridOption("rowData", rows)
+        if (isApiAlive(this.execRsltGridController?.api)) {
+            this.execRsltGridController.api.setGridOption("rowData", rows)
         }
     }
 
@@ -203,7 +208,7 @@ export default class extends BaseGridController {
             const resp = await fetch(`${this.stagedLocationsUrlValue}&workpl_cd=${encodeURIComponent(workplCd)}`)
             if (resp.ok) {
                 const data = await resp.json()
-                this.#stagedLocations = data.map(d => d.value)
+                this.stagedLocations = data.map(d => d.value)
                 this.#updateLocationColumn()
             }
         } catch (e) {
@@ -212,12 +217,12 @@ export default class extends BaseGridController {
     }
 
     #updateLocationColumn() {
-        const api = this.#detailGridController?.api
-        if (!isApiAlive(api) || this.#stagedLocations.length === 0) return
+        const api = this.detailGridController?.api
+        if (!isApiAlive(api) || this.stagedLocations.length === 0) return
 
         const colDef = api.getColumnDefs()?.find(c => c.field === "gr_loc_cd")
         if (colDef) {
-            colDef.cellEditorParams = { values: this.#stagedLocations }
+            colDef.cellEditorParams = { values: this.stagedLocations }
             api.setGridOption("columnDefs", api.getColumnDefs())
         }
     }
@@ -228,12 +233,12 @@ export default class extends BaseGridController {
         switchTab(event, this)
         const tab = this.activeTab
 
-        // AG Grid resize (숨겨진 상태에서 나타날 때 필요)
+        // AG Grid resize (꺼진 상태에서 탭 전환 시 필요)
         setTimeout(() => {
             if (tab === "detail") {
-                this.#detailGridController?.api?.sizeColumnsToFit()
+                this.detailGridController?.api?.sizeColumnsToFit()
             } else if (tab === "exec") {
-                this.#execRsltGridController?.api?.sizeColumnsToFit()
+                this.execRsltGridController?.api?.sizeColumnsToFit()
             }
         }, 50)
     }
@@ -241,17 +246,17 @@ export default class extends BaseGridController {
     activateTab(tab) {
         activateTab(tab, this)
 
-        // AG Grid resize (숨겨진 상태에서 나타날 때 필요)
+        // AG Grid resize (꺼진 상태에서 탭 전환 시 필요)
         setTimeout(() => {
             if (tab === "detail") {
-                this.#detailGridController?.api?.sizeColumnsToFit()
+                this.detailGridController?.api?.sizeColumnsToFit()
             } else if (tab === "exec") {
-                this.#execRsltGridController?.api?.sizeColumnsToFit()
+                this.execRsltGridController?.api?.sizeColumnsToFit()
             }
         }, 50)
     }
 
-    // --- 저장 버튼 (입고내역저장) ---
+    // --- 저장 버튼 (입고내역 저장) ---
 
     async saveGr(event) {
         event?.preventDefault()
@@ -261,7 +266,7 @@ export default class extends BaseGridController {
             return
         }
 
-        const api = this.#detailGridController?.api
+        const api = this.detailGridController?.api
         if (!isApiAlive(api)) return
 
         // 그리드에서 편집 중인 셀 종료
@@ -275,7 +280,7 @@ export default class extends BaseGridController {
 
         const hasInput = rows.some(r => parseFloat(r.gr_qty) > 0)
         if (!hasInput) {
-            showAlert("Warning", "입고물량이 입력된 행이 없습니다.", "warning")
+            showAlert("Warning", "입고물량을 입력한 행이 없습니다.", "warning")
             return
         }
 
@@ -310,7 +315,7 @@ export default class extends BaseGridController {
             return
         }
 
-        const masterData = this.#selectedMasterData
+        const masterData = this.selectedMasterData
         if (masterData?.gr_stat_cd !== "20") {
             showAlert("Warning", "입고확정불가: 입고상태가 '입고처리(20)' 상태일 때만 확정이 가능합니다.", "warning")
             return
@@ -357,9 +362,4 @@ export default class extends BaseGridController {
 
     // --- Private fields ---
     activeTab = "detail"
-    #masterGridEvents = null
-    #detailGridController = null
-    #execRsltGridController = null
-    #stagedLocations = []
-    #selectedMasterData = null
 }

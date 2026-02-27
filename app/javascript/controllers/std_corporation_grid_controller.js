@@ -1,143 +1,31 @@
-﻿import { Controller } from "@hotwired/stimulus"
-import { showAlert, confirmAction } from "components/ui/alert"
-import GridCrudManager from "controllers/grid/grid_crud_manager"
-import { fetchJson, hasChanges, isApiAlive, postJson, setManagerRowData, focusFirstRow, hasPendingChanges, buildTemplateUrl, refreshSelectionLabel, registerGridInstance } from "controllers/grid/grid_utils"
+import MasterDetailGridController from "controllers/master_detail_grid_controller"
+import { showAlert } from "components/ui/alert"
+import { fetchJson, hasChanges, isApiAlive, postJson, setManagerRowData, hasPendingChanges, buildTemplateUrl, refreshSelectionLabel } from "controllers/grid/grid_utils"
 
-export default class extends Controller {
-  static targets = ["masterGrid", "countryGrid", "selectedCorpLabel"]
+export default class extends MasterDetailGridController {
+  static targets = [...MasterDetailGridController.targets, "countryGrid", "selectedCorpLabel"]
 
   static values = {
+    ...MasterDetailGridController.values,
     masterBatchUrl: String,
     countryBatchUrlTemplate: String,
     countryListUrlTemplate: String
   }
 
   connect() {
-    this.masterManager = null
+    super.connect()
     this.countryManager = null
-    this.masterGridController = null
     this.selectedCorpCode = ""
-    this.masterRowClickedHandler = (event) => this.handleMasterRowSelection(event)
-    this.masterCellFocusedHandler = (event) => this.handleMasterRowSelection(event)
   }
 
   disconnect() {
-    this.unbindMasterEvents()
-    this.masterManager?.detach()
     this.countryManager?.detach()
-    this.masterManager = null
     this.countryManager = null
-    this.masterGridController = null
     this.selectedCorpCode = ""
+    super.disconnect()
   }
 
-  registerGrid(event) {
-    registerGridInstance(event, this, [
-      {
-        target: this.hasMasterGridTarget ? this.masterGridTarget : null,
-        controllerKey: "masterGridController",
-        managerKey: "masterManager",
-        configMethod: "masterConfig",
-        setup: () => {
-          this.bindMasterEvents(this.masterManager.api)
-        }
-      },
-      {
-        target: this.hasCountryGridTarget ? this.countryGridTarget : null,
-        managerKey: "countryManager",
-        configMethod: "countryConfig",
-        setup: () => {
-          this.clearCountryRows()
-        }
-      }
-    ], () => {
-      // setup function is not called for non-isMaster. So I need to do bindMasterEvents/clearCountryRows a bit differently, or just put it in the onAllReady.
-      this.bindMasterEvents(this.masterManager.api)
-      this.clearCountryRows()
-      this.syncMasterSelection()
-    })
-  }
-
-  addMasterRow() {
-    if (!this.masterManager) return
-
-    const txResult = this.masterManager.addRow()
-    const rowNode = txResult?.add?.[0]
-    if (!rowNode?.data) return
-
-    this.selectedCorpCode = rowNode.data.corp_cd || ""
-    this.refreshSelectedCorpLabel()
-    this.clearCountryRows()
-  }
-
-  deleteMasterRows() {
-    if (!this.masterManager) return
-    this.masterManager.deleteRows()
-  }
-
-  async saveMasterRows() {
-    if (!this.masterManager) return
-
-    this.masterManager.stopEditing()
-    const operations = this.masterManager.buildOperations()
-    if (!hasChanges(operations)) {
-      showAlert("변경된 데이터가 없습니다.")
-      return
-    }
-
-    const ok = await postJson(this.masterBatchUrlValue, operations)
-    if (!ok) return
-
-    showAlert("법인 정보가 저장되었습니다.")
-    await this.reloadMasterRows()
-  }
-
-  addCountryRow() {
-    if (!this.countryManager) return
-    if (!this.selectedCorpCode) {
-      showAlert("법인을 먼저 선택하세요.")
-      return
-    }
-    if (hasPendingChanges(this.masterManager)) {
-      showAlert("법인 정보를 먼저 저장하세요.")
-      return
-    }
-    this.countryManager.addRow({ ctry_cd: "KR", use_yn_cd: "Y", rpt_yn_cd: "N" })
-  }
-
-  deleteCountryRows() {
-    if (!this.countryManager) return
-    if (!this.selectedCorpCode) return
-    this.countryManager.deleteRows()
-  }
-
-  async saveCountryRows() {
-    if (!this.countryManager) return
-    if (!this.selectedCorpCode) {
-      showAlert("법인을 먼저 선택하세요.")
-      return
-    }
-    if (hasPendingChanges(this.masterManager)) {
-      showAlert("법인 정보를 먼저 저장하세요.")
-      return
-    }
-
-    this.countryManager.stopEditing()
-    const operations = this.countryManager.buildOperations()
-    if (!hasChanges(operations)) {
-      showAlert("변경된 데이터가 없습니다.")
-      return
-    }
-
-    const url = buildTemplateUrl(this.countryBatchUrlTemplateValue, ":id", this.selectedCorpCode)
-    const ok = await postJson(url, operations)
-    if (!ok) return
-
-    showAlert("법인 국가 정보가 저장되었습니다.")
-    await this.loadCountryRows(this.selectedCorpCode)
-  }
-
-  get masterConfig() {
+  configureManager() {
     return {
       pkFields: ["corp_cd"],
       fields: {
@@ -176,13 +64,101 @@ export default class extends Controller {
       firstEditCol: "corp_cd",
       pkLabels: { corp_cd: "법인코드" },
       onRowDataUpdated: () => {
-        if (!isApiAlive(this.countryManager?.api)) {
-          return
-        }
-
-        this.syncMasterSelection()
+        this.handleMasterRowDataUpdated({ resetTrackingManagers: [this.countryManager] })
       }
     }
+  }
+
+  detailGridConfigs() {
+    return [
+      {
+        target: this.hasCountryGridTarget ? this.countryGridTarget : null,
+        managerKey: "countryManager",
+        configMethod: "countryConfig"
+      }
+    ]
+  }
+
+  isDetailReady() {
+    return isApiAlive(this.countryManager?.api)
+  }
+
+  addMasterRow() {
+    if (!this.manager) return
+
+    const txResult = this.manager.addRow()
+    const rowNode = txResult?.add?.[0]
+    if (!rowNode?.data) return
+
+    this.handleMasterRowChangeOnce(rowNode.data, { force: true })
+  }
+
+  deleteMasterRows() {
+    if (!this.manager) return
+    this.manager.deleteRows()
+  }
+
+  async saveMasterRows() {
+    if (!this.manager) return
+
+    this.manager.stopEditing()
+    const operations = this.manager.buildOperations()
+    if (!hasChanges(operations)) {
+      showAlert("변경된 데이터가 없습니다.")
+      return
+    }
+
+    const ok = await postJson(this.masterBatchUrlValue, operations)
+    if (!ok) return
+
+    showAlert("법인 정보가 저장되었습니다.")
+    await this.reloadMasterRows()
+  }
+
+  addCountryRow() {
+    if (!this.countryManager) return
+    if (!this.selectedCorpCode) {
+      showAlert("법인을 먼저 선택하세요.")
+      return
+    }
+    if (hasPendingChanges(this.manager)) {
+      showAlert("법인 정보를 먼저 저장하세요.")
+      return
+    }
+
+    this.countryManager.addRow({ ctry_cd: "KR", use_yn_cd: "Y", rpt_yn_cd: "N" })
+  }
+
+  deleteCountryRows() {
+    if (!this.countryManager) return
+    if (!this.selectedCorpCode) return
+    this.countryManager.deleteRows()
+  }
+
+  async saveCountryRows() {
+    if (!this.countryManager) return
+    if (!this.selectedCorpCode) {
+      showAlert("법인을 먼저 선택하세요.")
+      return
+    }
+    if (hasPendingChanges(this.manager)) {
+      showAlert("법인 정보를 먼저 저장하세요.")
+      return
+    }
+
+    this.countryManager.stopEditing()
+    const operations = this.countryManager.buildOperations()
+    if (!hasChanges(operations)) {
+      showAlert("변경된 데이터가 없습니다.")
+      return
+    }
+
+    const url = buildTemplateUrl(this.countryBatchUrlTemplateValue, ":id", this.selectedCorpCode)
+    const ok = await postJson(url, operations)
+    if (!ok) return
+
+    showAlert("법인 국가 정보가 저장되었습니다.")
+    await this.loadCountryRows(this.selectedCorpCode)
   }
 
   get countryConfig() {
@@ -221,6 +197,20 @@ export default class extends Controller {
       pkLabels: { seq: "순번" },
       onCellValueChanged: (event) => this.handleCountryCellChanged(event)
     }
+  }
+
+  async handleMasterRowChange(rowData) {
+    await this.syncMasterDetailByCode(rowData, {
+      codeField: "corp_cd",
+      setSelectedCode: (code) => { this.selectedCorpCode = code },
+      refreshLabel: () => this.refreshSelectedCorpLabel(),
+      clearDetails: () => this.clearCountryRows(),
+      loadDetails: (corpCode) => this.loadCountryRows(corpCode)
+    })
+  }
+
+  async reloadMasterRows() {
+    await super.reloadMasterRows({ errorMessage: "법인 목록을 다시 불러오지 못했습니다." })
   }
 
   handleCountryCellChanged(event) {
@@ -266,74 +256,6 @@ export default class extends Controller {
       AMERICA_NEW_YORK: { stdTime: "UTC-05:00", summerTime: "Y" }
     }
     return map[normalized] || { stdTime: "", summerTime: "" }
-  }
-
-  bindMasterEvents(api) {
-    this.unbindMasterEvents()
-    api.addEventListener("rowClicked", this.masterRowClickedHandler)
-    api.addEventListener("cellFocused", this.masterCellFocusedHandler)
-  }
-
-  unbindMasterEvents() {
-    if (!isApiAlive(this.masterManager?.api)) return
-
-    this.masterManager.api.removeEventListener("rowClicked", this.masterRowClickedHandler)
-    this.masterManager.api.removeEventListener("cellFocused", this.masterCellFocusedHandler)
-  }
-
-  async handleMasterRowSelection(event) {
-    if (!isApiAlive(this.masterManager?.api)) return
-
-    let rowData = null
-    if (event?.data) {
-      rowData = event.data
-    } else if (typeof event?.rowIndex === "number" && event.rowIndex >= 0) {
-      rowData = this.masterManager.api.getDisplayedRowAtIndex(event.rowIndex)?.data
-    }
-    if (!rowData) return
-
-    this.selectedCorpCode = rowData.corp_cd || ""
-    this.refreshSelectedCorpLabel()
-
-    if (!this.selectedCorpCode || rowData.__is_new || rowData.__is_deleted) {
-      this.clearCountryRows()
-      return
-    }
-
-    await this.loadCountryRows(this.selectedCorpCode)
-  }
-
-  async reloadMasterRows() {
-    if (!isApiAlive(this.masterManager?.api)) return
-    if (!this.masterGridController?.urlValue) return
-
-    try {
-      const rows = await fetchJson(this.masterGridController.urlValue)
-      setManagerRowData(this.masterManager, rows)
-      await this.syncMasterSelection()
-    } catch {
-      showAlert("법인 목록을 다시 불러오지 못했습니다.")
-    }
-  }
-
-  async syncMasterSelection() {
-    if (!isApiAlive(this.masterManager?.api)) return
-
-    const firstData = focusFirstRow(this.masterManager.api)
-    if (!firstData) {
-      this.selectedCorpCode = ""
-      this.refreshSelectedCorpLabel()
-      this.clearCountryRows()
-      return
-    }
-
-    this.selectedCorpCode = firstData.corp_cd || ""
-    this.refreshSelectedCorpLabel()
-    if (this.selectedCorpCode && !firstData.__is_new && !firstData.__is_deleted) {
-      await this.loadCountryRows(this.selectedCorpCode)
-    } else {
-      this.clearCountryRows()
-    }
   }
 
   async loadCountryRows(corpCode) {

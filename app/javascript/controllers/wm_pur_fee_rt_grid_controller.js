@@ -1,14 +1,13 @@
-import BaseGridController from "controllers/base_grid_controller"
-import GridCrudManager from "controllers/grid/grid_crud_manager"
-import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
+import MasterDetailGridController from "controllers/master_detail_grid_controller"
+import { rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
 import { isApiAlive, postJson, hasChanges, setManagerRowData, focusFirstRow, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl } from "controllers/grid/grid_utils"
-import { showAlert, confirmAction } from "components/ui/alert"
+import { showAlert } from "components/ui/alert"
 
-export default class extends BaseGridController {
-    static targets = [...BaseGridController.targets, "masterGrid", "detailGrid", "selectedMasterLabel"]
+export default class extends MasterDetailGridController {
+    static targets = [...MasterDetailGridController.targets, "masterGrid", "detailGrid", "selectedMasterLabel"]
 
     static values = {
-        ...BaseGridController.values,
+        ...MasterDetailGridController.values,
         masterBatchUrl: String,
         detailBatchUrlTemplate: String,
         detailListUrlTemplate: String,
@@ -17,14 +16,11 @@ export default class extends BaseGridController {
 
     connect() {
         super.connect()
-        this.initialMasterSyncDone = false
-        this.masterGridEvents = new GridEventManager()
         this.detailGridController = null
         this.detailManager = null
     }
 
     disconnect() {
-        this.masterGridEvents.unbindAll()
         if (this.detailManager) {
             this.detailManager.detach()
             this.detailManager = null
@@ -69,11 +65,7 @@ export default class extends BaseGridController {
             firstEditCol: "pur_item_type",
             pkLabels: { wrhs_exca_fee_rt_no: "창고정산요율번호" },
             onRowDataUpdated: () => {
-                this.detailManager?.resetTracking()
-                if (!this.initialMasterSyncDone && isApiAlive(this.detailManager?.api)) {
-                    this.initialMasterSyncDone = true
-                    this.syncMasterSelectionAfterLoad()
-                }
+                this.handleMasterRowDataUpdated({ resetTrackingManagers: [this.detailManager] })
             }
         }
     }
@@ -113,28 +105,15 @@ export default class extends BaseGridController {
     }
 
     // 그리드 등록 분기
-    registerGrid(event) {
-        const registration = resolveAgGridRegistration(event)
-        if (!registration) return
-
-        const { gridElement, api, controller } = registration
-
-        if (gridElement === this.masterGridTarget) {
-            super.registerGrid(event)
-        } else if (gridElement === this.detailGridTarget) {
-            if (this.detailManager) this.detailManager.detach()
-            this.detailGridController = controller
-            this.detailManager = new GridCrudManager(this.configureDetailManager())
-            this.detailManager.attach(api)
-        }
-
-        if (this.manager?.api && this.detailManager?.api) {
-            this.bindMasterGridEvents()
-            if (!this.initialMasterSyncDone) {
-                this.initialMasterSyncDone = true
-                this.syncMasterSelectionAfterLoad()
+    detailGridConfigs() {
+        return [
+            {
+                target: this.hasDetailGridTarget ? this.detailGridTarget : null,
+                controllerKey: "detailGridController",
+                managerKey: "detailManager",
+                configMethod: "configureDetailManager"
             }
-        }
+        ]
     }
 
     bindMasterGridEvents() {
@@ -143,7 +122,7 @@ export default class extends BaseGridController {
     }
 
     handleMasterRowClicked = (event) => {
-        const rowData = rowDataFromGridEvent(event)
+        const rowData = rowDataFromGridEvent(this.manager?.api, event)
         if (!rowData || rowData.wrhs_exca_fee_rt_no === this.selectedMasterValue) return
 
         if (hasPendingChanges(this.detailManager)) {
