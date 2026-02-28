@@ -5,41 +5,47 @@
   <% end %>
 
   <nav class="flex-1 py-2 overflow-y-auto">
-    <% if dynamic_sidebar_available? %>
-      <% grouped = AdmMenu.sidebar_tree %>
-      <% (grouped[nil] || []).each do |menu| %>
-        <% if menu.menu_type == "FOLDER" %>
-          <%= render_sidebar_folder_tree(menu, grouped) %>
-        <% else %>
-          <%= sidebar_menu_button_from_record(menu) %>
+    <ul class="menu menu-sm w-full px-0 gap-0">
+      <% if dynamic_sidebar_available? %>
+        <% grouped = AdmMenu.sidebar_tree %>
+        <% (grouped[nil] || []).each do |menu| %>
+          <% if menu.menu_type == "FOLDER" %>
+            <%= render_sidebar_folder_tree(menu, grouped) %>
+          <% else %>
+            <%= sidebar_menu_button_from_record(menu) %>
+          <% end %>
+        <% end %>
+      <% else %>
+        <li>
+          <button class="nav-item has-children expanded" type="button"
+                  aria-expanded="true"
+                  data-action="click->sidebar#toggleTree">
+            <%= lucide_icon("folder", css_class: "icon") %> 메인
+            <%= lucide_icon("chevron-right", css_class: "chevron") %>
+          </button>
+          <ul class="nav-tree-children open">
+            <%= sidebar_menu_button "대시보드", tab_id: "overview", icon: "bar-chart-3", url: "/" %>
+          </ul>
+        </li>
+
+        <% if admin? %>
+          <li>
+            <button class="nav-item has-children" type="button"
+                    aria-expanded="false"
+                    data-action="click->sidebar#toggleTree">
+              <%= lucide_icon("settings", css_class: "icon") %> 시스템
+              <%= lucide_icon("chevron-right", css_class: "chevron") %>
+            </button>
+            <ul class="nav-tree-children">
+              <%= sidebar_menu_button "메뉴관리", tab_id: "system-menus", icon: "settings", url: "/system/menus" %>
+              <%= sidebar_menu_button "부서관리", tab_id: "system-dept", icon: "building-2", url: "/system/dept" %>
+              <%= sidebar_menu_button "사용자관리", tab_id: "system-users", icon: "user", url: "/system/users" %>
+              <%= sidebar_menu_button "공통코드관리", tab_id: "system-code", icon: "binary", url: "/system/code" %>
+            </ul>
+          </li>
         <% end %>
       <% end %>
-    <% else %>
-      <button class="nav-item has-children expanded" type="button"
-              aria-expanded="true"
-              data-action="click->sidebar#toggleTree">
-        <%= lucide_icon("folder", css_class: "icon") %> 메인
-        <%= lucide_icon("chevron-right", css_class: "chevron") %>
-      </button>
-      <div class="nav-tree-children open">
-        <%= sidebar_menu_button "대시보드", tab_id: "overview", icon: "bar-chart-3", url: "/" %>
-      </div>
-
-      <% if admin? %>
-        <button class="nav-item has-children" type="button"
-                aria-expanded="false"
-                data-action="click->sidebar#toggleTree">
-          <%= lucide_icon("settings", css_class: "icon") %> 시스템
-          <%= lucide_icon("chevron-right", css_class: "chevron") %>
-        </button>
-        <div class="nav-tree-children">
-          <%= sidebar_menu_button "메뉴관리", tab_id: "system-menus", icon: "settings", url: "/system/menus" %>
-          <%= sidebar_menu_button "부서관리", tab_id: "system-dept", icon: "building-2", url: "/system/dept" %>
-          <%= sidebar_menu_button "사용자관리", tab_id: "system-users", icon: "user", url: "/system/users" %>
-          <%= sidebar_menu_button "공통코드관리", tab_id: "system-code", icon: "binary", url: "/system/code" %>
-        </div>
-      <% end %>
-    <% end %>
+    </ul>
   </nav>
 
   <div class="flex items-center gap-2.5 px-4 py-3 border-t border-border bg-bg-secondary">

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,7 +8,12 @@
   <%= csrf_meta_tags %>
   <%= csp_meta_tag %>
   <%= stylesheet_link_tag "https://cdn.jsdelivr.net/npm/trix@2.1.15/dist/trix.css", "data-turbo-track": "reload", preload_links_header: false %>
+  <%= stylesheet_link_tag "https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/css/tom-select.min.css", preload_links_header: false %>
+  <%= stylesheet_link_tag "https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css", preload_links_header: false %>
+  <%= stylesheet_link_tag "https://cdn.jsdelivr.net/npm/daisyui@5/dist/full.min.css", preload_links_header: false %>
   <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload", preload_links_header: false %>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/js/tom-select.complete.min.js"></script>
   <%= javascript_importmap_tags %>
 </head>
 <body class="font-sans bg-bg-primary text-text-primary text-sm leading-normal h-screen overflow-hidden" data-controller="lucide">

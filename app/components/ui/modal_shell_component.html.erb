@@ -1,11 +1,9 @@
-<div class="app-modal-overlay fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]"
-     data-<%= controller %>-target="overlay"
-     <%= overlay_action_attr&.html_safe %>
-     hidden>
+<dialog class="app-modal-dialog"
+        data-<%= controller %>-target="overlay"
+        data-action="click-><%= controller %>#onBackdropClick">
   <div class="app-modal-shell bg-bg-primary border border-border rounded-lg max-w-[calc(100vw-32px)] max-h-[90vh] flex flex-col overflow-hidden shadow-2xl"
        style="<%= modal_style %>"
-       data-<%= controller %>-target="modal"
-       data-action="click-><%= controller %>#stopPropagation">
+       data-<%= controller %>-target="modal">
     <div class="app-modal-header flex justify-between items-center px-5 py-4 border-b border-border sticky top-0 z-[2] bg-bg-primary cursor-move" data-action="mousedown-><%= controller %>#startDrag">
       <h3 class="app-modal-title m-0 text-base" data-<%= controller %>-target="modalTitle"><%= title %></h3>
       <button type="button" class="app-modal-close bg-transparent border-none text-xl cursor-pointer text-text-secondary"
@@ -25,4 +23,4 @@
               <%= save_role_attr&.html_safe %>><%= save_text %></button>
     </div>
   </div>
-</div>
+</dialog>

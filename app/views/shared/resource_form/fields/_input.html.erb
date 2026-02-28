@@ -2,6 +2,7 @@
 <%
   param_key = model&.model_name&.param_key || 'resource'
   error_message = model&.errors&.[](field[:field].to_sym)&.first
+  has_icon = field[:icon].present?
 %>
 <div class="flex flex-col gap-1 col-span-24 min-w-0 <%= span_classes_for(field, cols: cols) %>"
      data-resource-form-target="fieldGroup"
@@ -10,7 +11,10 @@
     <%= resolve_label(field) %>
     <% if field[:required] %><span class="text-accent-rose ml-0.5 font-semibold">*</span><% end %>
   </label>
-  <div class="flex relative">
+  <div class="flex relative <%= 'form-grid-input-wrapper' if has_icon %>">
+    <% if has_icon %>
+      <span class="form-grid-input-icon"><%= lucide_icon(field[:icon]) %></span>
+    <% end %>
     <%= f.text_field field[:field].to_sym,
           id: "#{param_key}_#{field[:field]}",
           class: "form-grid-input #{'rf-field-error' if error_message.present?}",

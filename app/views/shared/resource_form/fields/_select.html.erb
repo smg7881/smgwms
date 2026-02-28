@@ -5,6 +5,7 @@
   has_dependency = field[:depends_on].present?
   current_value = model&.send(field[:field].to_sym) rescue nil
   error_message = model&.errors&.[](field[:field].to_sym)&.first
+  ts_searchable = field[:searchable].nil? ? true : !!field[:searchable]
 %>
 <div class="flex flex-col gap-1 col-span-24 min-w-0 <%= span_classes_for(field, cols: cols) %>"
      data-resource-form-target="fieldGroup <%= 'dependentField' if has_dependency %>"
@@ -19,6 +20,11 @@
             class="form-grid-select <%= 'rf-field-error' if error_message.present? %>"
             <%= "required" if field[:required] %>
             <%= "disabled" if field[:disabled] %>
+            <%= "multiple" if field[:multi] %>
+            data-controller="tom-select"
+            data-tom-select-searchable-value="<%= ts_searchable %>"
+            data-tom-select-multi-value="<%= !!field[:multi] %>"
+            data-tom-select-placeholder-value="<%= resolve_placeholder(field) || '선택하세요' %>"
             <% if has_dependency %>
               data-all-options="<%= (field[:options] || []).to_json %>"
               data-depends-on="<%= field[:depends_on] %>"

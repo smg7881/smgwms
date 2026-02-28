@@ -1,15 +1,35 @@
 <%# app/views/shared/search_form/fields/_date_picker.html.erb %>
 <% field_id = "q_#{field[:field]}" %>
+<% fp_mode = field[:date_type] == "datetime" ? "datetime" : "date" %>
 <div class="flex flex-col gap-1 col-span-24 min-w-0 <%= span_classes_for(field, cols: cols) %>" data-search-form-target="fieldGroup">
   <label class="text-sm font-medium text-text-secondary" for="<%= field_id %>"><%= resolve_label(field) %></label>
-  <div class="flex relative">
-    <input type="<%= field[:date_type] == 'datetime' ? 'datetime-local' : 'date' %>"
+  <div class="date-picker-wrapper"
+       data-controller="flatpickr"
+       data-flatpickr-mode-value="<%= fp_mode %>"
+       data-flatpickr-format-value="Y-m-d"
+       <%= "data-flatpickr-min-value=\"#{field[:min]}\"".html_safe if field[:min].present? %>
+       <%= "data-flatpickr-max-value=\"#{field[:max]}\"".html_safe if field[:max].present? %>>
+    <input type="text"
            id="<%= field_id %>"
            name="q[<%= field[:field] %>]"
            value="<%= q_value(field[:field]) %>"
-           class="form-grid-input"
-           <%= "disabled" if field[:disabled] %>
-           <%= "min=\"#{field[:min]}\"".html_safe if field[:min] %>
-           <%= "max=\"#{field[:max]}\"".html_safe if field[:max] %>>
+           class="form-grid-input w-full"
+           placeholder="<%= fp_mode == 'datetime' ? 'YYYY-MM-DD HH:MM' : 'YYYY-MM-DD' %>"
+           autocomplete="off"
+           <%= "disabled" if field[:disabled] %>>
+    <button type="button"
+            class="date-picker-btn"
+            tabindex="-1"
+            <%= "disabled" if field[:disabled] %>
+            data-action="click->flatpickr#open">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+    </button>
   </div>
 </div>

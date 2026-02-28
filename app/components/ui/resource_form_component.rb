@@ -14,6 +14,7 @@ class Ui::ResourceFormComponent < ApplicationComponent
     disable_file_attachments
     popup_type code_field hide_display
     display_width code_width button_width
+    searchable multi icon
   ].freeze
 
   VALID_FIELD_NAME = /\A[a-zA-Z0-9_]+\z/

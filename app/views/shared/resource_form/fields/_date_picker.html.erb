@@ -2,6 +2,7 @@
 <%
   param_key = model&.model_name&.param_key || 'resource'
   error_message = model&.errors&.[](field[:field].to_sym)&.first
+  fp_mode = field[:date_type] == "datetime" ? "datetime" : "date"
 %>
 <div class="flex flex-col gap-1 col-span-24 min-w-0 <%= span_classes_for(field, cols: cols) %>"
      data-resource-form-target="fieldGroup"
@@ -10,32 +11,37 @@
     <%= resolve_label(field) %>
     <% if field[:required] %><span class="text-accent-rose ml-0.5 font-semibold">*</span><% end %>
   </label>
-  <div class="flex relative">
-    <% if field[:date_type] == "datetime" %>
-      <%= f.datetime_local_field field[:field].to_sym,
-            id: "#{param_key}_#{field[:field]}",
-            class: "form-grid-input #{'rf-field-error' if error_message.present?}",
-            required: field[:required],
-            disabled: field[:disabled],
-            min: field[:min],
-            max: field[:max],
-            data: {
-              resource_form_target: "input",
-              action: "blur->resource-form#validateField"
-            }.merge(field[:target].present? && local_assigns[:target_controller].present? ? { "#{local_assigns[:target_controller]}_target" => field[:target] } : {}) %>
-    <% else %>
-      <%= f.date_field field[:field].to_sym,
-            id: "#{param_key}_#{field[:field]}",
-            class: "form-grid-input #{'rf-field-error' if error_message.present?}",
-            required: field[:required],
-            disabled: field[:disabled],
-            min: field[:min],
-            max: field[:max],
-            data: {
-              resource_form_target: "input",
-              action: "blur->resource-form#validateField"
-            }.merge(field[:target].present? && local_assigns[:target_controller].present? ? { "#{local_assigns[:target_controller]}_target" => field[:target] } : {}) %>
-    <% end %>
+  <div class="date-picker-wrapper"
+       data-controller="flatpickr"
+       data-flatpickr-mode-value="<%= fp_mode %>"
+       data-flatpickr-format-value="Y-m-d"
+       <%= "data-flatpickr-min-value=\"#{field[:min]}\"".html_safe if field[:min].present? %>
+       <%= "data-flatpickr-max-value=\"#{field[:max]}\"".html_safe if field[:max].present? %>>
+    <%= f.text_field field[:field].to_sym,
+          id: "#{param_key}_#{field[:field]}",
+          class: "form-grid-input #{'rf-field-error' if error_message.present?}",
+          placeholder: resolve_placeholder(field) || (fp_mode == "datetime" ? "YYYY-MM-DD HH:MM" : "YYYY-MM-DD"),
+          required: field[:required],
+          disabled: field[:disabled],
+          autocomplete: "off",
+          data: {
+            resource_form_target: "input",
+            action: "blur->resource-form#validateField"
+          }.merge(field[:target].present? && local_assigns[:target_controller].present? ? { "#{local_assigns[:target_controller]}_target" => field[:target] } : {}) %>
+    <button type="button"
+            class="date-picker-btn"
+            tabindex="-1"
+            <%= "disabled" if field[:disabled] %>
+            data-action="click->flatpickr#open">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+    </button>
   </div>
   <span class="rf-error-msg <%= 'invisible' if error_message.blank? %>"><%= error_message.presence || " " %></span>
   <% if field[:help].present? %>

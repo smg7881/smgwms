@@ -6,7 +6,7 @@
       <% is_pinned = (tab_id == "overview") %>
       <% label = tab["label"] %>
 
-      <button class="tab-item <%= "active" if is_active %> <%= "pinned" if is_pinned %>"
+      <button class="tab tab-item <%= "tab-active active" if is_active %> <%= "pinned" if is_pinned %>"
               type="button"
               title="<%= is_pinned ? "고정 탭" : label %>"
               data-action="click->tabs#activateTab contextmenu->tabs#openContextMenu"

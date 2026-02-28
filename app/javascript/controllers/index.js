@@ -77,7 +77,9 @@ const CONTROLLERS = [
   ["om-order-manual-completion", "controllers/om_order_manual_completion_controller"],
   ["wm-cust-rule-grid", "controllers/wm_cust_rule_grid_controller"],
   ["wm-pur-fee-rt-grid", "controllers/wm_pur_fee_rt_grid_controller"],
-  ["wm-gr-prar-grid", "controllers/wm_gr_prar_grid_controller"]
+  ["wm-gr-prar-grid", "controllers/wm_gr_prar_grid_controller"],
+  ["flatpickr", "controllers/flatpickr_controller"],
+  ["tom-select", "controllers/tom_select_controller"]
 ]
 
 CONTROLLERS.forEach(([identifier, modulePath]) => {

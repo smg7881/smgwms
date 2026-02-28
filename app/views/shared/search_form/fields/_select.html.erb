@@ -1,9 +1,20 @@
 <%# app/views/shared/search_form/fields/_select.html.erb %>
-<% field_id = "q_#{field[:field]}" %>
+<%
+  field_id = "q_#{field[:field]}"
+  ts_searchable = field[:searchable].nil? ? true : !!field[:searchable]
+%>
 <div class="flex flex-col gap-1 col-span-24 min-w-0 <%= span_classes_for(field, cols: cols) %>" data-search-form-target="fieldGroup">
   <label class="text-sm font-medium text-text-secondary" for="<%= field_id %>"><%= resolve_label(field) %></label>
   <div class="flex relative">
-    <select id="<%= field_id %>" name="q[<%= field[:field] %>]" class="form-grid-select" <%= "disabled" if field[:disabled] %>>
+    <select id="<%= field_id %>"
+            name="q[<%= field[:field] %>]"
+            class="form-grid-select"
+            <%= "disabled" if field[:disabled] %>
+            <%= "multiple" if field[:multi] %>
+            data-controller="tom-select"
+            data-tom-select-searchable-value="<%= ts_searchable %>"
+            data-tom-select-multi-value="<%= !!field[:multi] %>"
+            data-tom-select-placeholder-value="<%= resolve_placeholder(field) || '선택하세요' %>">
       <% if field[:include_blank] != false %>
         <option value=""><%= resolve_placeholder(field) || "선택하세요" %></option>
       <% end %>

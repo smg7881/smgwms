@@ -11,7 +11,7 @@ module SidebarHelper
     }
     data_attrs[:breadcrumbs] = breadcrumbs.to_json if breadcrumbs.present?
 
-    content_tag(
+    button = content_tag(
       :button,
       type: "button",
       class: "nav-item #{"active" if is_active}".strip,
@@ -25,6 +25,8 @@ module SidebarHelper
       end
       safe_join(parts)
     end
+
+    content_tag(:li, button)
   end
 
   def sidebar_menu_button_from_record(menu, default_icon: "file")
@@ -40,7 +42,7 @@ module SidebarHelper
     if menu.tab_id.present?
       sidebar_menu_button(menu.menu_nm, tab_id: menu.tab_id, icon: icon, url: menu.menu_url, breadcrumbs: crumbs)
     elsif menu.menu_url.present?
-      content_tag(
+      link = content_tag(
         :a,
         href: menu.menu_url,
         class: "nav-item",
@@ -48,6 +50,7 @@ module SidebarHelper
       ) do
         safe_join([ lucide_icon(icon, css_class: "icon", fallback: "file"), " #{menu.menu_nm} " ])
       end
+      content_tag(:li, link)
     end
   end
 
@@ -75,7 +78,7 @@ module SidebarHelper
       ])
     end
 
-    body = content_tag(:div, class: "nav-tree-children#{expanded_by_default ? " open" : ""}") do
+    body = content_tag(:ul, class: "nav-tree-children#{expanded_by_default ? " open" : ""}") do
       safe_join(children.filter_map do |child|
         if child.menu_type == "FOLDER"
           render_sidebar_folder_tree(child, grouped)
@@ -85,6 +88,6 @@ module SidebarHelper
       end)
     end
 
-    button + body
+    content_tag(:li, button + body)
   end
 end
