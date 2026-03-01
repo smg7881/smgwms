@@ -40,6 +40,11 @@
 
   <section class="std-client-detail">
     <div class="std-client-selected" data-client-grid-target="selectedClientLabel"><%= selected_client_label %></div>
+    <div class="std-client-validation" data-client-grid-target="validationBox" hidden>
+      <div class="std-client-validation-title">입력값 오류</div>
+      <div class="std-client-validation-summary" data-client-grid-target="validationSummary"></div>
+      <ul class="std-client-validation-list" data-client-grid-target="validationList"></ul>
+    </div>
 
     <%= render Ui::TabsComponent.new(
       target_controller: "client-grid",

@@ -233,6 +233,72 @@ export default class GridCrudManager {
     }
   }
 
+  validateRows() {
+    if (!isApiAlive(this.#api)) {
+      return { valid: true, errors: [], firstError: null }
+    }
+
+    const rules = this.#config.validationRules
+    if (!rules || typeof rules !== "object") {
+      return { valid: true, errors: [], firstError: null }
+    }
+
+    const candidates = this.#collectValidationCandidates()
+    if (candidates.length === 0) {
+      return { valid: true, errors: [], firstError: null }
+    }
+
+    const errors = []
+    candidates.forEach((candidate) => {
+      const normalizedRow = this.#pickFields(candidate.row)
+      this.#applyRequiredFieldRules(rules, candidate, normalizedRow, errors)
+      this.#applyFieldRules(rules, candidate, normalizedRow, errors)
+      this.#applyRowRules(rules, candidate, normalizedRow, errors)
+    })
+
+    return {
+      valid: errors.length === 0,
+      errors,
+      firstError: errors[0] || null
+    }
+  }
+
+  focusValidationError(error) {
+    if (!isApiAlive(this.#api) || !error) return false
+
+    const targetNode = this.#findNodeByValidationError(error)
+    if (!targetNode) return false
+
+    const rowIndex = typeof targetNode.rowIndex === "number" ? targetNode.rowIndex : null
+    if (rowIndex == null || rowIndex < 0) return false
+
+    this.#api.ensureIndexVisible?.(rowIndex)
+
+    const colKey = this.#resolveFocusColumn(error.field)
+    if (colKey) {
+      this.#api.setFocusedCell?.(rowIndex, colKey)
+      this.#api.flashCells?.({ rowNodes: [targetNode], columns: [colKey] })
+    }
+    targetNode.setSelected?.(true, true)
+
+    return true
+  }
+
+  formatValidationSummary(errors, { maxItems = 3 } = {}) {
+    const list = Array.isArray(errors) ? errors : []
+    if (list.length === 0) {
+      return "입력값을 확인해주세요."
+    }
+
+    const head = list.slice(0, Math.max(1, maxItems)).map((error) => this.#formatSingleValidationError(error))
+    const remain = list.length - head.length
+    if (remain > 0) {
+      head.push(`외 ${remain}건`)
+    }
+
+    return head.join(" | ")
+  }
+
   /**
    * ==========================================
    * Private 내부 처리용 헬퍼 구역
@@ -289,6 +355,264 @@ export default class GridCrudManager {
 
     row.__is_updated = true
     refreshStatusCells(this.#api, [event.node])
+  }
+
+  #collectValidationCandidates() {
+    const candidates = []
+    this.#api.forEachNode((node) => {
+      const row = node?.data
+      if (!row) return
+      if (row.__is_deleted) return
+
+      if (row.__is_new) {
+        if (this.#isBlankRow(row)) return
+        candidates.push({ scope: "insert", row, rowIndex: node.rowIndex })
+        return
+      }
+
+      if (this.#rowChanged(row)) {
+        candidates.push({ scope: "update", row, rowIndex: node.rowIndex })
+      }
+    })
+    return candidates
+  }
+
+  #applyRequiredFieldRules(rules, candidate, normalizedRow, errors) {
+    const requiredFields = Array.isArray(rules.requiredFields) ? rules.requiredFields : []
+    requiredFields.forEach((field) => {
+      const value = this.#resolveFieldValue(candidate.row, normalizedRow, field)
+      if (this.#isEmptyValue(value)) {
+        const label = this.#resolveFieldLabel(rules, field)
+        errors.push(this.#buildValidationError({
+          candidate,
+          field,
+          fieldLabel: label,
+          code: "required",
+          message: `${label}은(는) 필수입니다.`
+        }))
+      }
+    })
+  }
+
+  #applyFieldRules(rules, candidate, normalizedRow, errors) {
+    const fieldRules = rules.fieldRules || {}
+    Object.entries(fieldRules).forEach(([field, ruleList]) => {
+      const value = this.#resolveFieldValue(candidate.row, normalizedRow, field)
+      const rulesForField = Array.isArray(ruleList) ? ruleList : []
+      const label = this.#resolveFieldLabel(rules, field)
+      rulesForField.forEach((rule) => {
+        const resolved = this.#evaluateFieldRule(rule, value, {
+          field,
+          label,
+          row: candidate.row,
+          normalizedRow,
+          scope: candidate.scope
+        })
+        if (!resolved.valid) {
+          errors.push(this.#buildValidationError({
+            candidate,
+            field: resolved.field || field,
+            fieldLabel: resolved.fieldLabel || label,
+            code: resolved.code || "invalid",
+            message: resolved.message || `${label} 입력값을 확인하세요.`
+          }))
+        }
+      })
+    })
+  }
+
+  #applyRowRules(rules, candidate, normalizedRow, errors) {
+    const rowRules = Array.isArray(rules.rowRules) ? rules.rowRules : []
+    rowRules.forEach((rule) => {
+      const resolved = this.#evaluateRowRule(rule, {
+        row: candidate.row,
+        normalizedRow,
+        scope: candidate.scope
+      })
+      if (!resolved.valid) {
+        const field = resolved.field || rule?.field || ""
+        const label = this.#resolveFieldLabel(rules, field)
+        errors.push(this.#buildValidationError({
+          candidate,
+          field,
+          fieldLabel: label,
+          code: resolved.code || rule?.code || "row_invalid",
+          message: resolved.message || (field ? `${label} 입력값을 확인하세요.` : "행 입력값을 확인하세요.")
+        }))
+      }
+    })
+  }
+
+  #evaluateFieldRule(rule, value, context) {
+    if (!rule || typeof rule !== "object") {
+      return { valid: true }
+    }
+
+    const type = rule.type || "custom"
+    const allowBlank = rule.allowBlank !== false
+    const text = value == null ? "" : value.toString().trim()
+
+    if (allowBlank && text === "" && type !== "required") {
+      return { valid: true }
+    }
+
+    if (type === "required") {
+      if (this.#isEmptyValue(value)) {
+        return { valid: false, code: "required", message: rule.message }
+      }
+      return { valid: true }
+    }
+
+    if (type === "minLength") {
+      const limit = Number(rule.value ?? rule.min)
+      if (!Number.isNaN(limit) && text.length < limit) {
+        return { valid: false, code: "minLength", message: rule.message || `${context.label || context.field}은(는) 최소 ${limit}자 이상이어야 합니다.` }
+      }
+      return { valid: true }
+    }
+
+    if (type === "maxLength") {
+      const limit = Number(rule.value ?? rule.max)
+      if (!Number.isNaN(limit) && text.length > limit) {
+        return { valid: false, code: "maxLength", message: rule.message || `${context.label || context.field}은(는) 최대 ${limit}자까지 입력할 수 있습니다.` }
+      }
+      return { valid: true }
+    }
+
+    if (type === "pattern") {
+      const pattern = rule.value instanceof RegExp ? rule.value : null
+      if (pattern && !pattern.test(text)) {
+        return { valid: false, code: "pattern", message: rule.message }
+      }
+      return { valid: true }
+    }
+
+    if (type === "enum") {
+      const values = Array.isArray(rule.values) ? rule.values.map((entry) => entry?.toString?.() ?? "") : []
+      if (text !== "" && !values.includes(text)) {
+        return { valid: false, code: "enum", message: rule.message }
+      }
+      return { valid: true }
+    }
+
+    if (type === "custom" && typeof rule.validate === "function") {
+      return this.#normalizeValidationResult(
+        rule.validate(value, context),
+        { code: rule.code || "custom", message: rule.message, field: context.field, fieldLabel: context.label }
+      )
+    }
+
+    return { valid: true }
+  }
+
+  #evaluateRowRule(rule, context) {
+    if (!rule || typeof rule.validate !== "function") {
+      return { valid: true }
+    }
+
+    return this.#normalizeValidationResult(
+      rule.validate(context),
+      { code: rule.code || "row_custom", message: rule.message, field: rule.field || "", fieldLabel: rule.fieldLabel }
+    )
+  }
+
+  #normalizeValidationResult(result, defaults = {}) {
+    if (result === true || result == null) {
+      return { valid: true }
+    }
+    if (result === false) {
+      return { valid: false, code: defaults.code, message: defaults.message, field: defaults.field, fieldLabel: defaults.fieldLabel }
+    }
+    if (typeof result === "string") {
+      return { valid: false, code: defaults.code, message: result, field: defaults.field, fieldLabel: defaults.fieldLabel }
+    }
+    if (typeof result === "object") {
+      return {
+        valid: result.valid !== false ? true : false,
+        code: result.code || defaults.code,
+        message: result.message || defaults.message,
+        field: result.field || defaults.field,
+        fieldLabel: result.fieldLabel || defaults.fieldLabel
+      }
+    }
+    return { valid: true }
+  }
+
+  #resolveFieldValue(row, normalizedRow, field) {
+    if (Object.prototype.hasOwnProperty.call(normalizedRow, field)) {
+      return normalizedRow[field]
+    }
+    return row[field]
+  }
+
+  #resolveFieldLabel(rules, field) {
+    if (!field) return "입력값"
+    const labels = rules.fieldLabels || {}
+    return labels[field] || field
+  }
+
+  #isEmptyValue(value) {
+    if (value == null) return true
+    if (typeof value === "string") return value.trim() === ""
+    return false
+  }
+
+  #buildValidationError({ candidate, field, fieldLabel = "", code, message }) {
+    return {
+      scope: candidate.scope,
+      rowIndex: candidate.rowIndex,
+      rowKey: this.#rowKey(candidate.row),
+      tempId: candidate.row.__temp_id || null,
+      field: field || "",
+      fieldLabel: fieldLabel || "",
+      code,
+      message
+    }
+  }
+
+  #findNodeByValidationError(error) {
+    let foundNode = null
+    this.#api.forEachNode((node) => {
+      if (foundNode || !node?.data) return
+
+      const row = node.data
+      if (error.tempId && row.__temp_id && error.tempId === row.__temp_id) {
+        foundNode = node
+        return
+      }
+
+      if (error.rowKey) {
+        const rowKey = this.#rowKey(row)
+        if (rowKey && rowKey === error.rowKey) {
+          foundNode = node
+          return
+        }
+      }
+
+      if (typeof error.rowIndex === "number" && node.rowIndex === error.rowIndex) {
+        foundNode = node
+      }
+    })
+    return foundNode
+  }
+
+  #resolveFocusColumn(field) {
+    const displayedCols = this.#api.getAllDisplayedColumns?.() || []
+    const colIds = displayedCols.map((col) => col.getColId())
+
+    if (field && colIds.includes(field)) return field
+    if (this.#config.firstEditCol && colIds.includes(this.#config.firstEditCol)) {
+      return this.#config.firstEditCol
+    }
+    return colIds[0] || null
+  }
+
+  #formatSingleValidationError(error) {
+    const scopeLabel = error?.scope === "insert" ? "추가" : "수정"
+    const rowLabel = Number.isInteger(error?.rowIndex) ? `${error.rowIndex + 1}행` : "행"
+    const fieldLabel = error?.fieldLabel || error?.field || "입력값"
+    const message = error?.message || `${fieldLabel} 입력값을 확인하세요.`
+    return `[${scopeLabel} ${rowLabel}] ${message}`
   }
 
   // 백엔드 통신용. 등록된 config.fields 속성들만 row객체에서 뽑되 normalizer(예: trimUpper)를 거친 클린한 데이터 객체를 반환

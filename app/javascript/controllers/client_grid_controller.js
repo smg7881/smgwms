@@ -56,6 +56,21 @@ const CODE_FIELDS = [
 
 // 날짜 필드: input[type=date] 포맷으로 정규화 대상
 const DATE_FIELDS = ["aply_strt_day_cd", "aply_end_day_cd"]
+const YES_NO_VALUES = ["Y", "N"]
+const BIZMAN_NO_PATTERN = /^\d{10}$/
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const ADDITIONAL_TAB_FIELDS = new Set([
+  "if_yn_cd",
+  "branch_yn_cd",
+  "sell_bzac_yn_cd",
+  "pur_bzac_yn_cd",
+  "tpl_logis_yn_cd",
+  "elec_taxbill_yn_cd",
+  "bilg_bzac_cd",
+  "fnc_or_cd",
+  "acnt_no_cd",
+  "remk"
+])
 
 // 거래처 마스터 + 담당자/작업장 디테일 + 상세 폼 동기화 컨트롤러
 export default class extends BaseGridController {
@@ -68,6 +83,9 @@ export default class extends BaseGridController {
     "detailField",
     "detailGroupField",
     "detailSectionField",
+    "validationBox",
+    "validationSummary",
+    "validationList",
     "tabButton",
     "tabPanel"
   ]
@@ -103,6 +121,7 @@ export default class extends BaseGridController {
     })
     this.activateTab("basic")
     this.clearDetailForm()
+    this.clearValidationErrors()
     this.refreshSelectedClientLabel()
   }
 
@@ -234,6 +253,68 @@ export default class extends BaseGridController {
         "use_yn_cd",
         "remk"
       ],
+      validationRules: {
+        requiredFields: [
+          "bzac_nm",
+          "mngt_corp_cd",
+          "bizman_no",
+          "bzac_sctn_grp_cd",
+          "bzac_sctn_cd",
+          "bzac_kind_cd",
+          "ctry_cd",
+          "rpt_sales_emp_cd",
+          "aply_strt_day_cd",
+          "use_yn_cd"
+        ],
+        fieldLabels: {
+          bzac_nm: "거래처명",
+          mngt_corp_cd: "관리법인",
+          bizman_no: "사업자번호",
+          bzac_sctn_grp_cd: "거래처구분그룹",
+          bzac_sctn_cd: "거래처구분",
+          bzac_kind_cd: "거래처종류",
+          ctry_cd: "국가",
+          rpt_sales_emp_cd: "대표영업사원",
+          aply_strt_day_cd: "적용시작일",
+          aply_end_day_cd: "적용종료일",
+          tpl_logis_yn_cd: "3자물류여부",
+          if_yn_cd: "IF 여부",
+          branch_yn_cd: "지점여부",
+          sell_bzac_yn_cd: "매출여부",
+          pur_bzac_yn_cd: "매입여부",
+          elec_taxbill_yn_cd: "전자세금계산서",
+          use_yn_cd: "사용여부"
+        },
+        fieldRules: {
+          bizman_no: [
+            {
+              type: "pattern",
+              value: BIZMAN_NO_PATTERN,
+              message: "사업자번호는 숫자 10자리여야 합니다."
+            }
+          ],
+          tpl_logis_yn_cd: [{ type: "enum", values: YES_NO_VALUES }],
+          if_yn_cd: [{ type: "enum", values: YES_NO_VALUES }],
+          branch_yn_cd: [{ type: "enum", values: YES_NO_VALUES }],
+          sell_bzac_yn_cd: [{ type: "enum", values: YES_NO_VALUES }],
+          pur_bzac_yn_cd: [{ type: "enum", values: YES_NO_VALUES }],
+          elec_taxbill_yn_cd: [{ type: "enum", values: YES_NO_VALUES }],
+          use_yn_cd: [{ type: "enum", values: YES_NO_VALUES }]
+        },
+        rowRules: [
+          {
+            code: "date_order",
+            field: "aply_end_day_cd",
+            message: "적용종료일은 적용시작일보다 빠를 수 없습니다.",
+            validate: ({ normalizedRow }) => {
+              const start = (normalizedRow.aply_strt_day_cd || "").toString().trim()
+              const end = (normalizedRow.aply_end_day_cd || "").toString().trim()
+              if (!start || !end) return true
+              return start <= end
+            }
+          }
+        ]
+      },
       firstEditCol: "bzac_nm",
       pkLabels: { bzac_cd: "거래처코드" },
       onCellValueChanged: (event) => this.normalizeMasterField(event)
@@ -264,6 +345,27 @@ export default class extends BaseGridController {
       },
       blankCheckFields: ["nm_cd"],
       comparableFields: ["nm_cd", "ofic_telno_cd", "mbp_no_cd", "email_cd", "rpt_yn_cd", "use_yn_cd"],
+      validationRules: {
+        requiredFields: ["nm_cd"],
+        fieldLabels: {
+          nm_cd: "담당자명",
+          email_cd: "이메일",
+          rpt_yn_cd: "대표여부",
+          use_yn_cd: "사용여부"
+        },
+        fieldRules: {
+          email_cd: [
+            {
+              type: "pattern",
+              value: EMAIL_PATTERN,
+              allowBlank: true,
+              message: "이메일 형식이 올바르지 않습니다."
+            }
+          ],
+          rpt_yn_cd: [{ type: "enum", values: YES_NO_VALUES }],
+          use_yn_cd: [{ type: "enum", values: YES_NO_VALUES }]
+        }
+      },
       firstEditCol: "nm_cd",
       pkLabels: { seq_cd: "순번" }
     }
@@ -289,6 +391,16 @@ export default class extends BaseGridController {
       },
       blankCheckFields: ["workpl_nm_cd"],
       comparableFields: ["workpl_nm_cd", "workpl_sctn_cd", "ofcr_cd", "use_yn_cd"],
+      validationRules: {
+        requiredFields: ["workpl_nm_cd"],
+        fieldLabels: {
+          workpl_nm_cd: "작업장명",
+          use_yn_cd: "사용여부"
+        },
+        fieldRules: {
+          use_yn_cd: [{ type: "enum", values: YES_NO_VALUES }]
+        }
+      },
       firstEditCol: "workpl_nm_cd",
       pkLabels: { seq_cd: "순번" }
     }
@@ -322,6 +434,7 @@ export default class extends BaseGridController {
     this.selectedClientValue = ""
     this.currentMasterRow = null
     this.refreshSelectedClientLabel()
+    this.clearValidationErrors()
     this.clearDetailForm()
   }
 
@@ -517,6 +630,48 @@ export default class extends BaseGridController {
     refreshSelectionLabel(this.selectedClientLabelTarget, this.selectedClientValue, "거래처", "거래처를 먼저 선택하세요.")
   }
 
+  showValidationErrors({ errors = [], firstError = null, summary = "", manager = null } = {}) {
+    if (!this.hasValidationBoxTarget || !this.hasValidationListTarget) return false
+
+    this.#activateTabForValidation(manager, firstError)
+
+    const list = Array.isArray(errors) ? errors : []
+    const maxItems = 10
+    const visible = list.slice(0, maxItems)
+
+    if (this.hasValidationSummaryTarget) {
+      this.validationSummaryTarget.textContent = summary || "입력값을 확인해주세요."
+    }
+
+    this.validationListTarget.innerHTML = ""
+    visible.forEach((error) => {
+      const item = document.createElement("li")
+      item.textContent = this.#formatValidationLine(error)
+      this.validationListTarget.appendChild(item)
+    })
+
+    if (list.length > maxItems) {
+      const more = document.createElement("li")
+      more.textContent = `외 ${list.length - maxItems}건`
+      this.validationListTarget.appendChild(more)
+    }
+
+    this.validationBoxTarget.hidden = false
+    this.validationBoxTarget.scrollIntoView({ behavior: "smooth", block: "nearest" })
+    return true
+  }
+
+  clearValidationErrors() {
+    if (!this.hasValidationBoxTarget) return
+    this.validationBoxTarget.hidden = true
+    if (this.hasValidationSummaryTarget) {
+      this.validationSummaryTarget.textContent = ""
+    }
+    if (this.hasValidationListTarget) {
+      this.validationListTarget.innerHTML = ""
+    }
+  }
+
   // 마스터 변경 미저장 상태 체크
   hasMasterPendingChanges() {
     return hasPendingChanges(this.masterManager)
@@ -695,5 +850,36 @@ export default class extends BaseGridController {
         setSelectOptionsUtil(fields[1], options, fields[1]?.value || "")
       }
     }
+  }
+
+  #activateTabForValidation(manager, firstError) {
+    if (!manager) return
+
+    if (manager === this.contactManager) {
+      this.activateTab("contacts")
+      return
+    }
+
+    if (manager === this.workplaceManager) {
+      this.activateTab("workplaces")
+      return
+    }
+
+    if (manager !== this.masterManager) return
+
+    const field = (firstError?.field || "").toString().trim()
+    if (ADDITIONAL_TAB_FIELDS.has(field)) {
+      this.activateTab("additional")
+      return
+    }
+
+    this.activateTab("basic")
+  }
+
+  #formatValidationLine(error) {
+    const scopeLabel = error?.scope === "insert" ? "추가" : "수정"
+    const rowLabel = Number.isInteger(error?.rowIndex) ? `${error.rowIndex + 1}행` : "행"
+    const message = (error?.message || "입력값을 확인해주세요.").toString()
+    return `[${scopeLabel} ${rowLabel}] ${message}`
   }
 }

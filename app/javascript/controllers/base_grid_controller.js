@@ -239,6 +239,34 @@ export default class BaseGridController extends Controller {
 
     manager.stopEditing?.()
 
+    const validationResult = typeof manager.validateRows === "function"
+      ? manager.validateRows()
+      : { valid: true, errors: [] }
+    if (!validationResult.valid) {
+      const errors = Array.isArray(validationResult.errors) ? validationResult.errors : []
+      const firstError = validationResult.firstError || errors[0] || null
+      const summary = typeof manager.formatValidationSummary === "function"
+        ? manager.formatValidationSummary(errors, { maxItems: 3 })
+        : (firstError?.message || "입력값을 확인해주세요.")
+
+      const renderedInline = typeof this.showValidationErrors === "function"
+        ? this.showValidationErrors({ errors, firstError, summary, manager }) === true
+        : false
+
+      if (typeof manager.focusValidationError === "function" && firstError) {
+        manager.focusValidationError(firstError)
+      }
+
+      if (!renderedInline) {
+        showAlert("Validation", summary, "warning")
+      }
+      return false
+    }
+
+    if (typeof this.clearValidationErrors === "function") {
+      this.clearValidationErrors()
+    }
+
     const operations = manager.buildOperations
       ? manager.buildOperations()
       : manager.getChanges?.()

@@ -978,6 +978,37 @@ trix-editor {
   font-size: 12px;
 }
 
+.std-client-validation {
+  margin-bottom: 10px;
+  border: 1px solid rgba(210, 153, 34, 0.55);
+  background: rgba(45, 31, 4, 0.35);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.std-client-validation-title {
+  color: #f2cc60;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.std-client-validation-summary {
+  color: #e6edf3;
+  font-size: 12px;
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+
+.std-client-validation-list {
+  margin: 0;
+  padding-left: 16px;
+  list-style: disc;
+  color: #f2cc60;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .std-client-tabs {
   display: flex !important;
   visibility: visible;
