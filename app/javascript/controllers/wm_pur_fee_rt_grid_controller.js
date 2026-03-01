@@ -101,20 +101,13 @@ export default class extends MasterDetailGridController {
             blankCheckFields: ["aply_strt_ymd", "aply_end_ymd", "cur_cd", "aply_uprice", "std_work_qty"],
             comparableFields: ["dcsn_yn", "aply_strt_ymd", "aply_end_ymd", "aply_uprice", "cur_cd", "std_work_qty", "aply_strt_qty", "aply_end_qty", "rmk"],
             firstEditCol: "dcsn_yn",
-            pkLabels: { lineno: "라인번호" }
-        }
-    }
-
-    // 그리드 등록 분기
-    detailGridConfigs() {
-        return [
-            {
-                target: this.hasDetailGridTarget ? this.detailGridTarget : null,
+            pkLabels: { lineno: "라인번호" },
+            registration: {
+                targetName: "detailGrid",
                 controllerKey: "detailGridController",
-                managerKey: "detailManager",
-                configMethod: "configureDetailManager"
+                managerKey: "detailManager"
             }
-        ]
+        }
     }
 
     bindMasterGridEvents() {

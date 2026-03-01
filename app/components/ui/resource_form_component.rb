@@ -59,7 +59,7 @@ class Ui::ResourceFormComponent < ApplicationComponent
       data[:resource_form_dependencies_value] = dependencies.to_json
       data[:resource_form_loading_value] = false
 
-      opts[:class] = [ "max-w-full overflow-x-hidden w-full", opts[:class] ].compact.join(" ")
+      opts[:class] = [ "max-w-full overflow-x-visible w-full", opts[:class] ].compact.join(" ")
       opts[:data] = data
       opts
     end

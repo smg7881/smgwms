@@ -56,9 +56,94 @@ export default class MasterDetailGridController extends BaseGridController {
     ]
   }
 
-  // 하위 클래스 훅: 디테일 그리드 등록 설정을 반환합니다.
+  // 기본 구현: configure*Manager() + registration 메타로 자동 구성하고,
+  // 추가 수동 설정(manualDetailGridConfigs)을 병합합니다.
   detailGridConfigs() {
+    return [
+      ...this.autoDetailGridConfigs(),
+      ...this.manualDetailGridConfigs()
+    ]
+  }
+
+  // 읽기 전용 detail 등 자동화 대상이 아닌 설정을 수동으로 추가할 때 사용합니다.
+  manualDetailGridConfigs() {
     return []
+  }
+
+  detailManagerMethods() {
+    const methods = []
+    const seen = new Set()
+
+    let proto = Object.getPrototypeOf(this)
+    while (proto && proto !== BaseGridController.prototype && proto !== Object.prototype) {
+      const names = Object.getOwnPropertyNames(proto)
+      names.forEach((name) => {
+        if (seen.has(name)) return
+        if (name === "constructor" || name === "configureManager") return
+        if (!/^configure.+Manager$/.test(name)) return
+
+        const descriptor = Object.getOwnPropertyDescriptor(proto, name)
+        if (!descriptor) return
+
+        const isCallable = typeof descriptor.value === "function"
+        const isGetter = typeof descriptor.get === "function"
+        if (!isCallable && !isGetter) return
+
+        seen.add(name)
+        methods.push(name)
+      })
+
+      proto = Object.getPrototypeOf(proto)
+    }
+
+    return methods
+  }
+
+  autoDetailGridConfigs() {
+    const configs = []
+
+    this.detailManagerMethods().forEach((configMethod) => {
+      const source = this[configMethod]
+      const rawConfig = typeof source === "function" ? source.call(this) : source
+      const { registration } = this.splitManagerConfig(rawConfig)
+      if (!registration) return
+
+      const targetName = registration.targetName
+      if (!targetName || typeof targetName !== "string") return
+
+      const target = this.resolveTargetByName(targetName)
+      if (!target) {
+        console.warn(`[${this.identifier}] detail grid target not found: ${targetName}`)
+        return
+      }
+
+      const detailConfig = {
+        target,
+        configMethod
+      }
+
+      if (registration.controllerKey) {
+        detailConfig.controllerKey = registration.controllerKey
+      }
+      if (registration.managerKey) {
+        detailConfig.managerKey = registration.managerKey
+      }
+
+      configs.push(detailConfig)
+    })
+
+    return configs
+  }
+
+  resolveTargetByName(targetName) {
+    const hasTargetKey = `has${targetName.charAt(0).toUpperCase() + targetName.slice(1)}Target`
+    const targetKey = `${targetName}Target`
+
+    if (this[hasTargetKey] && this[targetKey]) {
+      return this[targetKey]
+    }
+
+    return null
   }
 
   // ─── 마스터/디테일 준비 완료 ───

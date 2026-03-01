@@ -1,6 +1,6 @@
 ﻿import { Controller } from "@hotwired/stimulus"
-import { showAlert, confirmAction } from "components/ui/alert"
-import { GridEventManager } from "controllers/grid/grid_event_manager"
+import { showAlert } from "components/ui/alert"
+import { GridEventManager, resolveAgGridRegistration } from "controllers/grid/grid_event_manager"
 import { registerGridInstance } from "controllers/grid/core/grid_registration"
 
 export default class extends Controller {
@@ -19,6 +19,8 @@ export default class extends Controller {
           } else {
             showAlert("조회된 목록에서 항목을 먼저 선택하세요.")
           }
+        } else {
+          showAlert("목록을 불러오는 중입니다. 잠시 후 다시 시도하세요.")
         }
       }
     }
@@ -37,20 +39,20 @@ export default class extends Controller {
     registerGridInstance(event, this, [
       {
         target: this.hasGridTarget ? this.gridTarget : null,
-        controllerKey: "gridController",
-        managerKey: "gridApi",
-        setup: () => {
-          this.gridEvents.unbindAll()
-          this.gridEvents.bind(this.gridApi, "rowDoubleClicked", this.handleRowDoubleClicked)
-          this.gridEvents.bind(this.gridApi, "cellKeyDown", this.handleCellKeyDown)
-        }
+        controllerKey: "gridController"
       }
-    ], () => {
-      // setup callbacks already handle binding
-      this.gridEvents.unbindAll()
-      this.gridEvents.bind(this.gridApi, "rowDoubleClicked", this.handleRowDoubleClicked)
-      this.gridEvents.bind(this.gridApi, "cellKeyDown", this.handleCellKeyDown)
-    })
+    ])
+
+    const registration = resolveAgGridRegistration(event)
+    if (!registration || !this.hasGridTarget) return
+
+    const { gridElement, api } = registration
+    if (gridElement !== this.gridTarget) return
+
+    this.gridApi = api
+    this.gridEvents.unbindAll()
+    this.gridEvents.bind(this.gridApi, "rowDoubleClicked", this.handleRowDoubleClicked)
+    this.gridEvents.bind(this.gridApi, "cellKeyDown", this.handleCellKeyDown)
   }
 
   submitForm() {

@@ -1552,8 +1552,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_26_030000) do
   end
 
   create_table "wm_cust_rules", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.string "aply_yn", limit: 1, default: "Y", null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "cust_cd", limit: 50, null: false
+    t.string "inout_sctn", limit: 50, null: false
+    t.string "inout_type", limit: 50, null: false
+    t.string "remark", limit: 500
+    t.string "rule_sctn", limit: 50, null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "workpl_cd", limit: 50, null: false
+    t.index ["workpl_cd", "cust_cd", "inout_sctn", "inout_type", "rule_sctn"], name: "idx_wm_cust_rules_unique", unique: true
   end
 
   create_table "wm_cust_stock_attrs", force: :cascade do |t|
@@ -1569,36 +1579,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_26_030000) do
     t.datetime "update_time"
     t.string "use_yn", limit: 1, default: "Y", null: false
     t.index ["cust_cd", "inout_sctn", "stock_attr_sctn"], name: "idx_wm_cust_stock_attrs_uk", unique: true
-  end
-
-  create_table "wm_customer_rules", force: :cascade do |t|
-    t.string "aply_yn"
-    t.datetime "created_at", null: false
-    t.string "cust_cd"
-    t.string "inout_sctn"
-    t.string "inout_type"
-    t.string "rmk"
-    t.string "rule_sctn"
-    t.datetime "updated_at", null: false
-    t.string "workpl_cd"
-  end
-
-  create_table "wm_customer_stock_attributes", force: :cascade do |t|
-    t.string "attr_desc", limit: 200
-    t.string "corp_cd", limit: 20, null: false
-    t.string "create_by", limit: 50
-    t.datetime "create_time"
-    t.datetime "created_at", null: false
-    t.bigint "cust_id", null: false
-    t.string "inout_sctn_cd", limit: 10, null: false
-    t.string "rel_col_nm", limit: 50
-    t.string "rel_tbl_nm", limit: 50
-    t.string "stock_attr_sctn_cd", limit: 10, null: false
-    t.string "update_by", limit: 50
-    t.datetime "update_time"
-    t.datetime "updated_at", null: false
-    t.string "use_yn", limit: 1, default: "Y", null: false
-    t.index ["corp_cd", "cust_id", "inout_sctn_cd", "stock_attr_sctn_cd"], name: "idx_wm_cust_stock_attr_unique", unique: true
   end
 
   create_table "wm_locations", force: :cascade do |t|

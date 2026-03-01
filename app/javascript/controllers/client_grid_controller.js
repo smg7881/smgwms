@@ -242,7 +242,12 @@ export default class extends MasterDetailGridController {
       blankCheckFields: ["nm_cd"],
       comparableFields: ["nm_cd", "ofic_telno_cd", "mbp_no_cd", "email_cd", "rpt_yn_cd", "use_yn_cd"],
       firstEditCol: "nm_cd",
-      pkLabels: { seq_cd: "순번" }
+      pkLabels: { seq_cd: "순번" },
+      registration: {
+        targetName: "contactsGrid",
+        controllerKey: "contactGridController",
+        managerKey: "contactManager"
+      }
     }
   }
 
@@ -267,25 +272,13 @@ export default class extends MasterDetailGridController {
       blankCheckFields: ["workpl_nm_cd"],
       comparableFields: ["workpl_nm_cd", "workpl_sctn_cd", "ofcr_cd", "use_yn_cd"],
       firstEditCol: "workpl_nm_cd",
-      pkLabels: { seq_cd: "순번" }
-    }
-  }
-
-  detailGridConfigs() {
-    return [
-      {
-        target: this.hasContactsGridTarget ? this.contactsGridTarget : null,
-        controllerKey: "contactGridController",
-        managerKey: "contactManager",
-        configMethod: "configureContactManager"
-      },
-      {
-        target: this.hasWorkplacesGridTarget ? this.workplacesGridTarget : null,
+      pkLabels: { seq_cd: "순번" },
+      registration: {
+        targetName: "workplacesGrid",
         controllerKey: "workplaceGridController",
-        managerKey: "workplaceManager",
-        configMethod: "configureWorkplaceManager"
+        managerKey: "workplaceManager"
       }
-    ]
+    }
   }
 
   isDetailReady() {

@@ -70,14 +70,8 @@ export default class extends MasterDetailGridController {
     }
   }
 
-  detailGridConfigs() {
-    return [
-      {
-        target: this.hasCountryGridTarget ? this.countryGridTarget : null,
-        managerKey: "countryManager",
-        configMethod: "countryConfig"
-      }
-    ]
+  configureCountryManager() {
+    return this.countryConfig
   }
 
   isDetailReady() {
@@ -202,6 +196,10 @@ export default class extends MasterDetailGridController {
       ],
       firstEditCol: "ctry_cd",
       pkLabels: { seq: "순번" },
+      registration: {
+        targetName: "countryGrid",
+        managerKey: "countryManager"
+      },
       onCellValueChanged: (event) => this.handleCountryCellChanged(event)
     }
   }

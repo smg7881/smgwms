@@ -8,7 +8,7 @@ import { Controller } from "@hotwired/stimulus"
  * <select> 요소에 Tom Select를 초기화합니다.
  *
  * Values:
- *   searchable   : 검색 입력 허용 여부 (기본: false)
+ *   searchable   : 검색 입력 허용 여부 (기본: true)
  *   multi        : 다중 선택 허용 여부 (기본: false)
  *   placeholder  : 플레이스홀더 텍스트 (기본: "")
  */
@@ -24,6 +24,16 @@ export default class extends Controller {
     if (!TS) {
       console.error("[tom-select] window.TomSelect not found. Check <script> tag in application.html.erb")
       return
+    }
+
+    // Turbo 캐시 복원 시 남은 고아 .ts-wrapper 제거 (이중 초기화 방지)
+    this.element.parentElement
+      ?.querySelectorAll('.ts-wrapper')
+      .forEach(el => el.remove())
+
+    // 이미 초기화된 경우 정리
+    if (this.element.tomselect) {
+      this.element.tomselect.destroy()
     }
 
     const config = {
@@ -73,14 +83,24 @@ export default class extends Controller {
         dropdown.style.bottom = (window.innerHeight - rect.top) + 'px'
       }
     }
+
+    // Turbo 캐시 스냅샷 전에 Tom Select 정리 (스냅샷에 .ts-wrapper가 포함되지 않도록)
+    document.addEventListener('turbo:before-cache', this.#handleBeforeCache)
   }
 
   disconnect() {
+    document.removeEventListener('turbo:before-cache', this.#handleBeforeCache)
     this.#ts?.destroy()
     this.#ts = null
   }
 
   #ts = null
+
+  // Turbo 캐시 직전 Tom Select 정리 → 스냅샷에 깨끗한 <select>만 남김
+  #handleBeforeCache = () => {
+    this.#ts?.destroy()
+    this.#ts = null
+  }
 
   #showInput() {
     const input = this.#ts?.control?.querySelector('input')

@@ -8,7 +8,6 @@
   <div class="flex relative">
     <select id="<%= field_id %>"
             name="q[<%= field[:field] %>]"
-            class="form-grid-select"
             <%= "disabled" if field[:disabled] %>
             <%= "multiple" if field[:multi] %>
             data-controller="tom-select"

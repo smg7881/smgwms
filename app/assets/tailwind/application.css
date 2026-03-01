@@ -213,7 +213,11 @@ a:hover {
 
 .form-grid-input[type="number"]::-webkit-inner-spin-button,
 .form-grid-input[type="number"]::-webkit-outer-spin-button {
-  filter: invert(1) brightness(0.72);
+  margin: 0;
+  opacity: 1;
+  filter: none;
+  background-color: #1f2937;
+  border-left: 1px solid #374151;
 }
 
 /* Date input dark scheme */
@@ -1319,7 +1323,14 @@ span.flatpickr-weekday {
 
 /* ── Phase 3: Tom Select 다크 오버라이드 ── */
 
-/* 원본 <select>를 완전히 숨김 (form-grid-select 클래스 덮어쓰기 방지) */
+/* Tom Select 적용 대상 원본 <select>를 항상 숨김 */
+/* JS 로드 전에도 즉시 숨겨서 flash 및 겹침 현상 방지 */
+/* data-controller 속성 포함 + ts-hidden-accessible 두 경우 모두 처리 */
+select[data-controller~="tom-select"],
+select.ts-hidden-accessible {
+  display: none !important;
+}
+
 .ts-hidden-accessible {
   position: absolute !important;
   width: 1px !important;
@@ -1335,10 +1346,15 @@ span.flatpickr-weekday {
 }
 
 .ts-wrapper {
+  width: 100%;
+  display: block;
   min-height: 32px;
 }
 
 .ts-wrapper .ts-control {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
   background: #1f2937 !important;
   border: 1px solid #374151 !important;
   color: #e6edf3 !important;
@@ -1371,6 +1387,12 @@ span.flatpickr-weekday {
 .ts-wrapper.focus .ts-control {
   border-color: #3b82f6 !important;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+}
+
+/* 유효성 오류 시 .ts-control에 에러 테두리 적용 */
+.ts-wrapper.rf-field-error .ts-control {
+  border-color: var(--color-accent-rose) !important;
+  box-shadow: 0 0 0 2px rgba(248, 81, 73, 0.2) !important;
 }
 
 .ts-wrapper .ts-control input {

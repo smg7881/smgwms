@@ -46,7 +46,7 @@ class Ui::SearchFormComponent < ApplicationComponent
         "search-form-cols-value" => cols
       }
 
-      base_class = "max-w-full overflow-x-hidden bg-bg-secondary border border-border rounded-lg p-4 mb-4"
+      base_class = "max-w-full overflow-x-visible bg-bg-secondary border border-border rounded-lg p-4 mb-4"
       composed_class = [ base_class, custom_class ].compact.join(" ").strip
       opts.merge(class: composed_class, data: custom_data.merge(stimulus_data))
     end

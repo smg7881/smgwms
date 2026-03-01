@@ -2,6 +2,24 @@ import { resolveAgGridRegistration } from "controllers/grid/grid_event_manager"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
 import { isApiAlive } from "controllers/grid/core/api_guard"
 
+function resolveManagerConfig(context, configMethod) {
+  if (!configMethod) return null
+
+  if (typeof context.resolveManagerConfig === "function") {
+    return context.resolveManagerConfig(configMethod)
+  }
+
+  const source = context[configMethod]
+  const rawConfig = typeof source === "function" ? source.call(context) : source
+
+  if (!rawConfig || typeof rawConfig !== "object") {
+    return rawConfig || null
+  }
+
+  const { registration: _ignoredRegistration, ...managerConfig } = rawConfig
+  return managerConfig
+}
+
 export function registerGridInstance(event, context, configs, onAllReady) {
   const registration = resolveAgGridRegistration(event)
   if (!registration) return
@@ -24,8 +42,11 @@ export function registerGridInstance(event, context, configs, onAllReady) {
         context[controllerKey] = controller
       }
 
-      if (managerKey && configMethod && typeof context[configMethod] === "function") {
-        context[managerKey] = new GridCrudManager(context[configMethod]())
+      if (managerKey && configMethod) {
+        const managerConfig = resolveManagerConfig(context, configMethod)
+        if (!managerConfig) break
+
+        context[managerKey] = new GridCrudManager(managerConfig)
         context[managerKey].attach(api)
       }
     }
@@ -57,4 +78,3 @@ export function registerGridInstance(event, context, configs, onAllReady) {
     onAllReady()
   }
 }
-

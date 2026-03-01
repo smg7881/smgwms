@@ -87,6 +87,26 @@ export default class BaseGridController extends Controller {
   // 단일 CRUD 그리드 설정. null 반환 시 Manager 생성 스킵 (읽기 전용 그리드).
   configureManager() { return null }
 
+  // configure*Manager() 결과를 CRUD 설정과 등록 메타로 분리합니다.
+  splitManagerConfig(rawConfig) {
+    if (!rawConfig || typeof rawConfig !== "object") {
+      return { managerConfig: rawConfig || null, registration: null }
+    }
+
+    const { registration = null, ...managerConfig } = rawConfig
+    return { managerConfig, registration }
+  }
+
+  // 메서드명(또는 getter 이름)으로 Manager 설정을 조회합니다.
+  resolveManagerConfig(configMethod) {
+    if (!configMethod) return null
+
+    const source = this[configMethod]
+    const rawConfig = typeof source === "function" ? source.call(this) : source
+    const { managerConfig } = this.splitManagerConfig(rawConfig)
+    return managerConfig
+  }
+
   // 다중 그리드 모드에서 모든 그리드 등록이 완료되었을 때 호출되는 훅.
   onAllGridsReady() { }
 
@@ -231,7 +251,7 @@ export default class BaseGridController extends Controller {
   #registerSingleGrid(api, controller) {
     this.gridController = controller
 
-    const config = this.configureManager()
+    const config = this.resolveManagerConfig("configureManager")
     if (config) {
       this.manager = new GridCrudManager(config)
       this.manager.attach(api)

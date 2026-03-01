@@ -230,18 +230,17 @@ export default class extends MasterDetailGridController {
         "exca_ofcr_nm", "use_yn_cd", "remk"
       ],
       firstEditCol: "fnc_or_cd",
-      pkLabels: { seq_no: "순번" }
+      pkLabels: { seq_no: "순번" },
+      registration: {
+        targetName: "settlementGrid",
+        controllerKey: "settlementGridController",
+        managerKey: "settlementManager"
+      }
     }
   }
 
-  detailGridConfigs() {
+  manualDetailGridConfigs() {
     return [
-      {
-        target: this.hasSettlementGridTarget ? this.settlementGridTarget : null,
-        controllerKey: "settlementGridController",
-        managerKey: "settlementManager",
-        configMethod: "configureSettlementManager"
-      },
       {
         target: this.hasHistoryGridTarget ? this.historyGridTarget : null,
         controllerKey: "historyGridController"

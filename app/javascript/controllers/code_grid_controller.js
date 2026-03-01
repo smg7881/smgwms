@@ -101,20 +101,13 @@ export default class extends MasterDetailGridController {
       blankCheckFields: ["detail_code", "detail_code_name"],
       comparableFields: ["detail_code_name", "short_name", "upper_code", "upper_detail_code", "rmk", "attr1", "attr2", "attr3", "attr4", "attr5", "sort_order", "use_yn"],
       firstEditCol: "detail_code",
-      pkLabels: { detail_code: "상세코드" }
-    }
-  }
-
-  // 등록 설정을 구성합니다
-  detailGridConfigs() {
-    return [
-      {
-        target: this.hasDetailGridTarget ? this.detailGridTarget : null,
+      pkLabels: { detail_code: "상세코드" },
+      registration: {
+        targetName: "detailGrid",
         controllerKey: "detailGridController",
-        managerKey: "detailManager",
-        configMethod: "configureDetailManager"
+        managerKey: "detailManager"
       }
-    ]
+    }
   }
 
   isDetailReady() {

@@ -17,7 +17,7 @@
   <div class="flex relative">
     <select id="<%= field_id %>"
             name="<%= "#{param_key}[#{field[:field]}]" %>"
-            class="form-grid-select <%= 'rf-field-error' if error_message.present? %>"
+            class="<%= 'rf-field-error' if error_message.present? %>"
             <%= "required" if field[:required] %>
             <%= "disabled" if field[:disabled] %>
             <%= "multiple" if field[:multi] %>
