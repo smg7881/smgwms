@@ -60,8 +60,13 @@ export default class extends Controller {
     // single select: 닫힌 상태에서 검색 input 숨기고 선택값만 표시
     if (!this.multiValue) {
       this.#hideInput()
-      this.#ts.on('dropdown_open', () => this.#showInput())
+      this.#ts.on('dropdown_open', () => {
+        this.#showInput()
+        this.#ts?.positionDropdown?.()
+      })
       this.#ts.on('dropdown_close', () => this.#hideInput())
+    } else {
+      this.#ts.on('dropdown_open', () => this.#ts?.positionDropdown?.())
     }
 
     // overflow:hidden 컨테이너 안에서도 드롭다운이 올바르게 표시되도록
@@ -70,20 +75,29 @@ export default class extends Controller {
       const dropdown = this.#ts.dropdown
       const wrapper = this.#ts.wrapper
       const rect = wrapper.getBoundingClientRect()
-      const dropdownHeight = dropdown.offsetHeight || 200
+      const naturalHeight = Math.min(dropdown.scrollHeight || dropdown.offsetHeight || 220, 320)
       const spaceBelow = window.innerHeight - rect.bottom
+      const spaceAbove = rect.top
 
       dropdown.style.position = 'fixed'
       dropdown.style.width  = rect.width + 'px'
       dropdown.style.left   = rect.left + 'px'
       dropdown.style.zIndex = '9999'
 
-      if (spaceBelow >= dropdownHeight || spaceBelow >= rect.top) {
-        dropdown.style.top    = rect.bottom + 'px'
-        dropdown.style.bottom = ''
+      const enoughBelow = spaceBelow >= naturalHeight
+      const enoughAbove = spaceAbove >= naturalHeight
+      const openUp = (!enoughBelow && enoughAbove) || (!enoughBelow && spaceAbove > spaceBelow)
+      const availableSpace = openUp ? spaceAbove : spaceBelow
+      const maxHeight = Math.max(140, Math.floor(availableSpace - 8))
+      const visibleHeight = Math.min(naturalHeight, maxHeight)
+
+      dropdown.style.maxHeight = `${maxHeight}px`
+      dropdown.style.bottom = ''
+
+      if (openUp) {
+        dropdown.style.top = `${Math.max(8, Math.floor(rect.top - visibleHeight))}px`
       } else {
-        dropdown.style.top    = ''
-        dropdown.style.bottom = (window.innerHeight - rect.top) + 'px'
+        dropdown.style.top = `${Math.floor(rect.bottom)}px`
       }
     }
 
