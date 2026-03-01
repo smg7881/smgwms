@@ -158,7 +158,6 @@ Rails.application.routes.draw do
     end
     resources :clients, controller: :clients, only: [ :index ] do
       collection do
-        get :sections
         post :batch_save
       end
 

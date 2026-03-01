@@ -16,7 +16,13 @@ export const FORMATTER_REGISTRY = {
   // 숫자 값 끝에 % 기호를 붙여 변환
   percent: (params) => params.value != null ? `${params.value}%` : "",
   // 긴 문자열 데이터를 50자까지만 자르고 '...'을 붙여 표시 (성능 및 UI 잘림 방지)
-  truncate: (params) => (params.value?.length > 50 ? `${params.value.slice(0, 50)}...` : (params.value || ""))
+  truncate: (params) => (params.value?.length > 50 ? `${params.value.slice(0, 50)}...` : (params.value || "")),
+  // 공통코드 코드값 → 코드명 변환. 컬럼 정의의 context.codeMap({ code: label }) 을 참조
+  codeLabel: (params) => {
+    const map = params.colDef?.context?.codeMap
+    if (!map || params.value == null || params.value === "") return params.value ?? ""
+    return map[params.value] ?? params.value
+  }
 }
 
 /**

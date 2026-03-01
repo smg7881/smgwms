@@ -441,6 +441,9 @@ export default class BaseGridController extends Controller {
     const roleConfig = this.#expectedRoles?.[roleName] || {}
     if (roleConfig.autoLoadOnReady === false) return
 
+    // 데이터 재로드 후 동일 키의 행도 반드시 재디스패치되도록 중복 방지 키 초기화
+    this.#masterLastKeys.delete(roleName)
+
     const rowData = this.selectFirstMasterRow(roleName)
     this.#handleMasterRowFocused(roleName, rowData)
   }

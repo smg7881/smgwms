@@ -149,6 +149,33 @@ export function setSelectOptions(selectEl, options, selectedValue = "", blankLab
   })
 
   selectEl.value = canSelect ? normalized : ""
+
+  const tomSelect = selectEl.tomselect
+  if (tomSelect) {
+    // native select DOM만 교체하면 Tom Select 내부 캐시가 갱신되지 않으므로
+    // Tom Select API로 직접 옵션을 교체한다
+    tomSelect.clearOptions()
+
+    if (blankLabel !== null) {
+      tomSelect.addOption({ value: "", text: blankLabel })
+    }
+
+    options.forEach((opt) => {
+      tomSelect.addOption({ value: opt.value, text: opt.label })
+    })
+
+    if (selectEl.multiple) {
+      const selectedValues = Array.from(selectEl.selectedOptions).map((option) => option.value)
+      tomSelect.setValue(selectedValues, true)
+    } else if (canSelect) {
+      tomSelect.setValue(normalized, true)
+    } else {
+      tomSelect.clear(true)
+    }
+
+    tomSelect.refreshOptions(false)
+  }
+
   return selectEl.value
 }
 

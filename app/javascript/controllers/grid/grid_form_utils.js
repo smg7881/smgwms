@@ -124,6 +124,9 @@ export function toggleDetailFields(controller, disabled, options = {}) {
     if (controller.hasDetailFieldTarget || controller.detailFieldTargets) {
         controller.detailFieldTargets.forEach((field) => {
             field.disabled = disabled
+            if (field.tomselect) {
+                disabled ? field.tomselect.disable() : field.tomselect.enable()
+            }
             if (onFieldToggle) onFieldToggle(field, disabled)
         })
     }

@@ -9,6 +9,22 @@ import {
   refreshSelectionLabel,
   setSelectOptions as setSelectOptionsUtil
 } from "controllers/grid/grid_utils"
+import {
+  bindDependentSelects,
+  unbindDependentSelects,
+  resolveMapOptions
+} from "controllers/grid/grid_dependent_select_utils"
+import {
+  bindDetailFieldEvents,
+  unbindDetailFieldEvents,
+  detailFieldKey,
+  fillDetailForm as fillDetailFormUtil,
+  clearDetailForm as clearDetailFormUtil,
+  syncDetailField as syncDetailFieldUtil,
+  markCurrentMasterRowUpdated,
+  refreshMasterRowCells,
+  findMasterNodeByData
+} from "controllers/grid/grid_form_utils"
 import { switchTab, activateTab } from "controllers/ui_utils"
 
 // 코드성 필드: 상세 폼/그리드 입력 시 대문자 정규화 대상
@@ -58,7 +74,6 @@ export default class extends BaseGridController {
     contactListUrlTemplate: String,
     workplaceBatchUrlTemplate: String,
     workplaceListUrlTemplate: String,
-    sectionsUrl: String,
     sectionMap: Object,
     selectedClient: String
   }
@@ -71,8 +86,17 @@ export default class extends BaseGridController {
     this.currentMasterRow = null
     this.activeTab = "basic"
 
-    this.bindSearchFields()
-    this.bindDetailFieldEvents()
+    bindDependentSelects(this, this.#searchDependentConfig())
+    bindDetailFieldEvents(this, null, (event) => {
+      syncDetailFieldUtil(event, this)
+      const key = detailFieldKey(event.currentTarget)
+      if (key === "fnc_or_cd") {
+        this.syncPopupFieldPresentation(event.currentTarget, key, event.currentTarget.value)
+      }
+      if (key === "bzac_sctn_grp_cd") {
+        this.handleDetailGroupChange(event)
+      }
+    })
     this.activateTab("basic")
     this.clearDetailForm()
     this.refreshSelectedClientLabel()
@@ -80,8 +104,8 @@ export default class extends BaseGridController {
 
   // 이벤트 해제 및 상태 정리
   disconnect() {
-    this.unbindSearchFields()
-    this.unbindDetailFieldEvents()
+    unbindDependentSelects(this)
+    unbindDetailFieldEvents(this)
 
     this.currentMasterRow = null
     this.financialInstitutionNameCache = null
@@ -270,6 +294,16 @@ export default class extends BaseGridController {
   // 역할별 매니저 접근 getter
   get masterManager() {
     return this.gridManager("master")
+  }
+
+  // grid_form_utils 유틸이 controller.manager 경로를 기대하므로 브릿지 제공
+  // base_grid_controller가 this.manager = null 을 쓰므로 setter도 함께 정의(흡수)
+  get manager() {
+    return this.masterManager
+  }
+
+  set manager(_v) {
+    // base_grid_controller의 단일그리드 경로 할당 흡수 — 멀티그리드 전용이므로 무시
   }
 
   get contactManager() {
@@ -500,57 +534,31 @@ export default class extends BaseGridController {
 
   // ----- 상세 폼 <-> 마스터 행 동기화 -----
   fillDetailForm(rowData) {
-    this.toggleDetailFields(false)
-    this.updateDetailSectionOptions(rowData?.bzac_sctn_grp_cd, rowData?.bzac_sctn_cd)
-
-    this.detailFieldTargets.forEach((field) => {
-      const key = this.detailFieldKey(field)
-      if (!key) return
-
-      const value = this.normalizeValueForInput(key, rowData?.[key])
-      field.value = value
-      this.syncPopupFieldPresentation(field, key, value, rowData)
+    fillDetailFormUtil(this, rowData, {
+      beforeFill: () => {
+        this.updateDetailSectionOptions(rowData?.bzac_sctn_grp_cd, rowData?.bzac_sctn_cd)
+      },
+      onFieldFill: (field, key, value, data) => {
+        this.syncPopupFieldPresentation(field, key, value, data)
+      },
+      onFieldToggle: (field, disabled) => {
+        this.togglePopupFieldDisabled(field, disabled)
+      }
     })
   }
 
   clearDetailForm() {
-    this.detailFieldTargets.forEach((field) => {
-      field.value = ""
-      const key = this.detailFieldKey(field)
-      this.syncPopupFieldPresentation(field, key, "")
+    clearDetailFormUtil(this, {
+      onFieldClear: (field, key) => {
+        this.syncPopupFieldPresentation(field, key, "")
+      },
+      onFieldToggle: (field, disabled) => {
+        this.togglePopupFieldDisabled(field, disabled)
+      },
+      afterClear: () => {
+        this.updateDetailSectionOptions("", "")
+      }
     })
-
-    this.updateDetailSectionOptions("", "")
-    this.toggleDetailFields(true)
-  }
-
-  toggleDetailFields(disabled) {
-    this.detailFieldTargets.forEach((field) => {
-      field.disabled = disabled
-      this.togglePopupFieldDisabled(field, disabled)
-    })
-  }
-
-  syncDetailField(event) {
-    if (!this.currentMasterRow) return
-
-    const field = event.currentTarget
-    const key = this.detailFieldKey(field)
-    if (!key) return
-
-    const normalized = this.normalizeDetailFieldValue(key, field.value)
-    if (field.value !== normalized) {
-      field.value = normalized
-    }
-
-    this.currentMasterRow[key] = normalized
-
-    if (key === "fnc_or_cd") {
-      this.syncPopupFieldPresentation(field, key, normalized)
-    }
-
-    this.markCurrentMasterRowUpdated()
-    this.refreshMasterRowCells([key, "__row_status"])
   }
 
   // 거래처구분그룹 변경 시 거래처구분 옵션/값 동기화
@@ -566,40 +574,16 @@ export default class extends BaseGridController {
     const currentSection = this.detailSectionFieldTarget.value
     this.currentMasterRow.bzac_sctn_cd = currentSection
 
-    this.markCurrentMasterRowUpdated()
-    this.refreshMasterRowCells(["bzac_sctn_grp_cd", "bzac_sctn_cd", "__row_status"])
+    markCurrentMasterRowUpdated(this)
+    refreshMasterRowCells(this, ["bzac_sctn_grp_cd", "bzac_sctn_cd", "__row_status"])
   }
 
   // 상세 폼 select 옵션 구성
   updateDetailSectionOptions(groupCode, selectedCode = "") {
     if (!this.hasDetailSectionFieldTarget) return
 
-    const options = this.resolveSectionOptions(groupCode)
+    const options = resolveMapOptions(this.sectionMapValue, groupCode)
     setSelectOptionsUtil(this.detailSectionFieldTarget, options, selectedCode, "")
-  }
-
-  // sectionMap 기반 옵션 계산 (그룹 미선택 시 전체 dedupe)
-  resolveSectionOptions(groupCode) {
-    const map = this.sectionMapValue || {}
-    const normalizedGroup = (groupCode || "").toString().trim().toUpperCase()
-
-    if (normalizedGroup && map[normalizedGroup]) {
-      return map[normalizedGroup]
-    }
-
-    const all = Object.values(map).flat()
-    const deduped = []
-    const seen = new Set()
-
-    all.forEach((item) => {
-      const value = item?.value
-      if (!value || seen.has(value)) return
-
-      seen.add(value)
-      deduped.push(item)
-    })
-
-    return deduped
   }
 
   // 입력값 표시용 정규화
@@ -649,165 +633,6 @@ export default class extends BaseGridController {
     const mm = `${parsed.getMonth() + 1}`.padStart(2, "0")
     const dd = `${parsed.getDate()}`.padStart(2, "0")
     return `${yyyy}-${mm}-${dd}`
-  }
-
-  // 마스터 행 변경 플래그 처리
-  markCurrentMasterRowUpdated() {
-    if (!this.currentMasterRow) return
-    if (this.currentMasterRow.__is_new || this.currentMasterRow.__is_deleted) return
-
-    this.currentMasterRow.__is_updated = true
-  }
-
-  // 마스터 그리드 셀 부분 갱신
-  refreshMasterRowCells(columns = []) {
-    const node = this.findMasterNodeByData(this.currentMasterRow)
-    const api = this.masterManager?.api
-
-    if (!node || !api) return
-
-    api.refreshCells({
-      rowNodes: [node],
-      columns,
-      force: true
-    })
-  }
-
-  // 현재 선택된 마스터 rowData에 대응하는 node 검색
-  findMasterNodeByData(rowData) {
-    const api = this.masterManager?.api
-    if (!api || !rowData) return null
-
-    let found = null
-    api.forEachNode((node) => {
-      if (node.data === rowData) {
-        found = node
-      }
-    })
-
-    return found
-  }
-
-  // ----- 검색 조건 연동 (구분그룹 -> 구분) -----
-  bindSearchFields() {
-    this.groupFieldElement = this.getSearchFieldElement("bzac_sctn_grp_cd")
-    this.sectionFieldElement = this.getSearchFieldElement("bzac_sctn_cd")
-
-    if (this.groupFieldElement) {
-      this._onGroupChange = () => this.handleGroupChange()
-      this.groupFieldElement.addEventListener("change", this._onGroupChange)
-    }
-
-    this.hydrateSectionSelect()
-  }
-
-  // 검색 이벤트 해제
-  unbindSearchFields() {
-    if (!this.groupFieldElement || !this._onGroupChange) return
-
-    this.groupFieldElement.removeEventListener("change", this._onGroupChange)
-    this._onGroupChange = null
-  }
-
-  // ----- 상세 폼 입력 이벤트 바인딩 -----
-  bindDetailFieldEvents() {
-    this.unbindDetailFieldEvents()
-
-    this._onDetailInput = (event) => {
-      this.syncDetailField(event)
-    }
-
-    this._onDetailChange = (event) => {
-      this.syncDetailField(event)
-
-      const key = this.detailFieldKey(event.currentTarget)
-      if (key === "fnc_or_cd") {
-        this.syncPopupFieldPresentation(event.currentTarget, key, event.currentTarget.value)
-      }
-      if (key === "bzac_sctn_grp_cd") {
-        this.handleDetailGroupChange(event)
-      }
-    }
-
-    this.detailFieldTargets.forEach((field) => {
-      field.addEventListener("input", this._onDetailInput)
-      field.addEventListener("change", this._onDetailChange)
-    })
-  }
-
-  // 상세 폼 입력 이벤트 해제
-  unbindDetailFieldEvents() {
-    if (!this._onDetailInput && !this._onDetailChange) return
-
-    this.detailFieldTargets.forEach((field) => {
-      if (this._onDetailInput) {
-        field.removeEventListener("input", this._onDetailInput)
-      }
-      if (this._onDetailChange) {
-        field.removeEventListener("change", this._onDetailChange)
-      }
-    })
-
-    this._onDetailInput = null
-    this._onDetailChange = null
-  }
-
-  // 검색 폼 초기값으로 구분 select 세팅
-  async hydrateSectionSelect() {
-    const groupCode = this.groupKeywordFromSearch()
-    const sectionCode = this.sectionKeywordFromSearch()
-    await this.loadSectionOptions(groupCode, sectionCode)
-  }
-
-  // 구분그룹 변경 시 구분 목록 재조회
-  async handleGroupChange() {
-    const groupCode = this.groupKeywordFromSearch()
-    await this.loadSectionOptions(groupCode, "")
-  }
-
-  // 서버에서 구분 목록 조회 후 select 옵션 적용
-  async loadSectionOptions(groupCode, selectedSectionCode) {
-    if (!this.hasSectionsUrlValue || !this.sectionFieldElement) return
-
-    const query = new URLSearchParams({ bzac_sctn_grp_cd: groupCode || "" })
-
-    try {
-      const rows = await fetchJson(`${this.sectionsUrlValue}?${query.toString()}`)
-      const options = Array.isArray(rows)
-        ? rows.map((row) => ({ value: row.detail_code, label: row.detail_code_name }))
-        : []
-
-      setSelectOptionsUtil(this.sectionFieldElement, options, selectedSectionCode)
-    } catch {
-      showAlert("거래처구분 목록 조회에 실패했습니다.")
-    }
-  }
-
-  // 검색 폼 값 추출 헬퍼
-  groupKeywordFromSearch() {
-    return this.getSearchFormValue("bzac_sctn_grp_cd")
-  }
-
-  sectionKeywordFromSearch() {
-    return this.getSearchFormValue("bzac_sctn_cd")
-  }
-
-  // 상세 필드 DOM에서 데이터 키 추출
-  detailFieldKey(fieldElement) {
-    if (!fieldElement) return ""
-
-    const datasetKey = fieldElement.dataset.field
-    if (datasetKey) return datasetKey
-
-    const nameAttr = fieldElement.getAttribute("name") || ""
-    const fromName = nameAttr.match(/\[([^\]]+)\]$/)
-    if (fromName) return fromName[1]
-
-    const idAttr = fieldElement.getAttribute("id") || ""
-    const fromId = idAttr.match(/_([a-z0-9_]+)$/i)
-    if (fromId) return fromId[1]
-
-    return ""
   }
 
   // popup 필드의 code/display 표시 동기화
@@ -923,5 +748,22 @@ export default class extends BaseGridController {
       columns: [field],
       force: true
     })
+  }
+
+  // 검색폼 의존 SELECT 설정 (거래처구분그룹 → 거래처구분)
+  #searchDependentConfig() {
+    return {
+      fields: ["bzac_sctn_grp_cd", "bzac_sctn_cd"],
+      onChange: [
+        (controller, fields) => {
+          const options = resolveMapOptions(controller.sectionMapValue, fields[0]?.value)
+          setSelectOptionsUtil(fields[1], options, "")
+        }
+      ],
+      hydrate: (controller, fields) => {
+        const options = resolveMapOptions(controller.sectionMapValue, fields[0]?.value)
+        setSelectOptionsUtil(fields[1], options, fields[1]?.value || "")
+      }
+    }
   }
 }

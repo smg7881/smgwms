@@ -8,23 +8,6 @@ class Std::ClientsController < Std::BaseController
     end
   end
 
-  def sections
-    group_code = params[:bzac_sctn_grp_cd].to_s.strip.upcase
-    scope = AdmCodeDetail.active.where(code: "STD_BZAC_SCTN").ordered
-    if group_code.present?
-      scope = scope.where(upper_detail_code: group_code)
-    end
-
-    rows = scope.map do |row|
-      {
-        detail_code: row.detail_code,
-        detail_code_name: row.detail_code_name
-      }
-    end
-
-    render json: rows
-  end
-
   def contacts
     client = find_client
     rows = client.ofcrs.ordered.map { |contact| contact_json(contact) }

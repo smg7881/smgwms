@@ -180,8 +180,17 @@ export default class extends Controller {
     // 입력 필드(text, hidden), 달력 등 실제 값 세팅 요소
     const targetEl = elements[elements.length - 1]
 
-    // 다중 선택 Select 처리
-    if (targetEl.tagName === "SELECT" && targetEl.multiple) {
+    // Tom Select가 붙은 SELECT는 Tom Select API로 값 세팅
+    const tomSelect = targetEl.tomselect
+    if (tomSelect) {
+      if (targetEl.multiple) {
+        const valArray = Array.isArray(value) ? value.map(String) : [String(value)]
+        tomSelect.setValue(valArray, true)
+      } else {
+        tomSelect.setValue(String(value ?? ""), true)
+      }
+    } else if (targetEl.tagName === "SELECT" && targetEl.multiple) {
+      // 다중 선택 Select 처리
       const valArray = Array.isArray(value) ? value : [String(value)]
       Array.from(targetEl.options).forEach(opt => {
         opt.selected = valArray.includes(opt.value)
@@ -266,13 +275,9 @@ export default class extends Controller {
 
     // "선택해주세요(빈칸)" 옵션은 필터링에서 제외하고 무조건 1개는 띄우기 위해 백업해둠
     const blankOption = selectEl.querySelector('option[value=""]')
-    selectEl.innerHTML = "" // 모든 옵션 청소 (비우기)
+    const blankLabel = blankOption?.textContent || "선택하세요"
 
-    if (blankOption) {
-      selectEl.appendChild(blankOption)
-    }
-
-    // 부모 값이 있으면 필터 돌리고, 빈칸이면 조건이 없는 것으로 간주해 모든 자식을 다 띄울지 논의 필요. 
+    // 부모 값이 있으면 필터 돌리고, 빈칸이면 조건이 없는 것으로 간주해 모든 자식을 다 띄울지 논의 필요.
     // 본 소스는 부모값이 있어야만 자식이 노출되는 방향으로 짜여짐.
     const filtered = parentValue
       ? allOptions.filter(opt => {
@@ -281,12 +286,28 @@ export default class extends Controller {
       })
       : allOptions
 
-    // 필터링 통과한 목록만 DOM에 렌더링 부착
-    for (const opt of filtered) {
-      const option = document.createElement("option")
-      option.value = opt.value || opt["value"]
-      option.textContent = opt.label || opt["label"]
-      selectEl.appendChild(option)
+    const tomSelect = selectEl.tomselect
+    if (tomSelect) {
+      // Tom Select가 붙은 경우 내부 옵션 캐시를 직접 교체
+      tomSelect.clearOptions()
+      tomSelect.addOption({ value: "", text: blankLabel })
+      filtered.forEach(opt => {
+        tomSelect.addOption({ value: opt.value || opt["value"], text: opt.label || opt["label"] })
+      })
+      tomSelect.clear(true)
+      tomSelect.refreshOptions(false)
+    } else {
+      // 일반 SELECT: DOM 직접 조작
+      selectEl.innerHTML = ""
+      if (blankOption) {
+        selectEl.appendChild(blankOption)
+      }
+      for (const opt of filtered) {
+        const option = document.createElement("option")
+        option.value = opt.value || opt["value"]
+        option.textContent = opt.label || opt["label"]
+        selectEl.appendChild(option)
+      }
     }
 
     // 자식의 항목도 변경된 것이므로 자식에게 연쇄 의존성이 걸려있는 "손자" 요소를 위해 change 이벤트 버블링 발생시킴

@@ -92,3 +92,23 @@ export async function loadSelectOptions(controller, baseUrl, params, errorMessag
     return null
   }
 }
+
+/**
+ * sectionMap(그룹코드 → 옵션배열) 기반 옵션 계산 순수 함수
+ *
+ * @param {Object} map   - { "INTERNAL": [{label, value}, ...], ... } 형태
+ * @param {string} groupCode - 선택된 그룹 코드 (없으면 전체 dedupe 반환)
+ * @returns {Array} { label, value } 옵션 배열
+ */
+export function resolveMapOptions(map, groupCode) {
+  const normalized = (groupCode || "").toString().trim().toUpperCase()
+  if (normalized && map[normalized]) return map[normalized]
+
+  const all = Object.values(map).flat()
+  const seen = new Set()
+  return all.filter((item) => {
+    if (!item?.value || seen.has(item.value)) return false
+    seen.add(item.value)
+    return true
+  })
+}

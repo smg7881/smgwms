@@ -22,10 +22,6 @@ class Std::Client::PageComponent < Std::BasePageComponent
       end
     end
 
-    def section_list_url
-      helpers.sections_std_clients_path(format: :json)
-    end
-
     def contact_list_url_template
       "/std/clients/:id/contacts.json"
     end
@@ -43,9 +39,9 @@ class Std::Client::PageComponent < Std::BasePageComponent
     end
 
     def section_map_json
-      map = {}
-      section_group_code_values.each do |group_code|
-        map[group_code] = section_option_items(group_code)
+      rows = AdmCodeDetail.active.where(code: "STD_BZAC_SCTN").where.not(upper_detail_code: [nil, ""]).ordered
+      map = rows.group_by(&:upper_detail_code).transform_values do |group_rows|
+        group_rows.map { |r| { label: r.detail_code_name, value: r.detail_code } }
       end
       map.to_json
     end
@@ -66,7 +62,7 @@ class Std::Client::PageComponent < Std::BasePageComponent
           field: "bzac_sctn_cd",
           type: "select",
           label: "거래처구분",
-          options: section_options,
+          options: common_code_options("STD_BZAC_SCTN", include_all: true),
           include_blank: false
         },
         { field: "bizman_no", type: "input", label: "사업자번호", placeholder: "숫자 10자리" },
@@ -102,16 +98,16 @@ class Std::Client::PageComponent < Std::BasePageComponent
           headerName: "거래처구분그룹",
           minWidth: 140,
           editable: false,
-          cellEditor: "agSelectCellEditor",
-          cellEditorParams: { values: section_group_code_values }
+          formatter: "codeLabel",
+          context: { codeMap: common_code_map("STD_BZAC_SCTN_GRP") }
         },
         {
           field: "bzac_sctn_cd",
           headerName: "거래처구분",
           minWidth: 130,
           editable: false,
-          cellEditor: "agSelectCellEditor",
-          cellEditorParams: { values: section_code_values }
+          formatter: "codeLabel",
+          context: { codeMap: common_code_map("STD_BZAC_SCTN") }
         },
         { field: "bizman_no", headerName: "사업자번호", minWidth: 120, editable: false },
         { field: "rpt_sales_emp_cd", headerName: "대표영업사원", minWidth: 120, editable: false },
@@ -203,34 +199,6 @@ class Std::Client::PageComponent < Std::BasePageComponent
       ]
     end
 
-    def section_group_options_for_form
-      common_code_options("STD_BZAC_SCTN_GRP")
-    end
-
-    def section_options_for_form
-      section_option_items(nil)
-    end
-
-    def section_code_values
-      common_code_values("STD_BZAC_SCTN")
-    end
-
-    def section_group_code_values
-      common_code_values("STD_BZAC_SCTN_GRP")
-    end
-
-    def kind_options_for_form
-      common_code_options("STD_BZAC_KIND")
-    end
-
-    def nation_options_for_form
-      common_code_options("STD_NATION")
-    end
-
-    def use_yn_options_for_form
-      common_code_options("CMM_USE_YN")
-    end
-
     def detail_form_model
       @detail_form_model ||= StdBzacMst.new
     end
@@ -252,7 +220,7 @@ class Std::Client::PageComponent < Std::BasePageComponent
           type: "select",
           label: "거래처구분그룹",
           required: true,
-          options: section_group_options_for_form,
+          options: common_code_options("STD_BZAC_SCTN_GRP"),
           target: "detailField detailGroupField"
         },
         {
@@ -260,7 +228,7 @@ class Std::Client::PageComponent < Std::BasePageComponent
           type: "select",
           label: "거래처구분",
           required: true,
-          options: section_options_for_form,
+          options: common_code_options("STD_BZAC_SCTN"),
           target: "detailField detailSectionField"
         },
         {
@@ -268,7 +236,7 @@ class Std::Client::PageComponent < Std::BasePageComponent
           type: "select",
           label: "거래처종류",
           required: true,
-          options: kind_options_for_form,
+          options: common_code_options("STD_BZAC_KIND"),
           target: "detailField"
         },
         {
@@ -276,7 +244,7 @@ class Std::Client::PageComponent < Std::BasePageComponent
           type: "select",
           label: "국가",
           required: true,
-          options: nation_options_for_form,
+          options: common_code_options("STD_NATION"),
           target: "detailField"
         },
         { field: "upper_bzac_cd", type: "input", label: "상위거래처", maxlength: 20, target: "detailField" },
@@ -293,10 +261,14 @@ class Std::Client::PageComponent < Std::BasePageComponent
           type: "select",
           label: "사용여부",
           required: true,
-          options: use_yn_options_for_form,
+          options: common_code_options("CMM_USE_YN"),
           target: "detailField"
         }
       ]
+    end
+
+    def use_yn_options_for_form
+      common_code_options("CMM_USE_YN")
     end
 
     def additional_form_fields
@@ -320,35 +292,5 @@ class Std::Client::PageComponent < Std::BasePageComponent
         { field: "acnt_no_cd", type: "input", label: "계좌번호", maxlength: 50, target: "detailField" },
         { field: "remk", type: "textarea", label: "비고", rows: 3, colspan: 2, maxlength: 500, target: "detailField" }
       ]
-    end
-
-    def section_option_items(group_code)
-      scope = AdmCodeDetail.active.where(code: "STD_BZAC_SCTN").ordered
-      if group_code.present?
-        scope = scope.where(upper_detail_code: group_code)
-      end
-
-      scope.map do |row|
-        {
-          label: row.detail_code_name,
-          value: row.detail_code
-        }
-      end
-    end
-
-    def section_options
-      options = [ { label: "전체", value: "" } ]
-      scope = AdmCodeDetail.active.where(code: "STD_BZAC_SCTN").ordered
-      if selected_section_group.present?
-        scope = scope.where(upper_detail_code: selected_section_group)
-      end
-      options + scope.map { |row| { label: row.detail_code_name, value: row.detail_code } }
-    end
-
-    def selected_section_group
-      @selected_section_group ||= begin
-        value = query_params.dig("q", "bzac_sctn_grp_cd").to_s.strip.upcase
-        value.presence
-      end
     end
 end

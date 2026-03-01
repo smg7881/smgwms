@@ -68,7 +68,9 @@
       "Bash(bin/rails server:*)",
       "Bash(curl:*)",
       "mcp__chrome-devtools__list_network_requests",
-      "mcp__chrome-devtools__press_key"
+      "mcp__chrome-devtools__press_key",
+      "Bash(node:*)",
+      "mcp__chrome-devtools__fill"
     ]
   }
 }

@@ -5,7 +5,7 @@ class Ui::AgGridComponent < ApplicationComponent
     filter sortable resizable editable
     pinned hide cellStyle cellClass
     type cellEditor cellEditorParams
-    formatter
+    formatter context
     cellRenderer cellRendererParams
     lookup_popup_type lookup_popup_url lookup_code_field lookup_name_field lookup_popup_title
     refData

@@ -284,8 +284,17 @@ export default class extends Controller {
     // 입력 필드(text, hidden), 달력 등 실제 값 세팅 요소
     const targetEl = elements[elements.length - 1]
 
-    // 다중 선택 Select 처리
-    if (targetEl.tagName === "SELECT" && targetEl.multiple) {
+    // Tom Select가 붙은 SELECT는 Tom Select API로 값 세팅
+    const tomSelect = targetEl.tomselect
+    if (tomSelect) {
+      if (targetEl.multiple) {
+        const valArray = Array.isArray(value) ? value.map(String) : [String(value)]
+        tomSelect.setValue(valArray, true)
+      } else {
+        tomSelect.setValue(String(value ?? ""), true)
+      }
+    } else if (targetEl.tagName === "SELECT" && targetEl.multiple) {
+      // 다중 선택 Select 처리
       const valArray = Array.isArray(value) ? value : [String(value)]
       Array.from(targetEl.options).forEach(opt => {
         opt.selected = valArray.includes(opt.value)
