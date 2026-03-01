@@ -636,6 +636,7 @@ export default class extends BaseGridController {
     }
 
     const nameKeyByCodeKey = {
+      mngt_corp_cd: "mngt_corp_nm",
       fnc_or_cd: "fnc_or_nm",
       upper_bzac_cd: "upper_bzac_nm",
       zip_cd: "zip_nm"

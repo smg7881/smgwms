@@ -50,7 +50,14 @@ class Std::Client::PageComponent < Std::BasePageComponent
       [
         { field: "bzac_cd", type: "input", label: "거래처코드", placeholder: "거래처코드 검색.." },
         { field: "bzac_nm", type: "input", label: "거래처명", placeholder: "거래처명 검색.." },
-        { field: "mngt_corp_cd", type: "input", label: "관리법인", placeholder: "관리법인 코드.." },
+        {
+          field: "mngt_corp_nm",
+          type: "popup",
+          label: "관리법인",
+          popup_type: "corp",
+          code_field: "mngt_corp_cd",
+          placeholder: "관리법인 선택"
+        },
         {
           field: "bzac_sctn_grp_cd",
           type: "select",
@@ -213,7 +220,16 @@ class Std::Client::PageComponent < Std::BasePageComponent
       [
         { field: "bzac_cd", type: "input", label: "거래처코드", readonly: true, target: "detailField" },
         { field: "bzac_nm", type: "input", label: "거래처명", required: true, maxlength: 100, target: "detailField" },
-        { field: "mngt_corp_cd", type: "input", label: "관리법인", required: true, maxlength: 20, target: "detailField" },
+        {
+          field: "mngt_corp_nm",
+          type: "popup",
+          label: "관리법인",
+          required: true,
+          popup_type: "corp",
+          code_field: "mngt_corp_cd",
+          placeholder: "관리법인 선택",
+          target: "detailField"
+        },
         { field: "bizman_no", type: "input", label: "사업자번호", required: true, maxlength: 10, inputmode: "numeric", target: "detailField" },
         {
           field: "bzac_sctn_grp_cd",

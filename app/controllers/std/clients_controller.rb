@@ -6,10 +6,18 @@ class Std::ClientsController < Std::BaseController
       format.html
       format.json do
         rows = clients_scope.to_a
+        mngt_corp_name_by_code = build_mngt_corp_name_map(rows)
         upper_name_by_code = build_upper_client_name_map(rows)
         zip_name_by_code = build_zip_name_map(rows)
 
-        render json: rows.map { |client| client_json(client, upper_name_by_code: upper_name_by_code, zip_name_by_code: zip_name_by_code) }
+        render json: rows.map do |client|
+          client_json(
+            client,
+            mngt_corp_name_by_code: mngt_corp_name_by_code,
+            upper_name_by_code: upper_name_by_code,
+            zip_name_by_code: zip_name_by_code
+          )
+        end
       end
     end
   end
@@ -279,6 +287,19 @@ class Std::ClientsController < Std::BaseController
       scope
     end
 
+    def build_mngt_corp_name_map(rows)
+      codes = Array(rows).map(&:mngt_corp_cd).compact_blank.uniq
+      if codes.empty?
+        return {}
+      end
+
+      return {} unless defined?(StdCorporation) && StdCorporation.table_exists?
+
+      StdCorporation.where(corp_cd: codes).pluck(:corp_cd, :corp_nm).to_h
+    rescue ActiveRecord::StatementInvalid
+      {}
+    end
+
     def build_upper_client_name_map(rows)
       codes = Array(rows).map(&:upper_bzac_cd).compact_blank.uniq
       if codes.empty?
@@ -406,12 +427,13 @@ class Std::ClientsController < Std::BaseController
       ).to_h.symbolize_keys
     end
 
-    def client_json(client, upper_name_by_code: {}, zip_name_by_code: {})
+    def client_json(client, mngt_corp_name_by_code: {}, upper_name_by_code: {}, zip_name_by_code: {})
       {
         id: client.bzac_cd,
         bzac_cd: client.bzac_cd,
         bzac_nm: client.bzac_nm,
         mngt_corp_cd: client.mngt_corp_cd,
+        mngt_corp_nm: mngt_corp_name_by_code[client.mngt_corp_cd.to_s.strip.upcase].to_s,
         bizman_no: client.bizman_no,
         bzac_sctn_grp_cd: client.bzac_sctn_grp_cd,
         bzac_sctn_cd: client.bzac_sctn_cd,
