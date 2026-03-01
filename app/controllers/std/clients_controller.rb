@@ -4,7 +4,13 @@ class Std::ClientsController < Std::BaseController
 
     respond_to do |format|
       format.html
-      format.json { render json: clients_scope.map { |client| client_json(client) } }
+      format.json do
+        rows = clients_scope.to_a
+        upper_name_by_code = build_upper_client_name_map(rows)
+        zip_name_by_code = build_zip_name_map(rows)
+
+        render json: rows.map { |client| client_json(client, upper_name_by_code: upper_name_by_code, zip_name_by_code: zip_name_by_code) }
+      end
     end
   end
 
@@ -273,6 +279,34 @@ class Std::ClientsController < Std::BaseController
       scope
     end
 
+    def build_upper_client_name_map(rows)
+      codes = Array(rows).map(&:upper_bzac_cd).compact_blank.uniq
+      if codes.empty?
+        return {}
+      end
+
+      StdBzacMst.where(bzac_cd: codes).pluck(:bzac_cd, :bzac_nm).to_h
+    end
+
+    def build_zip_name_map(rows)
+      codes = Array(rows).map(&:zip_cd).compact_blank.uniq
+      if codes.empty?
+        return {}
+      end
+
+      names = {}
+      StdZipCode.where(zipcd: codes, use_yn_cd: "Y").order(:zipcd, :seq_no).find_each do |zip|
+        code = zip.zipcd.to_s.strip.upcase
+        if names.key?(code)
+          next
+        end
+
+        label = zip.zipaddr.to_s.strip.presence || code
+        names[code] = label
+      end
+      names
+    end
+
     def search_bzac_code
       value = search_params[:bzac_cd].presence || search_params[:bzacCd].presence
       value.to_s.strip.upcase.presence
@@ -372,7 +406,7 @@ class Std::ClientsController < Std::BaseController
       ).to_h.symbolize_keys
     end
 
-    def client_json(client)
+    def client_json(client, upper_name_by_code: {}, zip_name_by_code: {})
       {
         id: client.bzac_cd,
         bzac_cd: client.bzac_cd,
@@ -383,6 +417,7 @@ class Std::ClientsController < Std::BaseController
         bzac_sctn_cd: client.bzac_sctn_cd,
         bzac_kind_cd: client.bzac_kind_cd,
         upper_bzac_cd: client.upper_bzac_cd,
+        upper_bzac_nm: upper_name_by_code[client.upper_bzac_cd.to_s.strip.upcase].to_s,
         rpt_bzac_cd: client.rpt_bzac_cd,
         ctry_cd: client.ctry_cd,
         tpl_logis_yn_cd: client.tpl_logis_yn_cd,
@@ -396,6 +431,7 @@ class Std::ClientsController < Std::BaseController
         fnc_or_nm: client.financial_institution&.fnc_or_nm.to_s,
         acnt_no_cd: client.acnt_no_cd,
         zip_cd: client.zip_cd,
+        zip_nm: zip_name_by_code[client.zip_cd.to_s.strip.upcase].to_s,
         addr_cd: client.addr_cd,
         addr_dtl_cd: client.addr_dtl_cd,
         rpt_sales_emp_cd: client.rpt_sales_emp_cd,

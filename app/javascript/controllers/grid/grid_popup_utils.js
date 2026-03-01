@@ -20,7 +20,8 @@
  */
 export function popupRootForField(fieldEl) {
   if (!fieldEl) return null
-  if (fieldEl.dataset.searchPopupTarget !== "code") return null
+  const popupTargets = String(fieldEl.dataset.searchPopupTarget || "").split(/\s+/).filter(Boolean)
+  if (!popupTargets.includes("code")) return null
   return fieldEl.closest("[data-controller~='search-popup']")
 }
 
@@ -37,13 +38,13 @@ export function setPopupValues(popupRoot, code, display = null) {
 
   const normalizedCode = String(code ?? "").trim()
 
-  const codeDisplayInput = popupRoot.querySelector("[data-search-popup-target='codeDisplay']")
+  const codeDisplayInput = popupRoot.querySelector("[data-search-popup-target~='codeDisplay']")
   if (codeDisplayInput) {
     codeDisplayInput.value = normalizedCode
   }
 
   if (display !== null) {
-    const displayInput = popupRoot.querySelector("[data-search-popup-target='display']")
+    const displayInput = popupRoot.querySelector("[data-search-popup-target~='display']")
     if (displayInput) {
       displayInput.value = String(display ?? "").trim()
     }
@@ -60,17 +61,17 @@ export function setPopupValues(popupRoot, code, display = null) {
 export function setPopupDisabled(popupRoot, disabled) {
   if (!popupRoot) return
 
-  const displayInput = popupRoot.querySelector("[data-search-popup-target='display']")
+  const displayInput = popupRoot.querySelector("[data-search-popup-target~='display']")
   if (displayInput) {
     displayInput.disabled = disabled
   }
 
-  const codeDisplayInput = popupRoot.querySelector("[data-search-popup-target='codeDisplay']")
+  const codeDisplayInput = popupRoot.querySelector("[data-search-popup-target~='codeDisplay']")
   if (codeDisplayInput) {
     codeDisplayInput.disabled = true
   }
 
-  const openButton = popupRoot.querySelector("button[data-action='search-popup#open']")
+  const openButton = popupRoot.querySelector("button[data-action~='search-popup#open']")
   if (openButton) {
     openButton.disabled = disabled
   }
@@ -88,9 +89,9 @@ export function syncAllPopupDisplaysFromCodes(rootEl) {
 
   const wrappers = rootEl.querySelectorAll("[data-controller~='search-popup']")
   wrappers.forEach((wrapper) => {
-    const codeInput = wrapper.querySelector("[data-search-popup-target='code']")
-    const codeDisplay = wrapper.querySelector("[data-search-popup-target='codeDisplay']")
-    const displayInput = wrapper.querySelector("[data-search-popup-target='display']")
+    const codeInput = wrapper.querySelector("[data-search-popup-target~='code']")
+    const codeDisplay = wrapper.querySelector("[data-search-popup-target~='codeDisplay']")
+    const displayInput = wrapper.querySelector("[data-search-popup-target~='display']")
     if (!codeInput) return
 
     const codeValue = String(codeInput.value || "").trim()

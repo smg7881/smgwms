@@ -566,6 +566,7 @@ export default class extends BaseGridController {
 
   // 거래처구분그룹 변경 시 거래처구분 옵션/값 동기화
   handleDetailGroupChange(event) {
+    if (this._suppressDetailFieldSync) return
     if (!this.currentMasterRow) return
     if (!this.hasDetailSectionFieldTarget) return
 
@@ -628,12 +629,26 @@ export default class extends BaseGridController {
     const popupRoot = popupRootForField(fieldElement)
     if (!popupRoot || !key) return
 
-    if (key === "fnc_or_cd") {
-      const seededName = (rowData?.fnc_or_nm || "").toString().trim()
-      setPopupValues(popupRoot, value, seededName || value)
-    } else {
-      setPopupValues(popupRoot, value)
+    const codeValue = (value || "").toString().trim()
+    if (codeValue === "") {
+      setPopupValues(popupRoot, "", "")
+      return
     }
+
+    const nameKeyByCodeKey = {
+      fnc_or_cd: "fnc_or_nm",
+      upper_bzac_cd: "upper_bzac_nm",
+      zip_cd: "zip_nm"
+    }
+
+    const nameKey = nameKeyByCodeKey[key]
+    const seededName = nameKey ? (rowData?.[nameKey] || "").toString().trim() : ""
+    if (seededName.length > 0) {
+      setPopupValues(popupRoot, codeValue, seededName)
+      return
+    }
+
+    setPopupValues(popupRoot, codeValue)
   }
 
   // popup 필드 비활성화 상태 동기화

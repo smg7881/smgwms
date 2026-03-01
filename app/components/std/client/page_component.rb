@@ -39,7 +39,7 @@ class Std::Client::PageComponent < Std::BasePageComponent
     end
 
     def section_map_json
-      rows = AdmCodeDetail.active.where(code: "STD_BZAC_SCTN").where.not(upper_detail_code: [nil, ""]).ordered
+      rows = AdmCodeDetail.active.where(code: "STD_BZAC_SCTN").where.not(upper_detail_code: [ nil, "" ]).ordered
       map = rows.group_by(&:upper_detail_code).transform_values do |group_rows|
         group_rows.map { |r| { label: r.detail_code_name, value: r.detail_code } }
       end
@@ -247,11 +247,27 @@ class Std::Client::PageComponent < Std::BasePageComponent
           options: common_code_options("STD_NATION"),
           target: "detailField"
         },
-        { field: "upper_bzac_cd", type: "input", label: "상위거래처", maxlength: 20, target: "detailField" },
+        {
+          field: "upper_bzac_nm",
+          type: "popup",
+          label: "상위거래처",
+          popup_type: "client",
+          code_field: "upper_bzac_cd",
+          placeholder: "상위거래처 선택",
+          target: "detailField"
+        },
         { field: "rpt_bzac_cd", type: "input", label: "대표거래처", maxlength: 20, target: "detailField" },
         { field: "rpt_sales_emp_cd", type: "input", label: "대표영업사원", required: true, maxlength: 20, target: "detailField" },
         { field: "rpt_sales_emp_nm", type: "input", label: "대표영업사원명", maxlength: 100, target: "detailField" },
-        { field: "zip_cd", type: "input", label: "우편번호", maxlength: 20, target: "detailField" },
+        {
+          field: "zip_nm",
+          type: "popup",
+          label: "우편번호",
+          popup_type: "zipcode",
+          code_field: "zip_cd",
+          placeholder: "우편번호 선택",
+          target: "detailField"
+        },
         { field: "addr_cd", type: "input", label: "주소", maxlength: 255, target: "detailField" },
         { field: "addr_dtl_cd", type: "input", label: "상세주소", maxlength: 255, target: "detailField" },
         { field: "aply_strt_day_cd", type: "date_picker", label: "적용시작일", required: true, target: "detailField" },
@@ -290,7 +306,7 @@ class Std::Client::PageComponent < Std::BasePageComponent
           target: "detailField"
         },
         { field: "acnt_no_cd", type: "input", label: "계좌번호", maxlength: 50, target: "detailField" },
-        { field: "remk", type: "textarea", label: "비고", rows: 3, colspan: 2, maxlength: 500, target: "detailField" }
+        { field: "remk", type: "textarea", label: "비고", rows: 3, colspan: 3, maxlength: 500, target: "detailField" }
       ]
     end
 end

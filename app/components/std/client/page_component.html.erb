@@ -93,7 +93,8 @@
         class: "std-client-section-head", title_class: "std-client-section-title", icon_class: "w-4 h-4",
         buttons: [
           { label: "행추가", class: "btn btn-sm btn-primary", action: "click->client-grid#addContactRow" },
-          { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->client-grid#deleteContactRows" }
+          { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->client-grid#deleteContactRows" },
+          { label: "저장", class: "btn btn-sm btn-success", action: "click->client-grid#saveContactRows" }
         ]
       ) %>
 
@@ -114,7 +115,8 @@
         class: "std-client-section-head", title_class: "std-client-section-title", icon_class: "w-4 h-4",
         buttons: [
           { label: "행추가", class: "btn btn-sm btn-primary", action: "click->client-grid#addWorkplaceRow" },
-          { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->client-grid#deleteWorkplaceRows" }
+          { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->client-grid#deleteWorkplaceRows" },
+          { label: "저장", class: "btn btn-sm btn-success", action: "click->client-grid#saveWorkplaceRows" }
         ]
       ) %>
 
