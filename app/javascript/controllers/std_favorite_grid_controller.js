@@ -2,7 +2,6 @@ import { Controller } from "@hotwired/stimulus"
 import { showAlert, confirmAction } from "components/ui/alert"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
 import { fetchJson, hasChanges, isApiAlive, postJson, setManagerRowData, focusFirstRow } from "controllers/grid/grid_utils"
-import { registerGridInstance } from "controllers/grid/core/grid_registration"
 
 export default class extends Controller {
   static targets = ["groupGrid", "star"]
@@ -40,12 +39,17 @@ export default class extends Controller {
   }
 
   registerGrid(event) {
-    registerGridInstance(event, this, [
-      { target: this.hasGroupGridTarget ? this.groupGridTarget : null, managerKey: "groupManager", configMethod: "groupConfig" }
-    ], () => {
-      this.reloadGroups()
-      this.reloadFavorites()
-    })
+    if (!this.hasGroupGridTarget) return
+
+    const gridElement = event?.target?.closest?.("[data-controller='ag-grid']")
+    const { api } = event.detail || {}
+    if (!gridElement || gridElement !== this.groupGridTarget || !api) return
+
+    this.groupManager?.detach?.()
+    this.groupManager = new GridCrudManager(this.groupConfig)
+    this.groupManager.attach(api)
+    this.reloadGroups()
+    this.reloadFavorites()
   }
 
   addRowWith({

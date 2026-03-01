@@ -9,10 +9,9 @@
  */
 import BaseGridController from "controllers/base_grid_controller"
 import { showAlert, confirmAction } from "components/ui/alert"
-import { GridEventManager, resolveAgGridRegistration } from "controllers/grid/grid_event_manager"
+import { GridEventManager } from "controllers/grid/grid_event_manager"
 import { AbortableRequestTracker, isAbortError } from "controllers/grid/request_tracker"
 import { isApiAlive, fetchJson, setGridRowData, focusFirstRow } from "controllers/grid/grid_utils"
-import { registerGridInstance } from "controllers/grid/core/grid_registration"
 
 export default class extends BaseGridController {
   // 타겟 뷰: 1단User, 2단Role, 3단Menu 그리드 DOM
@@ -21,6 +20,14 @@ export default class extends BaseGridController {
   static values = {
     rolesUrl: String,
     menusUrl: String
+  }
+
+  gridRoles() {
+    return {
+      user: { target: "userGrid" },
+      role: { target: "roleGrid" },
+      menu: { target: "menuGrid" }
+    }
   }
 
   connect() {
@@ -53,29 +60,15 @@ export default class extends BaseGridController {
     super.disconnect()
   }
 
-  // 3가지 그리드가 하나하나 생명력을 얻을 때마다 호출되며 등록을 체크
-  registerGrid(event) {
-    registerGridInstance(event, this, [
-      { target: this.hasUserGridTarget ? this.userGridTarget : null, controllerKey: "userGridController", managerKey: "userApi" },
-      { target: this.hasRoleGridTarget ? this.roleGridTarget : null, controllerKey: "roleGridController", managerKey: "roleApi" },
-      { target: this.hasMenuGridTarget ? this.menuGridTarget : null, controllerKey: "menuGridController", managerKey: "menuApi" }
-    ], () => {
-      this.bindGridEvents()
-      this.handleUserGridDataLoaded()
-    })
-
-    // 수동 할당 (registerGridInstance가 configMethod없이 API만 매핑하지는 않으므로)
-    const registration = resolveAgGridRegistration(event)
-    if (!registration) return
-    const { gridElement, api } = registration
-
-    if (gridElement === this.userGridTarget) {
-      this.userApi = api
-    } else if (gridElement === this.roleGridTarget) {
-      this.roleApi = api
-    } else if (gridElement === this.menuGridTarget) {
-      this.menuApi = api
-    }
+  onAllGridsReady() {
+    this.userGridController = this.gridCtrl("user")
+    this.roleGridController = this.gridCtrl("role")
+    this.menuGridController = this.gridCtrl("menu")
+    this.userApi = this.gridApi("user")
+    this.roleApi = this.gridApi("role")
+    this.menuApi = this.gridApi("menu")
+    this.bindGridEvents()
+    this.handleUserGridDataLoaded()
   }
 
   // 유저와 권한쪽의 셀렉션(선택/포커스) 변화 이벤트를 관제소에 등록함

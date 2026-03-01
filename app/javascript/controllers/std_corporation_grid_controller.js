@@ -1,21 +1,44 @@
-import MasterDetailGridController from "controllers/master_detail_grid_controller"
+import BaseGridController from "controllers/base_grid_controller"
 import { showAlert } from "components/ui/alert"
 import { fetchJson, isApiAlive, setManagerRowData, hasPendingChanges, buildTemplateUrl, refreshSelectionLabel, focusFirstRow } from "controllers/grid/grid_utils"
 
-export default class extends MasterDetailGridController {
-  static targets = [...MasterDetailGridController.targets, "countryGrid", "selectedCorpLabel"]
+export default class extends BaseGridController {
+  static targets = [...BaseGridController.targets, "masterGrid", "countryGrid", "selectedCorpLabel"]
 
   static values = {
-    ...MasterDetailGridController.values,
+    ...BaseGridController.values,
     masterBatchUrl: String,
     countryBatchUrlTemplate: String,
     countryListUrlTemplate: String
+  }
+
+  gridRoles() {
+    return {
+      master: {
+        target: "masterGrid",
+        manager: "configureManager",
+        masterKeyField: "corp_cd"
+      },
+      country: {
+        target: "countryGrid",
+        manager: "configureCountryManager",
+        parentGrid: "master",
+        onMasterRowChange: (rowData) => this.handleMasterRowChange(rowData)
+      }
+    }
   }
 
   connect() {
     super.connect()
     this.countryManager = null
     this.selectedCorpCode = ""
+  }
+
+  onAllGridsReady() {
+    this.manager = this.gridManager("master")
+    this.gridController = this.gridCtrl("master")
+    this.countryManager = this.gridManager("country")
+    this.refreshSelectedCorpLabel()
   }
 
   disconnect() {
@@ -288,6 +311,11 @@ export default class extends MasterDetailGridController {
   // 조회 직전 상세 그리드를 비웁니다.
   clearAllDetails() {
     this.clearCountryRows()
+  }
+
+  beforeSearchReset() {
+    this.selectedCorpCode = ""
+    this.refreshSelectedCorpLabel()
   }
 
   refreshSelectedCorpLabel() {

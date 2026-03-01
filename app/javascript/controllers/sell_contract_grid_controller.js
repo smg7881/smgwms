@@ -1,4 +1,4 @@
-﻿import MasterDetailGridController from "controllers/master_detail_grid_controller"
+﻿import BaseGridController from "controllers/base_grid_controller"
 import { showAlert } from "components/ui/alert"
 import { isApiAlive, fetchJson, setManagerRowData, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel, focusFirstRow } from "controllers/grid/grid_utils"
 import { switchTab, activateTab } from "controllers/ui_utils"
@@ -32,9 +32,9 @@ const DATE_FIELDS = [
   "ctrt_cnctr_ymd"
 ]
 
-export default class extends MasterDetailGridController {
+export default class extends BaseGridController {
   static targets = [
-    ...MasterDetailGridController.targets,
+    ...BaseGridController.targets,
     "masterGrid",
     "settlementGrid",
     "historyGrid",
@@ -45,12 +45,31 @@ export default class extends MasterDetailGridController {
   ]
 
   static values = {
-    ...MasterDetailGridController.values,
+    ...BaseGridController.values,
     masterBatchUrl: String,
     settlementBatchUrlTemplate: String,
     settlementListUrlTemplate: String,
     historyListUrlTemplate: String,
     selectedContract: String
+  }
+  gridRoles() {
+    return {
+      master: {
+        target: "masterGrid",
+        manager: "configureManager",
+        masterKeyField: "sell_ctrt_no"
+      },
+      settlement: {
+        target: "settlementGrid",
+        manager: "configureSettlementManager",
+        parentGrid: "master",
+        onMasterRowChange: (rowData) => this.handleMasterRowChange(rowData)
+      },
+      history: {
+        target: "historyGrid",
+        parentGrid: "master"
+      }
+    }
   }
 
   connect() {
@@ -65,7 +84,14 @@ export default class extends MasterDetailGridController {
     this.activateTab("basic")
     this.clearDetailForm()
   }
-
+  onAllGridsReady() {
+    this.manager = this.gridManager("master")
+    this.gridController = this.gridCtrl("master")
+    this.settlementManager = this.gridManager("settlement")
+    this.settlementGridController = this.gridCtrl("settlement")
+    this.historyGridController = this.gridCtrl("history")
+    this.refreshSelectedContractLabel()
+  }
   disconnect() {
     this.unbindDetailFieldEvents()
 
@@ -239,15 +265,6 @@ export default class extends MasterDetailGridController {
     }
   }
 
-  manualDetailGridConfigs() {
-    return [
-      {
-        target: this.hasHistoryGridTarget ? this.historyGridTarget : null,
-        controllerKey: "historyGridController"
-      }
-    ]
-  }
-
   isDetailReady() {
     return isApiAlive(this.settlementManager?.api) && isApiAlive(this.historyGridController?.api)
   }
@@ -413,6 +430,12 @@ export default class extends MasterDetailGridController {
     this.clearSettlementRows()
     this.clearHistoryRows()
   }
+  beforeSearchReset() {
+    this.selectedContractValue = ""
+    this.currentMasterRow = null
+    this.refreshSelectedContractLabel()
+    this.clearDetailForm()
+  }
 
   preventDetailSubmit(event) {
     event.preventDefault()
@@ -543,3 +566,4 @@ export default class extends MasterDetailGridController {
     })
   }
 }
+

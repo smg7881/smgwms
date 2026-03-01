@@ -1,4 +1,4 @@
-﻿import MasterDetailGridController from "controllers/master_detail_grid_controller"
+﻿import BaseGridController from "controllers/base_grid_controller"
 import { showAlert } from "components/ui/alert"
 import { isApiAlive, fetchJson, setManagerRowData, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel, setSelectOptions as setSelectOptionsUtil } from "controllers/grid/grid_utils"
 import { switchTab, activateTab } from "controllers/ui_utils"
@@ -38,9 +38,9 @@ const DATE_FIELDS = ["aply_strt_day_cd", "aply_end_day_cd"]
  * - 상세 폼 수정 시 마스터 그리드의 데이터 실시간 동기화
  * - 각 그리드별 개별 CRUD 관리 (GridCrudManager 사용)
  */
-export default class extends MasterDetailGridController {
+export default class extends BaseGridController {
   static targets = [
-    ...MasterDetailGridController.targets,
+    ...BaseGridController.targets,
     "masterGrid",
     "contactsGrid",
     "workplacesGrid",
@@ -54,7 +54,7 @@ export default class extends MasterDetailGridController {
   ]
 
   static values = {
-    ...MasterDetailGridController.values,
+    ...BaseGridController.values,
     masterBatchUrl: String,
     contactBatchUrlTemplate: String,
     contactListUrlTemplate: String,
@@ -63,6 +63,26 @@ export default class extends MasterDetailGridController {
     sectionsUrl: String,
     sectionMap: Object,
     selectedClient: String
+  }
+  gridRoles() {
+    return {
+      master: {
+        target: "masterGrid",
+        manager: "configureManager",
+        masterKeyField: "bzac_cd"
+      },
+      contacts: {
+        target: "contactsGrid",
+        manager: "configureContactManager",
+        parentGrid: "master",
+        onMasterRowChange: (rowData) => this.handleMasterRowChange(rowData)
+      },
+      workplaces: {
+        target: "workplacesGrid",
+        manager: "configureWorkplaceManager",
+        parentGrid: "master"
+      }
+    }
   }
 
   connect() {
@@ -90,6 +110,15 @@ export default class extends MasterDetailGridController {
     this.activateTab("basic")
     // 상세 폼 초기화
     this.clearDetailForm()
+  }
+  onAllGridsReady() {
+    this.manager = this.gridManager("master")
+    this.gridController = this.gridCtrl("master")
+    this.contactManager = this.gridManager("contacts")
+    this.workplaceManager = this.gridManager("workplaces")
+    this.contactGridController = this.gridCtrl("contacts")
+    this.workplaceGridController = this.gridCtrl("workplaces")
+    this.refreshSelectedClientLabel()
   }
 
   disconnect() {
@@ -472,6 +501,12 @@ export default class extends MasterDetailGridController {
     this.clearContactRows()
     this.clearWorkplaceRows()
   }
+  beforeSearchReset() {
+    this.selectedClientValue = ""
+    this.currentMasterRow = null
+    this.refreshSelectedClientLabel()
+    this.clearDetailForm()
+  }
 
   preventDetailSubmit(event) {
     event.preventDefault()
@@ -830,3 +865,5 @@ export default class extends MasterDetailGridController {
     })
   }
 }
+
+

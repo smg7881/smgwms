@@ -1,17 +1,17 @@
-﻿import MasterDetailGridController from "controllers/master_detail_grid_controller"
-import { isApiAlive, postJson, setManagerRowData, buildTemplateUrl } from "controllers/grid/grid_utils"
+﻿import BaseGridController from "controllers/base_grid_controller"
+import { isApiAlive, postJson, buildTemplateUrl } from "controllers/grid/grid_utils"
 import { showAlert, confirmAction } from "components/ui/alert"
 import { switchTab, activateTab } from "controllers/ui_utils"
-export default class extends MasterDetailGridController {
+export default class extends BaseGridController {
     static targets = [
-        ...MasterDetailGridController.targets,
+        ...BaseGridController.targets,
         "masterGrid", "detailGrid", "execRsltGrid",
         "selectedMasterLabel",
         "tabButton", "tabPanel"
     ]
 
     static values = {
-        ...MasterDetailGridController.values,
+        ...BaseGridController.values,
         detailListUrlTemplate: String,
         execResultUrlTemplate: String,
         saveUrlTemplate: String,
@@ -19,6 +19,24 @@ export default class extends MasterDetailGridController {
         cancelUrlTemplate: String,
         stagedLocationsUrl: String,
         selectedMaster: String
+    }
+    gridRoles() {
+        return {
+            master: {
+                target: "masterGrid",
+                manager: "configureManager",
+                masterKeyField: "gr_prar_no"
+            },
+            detail: {
+                target: "detailGrid",
+                parentGrid: "master",
+                onMasterRowChange: (rowData) => this.handleMasterRowChange(rowData)
+            },
+            exec: {
+                target: "execRsltGrid",
+                parentGrid: "master"
+            }
+        }
     }
 
     connect() {
@@ -30,6 +48,14 @@ export default class extends MasterDetailGridController {
         this.selectedMasterData = null
         this.#loadStagedLocations()
         this.activateTab("detail")
+    }
+
+    onAllGridsReady() {
+        this.manager = this.gridManager("master")
+        this.gridController = this.gridCtrl("master")
+        this.detailGridController = this.gridCtrl("detail")
+        this.execRsltGridController = this.gridCtrl("exec")
+        this.#updateSelectedMasterLabel()
     }
 
     disconnect() {
@@ -59,31 +85,11 @@ export default class extends MasterDetailGridController {
         }
     }
 
-    // --- 그리드 등록 분기 ---
-
-    detailGridConfigs() {
-        return [
-            {
-                target: this.hasDetailGridTarget ? this.detailGridTarget : null,
-                controllerKey: "detailGridController"
-            },
-            {
-                target: this.hasExecRsltGridTarget ? this.execRsltGridTarget : null,
-                controllerKey: "execRsltGridController"
-            }
-        ]
-    }
-
     isDetailReady() {
         return isApiAlive(this.detailGridController?.api) && isApiAlive(this.execRsltGridController?.api)
     }
 
     // --- 마스터 행 선택 ---
-
-    bindMasterGridEvents() {
-        this.masterGridEvents.unbindAll()
-        this.masterGridEvents.bind(this.manager?.api, "rowClicked", this.handleMasterGridEvent)
-    }
 
     async handleMasterRowChange(rowData) {
         if (!rowData) {
@@ -231,6 +237,10 @@ export default class extends MasterDetailGridController {
         }
     }
 
+    beforeSearchReset() {
+        this.#clearMasterSelection()
+    }
+
     // --- 탭 전환 ---
 
     switchTab(event) {
@@ -367,3 +377,9 @@ export default class extends MasterDetailGridController {
     // --- Private fields ---
     activeTab = "detail"
 }
+
+
+
+
+
+

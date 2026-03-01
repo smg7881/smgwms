@@ -7,10 +7,7 @@
  */
 import BaseGridController from "controllers/base_grid_controller"
 import { showAlert, confirmAction } from "components/ui/alert"
-import GridCrudManager from "controllers/grid/grid_crud_manager"
 import { isApiAlive, hideNoRowsOverlay, fetchJson, setManagerRowData, setGridRowData, refreshSelectionLabel, buildCompositeKey } from "controllers/grid/grid_utils"
-import { registerGridInstance } from "controllers/grid/core/grid_registration"
-import { GridEventManager, resolveAgGridRegistration, rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
 
 export default class extends BaseGridController {
   static targets = ["areaGrid", "zoneGrid", "selectedAreaLabel"]
@@ -18,6 +15,18 @@ export default class extends BaseGridController {
   static values = {
     zonesUrl: String, // 특정 Area에 속해있는 Zone 목록을 불러오는 API 엔드포인트
     batchUrl: String  // Zone C/U/D 변경사항을 한방에 서버로 커밋하는 API 엔드포인트
+  }
+
+  gridRoles() {
+    return {
+      area: { target: "areaGrid" },
+      zone: {
+        target: "zoneGrid",
+        manager: "zoneConfig",
+        parentGrid: "area",
+        onMasterRowChange: (rowData) => this.selectArea(rowData)
+      }
+    }
   }
 
   connect() {
@@ -28,18 +37,9 @@ export default class extends BaseGridController {
     this.areaGridController = null
     this.zoneGridController = null
     this.zoneManager = null // 디테일 그리드를 독자적으로 통제할 관리자
-    this.areaGridEvents = new GridEventManager()
   }
 
   disconnect() {
-    // 메모리 누수 방지 이벤트 파괴 및 DOM 종속성 클리닝
-    this.areaGridEvents.unbindAll()
-
-    if (this.zoneManager) {
-      this.zoneManager.detach()
-      this.zoneManager = null
-    }
-
     this.selectedArea = null
     this.areaApi = null
     this.zoneApi = null
@@ -48,42 +48,13 @@ export default class extends BaseGridController {
     super.disconnect()
   }
 
-  // 양쪽 그리드가 DOM에 렌더링되면서 차례차례 이벤트를 발사할때 식별해서 할당함
-  registerGrid(event) {
-    registerGridInstance(event, this, [
-      {
-        target: this.hasAreaGridTarget ? this.areaGridTarget : null,
-        controllerKey: "areaGridController",
-        managerKey: "areaApi",
-        setup: () => {
-          this.areaGridEvents.unbindAll()
-          // 부모(Area) 쪽에서 선택이 넘어갈 때의 트리거들
-          this.areaGridEvents.bind(this.areaApi, "rowClicked", this.handleAreaRowClicked)
-          this.areaGridEvents.bind(this.areaApi, "cellFocused", this.handleAreaCellFocused)
-          // 부모(Area) 그리드 자체가 완전히 데이터가 바뀌었을 때 (예: 검색, 초기조회 등)
-          this.areaGridEvents.bind(this.areaApi, "rowDataUpdated", this.handleAreaRowDataUpdated)
-        }
-      },
-      {
-        target: this.hasZoneGridTarget ? this.zoneGridTarget : null,
-        controllerKey: "zoneGridController",
-        managerKey: "zoneManager",
-        configMethod: "zoneConfig"
-      }
-    ], () => {
-      // setup callbacks handled everything for area. zone is configured using zoneConfig.
-      // just need to refresh label
-      this.refreshSelectedAreaLabel()
-    })
-
-    // 수동 할당 (registerGridInstance가 configMethod없는 경우 managerKey에 api 할당)
-    const registration = resolveAgGridRegistration(event)
-    if (!registration) return
-    if (registration.gridElement === this.areaGridTarget) {
-      this.areaApi = registration.api
-    } else if (registration.gridElement === this.zoneGridTarget) {
-      this.zoneApi = registration.api
-    }
+  onAllGridsReady() {
+    this.areaApi = this.gridApi("area")
+    this.zoneApi = this.gridApi("zone")
+    this.areaGridController = this.gridCtrl("area")
+    this.zoneGridController = this.gridCtrl("zone")
+    this.zoneManager = this.gridManager("zone")
+    this.refreshSelectedAreaLabel()
   }
 
   zoneConfig() {
@@ -105,30 +76,9 @@ export default class extends BaseGridController {
     }
   }
 
-  bindGridEvents() {
-    this.areaGridEvents.unbindAll()
-    // 부모(Area) 쪽에서 선택이 넘어갈 때의 트리거들
-    this.areaGridEvents.bind(this.areaApi, "rowClicked", this.handleAreaRowClicked)
-    this.areaGridEvents.bind(this.areaApi, "cellFocused", this.handleAreaCellFocused)
-    // 부모(Area) 그리드 자체가 완전히 데이터가 바뀌었을 때 (예: 검색, 초기조회 등)
-    this.areaGridEvents.bind(this.areaApi, "rowDataUpdated", this.handleAreaRowDataUpdated)
-  }
-
-  // Row 클릭
-  handleAreaRowClicked = (event) => {
-    this.selectArea(rowDataFromGridEvent(this.areaApi, event))
-  }
-
-  // 키보드 등으로 커서 이동 포커스
-  handleAreaCellFocused = (event) => {
-    this.selectArea(rowDataFromGridEvent(this.areaApi, event))
-  }
-
-  // 데이터 전체 리다이렉트
-  handleAreaRowDataUpdated = () => {
+  beforeSearchReset() {
     this.selectedArea = null
     this.refreshSelectedAreaLabel()
-    this.clearZoneGrid() // 부모 정보가 날아갔으니 자식은 무조건 초기화
   }
 
   // 마스터 행이 지정되었을때 핵심 State 갱신 및 조회 릴레이

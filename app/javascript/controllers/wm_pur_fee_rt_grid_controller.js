@@ -1,23 +1,46 @@
-import MasterDetailGridController from "controllers/master_detail_grid_controller"
-import { rowDataFromGridEvent } from "controllers/grid/grid_event_manager"
-import { isApiAlive, setManagerRowData, focusFirstRow, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl } from "controllers/grid/grid_utils"
+import BaseGridController from "controllers/base_grid_controller"
+import { isApiAlive, setManagerRowData, focusFirstRow, buildTemplateUrl } from "controllers/grid/grid_utils"
 import { showAlert } from "components/ui/alert"
 
-export default class extends MasterDetailGridController {
-    static targets = [...MasterDetailGridController.targets, "masterGrid", "detailGrid", "selectedMasterLabel"]
+export default class extends BaseGridController {
+    static targets = [...BaseGridController.targets, "masterGrid", "detailGrid", "selectedMasterLabel"]
 
     static values = {
-        ...MasterDetailGridController.values,
+        ...BaseGridController.values,
         masterBatchUrl: String,
         detailBatchUrlTemplate: String,
         detailListUrlTemplate: String,
         selectedMaster: String
     }
 
+    gridRoles() {
+        return {
+            master: {
+                target: "masterGrid",
+                manager: "configureManager",
+                masterKeyField: "wrhs_exca_fee_rt_no"
+            },
+            detail: {
+                target: "detailGrid",
+                manager: "configureDetailManager",
+                parentGrid: "master",
+                onMasterRowChange: (rowData) => this.selectMaster(rowData?.wrhs_exca_fee_rt_no)
+            }
+        }
+    }
+
     connect() {
         super.connect()
         this.detailGridController = null
         this.detailManager = null
+    }
+
+    onAllGridsReady() {
+        this.manager = this.gridManager("master")
+        this.gridController = this.gridCtrl("master")
+        this.detailManager = this.gridManager("detail")
+        this.detailGridController = this.gridCtrl("detail")
+        this.updateSelectedMasterLabel()
     }
 
     disconnect() {
@@ -110,22 +133,6 @@ export default class extends MasterDetailGridController {
         }
     }
 
-    bindMasterGridEvents() {
-        this.masterGridEvents.unbindAll()
-        this.masterGridEvents.bind(this.manager?.api, "rowClicked", this.handleMasterRowClicked)
-    }
-
-    handleMasterRowClicked = (event) => {
-        const rowData = rowDataFromGridEvent(this.manager?.api, event)
-        if (!rowData || rowData.wrhs_exca_fee_rt_no === this.selectedMasterValue) return
-
-        if (hasPendingChanges(this.detailManager)) {
-            blockIfPendingChanges(() => this.selectMaster(rowData.wrhs_exca_fee_rt_no))
-        } else {
-            this.selectMaster(rowData.wrhs_exca_fee_rt_no)
-        }
-    }
-
     selectFirstMasterRow() {
         if (!this.manager?.api) return
 
@@ -176,6 +183,10 @@ export default class extends MasterDetailGridController {
         if (this.detailManager?.api) {
             setManagerRowData(this.detailManager, [])
         }
+    }
+
+    beforeSearchReset() {
+        this.clearMasterSelection()
     }
 
     updateSelectedMasterLabel() {

@@ -1,7 +1,6 @@
 ﻿import { Controller } from "@hotwired/stimulus"
 import { showAlert } from "components/ui/alert"
-import { GridEventManager, resolveAgGridRegistration } from "controllers/grid/grid_event_manager"
-import { registerGridInstance } from "controllers/grid/core/grid_registration"
+import { GridEventManager } from "controllers/grid/grid_event_manager"
 
 export default class extends Controller {
   static targets = ["grid", "form", "keyword", "code"]
@@ -9,6 +8,7 @@ export default class extends Controller {
   connect() {
     this.gridEvents = new GridEventManager()
     this.gridApi = null
+    this.gridController = null
 
     this.messageListener = (event) => {
       if (event.data?.source === "search-popup-modal" && event.data?.type === "request-select") {
@@ -30,25 +30,20 @@ export default class extends Controller {
   disconnect() {
     this.gridEvents.unbindAll()
     this.gridApi = null
+    this.gridController = null
     if (this.messageListener) {
       window.removeEventListener("message", this.messageListener)
     }
   }
 
   registerGrid(event) {
-    registerGridInstance(event, this, [
-      {
-        target: this.hasGridTarget ? this.gridTarget : null,
-        controllerKey: "gridController"
-      }
-    ])
+    if (!this.hasGridTarget) return
 
-    const registration = resolveAgGridRegistration(event)
-    if (!registration || !this.hasGridTarget) return
+    const gridElement = event?.target?.closest?.("[data-controller='ag-grid']")
+    const { api, controller } = event.detail || {}
+    if (!gridElement || gridElement !== this.gridTarget || !api) return
 
-    const { gridElement, api } = registration
-    if (gridElement !== this.gridTarget) return
-
+    this.gridController = controller || null
     this.gridApi = api
     this.gridEvents.unbindAll()
     this.gridEvents.bind(this.gridApi, "rowDoubleClicked", this.handleRowDoubleClicked)

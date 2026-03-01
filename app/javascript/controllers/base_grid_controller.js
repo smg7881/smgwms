@@ -23,8 +23,14 @@
 import { Controller } from "@hotwired/stimulus"
 import { showAlert, confirmAction } from "components/ui/alert"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
-import { GridEventManager } from "controllers/grid/grid_event_manager"
-import { isApiAlive, setGridRowData, postJson, hasChanges } from "controllers/grid/grid_utils"
+import {
+  isApiAlive,
+  setGridRowData,
+  setManagerRowData,
+  focusFirstRow,
+  postJson,
+  hasChanges
+} from "controllers/grid/grid_utils"
 import { requestJson } from "controllers/grid/core/http_client"
 import {
   getSearchFormValue as getSearchFormValueFromBridge,
@@ -38,36 +44,59 @@ export default class BaseGridController extends Controller {
     batchUrl: String
   }
 
-  // ─── Lifecycle ───
-
   connect() {
-    // 단일 그리드 모드 호환용
     this.manager = null
     this.gridController = null
 
-    // 다중 그리드 레지스트리
     this.#gridRegistry = new Map()
-    this.#gridEvents = new GridEventManager()
     this.#expectedRoles = this.gridRoles()
+    if (!this.#expectedRoles || Object.keys(this.#expectedRoles).length === 0) {
+      this.#expectedRoles = null
+    }
+
+    this.#roleChildren = new Map()
+    this.#masterRoles = new Set()
+    this.#masterLastKeys = new Map()
+    this.#masterDispatchTokens = new Map()
+    this.#domBindings = new Map()
+    this.#roleApiBindings = new Map()
+    this.#allRolesReadyFired = false
+
+    if (this.#expectedRoles) {
+      this.#initializeRoleRelations()
+      this.#beforeSearchHandler = () => this.#handleBeforeSearch()
+      document.addEventListener("grid:before-search", this.#beforeSearchHandler)
+    }
   }
 
   disconnect() {
-    // 다중 그리드 정리
-    this.#gridEvents.unbindAll()
+    if (this.#beforeSearchHandler) {
+      document.removeEventListener("grid:before-search", this.#beforeSearchHandler)
+      this.#beforeSearchHandler = null
+    }
+
+    this.#gridRegistry.forEach((_entry, role) => {
+      this.#unbindRoleEvents(role)
+    })
+
     this.#gridRegistry.forEach(({ manager }) => {
       if (manager) manager.detach()
     })
     this.#gridRegistry.clear()
 
-    // 단일 그리드 정리
+    this.#roleChildren.clear()
+    this.#masterRoles.clear()
+    this.#masterLastKeys.clear()
+    this.#masterDispatchTokens.clear()
+    this.#domBindings.clear()
+    this.#roleApiBindings.clear()
+
     if (this.manager) {
       this.manager.detach()
       this.manager = null
     }
     this.gridController = null
   }
-
-  // ─── 그리드 등록 ───
 
   registerGrid(event) {
     const { api, controller } = event.detail
@@ -79,15 +108,10 @@ export default class BaseGridController extends Controller {
     }
   }
 
-  // ─── 서브 클래스 오버라이드 포인트 ───
-
-  // 다중 그리드 모드 시 역할-타겟 매핑 반환. null이면 단일 그리드 모드.
   gridRoles() { return null }
 
-  // 단일 CRUD 그리드 설정. null 반환 시 Manager 생성 스킵 (읽기 전용 그리드).
   configureManager() { return null }
 
-  // configure*Manager() 결과를 CRUD 설정과 등록 메타로 분리합니다.
   splitManagerConfig(rawConfig) {
     if (!rawConfig || typeof rawConfig !== "object") {
       return { managerConfig: rawConfig || null, registration: null }
@@ -97,7 +121,6 @@ export default class BaseGridController extends Controller {
     return { managerConfig, registration }
   }
 
-  // 메서드명(또는 getter 이름)으로 Manager 설정을 조회합니다.
   resolveManagerConfig(configMethod) {
     if (!configMethod) return null
 
@@ -107,10 +130,8 @@ export default class BaseGridController extends Controller {
     return managerConfig
   }
 
-  // 다중 그리드 모드에서 모든 그리드 등록이 완료되었을 때 호출되는 훅.
   onAllGridsReady() { }
-
-  // ─── 다중 그리드 접근 API ───
+  beforeSearchReset() { }
 
   gridApi(name) {
     return this.#gridRegistry.get(name)?.api || null
@@ -118,6 +139,10 @@ export default class BaseGridController extends Controller {
 
   gridCtrl(name) {
     return this.#gridRegistry.get(name)?.controller || null
+  }
+
+  gridManager(name) {
+    return this.#gridRegistry.get(name)?.manager || null
   }
 
   selectedRows(name) {
@@ -137,7 +162,14 @@ export default class BaseGridController extends Controller {
     if (ctrl?.refresh) ctrl.refresh()
   }
 
-  // ─── POST 헬퍼 (배치 액션 패턴) ───
+  selectFirstRow(name, { ensureVisible = true, select = false } = {}) {
+    const api = this.gridApi(name)
+    return focusFirstRow(api, { ensureVisible, select })
+  }
+
+  selectFirstMasterRow(masterRole = "master") {
+    return this.selectFirstRow(masterRole, { ensureVisible: true, select: false })
+  }
 
   async postAction(url, body, { confirmMessage, onSuccess, onFail } = {}) {
     if (confirmMessage && !confirmAction(confirmMessage)) return false
@@ -165,8 +197,6 @@ export default class BaseGridController extends Controller {
       return false
     }
   }
-
-  // ─── 단일 그리드 CRUD 액션 (기존 호환) ───
 
   addRow({
     manager = this.manager,
@@ -242,11 +272,16 @@ export default class BaseGridController extends Controller {
     return "저장이 완료되었습니다."
   }
 
-  // ─── Private ───
-
   #gridRegistry
-  #gridEvents
   #expectedRoles
+  #roleChildren
+  #masterRoles
+  #masterLastKeys
+  #masterDispatchTokens
+  #domBindings
+  #roleApiBindings
+  #allRolesReadyFired
+  #beforeSearchHandler
 
   #registerSingleGrid(api, controller) {
     this.gridController = controller
@@ -256,7 +291,6 @@ export default class BaseGridController extends Controller {
       this.manager = new GridCrudManager(config)
       this.manager.attach(api)
     } else {
-      // Manager 없이 API만 보관 (읽기 전용 그리드)
       this.manager = null
       this._singleGridApi = api
     }
@@ -269,17 +303,52 @@ export default class BaseGridController extends Controller {
     const matchedRole = this.#findRoleForElement(gridElement)
     if (!matchedRole) return
 
-    // 기존 등록 정리
     const existing = this.#gridRegistry.get(matchedRole)
+    this.#unbindRoleEvents(matchedRole)
     if (existing?.manager) existing.manager.detach()
 
-    this.#gridRegistry.set(matchedRole, { api, controller, manager: null })
+    const roleConfig = this.#expectedRoles[matchedRole] || {}
+    let manager = null
+    const managerConfig = this.#resolveRoleManagerConfig(matchedRole, roleConfig)
+    if (managerConfig) {
+      manager = new GridCrudManager(managerConfig)
+      manager.attach(api)
+    }
 
-    // 모든 그리드 등록 완료 체크
+    this.#gridRegistry.set(matchedRole, {
+      api,
+      controller,
+      manager,
+      element: gridElement
+    })
+
+    if (this.#masterRoles.has(matchedRole)) {
+      this.#bindMasterRoleEvents(matchedRole, gridElement, api)
+    }
+
     const roleNames = Object.keys(this.#expectedRoles)
-    if (roleNames.every((name) => this.#gridRegistry.has(name))) {
+    const allReady = roleNames.every((name) => this.#gridRegistry.has(name))
+    if (allReady && !this.#allRolesReadyFired) {
+      this.#allRolesReadyFired = true
       this.onAllGridsReady()
     }
+  }
+
+  #resolveRoleManagerConfig(roleName, roleConfig) {
+    const source = roleConfig?.manager
+    if (source == null) return null
+
+    let rawConfig = null
+    if (typeof source === "string") {
+      rawConfig = this.resolveManagerConfig(source)
+    } else if (typeof source === "function") {
+      rawConfig = source.call(this, { roleName, roleConfig })
+    } else {
+      rawConfig = source
+    }
+
+    const { managerConfig } = this.splitManagerConfig(rawConfig)
+    return managerConfig
   }
 
   #findRoleForElement(gridElement) {
@@ -287,8 +356,6 @@ export default class BaseGridController extends Controller {
 
     for (const [role, config] of Object.entries(this.#expectedRoles)) {
       const targetName = config.target
-      // Stimulus target 속성으로 매칭: data-<controller>-target="targetName"
-      // gridElement 자체 또는 그 부모가 target일 수 있으므로 closest와 querySelector 모두 시도
       const targetEl = this.#resolveTarget(targetName)
       if (!targetEl) continue
 
@@ -300,7 +367,6 @@ export default class BaseGridController extends Controller {
   }
 
   #resolveTarget(targetName) {
-    // Stimulus targets 배열에서 해당 타겟 엘리먼트를 가져옴
     const getter = `${targetName}Target`
     const hasGetter = `has${targetName.charAt(0).toUpperCase() + targetName.slice(1)}Target`
     if (this[hasGetter] && this[getter]) {
@@ -309,23 +375,191 @@ export default class BaseGridController extends Controller {
     return null
   }
 
-  // ─── Search Form 통합 연동 ───
+  #initializeRoleRelations() {
+    if (!this.#expectedRoles) return
 
-  /**
-   * 화면 내 search_form_controller 개체를 찾아 특정 필드의 값을 반환합니다.
-   * @param {string} fieldName 찾고자 하는 조건 필드명 (q 태그 제외, 예: 'workpl_cd')
-   * @param {Object} options 옵션 객체 { toUpperCase: true/false }
-   * @returns {string} 찾아낸 값
-   */
+    Object.entries(this.#expectedRoles).forEach(([roleName, config]) => {
+      if (config?.isMaster === true) {
+        this.#masterRoles.add(roleName)
+      }
+
+      const parentRole = config?.parentGrid
+      if (!parentRole || !this.#expectedRoles[parentRole]) return
+
+      if (!this.#roleChildren.has(parentRole)) {
+        this.#roleChildren.set(parentRole, [])
+      }
+      this.#roleChildren.get(parentRole).push(roleName)
+      this.#masterRoles.add(parentRole)
+    })
+  }
+
+  #bindMasterRoleEvents(roleName, gridElement, api) {
+    const rowFocusedHandler = (event) => {
+      const rowData = event?.detail?.data || null
+      this.#handleMasterRowFocused(roleName, rowData)
+    }
+
+    gridElement.addEventListener("ag-grid:rowFocused", rowFocusedHandler)
+    this.#domBindings.set(roleName, rowFocusedHandler)
+
+    const rowDataUpdatedHandler = () => {
+      this.#handleMasterRowDataUpdated(roleName)
+    }
+
+    if (isApiAlive(api)) {
+      api.addEventListener("rowDataUpdated", rowDataUpdatedHandler)
+      this.#roleApiBindings.set(roleName, [{ api, eventName: "rowDataUpdated", handler: rowDataUpdatedHandler }])
+    }
+  }
+
+  #unbindRoleEvents(roleName) {
+    const registration = this.#gridRegistry.get(roleName)
+
+    const rowFocusedHandler = this.#domBindings.get(roleName)
+    if (registration?.element && rowFocusedHandler) {
+      registration.element.removeEventListener("ag-grid:rowFocused", rowFocusedHandler)
+    }
+    this.#domBindings.delete(roleName)
+
+    const apiBindings = this.#roleApiBindings.get(roleName) || []
+    apiBindings.forEach(({ api, eventName, handler }) => {
+      if (isApiAlive(api)) {
+        api.removeEventListener(eventName, handler)
+      }
+    })
+    this.#roleApiBindings.delete(roleName)
+  }
+
+  #handleMasterRowDataUpdated(roleName) {
+    const childRoles = this.#roleChildren.get(roleName) || []
+    childRoles.forEach((childRole) => {
+      this.#clearRoleRows(childRole)
+      this.gridManager(childRole)?.resetTracking?.()
+    })
+
+    const roleConfig = this.#expectedRoles?.[roleName] || {}
+    if (roleConfig.autoLoadOnReady === false) return
+
+    const rowData = this.selectFirstMasterRow(roleName)
+    this.#handleMasterRowFocused(roleName, rowData)
+  }
+
+  #handleMasterRowFocused(roleName, rowData) {
+    if (!this.#expectedRoles) return
+
+    const dedupeKey = this.#resolveMasterDedupeKey(roleName, rowData)
+    if (dedupeKey !== null) {
+      const lastKey = this.#masterLastKeys.get(roleName)
+      if (lastKey === dedupeKey) return
+      this.#masterLastKeys.set(roleName, dedupeKey)
+    }
+
+    this.#dispatchMasterToChildren(roleName, rowData)
+  }
+
+  #resolveMasterDedupeKey(roleName, rowData) {
+    const roleConfig = this.#expectedRoles?.[roleName] || {}
+    const keyField = roleConfig.masterKeyField
+
+    if (!keyField) return null
+    if (!rowData) return "__EMPTY__"
+
+    const value = rowData[keyField]
+    return value == null ? "__EMPTY__" : String(value)
+  }
+
+  async #dispatchMasterToChildren(roleName, rowData) {
+    const childRoles = this.#roleChildren.get(roleName) || []
+    if (childRoles.length === 0) return
+
+    const token = (this.#masterDispatchTokens.get(roleName) || 0) + 1
+    this.#masterDispatchTokens.set(roleName, token)
+
+    const skipLoad = !rowData || rowData.__is_deleted || rowData.__is_new
+
+    await Promise.all(childRoles.map(async (childRole) => {
+      const roleConfig = this.#expectedRoles?.[childRole] || {}
+
+      if (typeof roleConfig.onMasterRowChange === "function") {
+        try {
+          roleConfig.onMasterRowChange.call(this, rowData)
+        } catch (error) {
+          console.error(`[${this.identifier}] onMasterRowChange error:`, error)
+        }
+      }
+
+      if (skipLoad) {
+        this.#clearRoleRows(childRole)
+        return
+      }
+
+      if (typeof roleConfig.detailLoader !== "function") return
+
+      try {
+        const loadedRows = await roleConfig.detailLoader.call(this, rowData, {
+          masterRole: roleName,
+          detailRole: childRole,
+          masterApi: this.gridApi(roleName),
+          detailApi: this.gridApi(childRole)
+        })
+
+        if (this.#masterDispatchTokens.get(roleName) !== token) return
+
+        const rows = Array.isArray(loadedRows) ? loadedRows : []
+        const manager = this.gridManager(childRole)
+        if (manager) {
+          setManagerRowData(manager, rows)
+        } else {
+          this.setRows(childRole, rows)
+        }
+      } catch (error) {
+        if (this.#masterDispatchTokens.get(roleName) !== token) return
+        console.error(`[${this.identifier}] detailLoader error:`, error)
+        this.#clearRoleRows(childRole)
+      }
+    }))
+  }
+
+  #clearRoleRows(roleName) {
+    const manager = this.gridManager(roleName)
+    if (manager) {
+      setManagerRowData(manager, [])
+      return
+    }
+
+    this.setRows(roleName, [])
+  }
+
+  #handleBeforeSearch() {
+    if (this.#expectedRoles) {
+      this.#masterLastKeys.clear()
+      this.#masterDispatchTokens.clear()
+
+      Object.keys(this.#expectedRoles).forEach((roleName) => {
+        this.#clearRoleRows(roleName)
+        this.gridManager(roleName)?.resetTracking?.()
+      })
+      this.beforeSearchReset()
+      return
+    }
+
+    if (this.manager) {
+      setManagerRowData(this.manager, [])
+      this.beforeSearchReset()
+      return
+    }
+
+    if (isApiAlive(this._singleGridApi)) {
+      setGridRowData(this._singleGridApi, [])
+    }
+    this.beforeSearchReset()
+  }
+
   getSearchFormValue(fieldName, { toUpperCase = true } = {}) {
     return getSearchFormValueFromBridge(this.application, fieldName, { toUpperCase })
   }
 
-  /**
-   * 화면 내 search_form 컨테이너에서 특정 필드의 DOM 엘리먼트를 반환합니다.
-   * @param {string} fieldName - q 태그 제외 필드명 (예: 'workpl_cd')
-   * @returns {Element|null}
-   */
   getSearchFieldElement(fieldName) {
     return getSearchFieldElementFromBridge(fieldName)
   }

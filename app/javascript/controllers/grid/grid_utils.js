@@ -1,9 +1,8 @@
 import { showAlert } from "components/ui/alert"
 import { isApiAlive } from "controllers/grid/core/api_guard"
 import { getCsrfToken, fetchJson as fetchJsonCore, requestJson } from "controllers/grid/core/http_client"
-import { registerGridInstance } from "controllers/grid/core/grid_registration"
 
-export { isApiAlive, getCsrfToken, registerGridInstance }
+export { isApiAlive, getCsrfToken }
 
 export function uuid() {
   return `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`

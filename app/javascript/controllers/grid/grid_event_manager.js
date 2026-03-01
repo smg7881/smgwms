@@ -6,25 +6,6 @@
  */
 import { isApiAlive } from "controllers/grid/core/api_guard"
 
-// 메인 AG Grid 컨트롤러가 바인딩되는 CSS 선택자
-const AG_GRID_SELECTOR = "[data-controller='ag-grid']"
-
-/**
- * resolveAgGridRegistration
- * 
- * 이벤트 타겟으로부터 가장 가까운 AG Grid 컨트롤러 엘리먼트를 찾고, 
- * 그 엘리먼트에 연결된 API와 컨트롤러 인스턴스를 반환하는 함수입니다.
- */
-export function resolveAgGridRegistration(event) {
-  const gridElement = event?.target?.closest?.(AG_GRID_SELECTOR)
-  if (!gridElement) return null
-
-  const { api, controller } = event.detail || {}
-  if (!api) return null
-
-  return { gridElement, api, controller }
-}
-
 /**
  * rowDataFromGridEvent
  * 

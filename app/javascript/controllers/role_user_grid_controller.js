@@ -8,9 +8,7 @@
  */
 import BaseGridController from "controllers/base_grid_controller"
 import { showAlert, confirmAction } from "components/ui/alert"
-import { resolveAgGridRegistration } from "controllers/grid/grid_event_manager"
 import { isApiAlive, postJson, fetchJson, setGridRowData } from "controllers/grid/grid_utils"
-import { registerGridInstance } from "controllers/grid/core/grid_registration"
 
 export default class extends BaseGridController {
   static targets = [
@@ -25,6 +23,13 @@ export default class extends BaseGridController {
     availableUrl: String, // 특정 Role 기준 배정 안된 유저 목록 패치 엔드포인트
     assignedUrl: String,  // 특정 Role 기준 이미 배정된 유저 목록 패치 엔드포인트
     saveUrl: String       // 변경 내역 최종 서버 커밋 엔드포인트
+  }
+
+  gridRoles() {
+    return {
+      left: { target: "leftGrid" },
+      right: { target: "rightGrid" }
+    }
   }
 
   connect() {
@@ -53,33 +58,12 @@ export default class extends BaseGridController {
     super.disconnect()
   }
 
-  // AG Grid 컨테이너들이 렌더링되면서 차례차례 dispatchEvent를 일으킬 때 캐치.
-  registerGrid(event) {
-    registerGridInstance(event, this, [
-      { target: this.hasLeftGridTarget ? this.leftGridTarget : null, controllerKey: "leftGridController", managerKey: "leftApi" },
-      { target: this.hasRightGridTarget ? this.rightGridTarget : null, controllerKey: "rightGridController", managerKey: "rightApi" }
-    ], () => {
-      // 공통 registerGridInstance 특성상 managerKey 에 new GridCrudManager()를 넣으려 시도할 수 있는데,
-      // 역할-사용자 화면은 자체 API만 필요하므로 예외적으로 controllerKey만 매핑하거나, 여기서 api만 직접 매핑.
-      // (registerGridInstance는 Manager 를 생성하지만 configMethod가 없으면 api만 넣지 않으므로 수동할당)
-    })
-
-    // 수동 할당 보정
-    const registration = resolveAgGridRegistration(event)
-    if (!registration) return
-    const { gridElement, api, controller } = registration
-
-    if (gridElement === this.leftGridTarget) {
-      this.leftGridController = controller
-      this.leftApi = api
-    } else if (gridElement === this.rightGridTarget) {
-      this.rightGridController = controller
-      this.rightApi = api
-    }
-
-    if (this.leftApi && this.rightApi) {
-      this.loadUsers()
-    }
+  onAllGridsReady() {
+    this.leftGridController = this.gridCtrl("left")
+    this.rightGridController = this.gridCtrl("right")
+    this.leftApi = this.gridApi("left")
+    this.rightApi = this.gridApi("right")
+    this.loadUsers()
   }
 
   // 상단 권한조건(콤보박스) 이 변경되었을 때 트리거

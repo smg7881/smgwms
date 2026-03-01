@@ -1,8 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import { showAlert, confirmAction } from "components/ui/alert"
 import { isApiAlive, postJson, fetchJson, setGridRowData, buildCompositeKey } from "controllers/grid/grid_utils"
-import { registerGridInstance } from "controllers/grid/core/grid_registration"
-import { resolveAgGridRegistration } from "controllers/grid/grid_event_manager"
 
 export default class extends Controller {
   static targets = [
@@ -40,18 +38,14 @@ export default class extends Controller {
   }
 
   registerGrid(event) {
-    registerGridInstance(event, this, [
-      { target: this.hasMappedGridTarget ? this.mappedGridTarget : null, managerKey: "mappedApi" },
-      { target: this.hasUnmappedGridTarget ? this.unmappedGridTarget : null, managerKey: "unmappedApi" }
-    ])
+    const gridElement = event?.target?.closest?.("[data-controller='ag-grid']")
+    const { api } = event.detail || {}
+    if (!gridElement || !api) return
 
-    // Fallback assignment to ensure the APIs are captured
-    const registration = resolveAgGridRegistration(event)
-    if (!registration) return
-    if (registration.gridElement === this.mappedGridTarget) {
-      this.mappedApi = registration.api
-    } else if (registration.gridElement === this.unmappedGridTarget) {
-      this.unmappedApi = registration.api
+    if (this.hasMappedGridTarget && gridElement === this.mappedGridTarget) {
+      this.mappedApi = api
+    } else if (this.hasUnmappedGridTarget && gridElement === this.unmappedGridTarget) {
+      this.unmappedApi = api
     }
   }
 

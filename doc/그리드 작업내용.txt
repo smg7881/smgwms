@@ -1,0 +1,34 @@
+/sc:analyze --ultrathink 
+" # 분석소스 위치
+   - D:\myProject\smgWms\app\javascript\controllers\ag_grid\ 폴더 전체 소스 
+   - D:\myProject\smgWms\app\javascript\controllers\grid\ 폴더 전체 소스
+   - D:\myProject\smgWms\app\javascript\controllers\ag_grid_controller.js
+   - D:\myProject\smgWms\app\javascript\controllers\base_crud_controller.js
+   - D:\myProject\smgWms\app\javascript\controllers\base_grid_controller.js
+   - D:\myProject\smgWms\app\javascript\controllers\master_detail_grid_controller.js
+  # 원하는 기능
+   1. 이 소스을 분석하여 유지보수 하기 쉽게 소스을 간결하게 작성하도록 변경을 해주세요. 소스을 합치거나 복잡하면 분리을 해주세요 , 중복된 소스을 찾아사 하나로 합쳐주세요
+     - 예로 D:\myProject\smgWms\app\javascript\controllers\ag_grid\data_loader.js 이 소스을 보면 조회 다른곳도 같은 기능으로 조회 기능이 있습니다.
+       중복되는 기능이라면 하나로 합쳐주세요. 그리고 
+   2. D:\myProject\smgWms\app\javascript\controllers\grid\grid_dependent_select_utils.js
+      D:\myProject\smgWms\app\javascript\controllers\grid\grid_event_manager.js
+      D:\myProject\smgWms\app\javascript\controllers\grid\core\grid_registration.js 이 소스들이 꼭 필요한지 다시 한번 검증을 해주세요. 	  
+   3. 다른 소스들도 꼭 필요한지 검증을 해주세요. 소스가 너무 복잡한것 같습니다. 
+   4. 최대한 적극적으로 ag-grid의 api을 사용 작업하도록 소스을 변경해주세요
+     - 예로 D:\myProject\smgWms\app\javascript\controllers\code_grid_controller.js 이 소스에 handleMasterRowChange 이 함수을 보면
+  	   제가 원하는것은 ag-grid가 조회가 되면 row건수을 읽어서 1 이상이면 첫번째 row을 데이터을 읽어서 그 키로 detail을    
+       조회하도록 하는것입니다.  
+	   이벤트을 적극적으로 이용하면 master 조회 전 master와 detail의 row을 초기화 하고 master에서 여기서 rowfoucsChange 이벤트 사용 하여 Detail 조회 기능을 추가하면
+	   row을 첫번째 로 이동하면 자동으로 detail이 조회된다
+	5. 초기화 값을 세팅하면 또 다른 세팅값을 입력 안해도 처음한번에 세팅값으로 다른 설정도 함께 설정하도록 한다
+	   예) D:\myProject\smgWms\app\javascript\controllers\code_grid_controller.js 에서 보면 configureManager 이런식으로 속성값을 object로 
+       넘기면 끝나도록 변경을 해주세요. 또 세팅값을 받아서 작업을 하지 말아주세요.
+	6. D:\myProject\smgWms\app\javascript\controllers\master_detail_grid_controller.js 이소스가 꼭 필요한지 알려주세요. 이것은 삭제을 하고 싶습니다. 이 소스가 가지고 있는 기능을 공통에서 할수 있도록 변경하고 싶습니다.   
+  # 최종 목표
+    1.  D:\myProject\smgWms\app\javascript\controllers\base_grid_controller.js 에 grid 기본 기능 제공
+	   - 데이터 조회, 행추가 , 행삭제, 저장, 그리등의 생성하기 위한 초기값 자동 세팅
+	   - 그리드의 초기값 중 상위 그리드 을 추가하여 그리드와 그리드 관계을 설정하고 싶다.
+	      상위 그리드값이 존재하면 상위 그리드가 마스터가 되고 입력한 그리드는 detail 그리드가 된다.
+		  마스터가 그리드가 조회가 되면 동시에 detail 그리드가 조회가 되도록 기능을 넣고 싶다. 
+		  동시 조회 기능은 위에서 설명한 것처럼 ag-grid위 api을 최대한 이용하여 개발을 한다
+	   - 상위 그리드 값이 없으면 master 그리드로 간주하여 조회 조건의 조회 버튼을 클릭하면 자동으로 조회 되도록 한다 

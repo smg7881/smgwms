@@ -1,6 +1,5 @@
 ﻿import { Controller } from "@hotwired/stimulus"
 import { showAlert, confirmAction } from "components/ui/alert"
-import { registerGridInstance } from "controllers/grid/core/grid_registration"
 
 export default class extends Controller {
   static targets = ["grid", "summary", "uploadFileInput"]
@@ -19,9 +18,13 @@ export default class extends Controller {
   }
 
   registerGrid(event) {
-    registerGridInstance(event, this, [
-      { target: this.hasGridTarget ? this.gridTarget : null, controllerKey: "gridController" }
-    ])
+    if (!this.hasGridTarget) return
+
+    const gridElement = event?.target?.closest?.("[data-controller='ag-grid']")
+    const { controller } = event.detail || {}
+    if (!gridElement || gridElement !== this.gridTarget) return
+
+    this.gridController = controller || null
   }
 
   preview(event) {
@@ -154,3 +157,4 @@ export default class extends Controller {
     return this.element.querySelector('input[type="file"][name="q[upload_file]"]')
   }
 }
+

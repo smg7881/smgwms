@@ -1,46 +1,72 @@
 ﻿/**
  * code_grid_controller.js
- * 
- * [공통] BaseGridController를 상속하는 마스터-디테일(1:N) 구조의 투인원(2 in 1) 컨트롤러입니다.
- * - 좌측(혹은 위)엔 그룹코드(Master) 그리드, 우측엔 상세코드(Detail) 그리드가 공존합니다.
- * - 마스터 행을 클릭하면 하위 디테일 그리드가 Ajax로 재로딩됩니다.
- * - Master, Detail 각각 독립적인 C/U/D 행위를 할 수 있으며 저장 API도 각각 나뉩니다.
+ *
+ * 그룹코드(마스터) + 상세코드(디테일) 관리 화면
+ * - BaseGridController의 gridRoles(parentGrid) 기반 공통 마스터-디테일 연동 사용
  */
-import MasterDetailGridController from "controllers/master_detail_grid_controller"
+import BaseGridController from "controllers/base_grid_controller"
 import { showAlert } from "components/ui/alert"
-import { isApiAlive, fetchJson, setManagerRowData, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel } from "controllers/grid/grid_utils"
+import {
+  isApiAlive,
+  fetchJson,
+  setManagerRowData,
+  hasPendingChanges,
+  blockIfPendingChanges,
+  buildTemplateUrl,
+  refreshSelectionLabel
+} from "controllers/grid/grid_utils"
 
-export default class extends MasterDetailGridController {
-  // 타겟 확정 (2개의 거대한 그리드 컨테이너 및 텍스트 라벨)
-  static targets = [...MasterDetailGridController.targets, "masterGrid", "detailGrid", "selectedCodeLabel"]
+export default class extends BaseGridController {
+  static targets = [...BaseGridController.targets, "masterGrid", "detailGrid", "selectedCodeLabel"]
 
-  // 백엔드 엔드포인트 세팅
   static values = {
-    ...MasterDetailGridController.values,
-    masterBatchUrl: String,             // 거시적인 1단계 그룹코드 저장 URL
-    detailBatchUrlTemplate: String,     // 하위 상세코드 배열 저장 URL 템플릿 (':code' 가 치환됨)
-    detailListUrlTemplate: String,      // 특정 부모를 선택했을때 긁어올 상세코드 조회 URL 템플릿
-    selectedCode: String                // 현재 클릭되어 활성화중인 마스터 PK
+    ...BaseGridController.values,
+    masterBatchUrl: String,
+    detailBatchUrlTemplate: String,
+    detailListUrlTemplate: String,
+    selectedCode: String
   }
 
   connect() {
     super.connect()
-    this.detailGridController = null    // 디테일 쪽 네이티브 컨트롤러 캐싱용
-    this.detailManager = null           // 디테일 쪽 독립 CRUD 매니저 캐싱용
+    this.refreshSelectedCodeLabel()
   }
 
-  disconnect() {
-    if (this.detailManager) {
-      this.detailManager.detach()
-      this.detailManager = null
+  gridRoles() {
+    return {
+      master: {
+        target: "masterGrid",
+        manager: this.masterManagerConfig(),
+        masterKeyField: "code"
+      },
+      detail: {
+        target: "detailGrid",
+        manager: this.detailManagerConfig(),
+        parentGrid: "master",
+        onMasterRowChange: (rowData) => {
+          this.selectedCodeValue = rowData?.code || ""
+          this.refreshSelectedCodeLabel()
+          this.clearDetailRows()
+        },
+        detailLoader: async (rowData) => {
+          const code = rowData?.code
+          const hasLoadableCode = Boolean(code) && !rowData?.__is_deleted && !rowData?.__is_new
+          if (!hasLoadableCode) return []
+
+          try {
+            const url = buildTemplateUrl(this.detailListUrlTemplateValue, ":code", code)
+            const rows = await fetchJson(url)
+            return Array.isArray(rows) ? rows : []
+          } catch {
+            showAlert("상세코드 목록 조회에 실패했습니다.")
+            return []
+          }
+        }
+      }
     }
-
-    this.detailGridController = null
-    super.disconnect()
   }
 
-  // (오버라이드) 좌측 '그룹코드(Master)' 쪽의 CRUD 명세.
-  configureManager() {
+  masterManagerConfig() {
     return {
       pkFields: ["code"],
       fields: {
@@ -54,17 +80,11 @@ export default class extends MasterDetailGridController {
       blankCheckFields: ["code", "code_name"],
       comparableFields: ["code_name", "sys_sctn_cd", "rmk", "use_yn"],
       firstEditCol: "code",
-      pkLabels: { code: "코드" },
-      // 마스터 그리드가 Ajax로 확 새로 그려졌을 때 진입되는 콜백
-      onRowDataUpdated: () => {
-        this.detailManager?.resetTracking?.()
-        this.selectFirstMasterRow()
-      }
+      pkLabels: { code: "코드" }
     }
   }
 
-  // (자체추가) 우측 '상세코드(Detail)' 쪽의 CRUD 명세.
-  configureDetailManager() {
+  detailManagerConfig() {
     return {
       pkFields: ["detail_code"],
       fields: {
@@ -83,7 +103,7 @@ export default class extends MasterDetailGridController {
         use_yn: "trimUpperDefault:Y"
       },
       defaultRow: {
-        code: "", // 외래키로 마스터 코드 주입 필요
+        code: "",
         detail_code: "",
         detail_code_name: "",
         short_name: "",
@@ -101,82 +121,56 @@ export default class extends MasterDetailGridController {
       blankCheckFields: ["detail_code", "detail_code_name"],
       comparableFields: ["detail_code_name", "short_name", "upper_code", "upper_detail_code", "rmk", "attr1", "attr2", "attr3", "attr4", "attr5", "sort_order", "use_yn"],
       firstEditCol: "detail_code",
-      pkLabels: { detail_code: "상세코드" },
-      registration: {
-        targetName: "detailGrid",
-        controllerKey: "detailGridController",
-        managerKey: "detailManager"
-      }
+      pkLabels: { detail_code: "상세코드" }
     }
   }
 
-  isDetailReady() {
-    return isApiAlive(this.detailManager?.api)
+  get masterManager() {
+    return this.gridManager("master")
   }
 
-  // 마스터 포커스가 바뀔 때 연쇄동작의 심볼
-  async handleMasterRowChange(rowData) {
-    if (!this.isDetailReady()) return
+  get detailManager() {
+    return this.gridManager("detail")
+  }
 
-    this.selectedCodeValue = rowData?.code || ""
+  beforeSearchReset() {
+    this.selectedCodeValue = ""
     this.refreshSelectedCodeLabel()
-    this.clearDetailRows()
-
-    const code = rowData?.code
-    const hasLoadableCode = Boolean(code) && !rowData?.__is_deleted && !rowData?.__is_new
-    if (!hasLoadableCode) return
-
-    await this.loadDetailRows(code)
   }
-
-  // --- HTML 버튼 바인딩 파트 --- 
 
   addMasterRow() {
     this.addRow({
-      manager: this.manager,
+      manager: this.masterManager,
       onAdded: (rowData) => {
-        // 행 추가되자마자 포커스를 그쪽으로 옮기고, 내부적으로 디테일은 백지화 됨
-        this.handleMasterRowChange(rowData)
+        this.selectedCodeValue = rowData?.code || ""
+        this.refreshSelectedCodeLabel()
+        this.clearDetailRows()
       }
     })
   }
 
   deleteMasterRows() {
-    this.deleteRows()
+    this.deleteRows({ manager: this.masterManager })
   }
 
   async saveMasterRows() {
     await this.saveRowsWith({
-      manager: this.manager,
+      manager: this.masterManager,
       batchUrl: this.masterBatchUrlValue,
       saveMessage: "코드 데이터가 저장되었습니다.",
-      onSuccess: () => this.afterSaveSuccess()
+      onSuccess: () => this.refreshGrid("master")
     })
   }
 
-  async afterSaveSuccess() {
-    if (!isApiAlive(this.manager?.api) || !this.gridController?.urlValue) return
-    try {
-      const rows = await fetchJson(this.gridController.urlValue)
-      setManagerRowData(this.manager, rows)
-      this.selectFirstMasterRow()
-    } catch {
-      // 마스터 재조회 실패 시 무시
-    }
-  }
-
-  // ===================== [Detail Area] =========================
-
   addDetailRow() {
     if (!this.detailManager) return
-    if (this.blockDetailActionIfMasterChanged()) return // 마스터가 저장되어 결함없는 상태인지 확인
+    if (this.blockDetailActionIfMasterChanged()) return
 
     if (!this.selectedCodeValue) {
       showAlert("코드를 먼저 선택해주세요.")
       return
     }
 
-    // 그룹코드를 강제할당하여 추가
     this.addRow({
       manager: this.detailManager,
       overrides: { code: this.selectedCodeValue }
@@ -204,48 +198,24 @@ export default class extends MasterDetailGridController {
       manager: this.detailManager,
       batchUrl,
       saveMessage: "상세코드 데이터가 저장되었습니다.",
-      onSuccess: () => this.loadDetailRows(this.selectedCodeValue)
+      onSuccess: () => this.refreshGrid("master")
     })
-  }
-
-  async loadDetailRows(code) {
-    if (!isApiAlive(this.detailManager?.api)) return
-
-    if (!code) {
-      this.clearDetailRows()
-      return
-    }
-
-    try {
-      const url = buildTemplateUrl(this.detailListUrlTemplateValue, ":code", code)
-      const rows = await fetchJson(url)
-      setManagerRowData(this.detailManager, rows)
-    } catch {
-      showAlert("상세코드 목록 조회에 실패했습니다.")
-    }
   }
 
   clearDetailRows() {
     setManagerRowData(this.detailManager, [])
   }
 
-  // 조회 직전 상세코드 그리드를 비웁니다.
-  clearAllDetails() {
-    this.clearDetailRows()
-  }
-
-  // 상단 부제목 영역에 가시화용
   refreshSelectedCodeLabel() {
     if (!this.hasSelectedCodeLabelTarget) return
     refreshSelectionLabel(this.selectedCodeLabelTarget, this.selectedCodeValue, "코드", "코드를 먼저 선택해주세요.")
   }
 
-  // 마스터쪽에 C/U/D가 발생한 상태인지 체크 (종속성 무결성 보호장치용)
   hasMasterPendingChanges() {
-    return hasPendingChanges(this.manager)
+    return hasPendingChanges(this.masterManager)
   }
 
   blockDetailActionIfMasterChanged() {
-    return blockIfPendingChanges(this.manager, "마스터 코드")
+    return blockIfPendingChanges(this.masterManager, "마스터 코드")
   }
 }
