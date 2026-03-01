@@ -23,9 +23,14 @@ import {
   syncDetailField as syncDetailFieldUtil,
   markCurrentMasterRowUpdated,
   refreshMasterRowCells,
-  findMasterNodeByData
+  toDateInputValue
 } from "controllers/grid/grid_form_utils"
 import { switchTab, activateTab } from "controllers/ui_utils"
+import {
+  popupRootForField,
+  setPopupValues,
+  setPopupDisabled
+} from "controllers/grid/grid_popup_utils"
 
 // 코드성 필드: 상세 폼/그리드 입력 시 대문자 정규화 대상
 const CODE_FIELDS = [
@@ -82,7 +87,6 @@ export default class extends BaseGridController {
   connect() {
     super.connect()
 
-    this.financialInstitutionNameCache = new Map()
     this.currentMasterRow = null
     this.activeTab = "basic"
 
@@ -108,7 +112,6 @@ export default class extends BaseGridController {
     unbindDetailFieldEvents(this)
 
     this.currentMasterRow = null
-    this.financialInstitutionNameCache = null
 
     super.disconnect()
   }
@@ -591,7 +594,7 @@ export default class extends BaseGridController {
     if (rawValue == null) return ""
 
     if (DATE_FIELDS.includes(fieldName)) {
-      return this.toDateInputValue(rawValue)
+      return toDateInputValue(rawValue)
     }
 
     return rawValue.toString()
@@ -610,7 +613,7 @@ export default class extends BaseGridController {
     }
 
     if (DATE_FIELDS.includes(fieldName)) {
-      return this.toDateInputValue(value)
+      return toDateInputValue(value)
     }
 
     if (fieldName === "remk") {
@@ -620,112 +623,23 @@ export default class extends BaseGridController {
     return value.trim()
   }
 
-  // 날짜형 문자열을 yyyy-mm-dd로 변환
-  toDateInputValue(value) {
-    const source = (value || "").toString().trim()
-    if (source === "") return ""
-    if (/^\d{4}-\d{2}-\d{2}$/.test(source)) return source
-
-    const parsed = new Date(source)
-    if (Number.isNaN(parsed.getTime())) return ""
-
-    const yyyy = parsed.getFullYear()
-    const mm = `${parsed.getMonth() + 1}`.padStart(2, "0")
-    const dd = `${parsed.getDate()}`.padStart(2, "0")
-    return `${yyyy}-${mm}-${dd}`
-  }
-
   // popup 필드의 code/display 표시 동기화
   syncPopupFieldPresentation(fieldElement, key, value, rowData = null) {
-    const popupRoot = this.popupRootForField(fieldElement)
+    const popupRoot = popupRootForField(fieldElement)
     if (!popupRoot || !key) return
-
-    const codeDisplay = popupRoot.querySelector("[data-search-popup-target='codeDisplay']")
-    if (codeDisplay) {
-      codeDisplay.value = value || ""
-    }
-
-    const displayInput = popupRoot.querySelector("[data-search-popup-target='display']")
-    if (!displayInput) return
 
     if (key === "fnc_or_cd") {
       const seededName = (rowData?.fnc_or_nm || "").toString().trim()
-      displayInput.value = seededName || value || ""
-      this.resolveFinancialInstitutionNameForPopup(popupRoot, value)
+      setPopupValues(popupRoot, value, seededName || value)
+    } else {
+      setPopupValues(popupRoot, value)
     }
   }
 
   // popup 필드 비활성화 상태 동기화
   togglePopupFieldDisabled(fieldElement, disabled) {
-    const popupRoot = this.popupRootForField(fieldElement)
-    if (!popupRoot) return
-
-    const displayInput = popupRoot.querySelector("[data-search-popup-target='display']")
-    if (displayInput) {
-      displayInput.disabled = disabled
-    }
-
-    const codeDisplay = popupRoot.querySelector("[data-search-popup-target='codeDisplay']")
-    if (codeDisplay) {
-      codeDisplay.disabled = true
-    }
-
-    const openButton = popupRoot.querySelector("button[data-action='search-popup#open']")
-    if (openButton) {
-      openButton.disabled = disabled
-    }
-  }
-
-  // 상세 필드가 popup 타입인지 판별 후 루트 반환
-  popupRootForField(fieldElement) {
-    if (!fieldElement) return null
-    if (fieldElement.dataset.searchPopupTarget !== "code") return null
-
-    return fieldElement.closest("[data-controller~='search-popup']")
-  }
-
-  // 금융기관명 지연 조회 + 캐시
-  async resolveFinancialInstitutionNameForPopup(popupRoot, code) {
-    const normalizedCode = (code || "").toString().trim().toUpperCase()
-    if (!popupRoot || !normalizedCode) return
-
-    const displayInput = popupRoot.querySelector("[data-search-popup-target='display']")
-    if (!displayInput) return
-
-    const cachedName = this.financialInstitutionNameCache?.get(normalizedCode)
-    if (cachedName) {
-      const currentDisplay = displayInput.value.trim()
-      if (currentDisplay === "" || currentDisplay.toUpperCase() === normalizedCode) {
-        displayInput.value = cachedName
-      }
-      return
-    }
-
-    try {
-      const query = new URLSearchParams({
-        "search_popup_form[fnc_or_cd]": normalizedCode,
-        "search_popup_form[use_yn]": "Y"
-      })
-      const rows = await fetchJson(`/search_popups/financial_institution?format=json&${query.toString()}`)
-      const matched = Array.isArray(rows)
-        ? rows.find((row) => {
-          const rowCode = String(row?.fnc_or_cd ?? row?.code ?? "").trim().toUpperCase()
-          return rowCode === normalizedCode
-        })
-        : null
-
-      const resolvedName = String(matched?.fnc_or_nm ?? matched?.name ?? "").trim()
-      if (!resolvedName) return
-
-      this.financialInstitutionNameCache?.set(normalizedCode, resolvedName)
-
-      const currentDisplay = displayInput.value.trim()
-      if (currentDisplay === "" || currentDisplay.toUpperCase() === normalizedCode) {
-        displayInput.value = resolvedName
-      }
-    } catch {
-      // noop
-    }
+    const popupRoot = popupRootForField(fieldElement)
+    if (popupRoot) setPopupDisabled(popupRoot, disabled)
   }
 
   // 마스터 셀 입력 정규화 (코드/사업자번호)

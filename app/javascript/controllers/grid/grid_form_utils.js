@@ -8,6 +8,23 @@
 import { isApiAlive } from "controllers/grid/grid_utils"
 import { getResourceFormValueFromElement, setResourceFormValueFromElement } from "controllers/grid/core/resource_form_bridge"
 
+/**
+ * 날짜형 문자열을 input[type=date] 호환 형식(yyyy-mm-dd)으로 변환
+ */
+export function toDateInputValue(value) {
+    const source = (value || "").toString().trim()
+    if (source === "") return ""
+    if (/^\d{4}-\d{2}-\d{2}$/.test(source)) return source
+
+    const parsed = new Date(source)
+    if (Number.isNaN(parsed.getTime())) return ""
+
+    const yyyy = parsed.getFullYear()
+    const mm = `${parsed.getMonth() + 1}`.padStart(2, "0")
+    const dd = `${parsed.getDate()}`.padStart(2, "0")
+    return `${yyyy}-${mm}-${dd}`
+}
+
 function withDetailSyncSuppressed(controller, callback) {
     const previous = controller._suppressDetailFieldSync === true
     controller._suppressDetailFieldSync = true

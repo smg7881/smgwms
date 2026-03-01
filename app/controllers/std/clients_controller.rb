@@ -246,7 +246,7 @@ class Std::ClientsController < Std::BaseController
     end
 
     def clients_scope
-      scope = StdBzacMst.ordered
+      scope = StdBzacMst.ordered.includes(:financial_institution)
 
       if search_bzac_code.present?
         scope = scope.where("bzac_cd LIKE ?", "%#{search_bzac_code}%")
@@ -393,6 +393,7 @@ class Std::ClientsController < Std::BaseController
         bilg_bzac_cd: client.bilg_bzac_cd,
         elec_taxbill_yn_cd: client.elec_taxbill_yn_cd,
         fnc_or_cd: client.fnc_or_cd,
+        fnc_or_nm: client.financial_institution&.fnc_or_nm.to_s,
         acnt_no_cd: client.acnt_no_cd,
         zip_cd: client.zip_cd,
         addr_cd: client.addr_cd,

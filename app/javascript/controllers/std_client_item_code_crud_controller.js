@@ -1,4 +1,5 @@
 import BaseCrudController from "controllers/base_crud_controller"
+import { syncAllPopupDisplaysFromCodes } from "controllers/grid/grid_popup_utils"
 
 export default class extends BaseCrudController {
   static resourceName = "client_item_code"
@@ -159,21 +160,7 @@ export default class extends BaseCrudController {
   }
 
   syncPopupDisplaysFromCodes() {
-    const wrappers = this.element.querySelectorAll("[data-controller~='search-popup']")
-    wrappers.forEach((wrapper) => {
-      const codeInput = wrapper.querySelector("[data-search-popup-target='code']")
-      const codeDisplay = wrapper.querySelector("[data-search-popup-target='codeDisplay']")
-      const displayInput = wrapper.querySelector("[data-search-popup-target='display']")
-      if (!codeInput) return
-
-      const codeValue = String(codeInput.value || "").trim()
-      if (codeDisplay) {
-        codeDisplay.value = codeValue
-      }
-      if (displayInput && String(displayInput.value || "").trim() === "") {
-        displayInput.value = codeValue
-      }
-    })
+    syncAllPopupDisplaysFromCodes(this.element)
   }
 
   formatDateTime(value) {

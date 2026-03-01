@@ -1,6 +1,12 @@
 class StdBzacMst < ApplicationRecord
   self.table_name = "std_bzac_mst"
 
+  belongs_to :financial_institution,
+             class_name: "StdFinancialInstitution",
+             foreign_key: :fnc_or_cd,
+             primary_key: :fnc_or_cd,
+             optional: true
+
   has_many :ofcrs,
            class_name: "StdBzacOfcr",
            foreign_key: :bzac_cd,
