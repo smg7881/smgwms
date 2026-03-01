@@ -1395,6 +1395,12 @@ select.ts-hidden-accessible {
   box-shadow: 0 0 0 2px rgba(248, 81, 73, 0.2) !important;
 }
 
+/* 검색 비활성화 select: readonly input의 텍스트 커서 숨김 */
+.ts-wrapper .ts-control input[readonly] {
+  caret-color: transparent;
+  cursor: pointer;
+}
+
 .ts-wrapper .ts-control input {
   color: #e6edf3 !important;
   font-size: 13px !important;

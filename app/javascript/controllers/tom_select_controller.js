@@ -49,7 +49,10 @@ export default class extends Controller {
     }
 
     if (!this.searchableValue) {
-      config.controlInput = null  // 키 입력 차단 (검색 비활성화)
+      // readonly input: 문자 검색은 막고 포커스·화살표키 네비게이션은 허용
+      const readonlyInput = document.createElement('input')
+      readonlyInput.setAttribute('readonly', '')
+      config.controlInput = readonlyInput
     }
 
     this.#ts = new TS(this.element, config)
