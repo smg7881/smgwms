@@ -6,6 +6,64 @@
  */
 
 import { isApiAlive } from "controllers/grid/grid_utils"
+import { getResourceFormValueFromElement, setResourceFormValueFromElement } from "controllers/grid/core/resource_form_bridge"
+
+function withDetailSyncSuppressed(controller, callback) {
+    const previous = controller._suppressDetailFieldSync === true
+    controller._suppressDetailFieldSync = true
+
+    try {
+        callback()
+    } finally {
+        controller._suppressDetailFieldSync = previous
+    }
+}
+
+function setDetailFieldValue(controller, fieldEl, value) {
+    const bridged = setResourceFormValueFromElement(controller.application, fieldEl, value)
+    if (bridged) return
+
+    const normalized = value == null ? "" : value
+
+    if (fieldEl.type === "checkbox") {
+        fieldEl.checked = normalized === true || fieldEl.value === String(normalized)
+        return
+    }
+
+    if (fieldEl.type === "radio") {
+        fieldEl.checked = fieldEl.value === String(normalized)
+        return
+    }
+
+    if (fieldEl.tagName === "SELECT" && fieldEl.multiple) {
+        const values = Array.isArray(normalized) ? normalized.map((v) => String(v)) : [String(normalized)]
+        Array.from(fieldEl.options).forEach((option) => {
+            option.selected = values.includes(option.value)
+        })
+        return
+    }
+
+    fieldEl.value = normalized
+}
+
+function getDetailFieldValue(controller, fieldEl) {
+    const bridged = getResourceFormValueFromElement(controller.application, fieldEl)
+    if (bridged !== null && bridged !== undefined) return bridged
+
+    if (fieldEl.type === "checkbox") {
+        return fieldEl.checked ? fieldEl.value : ""
+    }
+
+    if (fieldEl.type === "radio") {
+        return fieldEl.checked ? fieldEl.value : ""
+    }
+
+    if (fieldEl.tagName === "SELECT" && fieldEl.multiple) {
+        return Array.from(fieldEl.selectedOptions).map((option) => option.value)
+    }
+
+    return fieldEl.value
+}
 
 /**
  * 선택된 마스터 행 데이터를 기반으로 우측 상세 폼 입력창들의 값을 채움
@@ -18,14 +76,16 @@ export function fillDetailForm(controller, rowData, options = {}) {
     if (beforeFill) beforeFill(rowData)
 
     if (controller.hasDetailFieldTarget || controller.detailFieldTargets) {
-        controller.detailFieldTargets.forEach((field) => {
-            const key = detailFieldKey(field)
-            if (!key) return
+        withDetailSyncSuppressed(controller, () => {
+            controller.detailFieldTargets.forEach((field) => {
+                const key = detailFieldKey(field)
+                if (!key) return
 
-            const normalized = controller.normalizeValueForInput ? controller.normalizeValueForInput(key, rowData[key]) : (rowData[key] || "")
-            field.value = normalized
+                const normalized = controller.normalizeValueForInput ? controller.normalizeValueForInput(key, rowData[key]) : (rowData[key] || "")
+                setDetailFieldValue(controller, field, normalized)
 
-            if (onFieldFill) onFieldFill(field, key, normalized, rowData)
+                if (onFieldFill) onFieldFill(field, key, normalized, rowData)
+            })
         })
     }
 
@@ -41,10 +101,12 @@ export function clearDetailForm(controller, options = {}) {
     if (beforeClear) beforeClear()
 
     if (controller.hasDetailFieldTarget || controller.detailFieldTargets) {
-        controller.detailFieldTargets.forEach((field) => {
-            field.value = ""
-            const key = detailFieldKey(field)
-            if (onFieldClear && key) onFieldClear(field, key)
+        withDetailSyncSuppressed(controller, () => {
+            controller.detailFieldTargets.forEach((field) => {
+                setDetailFieldValue(controller, field, "")
+                const key = detailFieldKey(field)
+                if (onFieldClear && key) onFieldClear(field, key)
+            })
         })
     }
 
@@ -77,17 +139,20 @@ export function toggleDetailFields(controller, disabled, options = {}) {
  * 상세 폼의 입력값이 변경될 때 마스터 그리드의 해당 행 데이터를 실시간 업데이트
  */
 export function syncDetailField(event, controller) {
+    if (controller._suppressDetailFieldSync) return
     if (!controller.currentMasterRow) return
 
     const fieldEl = event.currentTarget
     const key = detailFieldKey(fieldEl)
     if (!key) return
 
-    const originalValue = fieldEl.value
+    const originalValue = getDetailFieldValue(controller, fieldEl)
     const normalized = controller.normalizeDetailFieldValue ? controller.normalizeDetailFieldValue(key, originalValue) : originalValue
 
     if (originalValue !== normalized) {
-        fieldEl.value = normalized
+        withDetailSyncSuppressed(controller, () => {
+            setDetailFieldValue(controller, fieldEl, normalized)
+        })
     }
 
     controller.currentMasterRow[key] = normalized
