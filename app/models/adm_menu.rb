@@ -34,7 +34,41 @@ class AdmMenu < ApplicationRecord
   end
 
   def self.tree_ordered
-    grouped = ordered.to_a.group_by(&:parent_cd)
+    tree_ordered_from(ordered.to_a)
+  end
+
+  def self.search_tree_with_ancestors(filters)
+    scope = ordered
+    scope = scope.where("menu_cd LIKE ?", "%#{filters[:menu_cd]}%") if filters[:menu_cd].present?
+    scope = scope.where("menu_nm LIKE ?", "%#{filters[:menu_nm]}%") if filters[:menu_nm].present?
+    scope = scope.where(use_yn: filters[:use_yn]) if filters[:use_yn].present?
+
+    matched_codes = scope.pluck(:menu_cd)
+    return [] if matched_codes.empty?
+
+    all_menus = ordered.to_a
+    menus_by_code = all_menus.index_by(&:menu_cd)
+    included_codes = Set.new
+
+    matched_codes.each do |menu_cd|
+      current = menus_by_code[menu_cd]
+      while current
+        break if included_codes.include?(current.menu_cd)
+
+        included_codes << current.menu_cd
+        current = menus_by_code[current.parent_cd]
+      end
+    end
+
+    tree_ordered_from(all_menus).select { |menu| included_codes.include?(menu.menu_cd) }
+  end
+
+  def self.sidebar_tree
+    active.ordered.to_a.group_by(&:parent_cd)
+  end
+
+  def self.tree_ordered_from(menus)
+    grouped = menus.group_by(&:parent_cd)
     visited = Set.new
     result = []
 
@@ -49,10 +83,7 @@ class AdmMenu < ApplicationRecord
     (grouped[nil] || []).each { |root| walk.call(root) }
     result
   end
-
-  def self.sidebar_tree
-    active.ordered.to_a.group_by(&:parent_cd)
-  end
+  private_class_method :tree_ordered_from
 
   private
     def parent_exists

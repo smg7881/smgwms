@@ -1,24 +1,25 @@
-﻿/**
+/**
  * user_crud_controller.js
- * 
- * [공통] BaseCrudController (모달 CRUD 컨트롤러) 상속체로서 "사용자(User) 관리"를 담당.
+ *
+ * [공통] BaseGridController (ModalMixin 합성) 상속체로서 "사용자(User) 관리"를 담당.
  * 주요 확장 사양:
  * - 프로필 사진(Photo)의 파일 선택기(Input) 트리거링, FileReader를 이용한 Base64 디코딩 및 미리보기.
  * - 프로필 사진 삭제 액션 및 휴지통 상태 관리.
  * - FormData를 사용해 Multipart로 사진과 함께 사용자 정보를 쏘는 액션 커스텀 오버라이딩.
  */
-import BaseCrudController from "controllers/base_crud_controller"
+import BaseGridController from "controllers/base_grid_controller"
 import { showAlert, confirmAction } from "components/ui/alert"
 
-export default class extends BaseCrudController {
+export default class extends BaseGridController {
   static resourceName = "user"
   static deleteConfirmKey = "userNm"  // 삭제 시 물어볼 사람 이름
   static entityLabel = "사용자"
 
-  // 등록되지 않은 유저 전용으로 보여줄 기본 SVG 프로필 아이콘(실루엣) 하드코딩 토큰 
+  // 등록되지 않은 유저 전용으로 보여줄 기본 SVG 프로필 아이콘(실루엣) 하드코딩 토큰
   static PLACEHOLDER_PHOTO = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Crect width='80' height='80' rx='8' fill='%23d0d7de'/%3E%3Cpath d='M30 50h20l-4-5-3 4-3-2-6 8zm-5-20v24a2 2 0 002 2h26a2 2 0 002-2V30a2 2 0 00-2-2h-5l-2-3H34l-2 3h-5a2 2 0 00-2 2zm15 4a6 6 0 110 12 6 6 0 010-12z' fill='%23fff'/%3E%3C/svg%3E"
 
   static targets = [
+    ...BaseGridController.targets,
     "overlay", "modal", "modalTitle", "form",
     "fieldId", "fieldUserIdCode", "fieldUserNm", "fieldEmailAddress", "fieldPassword",
     "fieldDeptCd", "fieldDeptNm", "fieldRoleCd", "fieldPositionCd", "fieldJobTitleCd",
@@ -29,6 +30,7 @@ export default class extends BaseCrudController {
   ]
 
   static values = {
+    ...BaseGridController.values,
     createUrl: String,
     updateUrl: String,
     deleteUrl: String,
@@ -37,6 +39,9 @@ export default class extends BaseCrudController {
   }
 
   connect() {
+    super.connect()
+    // handleDelete는 ModalMixin에서 일반 메서드로 정의되어 있으므로 this 바인딩이 필요합니다.
+    this.handleDelete = this.handleDelete.bind(this)
     this.connectBase({
       events: [
         { name: "user-crud:edit", handler: this.handleEdit },
@@ -47,6 +52,7 @@ export default class extends BaseCrudController {
 
   disconnect() {
     this.disconnectBase()
+    super.disconnect()
   }
 
   // 상단 공통 [추가/작성] 버튼을 통한 신규 오픈
@@ -126,7 +132,7 @@ export default class extends BaseCrudController {
 
       showAlert(result.message || "저장되었습니다.")
       this.closeModal()
-      this.refreshGrid()
+      this._refreshModalGrid()
     } catch {
       showAlert("저장 실패: 네트워크 오류")
     }
@@ -145,7 +151,7 @@ export default class extends BaseCrudController {
     // 브라우저 캐시 레벨에서 바이너리를 Base64로 떠서 바로 미리보기를 띄워줌
     const reader = new FileReader()
     reader.onload = (event) => {
-      this.photoPreviewTarget.src = event.target.result // Base64 DATA URI 
+      this.photoPreviewTarget.src = event.target.result // Base64 DATA URI
       this.photoRemoveBtnTarget.hidden = false          // 삭제 버튼 On
     }
     // 인코딩 시작

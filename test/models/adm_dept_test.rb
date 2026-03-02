@@ -46,4 +46,13 @@ class AdmDeptTest < ActiveSupport::TestCase
     assert_equal 2, sales.dept_level
     assert_equal 3, cs.dept_level
   end
+
+  test "search_tree_with_ancestors includes matching dept ancestors" do
+    result = AdmDept.search_tree_with_ancestors(dept_code: "CS")
+    dept_codes = result.map(&:dept_code)
+    dept_levels = result.map(&:dept_level)
+
+    assert_equal [ "HQ", "SALES", "CS" ], dept_codes
+    assert_equal [ 1, 2, 3 ], dept_levels
+  end
 end

@@ -28,8 +28,8 @@ class System::MenuLogsController < System::BaseController
         scope = scope.where("ip_address LIKE ?", "%#{search_params[:ip_address]}%")
       end
 
-      from_time = parsed_time(search_params[:access_time_from])
-      to_time = parsed_time(search_params[:access_time_to])
+      from_time = parse_time_param(search_params[:access_time_from])
+      to_time = parse_time_param(search_params[:access_time_to])
 
       if from_time.present?
         scope = scope.where("access_time >= ?", from_time)
@@ -51,14 +51,6 @@ class System::MenuLogsController < System::BaseController
         :access_time_from,
         :access_time_to
       )
-    end
-
-    def parsed_time(value)
-      return nil if value.blank?
-
-      Time.zone.parse(value)
-    rescue ArgumentError, TypeError
-      nil
     end
 
     def menu_log_json(log)

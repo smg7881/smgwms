@@ -1,21 +1,22 @@
-﻿class System::CodeDetailsController < System::BaseController
+class System::CodeDetailsController < System::BaseController
   def index
-    if code_header.nil?
+    header = code_header
+    if header.nil?
       render json: []
-      return
+    else
+      render json: header.details.ordered.map { |detail| detail_json(detail) }
     end
-
-    render json: code_header.details.ordered.map { |detail| detail_json(detail) }
   end
 
   def create
-    detail = code_header!.details.new(code_detail_params.except(:code))
-    detail.code = code_header!.code
+    header = code_header!
+    detail = header.details.new(code_detail_params.except(:code))
+    detail.code = header.code
 
     if detail.save
-      render json: { success: true, message: "상세코드가 추가되었습니다.", code_detail: detail_json(detail) }
+      render_success(message: "상세코드가 추가되었습니다.", payload: { code_detail: detail_json(detail) })
     else
-      render json: { success: false, errors: detail.errors.full_messages }, status: :unprocessable_entity
+      render_failure(errors: detail.errors.full_messages)
     end
   end
 
@@ -26,86 +27,59 @@
     attrs.delete("detail_code")
 
     if detail.update(attrs)
-      render json: { success: true, message: "상세코드가 수정되었습니다.", code_detail: detail_json(detail) }
+      render_success(message: "상세코드가 수정되었습니다.", payload: { code_detail: detail_json(detail) })
     else
-      render json: { success: false, errors: detail.errors.full_messages }, status: :unprocessable_entity
+      render_failure(errors: detail.errors.full_messages)
     end
   end
 
   def destroy
     detail = find_detail
-    detail.destroy
-    render json: { success: true, message: "상세코드가 삭제되었습니다." }
+    if detail.destroy
+      render_success(message: "상세코드가 삭제되었습니다.")
+    else
+      render_failure(errors: detail.errors.full_messages.presence || [ "상세코드 삭제에 실패했습니다." ])
+    end
   end
 
   def batch_save
     operations = batch_save_params
+    header = code_header!
     result = { inserted: 0, updated: 0, deleted: 0 }
     errors = []
 
     ActiveRecord::Base.transaction do
-      Array(operations[:rowsToInsert]).each do |attrs|
-        next if attrs[:detail_code].to_s.strip.blank? && attrs[:detail_code_name].to_s.strip.blank?
-
-        detail = code_header!.details.new(attrs.permit(:detail_code, :detail_code_name, :short_name, :upper_code, :upper_detail_code, :rmk, :attr1, :attr2, :attr3, :attr4, :attr5, :sort_order, :use_yn))
-        detail.code = code_header!.code
-        if detail.save
-          result[:inserted] += 1
-        else
-          errors.concat(detail.errors.full_messages)
-        end
-      end
-
-      Array(operations[:rowsToUpdate]).each do |attrs|
-        detail_code = attrs[:detail_code].to_s
-        detail = code_header!.details.find_by(detail_code: detail_code)
-        if detail.nil?
-          errors << "상세코드를 찾을 수 없습니다: #{detail_code}"
-          next
-        end
-
-        update_attrs = attrs.permit(:detail_code_name, :short_name, :upper_code, :upper_detail_code, :rmk, :attr1, :attr2, :attr3, :attr4, :attr5, :sort_order, :use_yn)
-        if detail.update(update_attrs)
-          result[:updated] += 1
-        else
-          errors.concat(detail.errors.full_messages)
-        end
-      end
-
-      Array(operations[:rowsToDelete]).each do |detail_code|
-        detail = code_header!.details.find_by(detail_code: detail_code.to_s)
-        next if detail.nil?
-
-        detail.destroy
-        result[:deleted] += 1
-      end
+      process_detail_inserts(header, operations[:rowsToInsert], result, errors)
+      process_detail_updates(header, operations[:rowsToUpdate], result, errors)
+      process_detail_deletes(header, operations[:rowsToDelete], result, errors)
 
       raise ActiveRecord::Rollback if errors.any?
     end
 
     if errors.any?
-      render json: { success: false, errors: errors.uniq }, status: :unprocessable_entity
+      render_failure(errors: errors.uniq)
     else
-      render json: { success: true, message: "상세코드 저장이 완료되었습니다.", data: result }
+      render_success(message: "상세코드 저장이 완료되었습니다.", payload: { data: result })
     end
   end
 
   private
     def code_header
-      @code_header ||= AdmCodeHeader.find_by(code: params[:code_id])
+      code = normalized_code_param(:code_id)
+      @code_header ||= AdmCodeHeader.find_by(code: code)
     end
 
     def code_header!
       header = code_header
       if header.nil?
-        raise ActiveRecord::RecordNotFound, "code not found: #{params[:code_id]}"
+        raise ActiveRecord::RecordNotFound, "code not found: #{normalized_code_param(:code_id)}"
       end
 
       header
     end
 
     def find_detail
-      code_header!.details.find_by!(detail_code: params[:detail_code])
+      code_header!.details.find_by!(detail_code: normalized_code_param(:detail_code))
     end
 
     def code_detail_params
@@ -118,6 +92,58 @@
         rowsToInsert: [ :detail_code, :detail_code_name, :short_name, :upper_code, :upper_detail_code, :rmk, :attr1, :attr2, :attr3, :attr4, :attr5, :sort_order, :use_yn ],
         rowsToUpdate: [ :detail_code, :detail_code_name, :short_name, :upper_code, :upper_detail_code, :rmk, :attr1, :attr2, :attr3, :attr4, :attr5, :sort_order, :use_yn ]
       )
+    end
+
+    def process_detail_inserts(header, rows, result, errors)
+      Array(rows).each do |attrs|
+        if attrs[:detail_code].to_s.strip.blank? && attrs[:detail_code_name].to_s.strip.blank?
+          next
+        end
+
+        detail = header.details.new(detail_insert_attrs(attrs))
+        detail.code = header.code
+        if detail.save
+          result[:inserted] += 1
+        else
+          errors.concat(detail.errors.full_messages)
+        end
+      end
+    end
+
+    def process_detail_updates(header, rows, result, errors)
+      Array(rows).each do |attrs|
+        detail_code = normalized_code(attrs[:detail_code])
+        detail = header.details.find_by(detail_code: detail_code)
+        if detail.nil?
+          errors << "상세코드를 찾을 수 없습니다: #{detail_code}"
+          next
+        end
+
+        if detail.update(detail_update_attrs(attrs))
+          result[:updated] += 1
+        else
+          errors.concat(detail.errors.full_messages)
+        end
+      end
+    end
+
+    def process_detail_deletes(header, rows, result, _errors)
+      Array(rows).each do |detail_code|
+        normalized = normalized_code(detail_code)
+        detail = header.details.find_by(detail_code: normalized)
+        next if detail.nil?
+
+        detail.destroy
+        result[:deleted] += 1
+      end
+    end
+
+    def detail_insert_attrs(attrs)
+      attrs.permit(:detail_code, :detail_code_name, :short_name, :upper_code, :upper_detail_code, :rmk, :attr1, :attr2, :attr3, :attr4, :attr5, :sort_order, :use_yn)
+    end
+
+    def detail_update_attrs(attrs)
+      attrs.permit(:detail_code_name, :short_name, :upper_code, :upper_detail_code, :rmk, :attr1, :attr2, :attr3, :attr4, :attr5, :sort_order, :use_yn)
     end
 
     def detail_json(detail)

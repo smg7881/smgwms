@@ -19,6 +19,42 @@ class System::DeptControllerTest < ActionDispatch::IntegrationTest
     assert_includes json.first.keys, "dept_code"
   end
 
+  test "index json includes ancestor departments when filtered" do
+    AdmDept.create!(
+      dept_code: "DSR",
+      dept_nm: "Dept Search Root",
+      parent_dept_code: nil,
+      dept_type: "HQ",
+      dept_order: 80,
+      use_yn: "Y"
+    )
+    AdmDept.create!(
+      dept_code: "DSP",
+      dept_nm: "Dept Search Parent",
+      parent_dept_code: "DSR",
+      dept_type: "TEAM",
+      dept_order: 1,
+      use_yn: "Y"
+    )
+    AdmDept.create!(
+      dept_code: "DSL",
+      dept_nm: "Dept Search Leaf",
+      parent_dept_code: "DSP",
+      dept_type: "PART",
+      dept_order: 1,
+      use_yn: "Y"
+    )
+
+    get system_dept_index_url(format: :json), params: { q: { dept_code: "DSL" } }
+    assert_response :success
+
+    json = JSON.parse(response.body)
+    dept_codes = json.map { |dept| dept["dept_code"] }
+    dept_levels = json.map { |dept| dept["dept_level"] }
+    assert_equal [ "DSR", "DSP", "DSL" ], dept_codes
+    assert_equal [ 1, 2, 3 ], dept_levels
+  end
+
   test "creates dept" do
     assert_difference("AdmDept.count", 1) do
       post system_dept_index_url, params: {

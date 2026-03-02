@@ -7,7 +7,7 @@ class System::UserMenuRoleController < System::BaseController
   end
 
   def roles_by_user
-    user = User.find_by(user_id_code: params[:user_id_code].to_s.strip)
+    user = find_user_by_user_id_code(params[:user_id_code])
 
     roles = if user&.role_id.present?
       AdmRole.where(id: user.role_id).ordered
@@ -19,10 +19,8 @@ class System::UserMenuRoleController < System::BaseController
   end
 
   def menus_by_user_role
-    user_id_code = params[:user_id_code].to_s.strip
-    role_cd = params[:role_cd].to_s.strip.upcase
-    user = User.find_by(user_id_code: user_id_code)
-    role = AdmRole.find_by(role_cd: role_cd)
+    user = find_user_by_user_id_code(params[:user_id_code])
+    role = AdmRole.find_by(role_cd: normalized_code(params[:role_cd]))
 
     if role.nil? || user.nil?
       render json: []
@@ -47,6 +45,11 @@ class System::UserMenuRoleController < System::BaseController
         scope = scope.where("dept_nm LIKE ?", "%#{search_params[:dept_nm]}%")
       end
       scope
+    end
+
+    def find_user_by_user_id_code(value)
+      user_id_code = value.to_s.strip
+      User.find_by(user_id_code: user_id_code)
     end
 
     def user_json(user)

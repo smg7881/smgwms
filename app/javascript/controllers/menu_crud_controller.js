@@ -1,20 +1,21 @@
-﻿/**
+/**
  * menu_crud_controller.js
- * 
- * [공통] BaseCrudController 상속체로서 "메뉴(Menu) 계층 트리" 데이터를 관리하는 모달 기능에 관여합니다.
+ *
+ * [공통] BaseGridController (ModalMixin 합성) 상속체로서 "메뉴(Menu) 계층 트리" 데이터를 관리하는 모달 기능에 관여합니다.
  * 주요 확장 사양:
  * - 메뉴의 계층(Menu Level)을 계산하여 '최상위(폴더) 만들기 대상'인지, '자식(링크) 달기 대상'인지 판별
  * - 그리드 액션에서 넘긴 데이터를 모달 폼으로 밀어넣고(Editing), 상태값을 서버 대응 인터페이스에 매칭
  */
-import BaseCrudController from "controllers/base_crud_controller"
+import BaseGridController from "controllers/base_grid_controller"
 
-export default class extends BaseCrudController {
+export default class extends BaseGridController {
   static resourceName = "menu"       // Form Builder에서 백엔드로 전송 시 그룹핑될 파라미터 Key명
   static deleteConfirmKey = "menuCd" // 삭제 컨펌 얼럿을 띄울 때 보여줄 메뉴코드 Key명
   static entityLabel = "메뉴"        // "메뉴 삭제를 진행하시겠습니까?" 등 Alert 활용 목적
 
   // 모달 안쪽 폼이 보유해야 할 거의 모든 인풋 구성 요소 Target 바인딩
   static targets = [
+    ...BaseGridController.targets,
     "overlay", "modal", "modalTitle", "form",
     "fieldId", "fieldMenuCd", "fieldMenuNm", "fieldParentCd",
     "fieldMenuUrl", "fieldMenuIcon", "fieldSortOrder",
@@ -22,12 +23,16 @@ export default class extends BaseCrudController {
   ]
 
   static values = {
+    ...BaseGridController.values,
     createUrl: String,
     updateUrl: String,
     deleteUrl: String
   }
 
   connect() {
+    super.connect()
+    // handleDelete는 ModalMixin에서 일반 메서드로 정의되어 있으므로 this 바인딩이 필요합니다.
+    this.handleDelete = this.handleDelete.bind(this)
     // 트리 셀 안의 버튼([+], [수정], [휴지통])이 눌려 전역 버스로 발송된 CustomEvent를 낚아채서 맵핑함
     this.connectBase({
       events: [
@@ -40,6 +45,7 @@ export default class extends BaseCrudController {
 
   disconnect() {
     this.disconnectBase()
+    super.disconnect()
   }
 
   // "최상위 메뉴 추가" 버튼용. 부모가 없는 순살(루트) 데이터 폼 세팅
@@ -75,7 +81,7 @@ export default class extends BaseCrudController {
     this.openModal() // 모달 오픈!
   }
 
-  // 펜 아이콘(수정) 클릭 시, 데이터 바인딩 
+  // 펜 아이콘(수정) 클릭 시, 데이터 바인딩
   handleEdit = (event) => {
     const data = event.detail.menuData
     this.resetForm()

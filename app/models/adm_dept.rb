@@ -20,28 +20,43 @@ class AdmDept < ApplicationRecord
   scope :ordered, -> { order(:dept_order, :dept_code) }
 
   def self.tree_ordered
-    grouped = ordered.to_a.group_by(&:parent_dept_code)
-    visited = Set.new
-    result = []
+    tree_ordered_from(ordered.to_a)
+  end
 
-    walk = lambda do |node, level|
-      return if visited.include?(node.dept_code)
+  def self.search_tree_with_ancestors(filters)
+    scope = ordered
+    if filters[:dept_code].present?
+      scope = scope.where("dept_code LIKE ?", "%#{filters[:dept_code]}%")
+    end
+    if filters[:dept_nm].present?
+      scope = scope.where("dept_nm LIKE ?", "%#{filters[:dept_nm]}%")
+    end
+    if filters[:use_yn].present?
+      scope = scope.where(use_yn: filters[:use_yn])
+    end
 
-      visited << node.dept_code
-      node.dept_level = level
-      result << node
-      children = grouped[node.dept_code] || []
-      children.each do |child|
-        walk.call(child, level + 1)
+    matched_codes = scope.pluck(:dept_code)
+    if matched_codes.empty?
+      return []
+    end
+
+    all_depts = ordered.to_a
+    depts_by_code = all_depts.index_by(&:dept_code)
+    included_codes = Set.new
+
+    matched_codes.each do |dept_code|
+      current = depts_by_code[dept_code]
+      while current
+        if included_codes.include?(current.dept_code)
+          break
+        end
+
+        included_codes << current.dept_code
+        current = depts_by_code[current.parent_dept_code]
       end
     end
 
-    roots = grouped[nil] || []
-    roots.each do |root|
-      walk.call(root, 1)
-    end
-
-    result
+    tree_ordered_from(all_depts).select { |dept| included_codes.include?(dept.dept_code) }
   end
 
   def self.next_child_order(parent_code)
@@ -71,6 +86,32 @@ class AdmDept < ApplicationRecord
 
     AdmDept.find_by(dept_code: parent_dept_code)
   end
+
+  def self.tree_ordered_from(depts)
+    grouped = depts.group_by(&:parent_dept_code)
+    visited = Set.new
+    result = []
+
+    walk = lambda do |node, level|
+      return if visited.include?(node.dept_code)
+
+      visited << node.dept_code
+      node.dept_level = level
+      result << node
+      children = grouped[node.dept_code] || []
+      children.each do |child|
+        walk.call(child, level + 1)
+      end
+    end
+
+    roots = grouped[nil] || []
+    roots.each do |root|
+      walk.call(root, 1)
+    end
+
+    result
+  end
+  private_class_method :tree_ordered_from
 
   private
     def normalize_fields

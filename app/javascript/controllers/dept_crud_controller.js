@@ -1,15 +1,15 @@
-﻿/**
+/**
  * dept_crud_controller.js
- * 
- * [공통] BaseCrudController (모달 폼 기반)를 상속하여 '부서정보' 관리를 제어합니다.
+ *
+ * [공통] BaseGridController (ModalMixin 합성)를 상속하여 '부서정보' 관리를 제어합니다.
  * 주요 확장 기능:
- * - "최상위 부서 추가", "하위 부서 추가", "부서 수정" 등의 다양한 의도를 가진 모달 폼으로 
+ * - "최상위 부서 추가", "하위 부서 추가", "부서 수정" 등의 다양한 의도를 가진 모달 폼으로
  *   동일한 템플릿(DOM)을 재활용하며 타이틀과 ReadOnly 등을 스위칭합니다.
  * - 트리 그리드(ag_grid/renderers.js 기반) 내부에서 버튼 클릭 시 날아오는 이벤트를 수신합니다.
  */
-import BaseCrudController from "controllers/base_crud_controller"
+import BaseGridController from "controllers/base_grid_controller"
 
-export default class extends BaseCrudController {
+export default class extends BaseGridController {
   // 모달 기반 메타데이터 오버라이드
   static resourceName = "dept"       // 객체 참조 변수명 단위 ex: dept[dept_nm]
   static deleteConfirmKey = "deptNm" // 삭제 컨펌창에 띄울 필드 맵핑 키
@@ -17,6 +17,7 @@ export default class extends BaseCrudController {
 
   // 모달 폼 안에 속한 무수한 인풋 DOM 타겟들
   static targets = [
+    ...BaseGridController.targets,
     "overlay", "modal", "modalTitle", "form",
     "fieldId", "fieldDeptCode", "fieldDeptNm", "fieldParentDeptCode",
     "fieldDeptType", "fieldDeptOrder", "fieldDescription"
@@ -24,6 +25,7 @@ export default class extends BaseCrudController {
 
   // 백엔드 요청을 위한 엔드포인트 URL 모음
   static values = {
+    ...BaseGridController.values,
     createUrl: String,
     updateUrl: String,
     deleteUrl: String,
@@ -31,6 +33,9 @@ export default class extends BaseCrudController {
   }
 
   connect() {
+    super.connect()
+    // handleDelete는 ModalMixin에서 일반 메서드로 정의되어 있으므로 this 바인딩이 필요합니다.
+    this.handleDelete = this.handleDelete.bind(this)
     // 부모단 로직(connectBase)을 기동하며, 커스텀 이벤트 버스들을 브릿지시켜둠.
     // 그리드 내부 셀 렌더러가 버튼클릭 시 방출하는 "dept-crud:edit" 등을 낚아챔.
     this.connectBase({
@@ -44,6 +49,7 @@ export default class extends BaseCrudController {
 
   disconnect() {
     this.disconnectBase()
+    super.disconnect()
   }
 
   // 최상단 버튼을 통한 '순수 신규 작성' 모달 열기용 진입점
@@ -110,7 +116,7 @@ export default class extends BaseCrudController {
 
   // 모달이 닫히거나 다음 노출을 대비하여 데이터를 White-out 하는 클리너
   resetForm() {
-    this.formTarget.reset() // DOM 폼태그 초기화 지원명령 
+    this.formTarget.reset() // DOM 폼태그 초기화 지원명령
     this.fieldIdTarget.value = ""
     this.fieldDeptOrderTarget.value = 0
     // 라디오 버튼 강제 원복

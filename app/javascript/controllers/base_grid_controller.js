@@ -36,6 +36,8 @@ import {
   getSearchFormValue as getSearchFormValueFromBridge,
   getSearchFieldElement as getSearchFieldElementFromBridge
 } from "controllers/grid/core/search_form_bridge"
+import { ModalMixin } from "controllers/concerns/modal_mixin"
+import { ExcelDownloadable } from "controllers/concerns/excel_downloadable"
 
 export default class BaseGridController extends Controller {
   static targets = ["grid"]
@@ -595,4 +597,7 @@ export default class BaseGridController extends Controller {
     return getSearchFieldElementFromBridge(fieldName)
   }
 }
+
+Object.assign(BaseGridController.prototype, ModalMixin)
+Object.assign(BaseGridController.prototype, ExcelDownloadable)
 

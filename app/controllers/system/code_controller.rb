@@ -1,4 +1,4 @@
-﻿class System::CodeController < System::BaseController
+class System::CodeController < System::BaseController
   def index
     @selected_code = params[:selected_code].presence
 
@@ -11,9 +11,9 @@
   def create
     header = AdmCodeHeader.new(code_header_params)
     if header.save
-      render json: { success: true, message: "코드가 추가되었습니다.", code_header: header_json(header) }
+      render_success(message: "코드가 추가되었습니다.", payload: { code_header: header_json(header) })
     else
-      render json: { success: false, errors: header.errors.full_messages }, status: :unprocessable_entity
+      render_failure(errors: header.errors.full_messages)
     end
   end
 
@@ -23,19 +23,19 @@
     attrs.delete("code")
 
     if header.update(attrs)
-      render json: { success: true, message: "코드가 수정되었습니다.", code_header: header_json(header) }
+      render_success(message: "코드가 수정되었습니다.", payload: { code_header: header_json(header) })
     else
-      render json: { success: false, errors: header.errors.full_messages }, status: :unprocessable_entity
+      render_failure(errors: header.errors.full_messages)
     end
   end
 
   def destroy
     header = find_header
 
-    if header.destroy
-      render json: { success: true, message: "코드가 삭제되었습니다." }
+    if destroy_header_with_details(header)
+      render_success(message: "코드가 삭제되었습니다.")
     else
-      render json: { success: false, errors: header.errors.full_messages.presence || [ "삭제에 실패했습니다." ] }, status: :unprocessable_entity
+      render_failure(errors: header.errors.full_messages.presence || [ "삭제에 실패했습니다." ])
     end
   end
 
@@ -45,59 +45,23 @@
     errors = []
 
     ActiveRecord::Base.transaction do
-      Array(operations[:rowsToInsert]).each do |attrs|
-        next if attrs[:code].to_s.strip.blank? && attrs[:code_name].to_s.strip.blank?
-
-        header = AdmCodeHeader.new(attrs.permit(:code, :code_name, :sys_sctn_cd, :rmk, :use_yn))
-        if header.save
-          result[:inserted] += 1
-        else
-          errors.concat(header.errors.full_messages)
-        end
-      end
-
-      Array(operations[:rowsToUpdate]).each do |attrs|
-        code = attrs[:code].to_s
-        header = AdmCodeHeader.find_by(code: code)
-        if header.nil?
-          errors << "코드를 찾을 수 없습니다: #{code}"
-          next
-        end
-
-        update_attrs = attrs.permit(:code_name, :sys_sctn_cd, :rmk, :use_yn)
-        if header.update(update_attrs)
-          result[:updated] += 1
-        else
-          errors.concat(header.errors.full_messages)
-        end
-      end
-
-      Array(operations[:rowsToDelete]).each do |code|
-        header = AdmCodeHeader.find_by(code: code.to_s)
-        next if header.nil?
-
-        AdmCodeDetail.where(code: header.code).delete_all
-
-        if header.destroy
-          result[:deleted] += 1
-        else
-          errors.concat(header.errors.full_messages.presence || [ "코드 삭제에 실패했습니다: #{code}" ])
-        end
-      end
+      process_header_inserts(operations[:rowsToInsert], result, errors)
+      process_header_updates(operations[:rowsToUpdate], result, errors)
+      process_header_deletes(operations[:rowsToDelete], result, errors)
 
       raise ActiveRecord::Rollback if errors.any?
     end
 
     if errors.any?
-      render json: { success: false, errors: errors.uniq }, status: :unprocessable_entity
+      render_failure(errors: errors.uniq)
     else
-      render json: { success: true, message: "코드 저장이 완료되었습니다.", data: result }
+      render_success(message: "코드 저장이 완료되었습니다.", payload: { data: result })
     end
   end
 
   private
     def find_header
-      AdmCodeHeader.find_by!(code: params[:id])
+      AdmCodeHeader.find_by!(code: normalized_code_param(:id))
     end
 
     def search_params
@@ -113,7 +77,7 @@
         scope = scope.where("code_name LIKE ?", "%#{search_params[:code_name]}%")
       end
       if search_params[:use_yn].present?
-        scope = scope.where(use_yn: search_params[:use_yn])
+        scope = scope.where(use_yn: normalized_code(search_params[:use_yn]))
       end
 
       if search_params[:detail_code].present? || search_params[:detail_code_name].present?
@@ -140,6 +104,72 @@
         rowsToInsert: [ :code, :code_name, :sys_sctn_cd, :rmk, :use_yn ],
         rowsToUpdate: [ :code, :code_name, :sys_sctn_cd, :rmk, :use_yn ]
       )
+    end
+
+    def process_header_inserts(rows, result, errors)
+      Array(rows).each do |attrs|
+        if attrs[:code].to_s.strip.blank? && attrs[:code_name].to_s.strip.blank?
+          next
+        end
+
+        header = AdmCodeHeader.new(header_insert_attrs(attrs))
+        if header.save
+          result[:inserted] += 1
+        else
+          errors.concat(header.errors.full_messages)
+        end
+      end
+    end
+
+    def process_header_updates(rows, result, errors)
+      Array(rows).each do |attrs|
+        code = normalized_code(attrs[:code])
+        header = AdmCodeHeader.find_by(code: code)
+        if header.nil?
+          errors << "코드를 찾을 수 없습니다: #{code}"
+          next
+        end
+
+        if header.update(header_update_attrs(attrs))
+          result[:updated] += 1
+        else
+          errors.concat(header.errors.full_messages)
+        end
+      end
+    end
+
+    def process_header_deletes(rows, result, errors)
+      Array(rows).each do |code|
+        normalized = normalized_code(code)
+        header = AdmCodeHeader.find_by(code: normalized)
+        next if header.nil?
+
+        if destroy_header_with_details(header)
+          result[:deleted] += 1
+        else
+          errors.concat(header.errors.full_messages.presence || [ "코드 삭제에 실패했습니다: #{normalized}" ])
+        end
+      end
+    end
+
+    def header_insert_attrs(attrs)
+      attrs.permit(:code, :code_name, :sys_sctn_cd, :rmk, :use_yn)
+    end
+
+    def header_update_attrs(attrs)
+      attrs.permit(:code_name, :sys_sctn_cd, :rmk, :use_yn)
+    end
+
+    def destroy_header_with_details(header)
+      destroyed = false
+
+      ActiveRecord::Base.transaction do
+        AdmCodeDetail.where(code: header.code).delete_all
+        destroyed = header.destroy
+        raise ActiveRecord::Rollback unless destroyed
+      end
+
+      destroyed
     end
 
     def header_json(header)

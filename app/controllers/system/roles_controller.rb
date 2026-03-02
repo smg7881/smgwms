@@ -9,9 +9,9 @@ class System::RolesController < System::BaseController
   def create
     role = AdmRole.new(role_params)
     if role.save
-      render json: { success: true, message: "역할이 추가되었습니다.", role: role_json(role) }
+      render_success(message: "역할이 추가되었습니다.", payload: { role: role_json(role) })
     else
-      render json: { success: false, errors: role.errors.full_messages }, status: :unprocessable_entity
+      render_failure(errors: role.errors.full_messages)
     end
   end
 
@@ -21,16 +21,19 @@ class System::RolesController < System::BaseController
     attrs.delete("role_cd")
 
     if role.update(attrs)
-      render json: { success: true, message: "역할이 수정되었습니다.", role: role_json(role) }
+      render_success(message: "역할이 수정되었습니다.", payload: { role: role_json(role) })
     else
-      render json: { success: false, errors: role.errors.full_messages }, status: :unprocessable_entity
+      render_failure(errors: role.errors.full_messages)
     end
   end
 
   def destroy
     role = find_role
-    role.destroy
-    render json: { success: true, message: "역할이 삭제되었습니다." }
+    if role.destroy
+      render_success(message: "역할이 삭제되었습니다.")
+    else
+      render_failure(errors: role.errors.full_messages.presence || [ "역할 삭제에 실패했습니다." ])
+    end
   end
 
   def batch_save
@@ -39,59 +42,23 @@ class System::RolesController < System::BaseController
     errors = []
 
     ActiveRecord::Base.transaction do
-      Array(operations[:rowsToInsert]).each do |attrs|
-        if attrs[:role_cd].to_s.strip.blank? && attrs[:role_nm].to_s.strip.blank?
-          next
-        end
-
-        role = AdmRole.new(attrs.permit(:role_cd, :role_nm, :description, :use_yn))
-        if role.save
-          result[:inserted] += 1
-        else
-          errors.concat(role.errors.full_messages)
-        end
-      end
-
-      Array(operations[:rowsToUpdate]).each do |attrs|
-        role_cd = attrs[:role_cd].to_s
-        role = AdmRole.find_by(role_cd: role_cd)
-        if role.nil?
-          errors << "역할코드를 찾을 수 없습니다: #{role_cd}"
-          next
-        end
-
-        update_attrs = attrs.permit(:role_nm, :description, :use_yn)
-        if role.update(update_attrs)
-          result[:updated] += 1
-        else
-          errors.concat(role.errors.full_messages)
-        end
-      end
-
-      Array(operations[:rowsToDelete]).each do |role_cd|
-        role = AdmRole.find_by(role_cd: role_cd.to_s)
-        next if role.nil?
-
-        if role.destroy
-          result[:deleted] += 1
-        else
-          errors.concat(role.errors.full_messages.presence || [ "역할 삭제에 실패했습니다: #{role_cd}" ])
-        end
-      end
+      process_role_inserts(operations[:rowsToInsert], result, errors)
+      process_role_updates(operations[:rowsToUpdate], result, errors)
+      process_role_deletes(operations[:rowsToDelete], result, errors)
 
       raise ActiveRecord::Rollback if errors.any?
     end
 
     if errors.any?
-      render json: { success: false, errors: errors.uniq }, status: :unprocessable_entity
+      render_failure(errors: errors.uniq)
     else
-      render json: { success: true, message: "역할 저장이 완료되었습니다.", data: result }
+      render_success(message: "역할 저장이 완료되었습니다.", payload: { data: result })
     end
   end
 
   private
     def find_role
-      AdmRole.find_by!(role_cd: params[:id])
+      AdmRole.find_by!(role_cd: normalized_code_param(:id))
     end
 
     def search_params
@@ -108,7 +75,7 @@ class System::RolesController < System::BaseController
         scope = scope.where("role_nm LIKE ?", "%#{search_params[:role_nm]}%")
       end
       if search_params[:use_yn].present?
-        scope = scope.where(use_yn: search_params[:use_yn])
+        scope = scope.where(use_yn: normalized_code(search_params[:use_yn]))
       end
 
       scope
@@ -124,6 +91,60 @@ class System::RolesController < System::BaseController
         rowsToInsert: [ :role_cd, :role_nm, :description, :use_yn ],
         rowsToUpdate: [ :role_cd, :role_nm, :description, :use_yn ]
       )
+    end
+
+    def process_role_inserts(rows, result, errors)
+      Array(rows).each do |attrs|
+        if attrs[:role_cd].to_s.strip.blank? && attrs[:role_nm].to_s.strip.blank?
+          next
+        end
+
+        role = AdmRole.new(role_insert_attrs(attrs))
+        if role.save
+          result[:inserted] += 1
+        else
+          errors.concat(role.errors.full_messages)
+        end
+      end
+    end
+
+    def process_role_updates(rows, result, errors)
+      Array(rows).each do |attrs|
+        role_cd = normalized_code(attrs[:role_cd])
+        role = AdmRole.find_by(role_cd: role_cd)
+        if role.nil?
+          errors << "역할코드를 찾을 수 없습니다: #{role_cd}"
+          next
+        end
+
+        if role.update(role_update_attrs(attrs))
+          result[:updated] += 1
+        else
+          errors.concat(role.errors.full_messages)
+        end
+      end
+    end
+
+    def process_role_deletes(rows, result, errors)
+      Array(rows).each do |role_cd|
+        normalized = normalized_code(role_cd)
+        role = AdmRole.find_by(role_cd: normalized)
+        next if role.nil?
+
+        if role.destroy
+          result[:deleted] += 1
+        else
+          errors.concat(role.errors.full_messages.presence || [ "역할 삭제에 실패했습니다: #{normalized}" ])
+        end
+      end
+    end
+
+    def role_insert_attrs(attrs)
+      attrs.permit(:role_cd, :role_nm, :description, :use_yn)
+    end
+
+    def role_update_attrs(attrs)
+      attrs.permit(:role_nm, :description, :use_yn)
     end
 
     def role_json(role)

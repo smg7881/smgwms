@@ -7,7 +7,7 @@
  * - 사용자가 그리드 상에서 작업장 코드를 변경했을 때, 서버나 Map을 참조하여 '작업장 명칭'을 즉결 동기화.
  */
 import BaseGridController from "controllers/base_grid_controller"
-import { showAlert, confirmAction } from "components/ui/alert"
+import { showAlert } from "components/ui/alert"
 import { resolveNameFromMap } from "controllers/grid/grid_utils"
 
 export default class extends BaseGridController {

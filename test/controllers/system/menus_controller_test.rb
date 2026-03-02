@@ -18,6 +18,52 @@ class System::MenusControllerTest < ActionDispatch::IntegrationTest
     assert_operator json.length, :>=, 1
   end
 
+  test "index json includes ancestor menus when filtered" do
+    AdmMenu.create!(
+      menu_cd: "SEARCH_ROOT",
+      menu_nm: "Search Root",
+      parent_cd: nil,
+      menu_url: nil,
+      menu_icon: nil,
+      sort_order: 90,
+      menu_level: 1,
+      menu_type: "FOLDER",
+      use_yn: "Y",
+      tab_id: nil
+    )
+    AdmMenu.create!(
+      menu_cd: "SEARCH_PARENT",
+      menu_nm: "Search Parent",
+      parent_cd: "SEARCH_ROOT",
+      menu_url: nil,
+      menu_icon: nil,
+      sort_order: 1,
+      menu_level: 2,
+      menu_type: "FOLDER",
+      use_yn: "Y",
+      tab_id: nil
+    )
+    AdmMenu.create!(
+      menu_cd: "SEARCH_LEAF",
+      menu_nm: "Search Leaf",
+      parent_cd: "SEARCH_PARENT",
+      menu_url: "/search/leaf",
+      menu_icon: nil,
+      sort_order: 1,
+      menu_level: 3,
+      menu_type: "MENU",
+      use_yn: "Y",
+      tab_id: "search-leaf"
+    )
+
+    get system_menus_url(format: :json), params: { q: { menu_cd: "SEARCH_LEAF" } }
+    assert_response :success
+
+    json = JSON.parse(response.body)
+    menu_codes = json.map { |menu| menu["menu_cd"] }
+    assert_equal [ "SEARCH_ROOT", "SEARCH_PARENT", "SEARCH_LEAF" ], menu_codes
+  end
+
   test "creates menu" do
     assert_difference("AdmMenu.count", 1) do
       post system_menus_url, params: {

@@ -20,9 +20,9 @@ class System::UsersController < System::BaseController
     user.password = SecureRandom.hex(8) unless user_params[:password].present?
 
     if user.save
-      render json: { success: true, message: "추가되었습니다.", user: user_json(user) }
+      render_success(message: "추가되었습니다.", payload: { user: user_json(user) })
     else
-      render json: { success: false, errors: user.errors.full_messages }, status: :unprocessable_entity
+      render_failure(errors: user.errors.full_messages)
     end
   end
 
@@ -33,20 +33,24 @@ class System::UsersController < System::BaseController
     update_attrs.delete("password") if update_attrs["password"].blank?
 
     if user.update(update_attrs)
-      render json: { success: true, message: "수정되었습니다.", user: user_json(user) }
+      render_success(message: "수정되었습니다.", payload: { user: user_json(user) })
     else
-      render json: { success: false, errors: user.errors.full_messages }, status: :unprocessable_entity
+      render_failure(errors: user.errors.full_messages)
     end
   end
 
   def destroy
     user = User.find(params[:id])
-    user.destroy
-    render json: { success: true, message: "삭제되었습니다." }
+    if user.destroy
+      render_success(message: "삭제되었습니다.")
+    else
+      render_failure(errors: user.errors.full_messages.presence || [ "삭제에 실패했습니다." ])
+    end
   end
 
   def check_id
-    exists = User.where(user_id_code: params[:code]).exists?
+    code = params[:code].to_s.strip
+    exists = User.where(user_id_code: code).exists?
     render json: { exists: exists }
   end
 

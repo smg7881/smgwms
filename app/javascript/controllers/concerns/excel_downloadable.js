@@ -2,7 +2,7 @@
  * ExcelDownloadable
  *
  * Stimulus 컨트롤러에 엑셀 다운로드/업로드 기능을 추가하는 믹스인입니다.
- * BaseCrudController 와 BaseGridController 양쪽에 동일하게 적용되어
+ * BaseGridController에 Object.assign으로 합성되어
  * Excel 공통 메서드를 단일 표준으로 관리합니다.
  *
  * 적용 방법:

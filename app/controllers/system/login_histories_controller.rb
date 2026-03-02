@@ -12,7 +12,9 @@ class System::LoginHistoriesController < System::BaseController
 
         render json: {
           rows: rows.map { |r| row_json(r) },
-          total: total
+          total: total,
+          page: page,
+          per_page: per_page
         }
       end
     end
@@ -29,8 +31,8 @@ class System::LoginHistoriesController < System::BaseController
         scope = scope.by_success(search_params[:login_success] == "true")
       end
 
-      from_time = parsed_time(search_params[:start_date])
-      to_time = parsed_time(search_params[:end_date])
+      from_time = parse_time_param(search_params[:start_date])
+      to_time = parse_time_param(search_params[:end_date])
       scope = scope.since(from_time) if from_time
       scope = scope.until_time(to_time) if to_time
 
@@ -39,14 +41,6 @@ class System::LoginHistoriesController < System::BaseController
 
     def search_params
       params.fetch(:q, {}).permit(:user_id_code, :start_date, :end_date, :login_success)
-    end
-
-    def parsed_time(value)
-      return nil if value.blank?
-
-      Time.zone.parse(value)
-    rescue ArgumentError, TypeError
-      nil
     end
 
     def row_json(record)

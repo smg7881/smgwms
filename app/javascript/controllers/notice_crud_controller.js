@@ -1,25 +1,26 @@
 /**
  * notice_crud_controller.js
  *
- * [공통] BaseCrudController 상속체로서 "공지사항(Notice)" 게시판의 작성/수정 모달을 제어합니다.
+ * [공통] BaseGridController (ModalMixin 합성) 상속체로서 "공지사항(Notice)" 게시판의 작성/수정 모달을 제어합니다.
  * 주요 확장 사양:
  * - 첨부파일(Attachments) 멀티 업로드 — AttachmentMixin 위임
  * - Trix 에디터(ActionText) 제어 — TrixMixin 위임
  * - 기존 첨부파일 목록 렌더링 및 삭제 대기열(removedAttachmentIds) 상태 관리
  * - 그리드 다중 선택을 통한 일괄 삭제(Bulk Delete) 기능 지원
  */
-import BaseCrudController from "controllers/base_crud_controller"
+import BaseGridController from "controllers/base_grid_controller"
 import { showAlert, confirmAction } from "components/ui/alert"
 import { AttachmentMixin } from "controllers/concerns/attachment_mixin"
 import { TrixMixin } from "controllers/concerns/trix_mixin"
 
-class NoticeCrudController extends BaseCrudController {
+class NoticeCrudController extends BaseGridController {
   static resourceName = "notice"      // 폼 데이터 생성 시 네임스페이스 (ex: notice[title])
   static deleteConfirmKey = "title"   // 삭제 확인 창에 띄울 필드 키맵
   static entityLabel = "공지사항"     // 얼럿 노출 텍스트
 
   // 공지사항 폼에서 통제하는 다양한 DOM 요소들
   static targets = [
+    ...BaseGridController.targets,
     "overlay", "modal", "modalTitle", "form",
     "fieldId", "fieldCategoryCode", "fieldTitle",
     "fieldStartDate", "fieldEndDate", "fieldContent",
@@ -27,6 +28,7 @@ class NoticeCrudController extends BaseCrudController {
   ]
 
   static values = {
+    ...BaseGridController.values,
     createUrl: String,
     updateUrl: String,
     deleteUrl: String,
@@ -34,7 +36,10 @@ class NoticeCrudController extends BaseCrudController {
   }
 
   connect() {
+    super.connect()
     this.initAttachment() // AttachmentMixin: removedAttachmentIds, selectedFilesBuffer 초기화
+    // handleDelete는 ModalMixin에서 일반 메서드로 정의되어 있으므로 this 바인딩이 필요합니다.
+    this.handleDelete = this.handleDelete.bind(this)
 
     // 이벤트 리스너 파이프라인 등록
     this.connectBase({
@@ -47,6 +52,7 @@ class NoticeCrudController extends BaseCrudController {
 
   disconnect() {
     this.disconnectBase()
+    super.disconnect()
   }
 
   // 신규 등록 모달 열기
@@ -136,7 +142,7 @@ class NoticeCrudController extends BaseCrudController {
     const method = isCreate ? "POST" : "PATCH"
 
     try {
-      // BaseCrudController의 요청 래퍼 사용 (Multipart 활성화 = 첨부파일 전송 허가)
+      // ModalMixin의 요청 래퍼 사용 (Multipart 활성화 = 첨부파일 전송 허가)
       const { response, result } = await this.requestJson(url, {
         method,
         body: formData,
@@ -150,7 +156,7 @@ class NoticeCrudController extends BaseCrudController {
 
       showAlert(result.message || "저장되었습니다.")
       this.closeModal()
-      this.refreshGrid()
+      this._refreshModalGrid()
     } catch {
       showAlert("저장 실패: 네트워크 오류")
     }
@@ -160,7 +166,7 @@ class NoticeCrudController extends BaseCrudController {
 
   // 메인 그리드에서 다중 체크박스로 여럿을 집어서 한방에 날릴때 사용
   async deleteSelected() {
-    const selectedRows = this.selectedRows()
+    const selectedRows = this._getModalSelectedRows()
     if (selectedRows.length === 0) {
       showAlert("삭제할 공지사항을 선택해주세요.")
       return
@@ -188,14 +194,19 @@ class NoticeCrudController extends BaseCrudController {
       }
 
       showAlert(result.message || "삭제되었습니다.")
-      this.refreshGrid()
+      this._refreshModalGrid()
     } catch {
       showAlert("삭제 실패: 네트워크 오류")
     }
   }
 
-  selectedRows() {
-    const api = this.getAgGridController()?.api
+  // BaseGridController.selectedRows(name)과 이름 충돌을 피하기 위해 별도 명칭 사용.
+  // AG Grid 컨트롤러에서 선택된 행을 DOM 탐색으로 직접 가져옵니다.
+  _getModalSelectedRows() {
+    const agGridEl = this.element.querySelector("[data-controller='ag-grid']")
+    if (!agGridEl) return []
+
+    const api = this.application.getControllerForElementAndIdentifier(agGridEl, "ag-grid")?.api
     if (!api || typeof api.getSelectedRows !== "function") {
       return []
     }

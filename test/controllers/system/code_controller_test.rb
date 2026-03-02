@@ -66,6 +66,17 @@ class System::CodeControllerTest < ActionDispatch::IntegrationTest
     assert_not AdmCodeDetail.exists?(code: header.code, detail_code: "D001")
   end
 
+  test "destroy deletes header with details and normalizes id param" do
+    header = AdmCodeHeader.create!(code: "DEL03", code_name: "Destroy With Details", use_yn: "Y")
+    AdmCodeDetail.create!(code: header.code, detail_code: "D001", detail_code_name: "Detail", sort_order: 1, use_yn: "Y")
+
+    delete system_code_url(header.code.downcase), as: :json
+
+    assert_response :success
+    assert_not AdmCodeHeader.exists?(code: header.code)
+    assert_not AdmCodeDetail.exists?(code: header.code, detail_code: "D001")
+  end
+
   test "non-admin cannot access code endpoints" do
     delete session_path
     post session_path, params: { email_address: "user@example.com", password: "password" }

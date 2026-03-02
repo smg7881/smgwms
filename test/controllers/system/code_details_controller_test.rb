@@ -11,6 +11,11 @@ class System::CodeDetailsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "index normalizes parent code param" do
+    get system_code_details_url(@header.code.downcase, format: :json)
+    assert_response :success
+  end
+
   test "creates code detail" do
     assert_difference("AdmCodeDetail.count", 1) do
       post system_code_details_url(@header.code), params: {
@@ -64,6 +69,15 @@ class System::CodeDetailsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Update remark", updated.rmk
     assert_equal "U2", updated.attr2
     assert_not AdmCodeDetail.exists?(code: @header.code, detail_code: "DEL1")
+  end
+
+  test "destroy normalizes detail_code param" do
+    AdmCodeDetail.create!(code: @header.code, detail_code: "DL01", detail_code_name: "Destroy", sort_order: 1, use_yn: "Y")
+
+    delete system_code_detail_url(@header.code.downcase, "dl01"), as: :json
+
+    assert_response :success
+    assert_not AdmCodeDetail.exists?(code: @header.code, detail_code: "DL01")
   end
 
   test "non-admin cannot access code detail endpoints" do

@@ -1,24 +1,29 @@
-﻿import BaseCrudController from "controllers/base_crud_controller"
+import BaseGridController from "controllers/base_grid_controller"
 import { showAlert, confirmAction } from "components/ui/alert"
 import { syncAllPopupDisplaysFromCodes } from "controllers/grid/grid_popup_utils"
 
-export default class extends BaseCrudController {
+export default class extends BaseGridController {
   static resourceName = "sellbuy_attribute"
   static deleteConfirmKey = "sellbuyAttrNm"
   static entityLabel = "매출입항목"
 
   static targets = [
+    ...BaseGridController.targets,
     "overlay", "modal", "modalTitle", "form",
     "fieldId", "fieldCorpCd", "fieldSellbuyAttrCd", "fieldUpperSellbuyAttrCd"
   ]
 
   static values = {
+    ...BaseGridController.values,
     createUrl: String,
     updateUrl: String,
     deleteUrl: String
   }
 
   connect() {
+    super.connect()
+    // handleDelete는 ModalMixin에서 일반 메서드로 정의되어 있으므로 this 바인딩이 필요합니다.
+    this.handleDelete = this.handleDelete.bind(this)
     this.connectBase({
       events: [
         { name: "std-sellbuy-attribute-crud:edit", handler: this.handleEdit },
@@ -30,6 +35,7 @@ export default class extends BaseCrudController {
 
   disconnect() {
     this.disconnectBase()
+    super.disconnect()
   }
 
   openCreate() {

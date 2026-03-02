@@ -18,9 +18,9 @@ class System::NoticeController < System::BaseController
 
     if notice.save
       attach_files(notice, uploaded_attachments)
-      render json: { success: true, message: "추가되었습니다.", notice: notice_json(notice, include_attachments: true) }
+      render_success(message: "추가되었습니다.", payload: { notice: notice_json(notice, include_attachments: true) })
     else
-      render json: { success: false, errors: notice.errors.full_messages }, status: :unprocessable_entity
+      render_failure(errors: notice.errors.full_messages)
     end
   end
 
@@ -30,28 +30,31 @@ class System::NoticeController < System::BaseController
     if notice.update(notice_params_without_attachments)
       purge_files(notice, removed_attachment_ids)
       attach_files(notice, uploaded_attachments)
-      render json: { success: true, message: "수정되었습니다.", notice: notice_json(notice, include_attachments: true) }
+      render_success(message: "수정되었습니다.", payload: { notice: notice_json(notice, include_attachments: true) })
     else
-      render json: { success: false, errors: notice.errors.full_messages }, status: :unprocessable_entity
+      render_failure(errors: notice.errors.full_messages)
     end
   end
 
   def destroy
     notice = find_notice
-    notice.destroy
-    render json: { success: true, message: "삭제되었습니다." }
+    if notice.destroy
+      render_success(message: "삭제되었습니다.")
+    else
+      render_failure(errors: notice.errors.full_messages.presence || [ "삭제에 실패했습니다." ])
+    end
   end
 
   def bulk_destroy
     ids = Array(params[:ids]).map { |id| id.to_i }.uniq
 
     if ids.empty?
-      render json: { success: false, errors: [ "삭제할 공지사항을 선택해주세요." ] }, status: :unprocessable_entity
+      render_failure(errors: [ "삭제할 공지사항을 선택해주세요." ])
       return
     end
 
     deleted_count = AdmNotice.where(id: ids).destroy_all.size
-    render json: { success: true, message: "#{deleted_count}건 삭제되었습니다." }
+    render_success(message: "#{deleted_count}건 삭제되었습니다.")
   end
 
   private
@@ -59,13 +62,13 @@ class System::NoticeController < System::BaseController
       scope = AdmNotice.ordered
 
       if search_params[:category_code].present?
-        scope = scope.where(category_code: search_params[:category_code].to_s.strip.upcase)
+        scope = scope.where(category_code: normalized_code(search_params[:category_code]))
       end
       if search_params[:title].present?
         scope = scope.where("title LIKE ?", "%#{search_params[:title]}%")
       end
       if search_params[:is_published].present?
-        scope = scope.where(is_published: search_params[:is_published].to_s.strip.upcase)
+        scope = scope.where(is_published: normalized_code(search_params[:is_published]))
       end
 
       scope
