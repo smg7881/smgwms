@@ -72,6 +72,13 @@ const ADDITIONAL_TAB_FIELDS = new Set([
   "remk"
 ])
 
+const POPUP_NAME_KEY_BY_CODE_KEY = {
+  mngt_corp_cd: "mngt_corp_nm",
+  fnc_or_cd: "fnc_or_nm",
+  upper_bzac_cd: "upper_bzac_nm",
+  zip_cd: "zip_nm"
+}
+
 // 거래처 마스터 + 담당자/작업장 디테일 + 상세 폼 동기화 컨트롤러
 export default class extends BaseGridController {
   static targets = [
@@ -112,13 +119,15 @@ export default class extends BaseGridController {
     bindDetailFieldEvents(this, null, (event) => {
       syncDetailFieldUtil(event, this)
       const key = detailFieldKey(event.currentTarget)
-      if (key === "fnc_or_cd") {
+      if (this.isPopupCodeKey(key)) {
         this.syncPopupFieldPresentation(event.currentTarget, key, event.currentTarget.value)
       }
       if (key === "bzac_sctn_grp_cd") {
         this.handleDetailGroupChange(event)
       }
     })
+    this._onPopupSelected = (event) => this.handlePopupSelected(event)
+    this.element.addEventListener("search-popup:selected", this._onPopupSelected)
     this.activateTab("basic")
     this.clearDetailForm()
     this.clearValidationErrors()
@@ -129,6 +138,10 @@ export default class extends BaseGridController {
   disconnect() {
     unbindDependentSelects(this)
     unbindDetailFieldEvents(this)
+    if (this._onPopupSelected) {
+      this.element.removeEventListener("search-popup:selected", this._onPopupSelected)
+      this._onPopupSelected = null
+    }
 
     this.currentMasterRow = null
 
@@ -197,11 +210,13 @@ export default class extends BaseGridController {
         bzac_cd: "",
         bzac_nm: "",
         mngt_corp_cd: "",
+        mngt_corp_nm: "",
         bizman_no: "",
         bzac_sctn_grp_cd: "",
         bzac_sctn_cd: "",
         bzac_kind_cd: "CORP",
         upper_bzac_cd: "",
+        upper_bzac_nm: "",
         rpt_bzac_cd: "",
         ctry_cd: "KR",
         tpl_logis_yn_cd: "N",
@@ -212,8 +227,10 @@ export default class extends BaseGridController {
         bilg_bzac_cd: "",
         elec_taxbill_yn_cd: "N",
         fnc_or_cd: "",
+        fnc_or_nm: "",
         acnt_no_cd: "",
         zip_cd: "",
+        zip_nm: "",
         addr_cd: "",
         addr_dtl_cd: "",
         rpt_sales_emp_cd: "",
@@ -790,27 +807,62 @@ export default class extends BaseGridController {
       return
     }
 
-    const nameKeyByCodeKey = {
-      mngt_corp_cd: "mngt_corp_nm",
-      fnc_or_cd: "fnc_or_nm",
-      upper_bzac_cd: "upper_bzac_nm",
-      zip_cd: "zip_nm"
-    }
-
-    const nameKey = nameKeyByCodeKey[key]
+    const nameKey = this.nameKeyForCodeKey(key)
     const seededName = nameKey ? (rowData?.[nameKey] || "").toString().trim() : ""
     if (seededName.length > 0) {
       setPopupValues(popupRoot, codeValue, seededName)
       return
     }
 
-    setPopupValues(popupRoot, codeValue)
+    setPopupValues(popupRoot, codeValue, "")
   }
 
   // popup 필드 비활성화 상태 동기화
   togglePopupFieldDisabled(fieldElement, disabled) {
     const popupRoot = popupRootForField(fieldElement)
     if (popupRoot) setPopupDisabled(popupRoot, disabled)
+  }
+
+  isPopupCodeKey(key) {
+    return Boolean(this.nameKeyForCodeKey(key))
+  }
+
+  nameKeyForCodeKey(codeKey) {
+    return POPUP_NAME_KEY_BY_CODE_KEY[codeKey] || null
+  }
+
+  handlePopupSelected(event) {
+    if (!this.currentMasterRow) return
+
+    const popupRoot = event.target?.closest?.("[data-controller~='search-popup']")
+    const codeKey = popupRoot?.dataset?.fieldName?.toString().trim()
+    if (!this.isPopupCodeKey(codeKey)) return
+
+    const nameKey = this.nameKeyForCodeKey(codeKey)
+    const detail = event.detail || {}
+    const code = this.normalizeDetailFieldValue(codeKey, detail.code ?? this.currentMasterRow[codeKey] ?? "")
+    const name = this.resolvePopupSelectionName(codeKey, detail)
+
+    this.currentMasterRow[codeKey] = code
+    this.currentMasterRow[nameKey] = name
+
+    refreshMasterRowCells(this, [codeKey, nameKey])
+  }
+
+  resolvePopupSelectionName(codeKey, detail) {
+    if (codeKey === "mngt_corp_cd") {
+      return String(detail.corp_nm ?? detail.name ?? detail.display ?? "").trim()
+    }
+
+    if (codeKey === "fnc_or_cd") {
+      return String(detail.fnc_or_nm ?? detail.name ?? detail.display ?? "").trim()
+    }
+
+    if (codeKey === "upper_bzac_cd" || codeKey === "zip_cd") {
+      return String(detail.name ?? detail.display ?? "").trim()
+    }
+
+    return String(detail.name ?? detail.display ?? "").trim()
   }
 
   // 마스터 셀 입력 정규화 (코드/사업자번호)

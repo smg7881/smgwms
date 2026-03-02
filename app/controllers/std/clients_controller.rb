@@ -8,16 +8,18 @@ class Std::ClientsController < Std::BaseController
         rows = clients_scope.to_a
         mngt_corp_name_by_code = build_mngt_corp_name_map(rows)
         upper_name_by_code = build_upper_client_name_map(rows)
+        fnc_or_name_by_code = build_financial_name_map(rows)
         zip_name_by_code = build_zip_name_map(rows)
 
-        render json: rows.map do |client|
+        render json: rows.map { |client|
           client_json(
             client,
             mngt_corp_name_by_code: mngt_corp_name_by_code,
             upper_name_by_code: upper_name_by_code,
+            fnc_or_name_by_code: fnc_or_name_by_code,
             zip_name_by_code: zip_name_by_code
           )
-        end
+        }
       end
     end
   end
@@ -309,6 +311,19 @@ class Std::ClientsController < Std::BaseController
       StdBzacMst.where(bzac_cd: codes).pluck(:bzac_cd, :bzac_nm).to_h
     end
 
+    def build_financial_name_map(rows)
+      codes = Array(rows).map(&:fnc_or_cd).compact_blank.map { |code| code.to_s.strip.upcase }.uniq
+      if codes.empty?
+        return {}
+      end
+
+      return {} unless defined?(StdFinancialInstitution) && StdFinancialInstitution.table_exists?
+
+      StdFinancialInstitution.where(fnc_or_cd: codes).pluck(:fnc_or_cd, :fnc_or_nm).to_h
+    rescue ActiveRecord::StatementInvalid
+      {}
+    end
+
     def build_zip_name_map(rows)
       codes = Array(rows).map(&:zip_cd).compact_blank.uniq
       if codes.empty?
@@ -427,7 +442,7 @@ class Std::ClientsController < Std::BaseController
       ).to_h.symbolize_keys
     end
 
-    def client_json(client, mngt_corp_name_by_code: {}, upper_name_by_code: {}, zip_name_by_code: {})
+    def client_json(client, mngt_corp_name_by_code: {}, upper_name_by_code: {}, fnc_or_name_by_code: {}, zip_name_by_code: {})
       {
         id: client.bzac_cd,
         bzac_cd: client.bzac_cd,
@@ -450,7 +465,7 @@ class Std::ClientsController < Std::BaseController
         bilg_bzac_cd: client.bilg_bzac_cd,
         elec_taxbill_yn_cd: client.elec_taxbill_yn_cd,
         fnc_or_cd: client.fnc_or_cd,
-        fnc_or_nm: client.financial_institution&.fnc_or_nm.to_s,
+        fnc_or_nm: fnc_or_name_by_code[client.fnc_or_cd.to_s.strip.upcase].to_s,
         acnt_no_cd: client.acnt_no_cd,
         zip_cd: client.zip_cd,
         zip_nm: zip_name_by_code[client.zip_cd.to_s.strip.upcase].to_s,

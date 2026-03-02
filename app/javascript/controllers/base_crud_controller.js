@@ -2,6 +2,7 @@ import { Controller } from "@hotwired/stimulus"
 import { showAlert, confirmAction } from "components/ui/alert"
 import { getCsrfToken, requestJson as requestJsonCore } from "controllers/grid/core/http_client"
 import { getSearchFormValue as getSearchFormValueFromBridge } from "controllers/grid/core/search_form_bridge"
+import { ExcelDownloadable } from "controllers/concerns/excel_downloadable"
 
 /**
  * BaseCrudController
@@ -18,7 +19,7 @@ import { getSearchFormValue as getSearchFormValueFromBridge } from "controllers/
  * - connect()에서 connectBase({ events }) 호출하여 기본 이벤트(모달 드래그 등)를 초기화
  * - 필요 시 openCreate, handleEdit, resetForm, save 오버라이드하여 각 리소스에 맞는 커스텀 동작 구현
  */
-export default class extends Controller {
+class BaseCrudController extends Controller {
   // 생성할 리소스의 모델명 (예: "user", "dept"). 폼 데이터를 서버에 전송할 때 키로 사용됩니다.
   static resourceName = ""
   // 삭제 확인창에 표시할 데이터의 기준 키 (예: "user_nm", "dept_nm")
@@ -203,47 +204,6 @@ export default class extends Controller {
     return this.application.getControllerForElementAndIdentifier(agGridEl, "ag-grid")
   }
 
-  // [엑셀 관리 공통]
-  // 엑셀 다운로드: value로 지정된 URL로 이동하여 엑셀을 내려받습니다.
-  downloadExcel() {
-    if (this.hasExcelExportUrlValue) {
-      window.location.href = this.excelExportUrlValue
-    }
-  }
-
-  // 엑셀 양식 템플릿 파일 다운로드. 양식 파일 URL로 요청을 날립니다.
-  downloadExcelTemplate() {
-    if (this.hasExcelTemplateUrlValue) {
-      window.location.href = this.excelTemplateUrlValue
-    }
-  }
-
-  // 업로드(Import) 처리 내역/이력을 보는 페이지로 이동합니다.
-  openImportHistory() {
-    if (this.hasImportHistoryUrlValue) {
-      window.location.href = this.importHistoryUrlValue
-    }
-  }
-
-  // 엑셀 업로드 팝업. 숨겨진 <input type="file" ...> 요소를 클릭하여 파일 브라우저를 띄웁니다.
-  openExcelImport() {
-    const fileInput = this.element.querySelector("[data-excel-import-input]")
-    if (fileInput) {
-      fileInput.click()
-    }
-  }
-
-  // 파일 브라우저에서 엑셀 파일 선택이 완료되는 즉시 자동으로 업로드 form을 submit 시킵니다.
-  submitExcelImport(event) {
-    const input = event.target
-    if (input.files.length === 0) return // 파일 미선택 시 무시
-
-    // 가장 가까운 form 요소를 찾아 전송 처리한 뒤 파일 input 초기화
-    const form = input.closest("form")
-    form?.requestSubmit()
-    input.value = ""
-  }
-
   // HTML <form> 요소 안의 정보(FormData)를 JSON 객체로 파싱합니다.
   // 폼 입력의 name 특성 중에서 대괄호([]) 안의 키만 추출하는 로직 적용. (Rails 규칙 반영)
   // 예: input name="user[email]" 의 값이 "admin" 이라면 => { email: "admin" } 생성
@@ -363,3 +323,7 @@ export default class extends Controller {
     return getSearchFormValueFromBridge(this.application, fieldName, { toUpperCase })
   }
 }
+
+Object.assign(BaseCrudController.prototype, ExcelDownloadable)
+
+export default BaseCrudController

@@ -37,6 +37,14 @@ export default class extends Controller {
     agGridController.exportCsv() // 그리드 컨트롤러 내부 exportCsv 진입 유도
   }
 
+  // [클라이언트 사이드 엑셀 다운로드 버튼 클릭 핸들러]
+  exportExcel() {
+    const agGridController = this.#findAgGridController()
+    if (!agGridController) return
+
+    agGridController.exportExcel(this.gridIdValue)
+  }
+
   // [헤더조건 필터 클리어 버튼 클릭 핸들러]
   clearFilter() {
     const agGridController = this.#findAgGridController()

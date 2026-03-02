@@ -31,7 +31,6 @@ Rails.application.routes.draw do
     resources :dept, controller: :dept, only: [ :index, :show, :create, :update, :destroy ] do
       collection do
         get :excel_template
-        get :excel_export
         post :excel_import
       end
     end
@@ -68,7 +67,6 @@ Rails.application.routes.draw do
       get :check_id, on: :collection
       collection do
         get :excel_template
-        get :excel_export
         post :excel_import
       end
     end

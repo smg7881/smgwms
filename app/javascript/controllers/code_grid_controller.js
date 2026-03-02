@@ -24,6 +24,8 @@ import {
   refreshSelectionLabel
 } from "controllers/grid/grid_utils"
 
+const YES_NO_VALUES = ["Y", "N"]
+
 // 코드 관리(마스터-디테일) 화면 전용 Stimulus 컨트롤러입니다.
 export default class extends BaseGridController {
   // 이 컨트롤러가 사용할 Stimulus target 목록입니다.
@@ -144,6 +146,18 @@ export default class extends BaseGridController {
       },
       // 저장 전 필수 입력 검증 대상 컬럼입니다.
       blankCheckFields: ["code", "code_name"],
+      validationRules: {
+        requiredFields: ["code", "code_name", "sys_sctn_cd", "use_yn"],
+        fieldLabels: {
+          code: "코드",
+          code_name: "코드명",
+          sys_sctn_cd: "시스템구분",
+          use_yn: "사용여부"
+        },
+        fieldRules: {
+          use_yn: [{ type: "enum", values: YES_NO_VALUES }]
+        }
+      },
       // 변경 비교(수정 여부 판단) 대상 컬럼입니다.
       comparableFields: [
         "code_name",
@@ -225,6 +239,18 @@ export default class extends BaseGridController {
       },
       // 저장 전 필수 입력 검증 대상 컬럼입니다.
       blankCheckFields: ["detail_code", "detail_code_name"],
+      validationRules: {
+        requiredFields: ["detail_code", "detail_code_name", "sort_order", "use_yn"],
+        fieldLabels: {
+          detail_code: "상세코드",
+          detail_code_name: "상세코드명",
+          sort_order: "정렬순서",
+          use_yn: "사용여부"
+        },
+        fieldRules: {
+          use_yn: [{ type: "enum", values: YES_NO_VALUES }]
+        }
+      },
       // 변경 비교(수정 여부 판단) 대상 컬럼입니다.
       comparableFields: [
         "detail_code_name",

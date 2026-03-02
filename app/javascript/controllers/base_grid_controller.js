@@ -595,3 +595,4 @@ export default class BaseGridController extends Controller {
     return getSearchFieldElementFromBridge(fieldName)
   }
 }
+

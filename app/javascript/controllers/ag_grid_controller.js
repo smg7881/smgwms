@@ -95,6 +95,50 @@ export default class extends Controller {
     this.gridApi.exportDataAsCsv()
   }
 
+  // 화면에 렌더링 된 그리드 데이터를 SheetJS로 XLSX 파일로 내보냅니다. (클라이언트 사이드)
+  async exportExcel(filename) {
+    if (!isApiAlive(this.gridApi)) return
+
+    // SheetJS lazy import (최초 클릭 시에만 CDN 로드)
+    const XLSX = await import("xlsx")
+
+    // 표시 가능한 컬럼 추출 (내부 컬럼 제외)
+    const allColumns = this.gridApi.getAllGridColumns() || []
+    const exportColumns = allColumns.filter(col => {
+      const colId = col.getColId?.() || ""
+      if (colId === "__row_status") return false
+      if (colId === "actions") return false
+      if (colId.startsWith("__")) return false
+      if (colId === "ag-Grid-SelectionColumn" || colId.includes("SelectionColumn")) return false
+      return true
+    })
+
+    // 헤더 행 생성 (컬럼 헤더명 사용)
+    const headers = exportColumns.map(col => col.getColDef?.()?.headerName || col.getColId?.() || "")
+
+    // 데이터 행 생성 (forEachNode는 페이징에 무관하게 전체 데이터 순회)
+    const rows = []
+    this.gridApi.forEachNode(node => {
+      if (!node.data) return
+      const row = exportColumns.map(col => {
+        const field = col.getColDef?.()?.field
+        return field ? (node.data[field] ?? "") : ""
+      })
+      rows.push(row)
+    })
+
+    // SheetJS 워크시트 및 워크북 생성
+    const wsData = [headers, ...rows]
+    const ws = XLSX.utils.aoa_to_sheet(wsData)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, "Sheet1")
+
+    // 파일명 결정 (gridIdValue 또는 "export")
+    const name = filename || this.gridIdValue || "export"
+    const ts = new Date().toISOString().slice(0, 10).replace(/-/g, "")
+    XLSX.writeFile(wb, `${name}_${ts}.xlsx`)
+  }
+
   // 그리드 기본 옵션과 데이터를 셋업하고 API 객체를 생성 및 초기화합니다.
   initGrid() {
     // AG Grid Configuration

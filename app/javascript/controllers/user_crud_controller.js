@@ -33,8 +33,6 @@ export default class extends BaseCrudController {
     updateUrl: String,
     deleteUrl: String,
     checkIdUrl: String,
-    excelExportUrl: String,
-    excelTemplateUrl: String,
     importHistoryUrl: String
   }
 

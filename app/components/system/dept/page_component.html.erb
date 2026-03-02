@@ -2,8 +2,6 @@
      data-dept-crud-create-url-value="<%= create_url %>"
      data-dept-crud-update-url-value="<%= update_url %>"
      data-dept-crud-delete-url-value="<%= delete_url %>"
-     data-dept-crud-excel-export-url-value="<%= excel_export_url %>"
-     data-dept-crud-excel-template-url-value="<%= excel_template_url %>"
      data-dept-crud-import-history-url-value="<%= import_history_url %>">
   <%= render Ui::SearchFormComponent.new(
     url: create_url,
@@ -14,10 +12,8 @@
 
   <%= render Ui::GridHeaderComponent.new(
     icon: "building", title: "부서 목록", grid_id: "dept",
-    excel_action: "click->dept-crud#downloadExcel",
     buttons: [
       { label: "엑셀양식", class: "btn btn-sm btn-secondary", action: "click->dept-crud#downloadExcelTemplate" },
-      { label: "엑셀다운로드", class: "btn btn-sm btn-secondary", action: "click->dept-crud#downloadExcel" },
       { label: "엑셀업로드", class: "btn btn-sm btn-secondary", action: "click->dept-crud#openExcelImport" },
       { label: "업로드이력", class: "btn btn-sm btn-secondary", action: "click->dept-crud#openImportHistory" },
       { label: "추가", class: "btn btn-sm btn-primary", action: "click->dept-crud#openCreate" }

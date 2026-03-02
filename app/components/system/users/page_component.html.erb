@@ -3,8 +3,6 @@
      data-user-crud-update-url-value="<%= update_url %>"
      data-user-crud-delete-url-value="<%= delete_url %>"
      data-user-crud-check-id-url-value="<%= check_id_url %>"
-     data-user-crud-excel-export-url-value="<%= excel_export_url %>"
-     data-user-crud-excel-template-url-value="<%= excel_template_url %>"
      data-user-crud-import-history-url-value="<%= import_history_url %>">
   <%= render Ui::SearchFormComponent.new(
     url: create_url,
@@ -15,10 +13,8 @@
 
   <%= render Ui::GridHeaderComponent.new(
     icon: "users", title: "사용자 목록", grid_id: "users",
-    excel_action: "click->user-crud#downloadExcel",
     buttons: [
       { label: "엑셀양식", class: "btn btn-sm btn-secondary", action: "click->user-crud#downloadExcelTemplate" },
-      { label: "엑셀다운로드", class: "btn btn-sm btn-secondary", action: "click->user-crud#downloadExcel" },
       { label: "엑셀업로드", class: "btn btn-sm btn-secondary", action: "click->user-crud#openExcelImport" },
       { label: "업로드이력", class: "btn btn-sm btn-secondary", action: "click->user-crud#openImportHistory" },
       { label: "사용자추가", class: "btn btn-sm btn-primary", action: "click->user-crud#openCreate" }

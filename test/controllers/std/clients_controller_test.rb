@@ -30,6 +30,40 @@ class Std::ClientsControllerTest < ActionDispatch::IntegrationTest
     assert rows.any? { |row| row["bzac_cd"] == "CL000001" }
   end
 
+  test "index json includes popup name fields for master row binding" do
+    StdFinancialInstitution.create!(
+      fnc_or_cd: "CITI",
+      fnc_or_nm: "Citi Bank",
+      fnc_or_eng_nm: "CITI BANK",
+      ctry_cd: "US",
+      use_yn_cd: "Y"
+    )
+
+    StdBzacMst.create!(
+      bzac_cd: "CL000099",
+      bzac_nm: "Client With Bank",
+      mngt_corp_cd: "CORP01",
+      bizman_no: "9999999999",
+      bzac_sctn_grp_cd: "CUSTOMER",
+      bzac_sctn_cd: "DOMESTIC",
+      bzac_kind_cd: "CORP",
+      ctry_cd: "KR",
+      rpt_sales_emp_cd: "EMP01",
+      fnc_or_cd: "CITI",
+      aply_strt_day_cd: Date.current,
+      use_yn_cd: "Y"
+    )
+
+    get std_clients_url(format: :json)
+    assert_response :success
+
+    rows = JSON.parse(response.body)
+    row = rows.find { |entry| entry["bzac_cd"] == "CL000099" }
+    assert_not_nil row
+    assert_equal "CITI", row["fnc_or_cd"]
+    assert_equal "Citi Bank", row["fnc_or_nm"]
+  end
+
   test "batch_save inserts updates and soft deletes with history" do
     StdBzacMst.create!(
       bzac_cd: "CL000010",

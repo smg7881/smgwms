@@ -8,7 +8,7 @@ class Ui::GridActionsComponent < ApplicationComponent
     attr_reader :grid_id, :excel_action
 
     def csv_fallback_action
-      "click->grid-actions#exportCsv"
+      "click->grid-actions#exportExcel"
     end
 
     def resolved_excel_action

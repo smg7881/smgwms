@@ -15,4 +15,8 @@ pin "ag-grid-community",
   to: "https://cdn.jsdelivr.net/npm/ag-grid-community@35.1.0/dist/package/main.esm.mjs",
   preload: true
 
+pin "xlsx",
+  to: "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/xlsx.mjs",
+  preload: false
+
 pin "@rails/request.js", to: "https://ga.jspm.io/npm:@rails/request.js@0.0.9/src/index.js"

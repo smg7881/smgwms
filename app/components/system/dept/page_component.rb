@@ -7,10 +7,6 @@ class System::Dept::PageComponent < System::BasePageComponent
       helpers.excel_template_system_dept_index_path
     end
 
-    def excel_export_url
-      helpers.excel_export_system_dept_index_path
-    end
-
     def excel_import_url
       helpers.excel_import_system_dept_index_path
     end

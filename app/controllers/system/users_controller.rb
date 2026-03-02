@@ -55,10 +55,6 @@ class System::UsersController < System::BaseController
       :users
     end
 
-    def excel_export_scope
-      filtered_users_scope
-    end
-
     def filtered_users_scope
       if search_params.values.any?(&:present?)
         scope = User.ordered

@@ -59,10 +59,6 @@ class System::DeptController < System::BaseController
       :dept
     end
 
-    def excel_export_scope
-      AdmDept.tree_ordered
-    end
-
     def search_params
       params.fetch(:q, {}).permit(:dept_code, :dept_nm, :use_yn)
     end

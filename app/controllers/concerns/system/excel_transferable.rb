@@ -19,22 +19,6 @@
       )
     end
 
-    def excel_export
-      handler = excel_handler
-      rows = handler.export_rows(excel_export_scope)
-      payload = Excel::WorkbookBuilder.new(
-        headers: handler.headers,
-        rows: rows,
-        sheet_name: handler.sheet_name
-      ).to_stream
-
-      send_data(
-        payload,
-        filename: "#{handler.filename_prefix}-#{Date.current}.xlsx",
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-      )
-    end
-
     def excel_import
       validation = Excel::UploadValidator.new(params[:file]).call
       unless validation.valid
@@ -143,10 +127,6 @@
 
       def excel_resource_key
         raise NotImplementedError, "하위 클래스에서 excel_resource_key를 구현해야 합니다."
-      end
-
-      def excel_export_scope
-        raise NotImplementedError, "하위 클래스에서 excel_export_scope를 구현해야 합니다."
       end
   end
 end

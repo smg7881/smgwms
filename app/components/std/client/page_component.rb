@@ -119,7 +119,11 @@ class Std::Client::PageComponent < Std::BasePageComponent
         { field: "bizman_no", headerName: "사업자번호", minWidth: 120, editable: false },
         { field: "rpt_sales_emp_cd", headerName: "대표영업사원", minWidth: 120, editable: false },
         { field: "mngt_corp_cd", headerName: "관리법인", minWidth: 120, editable: false },
+        { field: "mngt_corp_nm", headerName: "관리법인명", minWidth: 160, editable: false, hide: true },
         { field: "ctry_cd", headerName: "국가", maxWidth: 90, editable: false },
+        { field: "upper_bzac_nm", headerName: "상위거래처명", minWidth: 180, editable: false, hide: true },
+        { field: "fnc_or_nm", headerName: "금융기관명", minWidth: 180, editable: false, hide: true },
+        { field: "zip_nm", headerName: "우편번호명", minWidth: 180, editable: false, hide: true },
         {
           field: "use_yn_cd",
           headerName: "사용여부",

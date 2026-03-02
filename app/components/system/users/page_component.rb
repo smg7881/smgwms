@@ -11,10 +11,6 @@ class System::Users::PageComponent < System::BasePageComponent
       helpers.excel_template_system_users_path
     end
 
-    def excel_export_url
-      helpers.excel_export_system_users_path
-    end
-
     def excel_import_url
       helpers.excel_import_system_users_path
     end
