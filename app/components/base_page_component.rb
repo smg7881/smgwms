@@ -33,6 +33,10 @@ class BasePageComponent < ApplicationComponent
       common_code_options(code, value_transform: value_transform).to_h { |opt| [ opt[:value], opt[:label] ] }
     end
 
+    def common_code_radio_options(code, value_transform: nil)
+      common_code_options(code, value_transform: value_transform)
+    end
+
     def record_options(model, code_field:, name_field:, include_all: false, all_label: "전체", label_format: nil)
       records = fetch_records(model)
       options = records.map do |record|

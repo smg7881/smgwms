@@ -3,6 +3,8 @@ class StdBusinessCertificate < ApplicationRecord
 
   self.table_name = "std_business_certificates"
 
+  has_many_attached :attachments
+
   validates :bzac_cd, presence: true, uniqueness: true, length: { maximum: 20 }
   validates :compreg_slip, presence: true, length: { maximum: 30 }
   validates :bizman_yn_cd, presence: true, length: { maximum: 20 }
@@ -14,6 +16,19 @@ class StdBusinessCertificate < ApplicationRecord
   before_validation :normalize_fields
 
   scope :ordered, -> { order(:bzac_cd) }
+
+  def refresh_attached_file_name!(clear_if_empty: false)
+    filenames = attachments.map { |file| file.filename.to_s }.reject(&:blank?)
+    summary = filenames.join(", ").truncate(255)
+
+    if summary.present?
+      update_column(:attached_file_nm, summary)
+    else
+      if clear_if_empty
+        update_column(:attached_file_nm, nil)
+      end
+    end
+  end
 
   private
     def normalize_fields

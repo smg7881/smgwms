@@ -63,20 +63,14 @@ class System::Notice::PageComponent < System::BasePageComponent
           field: "is_top_fixed",
           type: "radio",
           label: "상단고정",
-          options: [
-            { label: "고정", value: "Y" },
-            { label: "일반", value: "N" }
-          ],
+          options: common_code_radio_options("CMM_USE_YN"),
           target: "fieldIsTopFixed"
         },
         {
           field: "is_published",
           type: "radio",
           label: "게시여부",
-          options: [
-            { label: "게시", value: "Y" },
-            { label: "미게시", value: "N" }
-          ],
+          options: common_code_radio_options("CMM_USE_YN"),
           target: "fieldIsPublished"
         },
         { field: "start_date", type: "date_picker", label: "게시 시작일", target: "fieldStartDate" },

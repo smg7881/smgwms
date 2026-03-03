@@ -1266,6 +1266,40 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_03_153000) do
     t.index ["user_id_code", "user_favor_menu_grp"], name: "index_std_favorites_on_user_and_group"
   end
 
+  create_table "std_work_routing_steps", force: :cascade do |t|
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "rmk_cd", limit: 500
+    t.integer "seq_no", null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn_cd", limit: 1, default: "Y", null: false
+    t.string "work_step_cd", limit: 30, null: false
+    t.string "work_step_level1_cd", limit: 30
+    t.string "work_step_level2_cd", limit: 30
+    t.string "wrk_rt_cd", limit: 20, null: false
+    t.index ["use_yn_cd"], name: "index_std_work_routing_steps_on_use_yn_cd"
+    t.index ["wrk_rt_cd", "seq_no"], name: "index_std_work_routing_steps_on_wrk_rt_cd_and_seq_no", unique: true
+    t.index ["wrk_rt_cd"], name: "index_std_work_routing_steps_on_wrk_rt_cd"
+  end
+
+  create_table "std_work_routings", force: :cascade do |t|
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "hwajong_cd", limit: 30
+    t.string "rmk_cd", limit: 500
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn_cd", limit: 1, default: "Y", null: false
+    t.string "wrk_rt_cd", limit: 20, null: false
+    t.string "wrk_rt_nm", limit: 150, null: false
+    t.string "wrk_type1_cd", limit: 30
+    t.string "wrk_type2_cd", limit: 30
+    t.index ["use_yn_cd"], name: "index_std_work_routings_on_use_yn_cd"
+    t.index ["wrk_rt_cd"], name: "index_std_work_routings_on_wrk_rt_cd", unique: true
+    t.index ["wrk_rt_nm"], name: "index_std_work_routings_on_wrk_rt_nm"
+  end
+
   create_table "std_workplaces", force: :cascade do |t|
     t.string "addr_cd", limit: 300
     t.decimal "adpt_capa", precision: 14, scale: 3

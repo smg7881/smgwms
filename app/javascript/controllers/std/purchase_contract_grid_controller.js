@@ -1,8 +1,24 @@
 ﻿import BaseGridController from "controllers/base_grid_controller"
 import { showAlert } from "components/ui/alert"
-import { isApiAlive, fetchJson, setManagerRowData, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel, focusFirstRow } from "controllers/grid/grid_utils"
+import {
+  fetchJson,
+  setManagerRowData,
+  hasPendingChanges,
+  blockIfPendingChanges,
+  buildTemplateUrl,
+  refreshSelectionLabel
+} from "controllers/grid/grid_utils"
 import { switchTab, activateTab } from "controllers/ui_utils"
-import * as GridFormUtils from "controllers/grid/grid_form_utils"
+import {
+  bindDetailFieldEvents,
+  unbindDetailFieldEvents,
+  fillDetailForm as fillDetailFormUtil,
+  clearDetailForm as clearDetailFormUtil,
+  syncDetailField as syncDetailFieldUtil,
+  toDateInputValue
+} from "controllers/grid/grid_form_utils"
+
+// 코드성 입력값: 저장 전 trim + upper 정규화 대상 필드
 const CODE_FIELDS = [
   "corp_cd",
   "bzac_cd",
@@ -27,6 +43,7 @@ const CODE_FIELDS = [
   "work_step_no2_cd"
 ]
 
+// 날짜 입력값: input[type=date] 형식으로 정규화할 필드
 const DATE_FIELDS = [
   "strt_ctrt_ymd",
   "ctrt_strt_day",
@@ -37,6 +54,7 @@ const DATE_FIELDS = [
 ]
 
 export default class extends BaseGridController {
+  // 멀티 그리드 화면에서 사용하는 주요 DOM 타겟
   static targets = [
     ...BaseGridController.targets,
     "masterGrid",
@@ -56,61 +74,56 @@ export default class extends BaseGridController {
     historyListUrlTemplate: String,
     selectedContract: String
   }
+
+  // 마스터-디테일(정산/이력) 역할 정의
   gridRoles() {
     return {
       master: {
         target: "masterGrid",
-        manager: "configureManager",
+        manager: this.masterManagerConfig(),
         masterKeyField: "pur_ctrt_no"
       },
       settlement: {
         target: "settlementGrid",
-        manager: "configureSettlementManager",
+        manager: this.settlementManagerConfig(),
         parentGrid: "master",
-        onMasterRowChange: (rowData) => this.handleMasterRowChange(rowData)
+        onMasterRowChange: (rowData) => this.handleMasterRowChange(rowData),
+        detailLoader: async (rowData) => this.fetchSettlementRows(rowData)
       },
       history: {
         target: "historyGrid",
-        parentGrid: "master"
+        parentGrid: "master",
+        detailLoader: async (rowData) => this.fetchHistoryRows(rowData)
       }
     }
   }
 
+  // 초기 화면 상태와 상세 폼 동기화 이벤트를 설정
   connect() {
     super.connect()
-    this.settlementGridController = null
-    this.settlementManager = null
-    this.historyGridController = null
+
     this.currentMasterRow = null
     this.activeTab = "basic"
 
-    this.bindDetailFieldEvents()
+    bindDetailFieldEvents(this, null, (event) => {
+      syncDetailFieldUtil(event, this)
+    })
     this.activateTab("basic")
     this.clearDetailForm()
-  }
-  onAllGridsReady() {
-    this.manager = this.gridManager("master")
-    this.gridController = this.gridCtrl("master")
-    this.settlementManager = this.gridManager("settlement")
-    this.settlementGridController = this.gridCtrl("settlement")
-    this.historyGridController = this.gridCtrl("history")
     this.refreshSelectedContractLabel()
   }
+
+  // 화면 이탈 시 이벤트/참조 정리
   disconnect() {
-    this.unbindDetailFieldEvents()
+    unbindDetailFieldEvents(this)
 
-    if (this.settlementManager) {
-      this.settlementManager.detach()
-      this.settlementManager = null
-    }
-
-    this.settlementGridController = null
-    this.historyGridController = null
     this.currentMasterRow = null
+
     super.disconnect()
   }
 
-  configureManager() {
+  // 마스터 그리드 CRUD/정규화 규칙
+  masterManagerConfig() {
     return {
       pkFields: ["pur_ctrt_no"],
       fields: {
@@ -204,15 +217,12 @@ export default class extends BaseGridController {
       ],
       firstEditCol: "pur_ctrt_nm",
       pkLabels: { pur_ctrt_no: "매입계약번호" },
-      onCellValueChanged: (event) => this.normalizeMasterField(event),
-      onRowDataUpdated: () => {
-        this.settlementManager?.resetTracking?.()
-        this.selectFirstMasterRow()
-      }
+      onCellValueChanged: (event) => this.normalizeMasterField(event)
     }
   }
 
-  configureSettlementManager() {
+  // 정산 디테일 그리드 CRUD/정규화 규칙
+  settlementManagerConfig() {
     return {
       pkFields: ["seq_no"],
       fields: {
@@ -256,23 +266,43 @@ export default class extends BaseGridController {
         "exca_ofcr_nm", "use_yn_cd", "remk"
       ],
       firstEditCol: "fnc_or_cd",
-      pkLabels: { seq_no: "순번" },
-      registration: {
-        targetName: "settlementGrid",
-        controllerKey: "settlementGridController",
-        managerKey: "settlementManager"
-      }
+      pkLabels: { seq_no: "순번" }
     }
   }
 
-  isDetailReady() {
-    return isApiAlive(this.settlementManager?.api) && isApiAlive(this.historyGridController?.api)
+  // 마스터 grid manager shortcut
+  get masterManager() {
+    return this.gridManager("master")
   }
 
-  async handleMasterRowChange(rowData) {
-    if (!this.isDetailReady()) return
+  // grid_form_utils가 controller.manager를 참조하므로 브릿지 제공
+  get manager() {
+    return this.masterManager
+  }
 
+  set manager(_v) {
+    // BaseGridController.connect()/disconnect()가 this.manager에 값을 대입하므로
+    // 멀티그리드 컨트롤러에서는 대입을 흡수하는 setter가 필요합니다.
+    // 실제 참조는 항상 getter(get manager)로 masterManager를 반환합니다.
+  }
+
+  // 정산 grid manager shortcut
+  get settlementManager() {
+    return this.gridManager("settlement")
+  }
+
+  // 검색 직전 화면 상태 초기화
+  beforeSearchReset() {
+    this.selectedContractValue = ""
+    this.currentMasterRow = null
+    this.refreshSelectedContractLabel()
+    this.clearDetailForm()
+  }
+
+  // 마스터 선택 변경 시 상세 폼/라벨/디테일 그리드 초기화
+  handleMasterRowChange(rowData) {
     this.currentMasterRow = rowData || null
+
     if (!rowData) {
       this.clearDetailForm()
     } else {
@@ -281,19 +311,15 @@ export default class extends BaseGridController {
 
     this.selectedContractValue = rowData?.pur_ctrt_no || ""
     this.refreshSelectedContractLabel()
+
     this.clearSettlementRows()
     this.clearHistoryRows()
-
-    const code = rowData?.pur_ctrt_no
-    const hasLoadableCode = Boolean(code) && !rowData?.__is_deleted && !rowData?.__is_new
-    if (!hasLoadableCode) return
-
-    await Promise.all([this.loadSettlementRows(code), this.loadHistoryRows(code)])
   }
 
+  // ----- 마스터 CRUD -----
   addMasterRow() {
     this.addRow({
-      manager: this.manager,
+      manager: this.masterManager,
       config: { startCol: "pur_ctrt_nm" },
       onAdded: (rowData) => {
         this.activateTab("basic")
@@ -303,37 +329,19 @@ export default class extends BaseGridController {
   }
 
   deleteMasterRows() {
-    this.deleteRows()
+    this.deleteRows({ manager: this.masterManager })
   }
 
   async saveMasterRows() {
     await this.saveRowsWith({
-      manager: this.manager,
-      batchUrl: this.batchUrlValue,
-      saveMessage: this.saveMessage,
-      onSuccess: () => this.afterSaveSuccess()
+      manager: this.masterManager,
+      batchUrl: this.masterBatchUrlValue,
+      saveMessage: "매입계약 데이터가 저장되었습니다.",
+      onSuccess: () => this.refreshGrid("master")
     })
   }
 
-  get batchUrlValue() {
-    return this.masterBatchUrlValue
-  }
-
-  get saveMessage() {
-    return "매입계약 데이터가 저장되었습니다."
-  }
-
-  async afterSaveSuccess() {
-    if (!isApiAlive(this.manager?.api) || !this.gridController?.urlValue) return
-    try {
-      const rows = await fetchJson(this.gridController.urlValue)
-      setManagerRowData(this.manager, rows)
-      this.selectFirstMasterRow()
-    } catch {
-      // 마스터 재조회 실패 시 무시
-    }
-  }
-
+  // ----- 정산 CRUD -----
   addSettlementRow() {
     if (!this.settlementManager) return
     if (this.blockDetailActionIfMasterChanged()) return
@@ -368,92 +376,107 @@ export default class extends BaseGridController {
       batchUrl,
       saveMessage: "매입계약 정산정보가 저장되었습니다.",
       onSuccess: () => Promise.all([
-        this.loadSettlementRows(this.selectedContractValue),
-        this.loadHistoryRows(this.selectedContractValue)
+        this.reloadSettlementRows(this.selectedContractValue),
+        this.reloadHistoryRowsByContract(this.selectedContractValue)
       ])
     })
   }
 
-  async loadSettlementRows(contractNo) {
-    if (!isApiAlive(this.settlementManager?.api)) return
+  // ----- 디테일 로더(마스터 선택 연동) -----
+  async fetchSettlementRows(rowData) {
+    const contractNo = rowData?.pur_ctrt_no
+    const canLoad = Boolean(contractNo) && !rowData?.__is_deleted && !rowData?.__is_new
+    if (!canLoad) return []
 
-    if (!contractNo) {
-      this.clearSettlementRows()
-      return
-    }
+    return this.fetchSettlementRowsByContract(contractNo)
+  }
+
+  async fetchSettlementRowsByContract(contractNo) {
+    if (!contractNo) return []
 
     try {
       const url = buildTemplateUrl(this.settlementListUrlTemplateValue, ":id", contractNo)
       const rows = await fetchJson(url)
-      setManagerRowData(this.settlementManager, rows)
+      return Array.isArray(rows) ? rows : []
     } catch {
       showAlert("정산정보 목록 조회에 실패했습니다.")
+      return []
     }
   }
 
-  async loadHistoryRows(contractNo) {
-    if (!isApiAlive(this.historyGridController?.api)) return
+  async fetchHistoryRows(rowData) {
+    const contractNo = rowData?.pur_ctrt_no
+    const canLoad = Boolean(contractNo) && !rowData?.__is_deleted && !rowData?.__is_new
+    if (!canLoad) return []
 
-    if (!contractNo) {
-      this.clearHistoryRows()
-      return
-    }
+    return this.fetchHistoryRowsByContract(contractNo)
+  }
+
+  async fetchHistoryRowsByContract(contractNo) {
+    if (!contractNo) return []
 
     try {
       const url = buildTemplateUrl(this.historyListUrlTemplateValue, ":id", contractNo)
       const rows = await fetchJson(url)
-      this.historyGridController.api.setGridOption("rowData", rows)
+      return Array.isArray(rows) ? rows : []
     } catch {
       showAlert("변경이력 조회에 실패했습니다.")
+      return []
     }
   }
 
+  // 저장 후 특정 계약 기준으로 디테일 재조회
+  async reloadSettlementRows(contractNo) {
+    const rows = await this.fetchSettlementRowsByContract(contractNo)
+    setManagerRowData(this.settlementManager, rows)
+  }
+
+  async reloadHistoryRowsByContract(contractNo) {
+    const rows = await this.fetchHistoryRowsByContract(contractNo)
+    this.setRows("history", rows)
+  }
+
+  // 이력 탭 수동 새로고침 액션
   async reloadHistoryRows() {
     if (!this.selectedContractValue) {
       showAlert("매입계약을 먼저 선택해주세요.")
       return
     }
-    await this.loadHistoryRows(this.selectedContractValue)
+
+    await this.reloadHistoryRowsByContract(this.selectedContractValue)
   }
 
+  // 디테일 그리드 비우기
   clearSettlementRows() {
     setManagerRowData(this.settlementManager, [])
   }
 
   clearHistoryRows() {
-    if (!isApiAlive(this.historyGridController?.api)) return
-    this.historyGridController.api.setGridOption("rowData", [])
+    this.setRows("history", [])
   }
 
-  // 조회 직전 상세 그리드를 비웁니다.
-  clearAllDetails() {
-    this.clearSettlementRows()
-    this.clearHistoryRows()
-  }
-  beforeSearchReset() {
-    this.selectedContractValue = ""
-    this.currentMasterRow = null
-    this.refreshSelectedContractLabel()
-    this.clearDetailForm()
-  }
-
+  // 상세 폼 submit 기본 동작 차단(그리드 저장 흐름 사용)
   preventDetailSubmit(event) {
     event.preventDefault()
   }
 
+  // 선택된 계약 라벨 표시 갱신
   refreshSelectedContractLabel() {
     if (!this.hasSelectedContractLabelTarget) return
+
     refreshSelectionLabel(this.selectedContractLabelTarget, this.selectedContractValue, "매입계약", "매입계약을 먼저 선택하세요.")
   }
 
+  // 마스터 미저장 변경 여부 검사
   hasMasterPendingChanges() {
-    return hasPendingChanges(this.manager)
+    return hasPendingChanges(this.masterManager)
   }
 
   blockDetailActionIfMasterChanged() {
-    return blockIfPendingChanges(this.manager, "매입계약 마스터")
+    return blockIfPendingChanges(this.masterManager, "매입계약 마스터")
   }
 
+  // 탭 전환
   switchTab(event) {
     switchTab(event, this)
   }
@@ -462,32 +485,27 @@ export default class extends BaseGridController {
     activateTab(tab, this)
   }
 
+  // 상세 폼 <-> 마스터 행 동기화
   fillDetailForm(rowData) {
-    GridFormUtils.fillDetailForm(this, rowData)
+    fillDetailFormUtil(this, rowData)
   }
 
   clearDetailForm() {
-    GridFormUtils.clearDetailForm(this)
+    clearDetailFormUtil(this)
   }
 
-  toggleDetailFields(disabled) {
-    GridFormUtils.toggleDetailFields(this, disabled)
-  }
-
-  syncDetailField(event) {
-    GridFormUtils.syncDetailField(event, this)
-  }
-
+  // 입력 필드 표시용 정규화
   normalizeValueForInput(fieldName, rawValue) {
     if (rawValue == null) return ""
 
     if (DATE_FIELDS.includes(fieldName)) {
-      return this.toDateInputValue(rawValue)
+      return toDateInputValue(rawValue)
     }
 
     return rawValue.toString()
   }
 
+  // 상세 폼 저장용 정규화
   normalizeDetailFieldValue(fieldName, rawValue) {
     const value = (rawValue || "").toString()
 
@@ -500,7 +518,7 @@ export default class extends BaseGridController {
     }
 
     if (DATE_FIELDS.includes(fieldName)) {
-      return this.toDateInputValue(value)
+      return toDateInputValue(value)
     }
 
     if (fieldName === "remk" || fieldName.endsWith("_cond_cd") || fieldName.endsWith("_reason_cd")) {
@@ -510,44 +528,7 @@ export default class extends BaseGridController {
     return value.trim()
   }
 
-  toDateInputValue(value) {
-    const source = (value || "").toString().trim()
-    if (source === "") return ""
-    if (/^\d{4}-\d{2}-\d{2}$/.test(source)) return source
-
-    const parsed = new Date(source)
-    if (Number.isNaN(parsed.getTime())) return ""
-
-    const yyyy = parsed.getFullYear()
-    const mm = `${parsed.getMonth() + 1}`.padStart(2, "0")
-    const dd = `${parsed.getDate()}`.padStart(2, "0")
-    return `${yyyy}-${mm}-${dd}`
-  }
-
-  markCurrentMasterRowUpdated() {
-    GridFormUtils.markCurrentMasterRowUpdated(this)
-  }
-
-  refreshMasterRowCells(columns = []) {
-    GridFormUtils.refreshMasterRowCells(this, columns)
-  }
-
-  findMasterNodeByData(rowData) {
-    return GridFormUtils.findMasterNodeByData(this, rowData)
-  }
-
-  bindDetailFieldEvents() {
-    GridFormUtils.bindDetailFieldEvents(this)
-  }
-
-  unbindDetailFieldEvents() {
-    GridFormUtils.unbindDetailFieldEvents(this)
-  }
-
-  detailFieldKey(fieldEl) {
-    return GridFormUtils.detailFieldKey(fieldEl)
-  }
-
+  // 마스터 셀 입력 정규화(코드/사업자번호)
   normalizeMasterField(event) {
     const field = event?.colDef?.field
     if (!field || !event?.node?.data) return
@@ -559,11 +540,13 @@ export default class extends BaseGridController {
       row[field] = (row[field] || "").toString().trim().toUpperCase()
     }
 
-    this.manager.api.refreshCells({
+    const api = this.masterManager?.api
+    if (!api) return
+
+    api.refreshCells({
       rowNodes: [event.node],
       columns: [field],
       force: true
     })
   }
 }
-

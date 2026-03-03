@@ -1,6 +1,8 @@
-<div data-controller="std-business-certificate-grid"
-     data-action="ag-grid:ready->std-business-certificate-grid#registerGrid"
-     data-std-business-certificate-grid-batch-url-value="<%= batch_save_url %>">
+<div data-controller="std-business-certificate-crud"
+     data-std-business-certificate-crud-create-url-value="<%= create_url %>"
+     data-std-business-certificate-crud-update-url-value="<%= update_url %>"
+     data-std-business-certificate-crud-delete-url-value="<%= delete_url %>"
+     data-std-business-certificate-crud-client-defaults-url-value="<%= client_defaults_url %>">
   <%= render Ui::SearchFormComponent.new(
     url: create_url,
     fields: search_fields,
@@ -11,19 +13,46 @@
   <%= render Ui::GridHeaderComponent.new(
     icon: "id-card", title: "사업자등록증 목록", grid_id: "std-business-certificate",
     buttons: [
-      { label: "추가", class: "btn btn-sm btn-primary", action: "click->std-business-certificate-grid#addRow" },
-      { label: "삭제", class: "btn btn-sm btn-danger", action: "click->std-business-certificate-grid#deleteRows" },
-      { label: "저장", class: "btn btn-sm btn-success", action: "click->std-business-certificate-grid#saveRows" }
+      { label: "신규등록", class: "btn btn-sm btn-primary", action: "click->std-business-certificate-crud#openCreate" }
     ]
   ) %>
 
   <%= render Ui::AgGridComponent.new(
     columns: columns,
     url: grid_url,
-    height: "calc(100vh - 360px)",
+    height: "calc(100vh - 370px)",
     page_size: 20,
-    row_selection: "multiple",
-    grid_id: "std-business-certificate",
-    data: { std_business_certificate_grid_target: "grid" }
+    grid_id: "std-business-certificate"
   ) %>
+
+  <%= render Ui::ModalShellComponent.new(
+    controller: "std-business-certificate-crud",
+    title: "사업자등록증 등록",
+    save_form_id: "std-business-certificate-crud-form",
+    cancel_role: "cancel",
+    save_role: "save",
+    width: "920px"
+  ) do |modal| %>
+    <% modal.with_body do %>
+      <input type="hidden" data-std-business-certificate-crud-target="fieldId" />
+
+      <%= render Ui::ResourceFormComponent.new(
+        model: StdBusinessCertificate.new,
+        url: "#",
+        cols: 2,
+        show_buttons: false,
+        target_controller: "std_business_certificate_crud",
+        fields: form_fields,
+        form_data: {
+          std_business_certificate_crud_target: "form",
+          action: "submit->resource-form#submit submit->std-business-certificate-crud#submit"
+        },
+        form_html: {
+          id: "std-business-certificate-crud-form",
+          novalidate: true,
+          autocomplete: "off"
+        }
+      ) %>
+    <% end %>
+  <% end %>
 </div>

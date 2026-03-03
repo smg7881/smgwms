@@ -1,0 +1,6 @@
+<%= turbo_frame_tag "main-content" do %>
+  <%= render Std::WorkRoutingStep::PageComponent.new(
+    query_params: request.query_parameters,
+    selected_work_routing: @selected_work_routing
+  ) %>
+<% end %>

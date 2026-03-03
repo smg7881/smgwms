@@ -11,7 +11,7 @@ class Std::ZipcodesController < Std::BaseController
   end
 
   def create
-    row = StdZipCode.new(zipcode_params)
+    row = StdZipCode.new(zipcode_attributes)
 
     if row.save
       render json: { success: true, message: "우편번호가 등록되었습니다.", zipcode: zipcode_json(row) }
@@ -27,7 +27,7 @@ class Std::ZipcodesController < Std::BaseController
       return
     end
 
-    update_attrs = zipcode_params.to_h
+    update_attrs = zipcode_attributes
     update_attrs.delete("ctry_cd")
     update_attrs.delete("zipcd")
     update_attrs.delete("seq_no")
@@ -104,15 +104,31 @@ class Std::ZipcodesController < Std::BaseController
       search_params[:use_yn_cd].to_s.strip.upcase.presence
     end
 
-    def zipcode_params
-      params.require(:zipcode).permit(
+    def zipcode_attributes
+      refresh_zipcode_column_information
+
+      permitted = params.require(:zipcode).permit(*zipcode_param_keys).to_h
+      permitted.slice(*StdZipCode.attribute_names)
+    end
+
+    def zipcode_param_keys
+      [
+        :authenticity_token, :ctry_lookup,
         :ctry_cd, :zipcd, :seq_no,
         :zipaddr, :sido, :sgng, :eupdiv,
         :addr_ri, :iland_san, :san_houseno, :apt_bild_nm,
         :strt_houseno_wek, :strt_houseno_mnst, :end_houseno_wek, :end_houseno_mnst,
         :dong_rng_strt, :dong_houseno_end, :chg_ymd,
         :use_yn_cd
-      )
+      ]
+    end
+
+    def refresh_zipcode_column_information
+      if StdZipCode.attribute_names.exclude?("addr_ri")
+        if ActiveRecord::Base.connection.column_exists?(:std_zip_codes, :addr_ri)
+          StdZipCode.reset_column_information
+        end
+      end
     end
 
     def find_zipcode
@@ -144,17 +160,17 @@ class Std::ZipcodesController < Std::BaseController
         sido: row.sido,
         sgng: row.sgng,
         eupdiv: row.eupdiv,
-        addr_ri: row.addr_ri,
-        iland_san: row.iland_san,
-        san_houseno: row.san_houseno,
-        apt_bild_nm: row.apt_bild_nm,
-        strt_houseno_wek: row.strt_houseno_wek,
-        strt_houseno_mnst: row.strt_houseno_mnst,
-        end_houseno_wek: row.end_houseno_wek,
-        end_houseno_mnst: row.end_houseno_mnst,
-        dong_rng_strt: row.dong_rng_strt,
-        dong_houseno_end: row.dong_houseno_end,
-        chg_ymd: row.chg_ymd,
+        addr_ri: row.attributes["addr_ri"],
+        iland_san: row.attributes["iland_san"],
+        san_houseno: row.attributes["san_houseno"],
+        apt_bild_nm: row.attributes["apt_bild_nm"],
+        strt_houseno_wek: row.attributes["strt_houseno_wek"],
+        strt_houseno_mnst: row.attributes["strt_houseno_mnst"],
+        end_houseno_wek: row.attributes["end_houseno_wek"],
+        end_houseno_mnst: row.attributes["end_houseno_mnst"],
+        dong_rng_strt: row.attributes["dong_rng_strt"],
+        dong_houseno_end: row.attributes["dong_houseno_end"],
+        chg_ymd: row.attributes["chg_ymd"],
         use_yn_cd: row.use_yn_cd,
         create_by: row.create_by,
         create_time: row.create_time,

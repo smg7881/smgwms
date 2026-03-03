@@ -29,6 +29,8 @@ class Std::ZipcodesControllerTest < ActionDispatch::IntegrationTest
   test "create update and destroy work with modal endpoints" do
     post std_zipcodes_url, params: {
       zipcode: {
+        authenticity_token: "token",
+        ctry_lookup: "대한민국",
         ctry_cd: "KR",
         zipcd: "88990",
         seq_no: 1,
@@ -36,6 +38,9 @@ class Std::ZipcodesControllerTest < ActionDispatch::IntegrationTest
         sido: "서울특별시",
         sgng: "강남구",
         eupdiv: "역삼동",
+        addr_ri: "테스트리",
+        iland_san: "산",
+        apt_bild_nm: "테스트아파트",
         use_yn_cd: "Y"
       }
     }, as: :json
@@ -43,6 +48,9 @@ class Std::ZipcodesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     row = StdZipCode.find_by!(ctry_cd: "KR", zipcd: "88990", seq_no: 1)
     assert_equal "역삼동", row.eupdiv
+    assert_equal "테스트리", row.addr_ri
+    assert_equal "산", row.iland_san
+    assert_equal "테스트아파트", row.apt_bild_nm
 
     patch std_zipcode_url(row.id), params: {
       zipcode: {

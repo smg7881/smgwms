@@ -57,7 +57,7 @@ const CONTROLLERS = [
   ["std-approval-request-grid", "controllers/std/approval_request_grid_controller"],
   ["std-approval-history-grid", "controllers/std/approval_history_grid_controller"],
   ["std-corporation-grid", "controllers/std/corporation_grid_controller"],
-  ["std-business-certificate-grid", "controllers/std/business_certificate_grid_controller"],
+  ["std-business-certificate-crud", "controllers/std/business_certificate_crud_controller"],
   ["std-good-grid", "controllers/std/good_grid_controller"],
   ["std-favorite-grid", "controllers/std/favorite_grid_controller"],
   ["std-interface-info-grid", "controllers/std/interface_info_grid_controller"],

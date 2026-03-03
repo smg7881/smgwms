@@ -1,0 +1,76 @@
+<div data-controller="std-work-routing-step-grid"
+     data-action="ag-grid:ready->std-work-routing-step-grid#registerGrid"
+     data-std-work-routing-step-grid-master-batch-url-value="<%= master_batch_save_url %>"
+     data-std-work-routing-step-grid-detail-batch-url-template-value="<%= detail_batch_save_url_template %>"
+     data-std-work-routing-step-grid-detail-list-url-template-value="/std/work_routing_steps/:id/details.json"
+     data-std-work-routing-step-grid-selected-work-routing-value="<%= selected_work_routing.to_s %>"
+     data-std-work-routing-step-grid-work-type1-map-value='<%= work_type1_map_json %>'
+     data-std-work-routing-step-grid-work-type2-map-value='<%= work_type2_map_json %>'
+     data-std-work-routing-step-grid-work-step-level2-map-value='<%= work_step_level2_map_json %>'>
+  <%= render Ui::SearchFormComponent.new(
+    url: create_url,
+    fields: search_fields,
+    cols: 3,
+    enable_collapse: true
+  ) %>
+
+  <div class="grid grid-cols-2 gap-3 max-[1200px]:grid-cols-1">
+    <section class="min-w-0">
+      <%= render Ui::GridHeaderComponent.new(
+        icon: "route", title: "기준작업경로 목록", grid_id: "std-work-routing-master",
+        buttons: [
+          { label: "행추가", class: "btn btn-sm btn-primary", action: "click->std-work-routing-step-grid#addMasterRow" },
+          { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->std-work-routing-step-grid#deleteMasterRows" },
+          { label: "저장", class: "btn btn-sm btn-success", action: "click->std-work-routing-step-grid#saveMasterRows" }
+        ]
+      ) %>
+
+      <%= render Ui::AgGridComponent.new(
+        columns: master_columns,
+        url: grid_url,
+        height: "calc(100vh - 420px)",
+        pagination: false,
+        row_selection: "multiple",
+        grid_id: "std-work-routing-master",
+        data: { std_work_routing_step_grid_target: "masterGrid" }
+      ) %>
+    </section>
+
+    <section class="min-w-0">
+      <%= render Ui::GridHeaderComponent.new(
+        icon: "list-tree", title: "작업경로별 작업단계 목록", grid_id: "std-work-routing-detail",
+        buttons: [
+          { label: "행추가", class: "btn btn-sm btn-primary", action: "click->std-work-routing-step-grid#addDetailRow" },
+          { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->std-work-routing-step-grid#deleteDetailRows" },
+          { label: "저장", class: "btn btn-sm btn-success", action: "click->std-work-routing-step-grid#saveDetailRows" }
+        ]
+      ) do |header| %>
+        <% header.with_subtitle do %>
+          <p class="text-text-secondary text-xs" data-std-work-routing-step-grid-target="selectedWorkRoutingLabel"><%= selected_work_routing_label %></p>
+        <% end %>
+      <% end %>
+
+      <% if detail_grid_url.present? %>
+        <%= render Ui::AgGridComponent.new(
+          columns: detail_columns,
+          url: detail_grid_url,
+          height: "calc(100vh - 420px)",
+          pagination: false,
+          row_selection: "multiple",
+          grid_id: "std-work-routing-detail",
+          data: { std_work_routing_step_grid_target: "detailGrid" }
+        ) %>
+      <% else %>
+        <%= render Ui::AgGridComponent.new(
+          columns: detail_columns,
+          row_data: [],
+          height: "calc(100vh - 420px)",
+          pagination: false,
+          row_selection: "multiple",
+          grid_id: "std-work-routing-detail",
+          data: { std_work_routing_step_grid_target: "detailGrid" }
+        ) %>
+      <% end %>
+    </section>
+  </div>
+</div>

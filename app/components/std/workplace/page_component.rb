@@ -158,23 +158,16 @@ class Std::Workplace::PageComponent < Std::BasePageComponent
           type: "radio",
           label: "창고관리여부",
           value: "N",
-          options: yn_radio_options
+          options: common_code_radio_options("CMM_USE_YN")
         },
         {
           field: "use_yn_cd",
           type: "radio",
           label: "사용여부",
           value: "Y",
-          options: yn_radio_options
+          options: common_code_radio_options("CMM_USE_YN")
         },
         { field: "remk_cd", type: "textarea", label: "설명", rows: 4, colspan: 2, span: "24", maxlength: 1000, target: "fieldRemkCd" }
-      ]
-    end
-
-    def yn_radio_options
-      [
-        { label: "사용", value: "Y" },
-        { label: "미사용", value: "N" }
       ]
     end
 end

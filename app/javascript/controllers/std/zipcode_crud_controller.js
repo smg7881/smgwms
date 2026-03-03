@@ -8,7 +8,12 @@ export default class extends BaseGridController {
   static targets = [
     ...BaseGridController.targets,
     "overlay", "modal", "modalTitle", "form",
-    "fieldId", "fieldCtryCd", "fieldZipcd", "fieldSeqNo"
+    "fieldId", "fieldCtryCd", "fieldZipcd", "fieldSeqNo",
+    "fieldZipaddr", "fieldSido", "fieldSgng", "fieldEupdiv",
+    "fieldAddrRi", "fieldIlandSan", "fieldSanHouseno", "fieldAptBildNm",
+    "fieldStrtHousenoWek", "fieldStrtHousenoMnst", "fieldEndHousenoWek", "fieldEndHousenoMnst",
+    "fieldDongRngStrt", "fieldDongHousenoEnd", "fieldChgYmd",
+    "fieldUseYnCd", "fieldCreateBy", "fieldCreateTime", "fieldUpdateBy", "fieldUpdateTime"
   ]
 
   static values = {
@@ -43,13 +48,9 @@ export default class extends BaseGridController {
     this.fieldCtryCdTarget.readOnly = false
     this.fieldZipcdTarget.readOnly = false
     this.fieldSeqNoTarget.readOnly = false
-
-    this.setFieldValues({
-      ctry_cd: this.selectedCountryCodeFromSearch() || "KR",
-      ctry_lookup: this.selectedCountryNameFromSearch(),
-      seq_no: 1,
-      use_yn_cd: "Y"
-    })
+    this.fieldCtryCdTarget.value = this.selectedCountryCodeFromSearch() || "KR"
+    this.fieldSeqNoTarget.value = 1
+    this.fieldUseYnCdTarget.value = "Y"
     this.setAuditPreviewForCreate()
     this.syncPopupDisplaysFromCodes()
     this.openModal()
@@ -67,28 +68,26 @@ export default class extends BaseGridController {
     this.fieldZipcdTarget.readOnly = true
     this.fieldSeqNoTarget.readOnly = true
 
-    this.setFieldValues({
-      ctry_cd: data.ctry_cd || "",
-      ctry_lookup: data.ctry_nm || data.ctry_cd || "",
-      zipcd: data.zipcd || "",
-      seq_no: data.seq_no ?? "",
-      zipaddr: data.zipaddr || "",
-      sido: data.sido || "",
-      sgng: data.sgng || "",
-      eupdiv: data.eupdiv || "",
-      addr_ri: data.addr_ri || "",
-      iland_san: data.iland_san || "",
-      san_houseno: data.san_houseno || "",
-      apt_bild_nm: data.apt_bild_nm || "",
-      strt_houseno_wek: data.strt_houseno_wek || "",
-      strt_houseno_mnst: data.strt_houseno_mnst || "",
-      end_houseno_wek: data.end_houseno_wek || "",
-      end_houseno_mnst: data.end_houseno_mnst || "",
-      dong_rng_strt: data.dong_rng_strt || "",
-      dong_houseno_end: data.dong_houseno_end || "",
-      chg_ymd: this.normalizeDateValue(data.chg_ymd),
-      use_yn_cd: data.use_yn_cd || "Y"
-    })
+    this.fieldCtryCdTarget.value = data.ctry_cd || ""
+    this.fieldZipcdTarget.value = data.zipcd || ""
+    this.fieldSeqNoTarget.value = data.seq_no ?? ""
+    this.fieldZipaddrTarget.value = data.zipaddr || ""
+    this.fieldSidoTarget.value = data.sido || ""
+    this.fieldSgngTarget.value = data.sgng || ""
+    this.fieldEupdivTarget.value = data.eupdiv || ""
+    this.fieldAddrRiTarget.value = data.addr_ri || ""
+    this.fieldIlandSanTarget.value = data.iland_san || ""
+    this.fieldSanHousenoTarget.value = data.san_houseno || ""
+    this.fieldAptBildNmTarget.value = data.apt_bild_nm || ""
+    this.fieldStrtHousenoWekTarget.value = data.strt_houseno_wek || ""
+    this.fieldStrtHousenoMnstTarget.value = data.strt_houseno_mnst || ""
+    this.fieldEndHousenoWekTarget.value = data.end_houseno_wek || ""
+    this.fieldEndHousenoMnstTarget.value = data.end_houseno_mnst || ""
+    this.fieldDongRngStrtTarget.value = data.dong_rng_strt || ""
+    this.fieldDongHousenoEndTarget.value = data.dong_houseno_end || ""
+    this.fieldChgYmdTarget.value = this.normalizeDateValue(data.chg_ymd)
+    this.fieldUseYnCdTarget.value = data.use_yn_cd || "Y"
+
     this.setAuditValues(data)
 
     this.syncPopupDisplaysFromCodes()
@@ -101,27 +100,29 @@ export default class extends BaseGridController {
     this.fieldCtryCdTarget.readOnly = false
     this.fieldZipcdTarget.readOnly = false
     this.fieldSeqNoTarget.readOnly = false
-
-    this.setFieldValues({
-      ctry_lookup: "",
-      seq_no: 1,
-      addr_ri: "",
-      iland_san: "",
-      san_houseno: "",
-      apt_bild_nm: "",
-      strt_houseno_wek: "",
-      strt_houseno_mnst: "",
-      end_houseno_wek: "",
-      end_houseno_mnst: "",
-      dong_rng_strt: "",
-      dong_houseno_end: "",
-      chg_ymd: "",
-      use_yn_cd: "Y",
-      create_by: "",
-      create_time: "",
-      update_by: "",
-      update_time: ""
-    })
+    this.fieldCtryCdTarget.value = ""
+    this.fieldZipcdTarget.value = ""
+    this.fieldSeqNoTarget.value = 1
+    this.fieldZipaddrTarget.value = ""
+    this.fieldSidoTarget.value = ""
+    this.fieldSgngTarget.value = ""
+    this.fieldEupdivTarget.value = ""
+    this.fieldAddrRiTarget.value = ""
+    this.fieldIlandSanTarget.value = ""
+    this.fieldSanHousenoTarget.value = ""
+    this.fieldAptBildNmTarget.value = ""
+    this.fieldStrtHousenoWekTarget.value = ""
+    this.fieldStrtHousenoMnstTarget.value = ""
+    this.fieldEndHousenoWekTarget.value = ""
+    this.fieldEndHousenoMnstTarget.value = ""
+    this.fieldDongRngStrtTarget.value = ""
+    this.fieldDongHousenoEndTarget.value = ""
+    this.fieldChgYmdTarget.value = ""
+    this.fieldUseYnCdTarget.value = "Y"
+    this.fieldCreateByTarget.value = ""
+    this.fieldCreateTimeTarget.value = ""
+    this.fieldUpdateByTarget.value = ""
+    this.fieldUpdateTimeTarget.value = ""
     this.syncPopupDisplaysFromCodes()
   }
 
@@ -129,24 +130,20 @@ export default class extends BaseGridController {
     return this.getSearchFormValue("ctry_cd")
   }
 
-  selectedCountryNameFromSearch() {
-    return this.getSearchFormValue("ctry_nm", { toUpperCase: false })
-  }
-
   setAuditPreviewForCreate() {
     const nowText = this.formatDateTime(new Date())
     const actor = this.currentActor()
-    this.setFieldValue("create_by", actor)
-    this.setFieldValue("create_time", nowText)
-    this.setFieldValue("update_by", actor)
-    this.setFieldValue("update_time", nowText)
+    this.fieldCreateByTarget.value = actor
+    this.fieldCreateTimeTarget.value = nowText
+    this.fieldUpdateByTarget.value = actor
+    this.fieldUpdateTimeTarget.value = nowText
   }
 
   setAuditValues(data) {
-    this.setFieldValue("create_by", data.create_by || "")
-    this.setFieldValue("create_time", this.formatDateTime(data.create_time))
-    this.setFieldValue("update_by", data.update_by || "")
-    this.setFieldValue("update_time", this.formatDateTime(data.update_time))
+    this.fieldCreateByTarget.value = data.create_by || ""
+    this.fieldCreateTimeTarget.value = this.formatDateTime(data.create_time)
+    this.fieldUpdateByTarget.value = data.update_by || ""
+    this.fieldUpdateTimeTarget.value = this.formatDateTime(data.update_time)
   }
 
   normalizeDateValue(value) {

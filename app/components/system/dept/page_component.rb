@@ -76,10 +76,7 @@ class System::Dept::PageComponent < System::BasePageComponent
           type: "radio",
           label: "사용여부",
           value: "Y",
-          options: [
-            { label: "사용", value: "Y" },
-            { label: "미사용", value: "N" }
-          ]
+          options: common_code_radio_options("CMM_USE_YN")
         },
         { field: "description", type: "textarea", label: "설명", rows: 4, colspan: 2, maxlength: 500, target: "fieldDescription" }
       ]

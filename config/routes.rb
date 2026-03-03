@@ -116,6 +116,12 @@ Rails.application.routes.draw do
   end
 
   namespace :std do
+    resources :work_routing_steps, controller: :work_routing_steps, only: [ :index ] do
+      post :batch_save, on: :collection
+      resources :details, controller: :work_routing_step_details, only: [ :index ], param: :seq_no do
+        post :batch_save, on: :collection
+      end
+    end
     resources :workplaces, controller: :workplaces, only: [ :index, :create, :update, :destroy ] do
       post :batch_save, on: :collection
     end
@@ -211,8 +217,9 @@ Rails.application.routes.draw do
         post :batch_save_country_infos
       end
     end
-    resources :business_certificates, controller: :business_certificates, only: [ :index ] do
+    resources :business_certificates, controller: :business_certificates, only: [ :index, :show, :create, :update, :destroy ] do
       post :batch_save, on: :collection
+      get :client_defaults, on: :collection
     end
     resources :goods, controller: :goods, only: [ :index ] do
       post :batch_save, on: :collection
