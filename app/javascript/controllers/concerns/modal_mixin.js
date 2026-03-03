@@ -274,7 +274,26 @@ export const ModalMixin = {
     const input = this.formTarget.querySelector(`[name='${resourceName}[${fieldName}]']`)
     if (!input) return
 
-    input.value = value
+    const normalizedValue = value == null ? "" : value
+
+    if (input.type === "checkbox") {
+      const truthy = normalizedValue === true || normalizedValue === "Y" || normalizedValue === "1" || normalizedValue === 1
+      input.checked = truthy
+      return
+    }
+
+    // Tom Select is bound to the original <select>; keep UI state in sync with programmatic updates.
+    if (input.tomselect) {
+      if (input.multiple) {
+        const values = Array.isArray(normalizedValue) ? normalizedValue.map((v) => String(v)) : []
+        input.tomselect.setValue(values, true)
+      } else {
+        input.tomselect.setValue(String(normalizedValue), true)
+      }
+      return
+    }
+
+    input.value = normalizedValue
   },
 
   setFieldValues(values = {}) {

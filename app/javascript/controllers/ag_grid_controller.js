@@ -211,7 +211,7 @@ export default class extends Controller {
 
     // 만약 "수정/삭제 등 진행 상태"를 나타내는 가상 상태 컬럼이 있다면 
     // 체크박스 바로 다음(좌측 2번째 등) 고정된 위치로 수급순서(order)를 보정해주는 함수
-    this.ensureStatusColumnOrder()
+    this.ensureSystemColumnOrder()
 
     // 1차 옵션 세팅 완료 후 실제 데이터 로딩 분기처리
     if (this.serverPaginationValue) {
@@ -266,11 +266,43 @@ export default class extends Controller {
   // HTML 속성으로 부터 넘겨받은 { field: 'name', type: 'text',... } JSON 배열에 대해서 
   // 실제 AGGrid가 읽어들일 수 있는 colDef 스펙으로 변환(Render, Formatter 삽입) 해주는 파서(parser) 역할
   buildColumnDefs() {
-    return buildAgGridColumnDefs(this.columnsValue, {
+    const builtColumns = buildAgGridColumnDefs(this.columnsValue, {
       formatterRegistry: FORMATTER_REGISTRY,
       rendererRegistry: RENDERER_REGISTRY,
       isLookupColumn: (colDef) => this.isLookupColumn(colDef)
     })
+
+    const hasRowNoColumn = builtColumns.some((column) => column?.field === "__row_no")
+    if (hasRowNoColumn) return builtColumns
+
+    return [this.createRowNoColumnDef(), ...builtColumns]
+  }
+
+  createRowNoColumnDef() {
+    return {
+      field: "__row_no",
+      headerName: "순번",
+      width: 60,
+      minWidth: 60,
+      maxWidth: 60,
+      editable: false,
+      sortable: false,
+      filter: false,
+      resizable: false,
+      suppressHeaderMenuButton: true,
+      cellStyle: { textAlign: "center" },
+      valueGetter: (params) => {
+        const rowIndex = Number(params?.node?.rowIndex)
+        if (!Number.isInteger(rowIndex) || rowIndex < 0) return ""
+
+        if (this.serverPaginationValue) {
+          const pageOffset = (this.#serverPage - 1) * this.pageSizeValue
+          return pageOffset + rowIndex + 1
+        }
+
+        return rowIndex + 1
+      }
+    }
   }
 
   // 공통 적용 컬럼 속성 모음
@@ -574,6 +606,57 @@ export default class extends Controller {
 
   // 브라우저 localStorage에서 커스텀 컬럼 정보를 추출하여 파싱하고 
   // 실제 Grid Api 객체에 재적용시키는 기능.
+  ensureSystemColumnOrder() {
+    const reposition = () => {
+      if (!isApiAlive(this.gridApi)) return
+      if (!this.gridApi?.moveColumns || !this.gridApi?.getAllGridColumns) return
+
+      const getColumns = () => this.gridApi.getAllGridColumns()
+      const hasColumn = (colId) => getColumns().some((column) => column.getColId?.() === colId)
+      const findIndexById = (colId) => getColumns().findIndex((column) => column.getColId?.() === colId)
+      const findSelectionIndex = () => getColumns().findIndex((column) => {
+        const colId = column.getColId?.() || ""
+        return colId === "ag-Grid-SelectionColumn" || colId.includes("SelectionColumn")
+      })
+
+      const hasRowNo = hasColumn("__row_no")
+      const hasStatus = hasColumn("__row_status")
+      if (!hasRowNo && !hasStatus) return
+
+      const selectionIndex = findSelectionIndex()
+      if (selectionIndex >= 0) {
+        if (hasStatus) {
+          const targetStatusIndex = selectionIndex + 1
+          if (findIndexById("__row_status") !== targetStatusIndex) {
+            this.gridApi.moveColumns(["__row_status"], targetStatusIndex)
+          }
+        }
+
+        if (hasRowNo) {
+          const targetRowNoIndex = selectionIndex + (hasStatus ? 2 : 1)
+          if (findIndexById("__row_no") !== targetRowNoIndex) {
+            this.gridApi.moveColumns(["__row_no"], targetRowNoIndex)
+          }
+        }
+        return
+      }
+
+      if (hasStatus && findIndexById("__row_status") !== 0) {
+        this.gridApi.moveColumns(["__row_status"], 0)
+      }
+
+      if (hasRowNo) {
+        const targetRowNoIndex = hasStatus ? 1 : 0
+        if (findIndexById("__row_no") !== targetRowNoIndex) {
+          this.gridApi.moveColumns(["__row_no"], targetRowNoIndex)
+        }
+      }
+    }
+
+    queueMicrotask(reposition)
+    setTimeout(reposition, 0)
+  }
+
   #restoreColumnState() {
     const id = this.gridIdValue
     if (!id || !isApiAlive(this.gridApi)) return // 고유 ID가 부여된 그리드만 복원 가능
@@ -584,6 +667,7 @@ export default class extends Controller {
     try {
       const state = JSON.parse(saved)
       this.gridApi.applyColumnState({ state, applyOrder: true }) // 너비, 감춤, 정렬 및 순서(applyOrder) 함께 복원
+      this.ensureSystemColumnOrder()
     } catch (e) {
       // JSON 호환 불가 오류 등 손상된 경우 캐시 제거
       console.warn("[ag-grid] failed to restore column state:", e)
@@ -619,4 +703,3 @@ export default class extends Controller {
     }, 2000)
   }
 }
-

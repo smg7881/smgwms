@@ -13,12 +13,18 @@ class SearchPopupsController < ApplicationController
         params[:q][:fnc_or_nm] = keyword
       elsif sellbuy_attr_popup?
         params[:q][:sellbuy_attr_nm] = keyword
+      elsif customer_popup?
+        params[:q][:bzac_nm] = keyword
       else
         params[:q][:display] = keyword
       end
     end
 
     @popup_form = build_popup_form
+    if customer_popup?
+      @customer_sctn_grp_options = customer_code_options("03", "STD_BZAC_SCTN_GRP")
+      @customer_sctn_options = customer_code_options("04", "STD_BZAC_SCTN")
+    end
     @rows = lookup_rows(@type)
 
     respond_to do |format|
@@ -30,6 +36,15 @@ class SearchPopupsController < ApplicationController
             display: row[:display],
             corp_cd: row[:corp_cd],
             corp_nm: row[:corp_nm],
+            bzac_cd: row[:bzac_cd],
+            bzac_nm: row[:bzac_nm],
+            bzac_sctn: row[:bzac_sctn],
+            bzac_sctn_grp_cd: row[:bzac_sctn_grp_cd],
+            bzac_sctn_cd: row[:bzac_sctn_cd],
+            ofcr_nm: row[:ofcr_nm],
+            tel_no: row[:tel_no],
+            bilg_bzac_cd: row[:bilg_bzac_cd],
+            head_office_yn: row[:head_office_yn],
             ctry: row[:ctry],
             ctry_cd: row[:ctry_cd],
             ctry_nm: row[:ctry_nm],
@@ -83,7 +98,8 @@ class SearchPopupsController < ApplicationController
       params.fetch(:q, {}).permit(
         :display, :code, :corp_cd, :corp_nm, :use_yn,
         :ctry_cd, :fnc_or_cd, :fnc_or_nm,
-        :sellbuy_attr_cd, :sellbuy_attr_nm, :tran_yn, :strg_yn
+        :sellbuy_attr_cd, :sellbuy_attr_nm, :tran_yn, :strg_yn,
+        :bzac_cd, :bzac_nm, :head_office_yn, :bzac_sctn_grp_cd, :bzac_sctn_cd, :biz_no
       )
     end
 
@@ -98,6 +114,10 @@ class SearchPopupsController < ApplicationController
     # 현재 조회가 매출입항목 관련 팝업인지 여부를 반환합니다.
     def sellbuy_attr_popup?
       %w[sellbuy_attr sellbuyattribute sell_buy_attr].include?(@type)
+    end
+
+    def customer_popup?
+      %w[customer client bzac].include?(@type)
     end
 
     def normalized_use_yn(value)
@@ -148,6 +168,17 @@ class SearchPopupsController < ApplicationController
           tran_yn: normalized_optional_yn(popup_form_params[:tran_yn]),
           strg_yn: normalized_optional_yn(popup_form_params[:strg_yn])
         )
+      elsif customer_popup?
+        SearchPopupForm.new(
+          bzac_cd: popup_form_params[:bzac_cd].to_s.strip.upcase.presence,
+          bzac_nm: popup_form_params[:bzac_nm].to_s.strip.presence,
+          corp_cd: popup_corp_cd.presence,
+          head_office_yn: normalized_optional_yn(popup_form_params[:head_office_yn]),
+          bzac_sctn_grp_cd: popup_form_params[:bzac_sctn_grp_cd].to_s.strip.upcase.presence,
+          bzac_sctn_cd: popup_form_params[:bzac_sctn_cd].to_s.strip.upcase.presence,
+          use_yn: normalized_use_yn(popup_form_params[:use_yn]),
+          biz_no: popup_form_params[:biz_no].to_s.gsub(/[^0-9]/, "").presence
+        )
       else
         SearchPopupForm.new(
           display: lookup_keyword,
@@ -170,6 +201,8 @@ class SearchPopupsController < ApplicationController
         financial_org_rows
       elsif sellbuy_attr_popup?
         sellbuy_attr_rows
+      elsif customer_popup?
+        customer_rows
       else
         generic_rows(type)
       end
@@ -356,6 +389,81 @@ class SearchPopupsController < ApplicationController
       []
     end
 
+    def customer_rows
+      return [] unless defined?(StdBzacMst) && StdBzacMst.table_exists?
+
+      scope = StdBzacMst.ordered
+      if @popup_form.bzac_cd.present?
+        scope = scope.where("bzac_cd LIKE ?", "%#{@popup_form.bzac_cd}%")
+      end
+      if @popup_form.bzac_nm.present?
+        scope = scope.where("bzac_nm LIKE ?", "%#{@popup_form.bzac_nm}%")
+      end
+      if @popup_form.corp_cd.present?
+        scope = scope.where(mngt_corp_cd: @popup_form.corp_cd)
+      end
+      if @popup_form.head_office_yn == "Y"
+        scope = scope.where(rpt_bzac_cd: [ nil, "" ])
+      elsif @popup_form.head_office_yn == "N"
+        scope = scope.where.not(rpt_bzac_cd: [ nil, "" ])
+      end
+      if @popup_form.bzac_sctn_grp_cd.present?
+        scope = scope.where(bzac_sctn_grp_cd: @popup_form.bzac_sctn_grp_cd)
+      end
+      if @popup_form.bzac_sctn_cd.present?
+        scope = scope.where(bzac_sctn_cd: @popup_form.bzac_sctn_cd)
+      end
+      if @popup_form.use_yn.present?
+        scope = scope.where(use_yn_cd: @popup_form.use_yn)
+      end
+      if @popup_form.biz_no.present?
+        scope = scope.where("REPLACE(REPLACE(bizman_no, '-', ''), ' ', '') LIKE ?", "%#{@popup_form.biz_no}%")
+      end
+
+      rows = scope.limit(200).to_a
+      return [] if rows.empty?
+
+      sctn_name_map = code_name_map("04", "STD_BZAC_SCTN")
+
+      corp_codes = rows.map(&:mngt_corp_cd).compact_blank.uniq
+      corp_name_map = if corp_codes.empty? || !defined?(StdCorporation) || !StdCorporation.table_exists?
+        {}
+      else
+        StdCorporation.where(corp_cd: corp_codes).pluck(:corp_cd, :corp_nm).to_h
+      end
+
+      contact_map = customer_contact_map(rows.map(&:bzac_cd))
+
+      rows.map do |row|
+        bzac_cd = row.bzac_cd.to_s.strip.upcase
+        bzac_nm = row.bzac_nm.to_s.strip
+        corp_cd = row.mngt_corp_cd.to_s.strip.upcase
+        sctn_code = row.bzac_sctn_cd.to_s.strip.upcase
+        contact = contact_map[bzac_cd] || {}
+
+        {
+          code: bzac_cd,
+          name: bzac_nm,
+          display: bzac_nm,
+          bzac_cd: bzac_cd,
+          bzac_nm: bzac_nm,
+          corp_cd: corp_cd.presence,
+          corp_nm: corp_name_map[corp_cd].to_s.presence,
+          head_office_yn: row.rpt_bzac_cd.present? ? "N" : "Y",
+          bzac_sctn_grp_cd: row.bzac_sctn_grp_cd.to_s.strip.upcase.presence,
+          bzac_sctn_cd: sctn_code.presence,
+          bzac_sctn: sctn_name_map[sctn_code].to_s.presence || sctn_code.presence,
+          biz_no: formatted_biz_no(row.bizman_no),
+          ofcr_nm: contact[:name],
+          tel_no: contact[:tel],
+          bilg_bzac_cd: row.bilg_bzac_cd.to_s.strip.upcase.presence,
+          use_yn: row.use_yn_cd.to_s.strip.upcase
+        }.compact
+      end
+    rescue ActiveRecord::StatementInvalid
+      []
+    end
+
     def client_rows
       return [] unless defined?(StdBzacMst) && StdBzacMst.table_exists?
 
@@ -507,5 +615,74 @@ class SearchPopupsController < ApplicationController
       end
     rescue ActiveRecord::StatementInvalid
       []
+    end
+
+    def customer_code_options(primary_code, fallback_code)
+      details = active_code_details(primary_code)
+      if details.empty?
+        details = active_code_details(fallback_code)
+      end
+
+      [ { label: "전체", value: "" } ] + details.map do |detail|
+        {
+          label: detail.detail_code_name.to_s.strip,
+          value: detail.detail_code.to_s.strip.upcase
+        }
+      end
+    end
+
+    def active_code_details(code)
+      normalized = code.to_s.strip.upcase
+      return [] if normalized.blank?
+
+      AdmCodeDetail.active.where(code: normalized).ordered.to_a
+    rescue ActiveRecord::StatementInvalid
+      []
+    end
+
+    def code_name_map(*codes)
+      details = codes.flat_map { |code| active_code_details(code) }
+      details.each_with_object({}) do |detail, map|
+        key = detail.detail_code.to_s.strip.upcase
+        if key.present? && !map.key?(key)
+          map[key] = detail.detail_code_name.to_s.strip
+        end
+      end
+    end
+
+    def customer_contact_map(bzac_codes)
+      return {} unless defined?(StdBzacOfcr) && StdBzacOfcr.table_exists?
+
+      normalized_codes = Array(bzac_codes).map { |code| code.to_s.strip.upcase }.reject(&:blank?).uniq
+      return {} if normalized_codes.empty?
+
+      rows = StdBzacOfcr
+        .where(bzac_cd: normalized_codes, use_yn_cd: "Y")
+        .order(Arel.sql("CASE WHEN rpt_yn_cd = 'Y' THEN 0 ELSE 1 END"), :seq_cd)
+        .to_a
+
+      rows.each_with_object({}) do |row, map|
+        key = row.bzac_cd.to_s.strip.upcase
+        if map.key?(key)
+          next
+        end
+
+        tel = row.ofic_telno_cd.to_s.strip.presence || row.mbp_no_cd.to_s.strip.presence
+        map[key] = {
+          name: row.nm_cd.to_s.strip.presence,
+          tel: tel
+        }.compact
+      end
+    rescue ActiveRecord::StatementInvalid
+      {}
+    end
+
+    def formatted_biz_no(value)
+      digits = value.to_s.gsub(/[^0-9]/, "")
+      if digits.length == 10
+        "#{digits[0, 3]}-#{digits[3, 3]}-#{digits[6, 4]}"
+      else
+        value.to_s.strip.presence
+      end
     end
 end

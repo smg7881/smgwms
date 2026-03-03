@@ -1,11 +1,17 @@
 <%# app/views/shared/resource_form/fields/_select.html.erb %>
 <%
-  param_key = model&.model_name&.param_key || 'resource'
+  param_key = model&.model_name&.param_key || "resource"
   field_id = "#{param_key}_#{field[:field]}"
   has_dependency = field[:depends_on].present?
   current_value = model&.send(field[:field].to_sym) rescue nil
   error_message = model&.errors&.[](field[:field].to_sym)&.first
   ts_searchable = field[:searchable].nil? ? true : !!field[:searchable]
+  use_tom_select = field[:tom_select] != false
+  select_classes = ["form-grid-select"]
+  if error_message.present?
+    select_classes << "rf-field-error"
+  end
+  placeholder = resolve_placeholder(field) || "선택하세요"
 %>
 <div class="flex flex-col gap-1 col-span-24 min-w-0 <%= span_classes_for(field, cols: cols) %>"
      data-resource-form-target="fieldGroup <%= 'dependentField' if has_dependency %>"
@@ -17,14 +23,16 @@
   <div class="flex relative">
     <select id="<%= field_id %>"
             name="<%= "#{param_key}[#{field[:field]}]" %>"
-            class="<%= 'rf-field-error' if error_message.present? %>"
+            class="<%= select_classes.join(' ') %>"
             <%= "required" if field[:required] %>
             <%= "disabled" if field[:disabled] %>
             <%= "multiple" if field[:multi] %>
+            <% if use_tom_select %>
             data-controller="tom-select"
             data-tom-select-searchable-value="<%= ts_searchable %>"
             data-tom-select-multi-value="<%= !!field[:multi] %>"
-            data-tom-select-placeholder-value="<%= resolve_placeholder(field) || '선택하세요' %>"
+            data-tom-select-placeholder-value="<%= placeholder %>"
+            <% end %>
             <% if has_dependency %>
               data-all-options="<%= (field[:options] || []).to_json %>"
               data-depends-on="<%= field[:depends_on] %>"
@@ -36,7 +44,7 @@
             data-resource-form-target="input"
             data-action="<%= has_dependency ? '' : 'change->resource-form#onSelectChange' %> blur->resource-form#validateField">
       <% if field[:include_blank] != false %>
-        <option value=""><%= resolve_placeholder(field) || "선택하세요" %></option>
+        <option value=""><%= placeholder %></option>
       <% end %>
       <% (field[:options] || []).each do |opt| %>
         <%

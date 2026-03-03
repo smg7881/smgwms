@@ -1,9 +1,12 @@
 <%
   financial_org_popup = %w[financial_institution fin_org financial_org fnc_or].include?(@type)
   sellbuy_attr_popup = %w[sellbuy_attr sellbuyattribute sell_buy_attr].include?(@type)
+  customer_popup = %w[customer client bzac].include?(@type)
 
   popup_title = if @type == "corp"
     "법인 조회"
+  elsif customer_popup
+    "거래처 조회"
   elsif financial_org_popup
     "금융기관 조회"
   elsif sellbuy_attr_popup
@@ -68,6 +71,113 @@
         display: row[:display],
         upper_corp_cd: row[:upper_corp_cd],
         upper_corp_nm: row[:upper_corp_nm]
+      }
+    end
+  elsif customer_popup
+    popup_fields = [
+      {
+        field: "bzac_cd",
+        type: "input",
+        label: "거래처코드",
+        placeholder: "거래처코드 입력"
+      },
+      {
+        field: "bzac_nm",
+        type: "input",
+        label: "거래처명",
+        placeholder: "거래처명 입력"
+      },
+      {
+        field: "corp_nm",
+        type: "popup",
+        label: "법인",
+        popup_type: "corp",
+        code_field: "corp_cd",
+        placeholder: "법인 선택"
+      },
+      {
+        field: "head_office_yn",
+        type: "select",
+        label: "본사",
+        options: [
+          { label: "전체", value: "" },
+          { label: "본사", value: "Y" },
+          { label: "지사", value: "N" }
+        ],
+        include_blank: false
+      },
+      {
+        field: "bzac_sctn_grp_cd",
+        type: "select",
+        label: "거래처구분그룹",
+        options: @customer_sctn_grp_options || [],
+        include_blank: false
+      },
+      {
+        field: "bzac_sctn_cd",
+        type: "select",
+        label: "거래처구분",
+        options: @customer_sctn_options || [],
+        include_blank: false
+      },
+      {
+        field: "use_yn",
+        type: "select",
+        label: "사용여부",
+        options: [
+          { label: "Y", value: "Y" },
+          { label: "N", value: "N" }
+        ],
+        include_blank: false
+      },
+      {
+        field: "biz_no",
+        type: "input",
+        label: "사업자등록번호",
+        placeholder: "숫자 10자리 또는 하이픈 포함"
+      }
+    ]
+
+    popup_columns = [
+      { field: "bzac_cd", headerName: "거래처코드", minWidth: 130, editable: false },
+      { field: "bzac_nm", headerName: "거래처명", minWidth: 180, editable: false },
+      { field: "biz_no", headerName: "사업자등록번호", minWidth: 150, editable: false },
+      { field: "bzac_sctn", headerName: "거래처구분", minWidth: 140, editable: false },
+      { field: "ofcr_nm", headerName: "담당자명", minWidth: 120, editable: false },
+      { field: "tel_no", headerName: "전화번호", minWidth: 140, editable: false },
+      { field: "bilg_bzac_cd", headerName: "청구거래처코드", minWidth: 150, editable: false },
+      {
+        field: "__select",
+        headerName: "선택",
+        minWidth: 90,
+        maxWidth: 90,
+        editable: false,
+        sortable: false,
+        filter: false,
+        resizable: false,
+        cellStyle: { textAlign: "center" },
+        cellRenderer: "popupSelectCellRenderer"
+      }
+    ]
+
+    popup_rows = @rows.map do |row|
+      {
+        code: row[:code],
+        name: row[:name],
+        display: row[:display],
+        bzac_cd: row[:bzac_cd] || row[:code],
+        bzac_nm: row[:bzac_nm] || row[:name],
+        corp_cd: row[:corp_cd],
+        corp_nm: row[:corp_nm],
+        head_office_yn: row[:head_office_yn],
+        bzac_sctn_grp_cd: row[:bzac_sctn_grp_cd],
+        bzac_sctn_cd: row[:bzac_sctn_cd],
+        bzac_sctn: row[:bzac_sctn],
+        biz_no: row[:biz_no],
+        ofcr_nm: row[:ofcr_nm],
+        tel_no: row[:tel_no],
+        bilg_bzac_cd: row[:bilg_bzac_cd],
+        use_yn: row[:use_yn]
       }
     end
   elsif financial_org_popup

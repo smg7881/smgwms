@@ -1,7 +1,7 @@
 /**
  * popup_manager.js
  *
- * 단일 <dialog> 기반 통합 팝업 엔진.
+ * <dialog> 기반 통합 팝업 엔진.
  *
  * 두 가지 모드를 지원합니다:
  *   - lookup  : url 제공 시 → <dialog> + <turbo-frame> 으로 검색 팝업 로드
@@ -13,8 +13,10 @@
 
 import { attachDrag } from "controllers/popup/popup_drag_mixin"
 
-const POPUP_DIALOG_ID = "popup-manager-dialog"
-const POPUP_FRAME_ID = "popup-frame"
+const POPUP_DIALOG_CLASS = "popup-manager-lookup-dialog"
+const POPUP_DIALOG_ID_PREFIX = "popup-manager-dialog"
+const POPUP_FRAME_ID_PREFIX = "popup-frame"
+let popupSequence = 0
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -24,11 +26,11 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;")
 }
 
-function buildFrameSrc(baseUrl, keyword) {
+function buildFrameSrc(baseUrl, keyword, frameId) {
   const url = new URL(baseUrl, window.location.origin)
   const text = String(keyword ?? "").trim()
   if (text.length > 0) url.searchParams.set("q", text)
-  url.searchParams.set("frame", POPUP_FRAME_ID)
+  url.searchParams.set("frame", frameId)
   return `${url.pathname}${url.search}${url.hash}`
 }
 
@@ -37,9 +39,6 @@ function defaultTitle(type) {
   return label ? `${label} 조회` : "조회"
 }
 
-// 현재 열려 있는 lookup 팝업 정리 함수 (전역 싱글턴)
-let _activeFinalize = null
-
 // lookup 팝업 dialog의 ::backdrop을 투명하게 설정 (부모 모달이 보이도록)
 // CSS 파일 컴파일에 의존하지 않고 JS로 직접 주입합니다.
 ;(function injectPopupManagerStyle() {
@@ -47,7 +46,7 @@ let _activeFinalize = null
   if (document.getElementById(styleId)) return
   const style = document.createElement("style")
   style.id = styleId
-  style.textContent = `dialog#${POPUP_DIALOG_ID}::backdrop { background: transparent !important; }`
+  style.textContent = `dialog.${POPUP_DIALOG_CLASS}::backdrop { background: transparent !important; }`
   document.head.appendChild(style)
 })()
 
@@ -85,20 +84,16 @@ export const PopupManager = {
     const popupType = String(url ?? "").trim()
     if (!popupType) return Promise.resolve(null)
 
-    // 이미 열려 있는 lookup 팝업 닫기
-    if (typeof _activeFinalize === "function") {
-      _activeFinalize(null)
-    }
+    popupSequence += 1
+    const dialogId = `${POPUP_DIALOG_ID_PREFIX}-${popupSequence}`
+    const frameId = `${POPUP_FRAME_ID_PREFIX}-${popupSequence}`
+    const dialog = document.createElement("dialog")
+    dialog.id = dialogId
+    dialog.className = `app-modal-dialog ${POPUP_DIALOG_CLASS}`
+    dialog.style.zIndex = String(3000 + popupSequence)
+    document.body.appendChild(dialog)
 
-    let dialog = document.getElementById(POPUP_DIALOG_ID)
-    if (!dialog) {
-      dialog = document.createElement("dialog")
-      dialog.id = POPUP_DIALOG_ID
-      dialog.className = "app-modal-dialog"
-      document.body.appendChild(dialog)
-    }
-
-    const frameSrc = buildFrameSrc(url, keyword)
+    const frameSrc = buildFrameSrc(url, keyword, frameId)
     const heading = String(title ?? "").trim() || defaultTitle(url)
 
     dialog.innerHTML = `
@@ -111,7 +106,7 @@ export const PopupManager = {
                   data-role="popup-close">&times;</button>
         </div>
         <div class="app-modal-body modal-body" style="padding:0;overflow:hidden;flex:1;">
-          <turbo-frame id="${POPUP_FRAME_ID}"
+          <turbo-frame id="${frameId}"
                        src="${escapeHtml(frameSrc)}"
                        style="display:block;width:100%;height:min(72vh,700px);">
           </turbo-frame>
@@ -131,16 +126,16 @@ export const PopupManager = {
 
       const finalize = (selection) => {
         if (signal.aborted) return
-        _activeFinalize = null
         listenerAbort.abort()
         dragInstance?.destroy()
         dialog.style.display = ""
-        dialog.close()
+        if (dialog.open) {
+          dialog.close()
+        }
         dialog.innerHTML = ""
+        dialog.remove()
         resolve(selection)
       }
-
-      _activeFinalize = finalize
 
       // search_popup_grid_controller.js에서 버블링되는 CustomEvent 수신
       dialog.addEventListener("popup:select", (event) => {

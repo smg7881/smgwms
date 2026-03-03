@@ -16,6 +16,12 @@ class SearchPopupForm
   attribute :sellbuy_attr_nm, :string
   attribute :tran_yn, :string
   attribute :strg_yn, :string
+  attribute :bzac_cd, :string
+  attribute :bzac_nm, :string
+  attribute :head_office_yn, :string
+  attribute :bzac_sctn_grp_cd, :string
+  attribute :bzac_sctn_cd, :string
+  attribute :biz_no, :string
 
   def persisted?
     false

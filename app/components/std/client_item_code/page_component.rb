@@ -30,12 +30,12 @@ class Std::ClientItemCode::PageComponent < Std::BasePageComponent
         { field: "png_yn_cd", headerName: "포장여부", minWidth: 95, cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" } },
         { field: "mstair_lading_yn_cd", headerName: "계단적재여부", minWidth: 130, cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" } },
         { field: "if_yn_cd", headerName: "인터페이스여부", minWidth: 130, cellRenderer: "createStatusBadge", cellRendererParams: { trueLabel: "Y" } },
-        { field: "wgt_unit_cd", headerName: "중량단위코드", minWidth: 125, refData: common_code_map("STD_WGT_UNIT") },
-        { field: "qty_unit_cd", headerName: "수량단위코드", minWidth: 125, refData: common_code_map("STD_QTY_UNIT") },
-        { field: "tmpt_unit_cd", headerName: "온도단위코드", minWidth: 125, refData: common_code_map("STD_TMPT_UNIT") },
-        { field: "vol_unit_cd", headerName: "부피단위코드", minWidth: 125, refData: common_code_map("STD_VOL_UNIT") },
-        { field: "basis_unit_cd", headerName: "기본단위코드", minWidth: 125, refData: common_code_map("STD_BASIS_UNIT") },
-        { field: "len_unit_cd", headerName: "길이단위코드", minWidth: 125, refData: common_code_map("STD_LEN_UNIT") },
+        { field: "wgt_unit_cd", headerName: "중량단위코드", minWidth: 125, refData: common_code_map(unit_code_for(:wgt)) },
+        { field: "qty_unit_cd", headerName: "수량단위코드", minWidth: 125, refData: common_code_map(unit_code_for(:qty)) },
+        { field: "tmpt_unit_cd", headerName: "온도단위코드", minWidth: 125, refData: common_code_map(unit_code_for(:tmpt)) },
+        { field: "vol_unit_cd", headerName: "부피단위코드", minWidth: 125, refData: common_code_map(unit_code_for(:vol)) },
+        { field: "basis_unit_cd", headerName: "기본단위코드", minWidth: 125, refData: common_code_map(unit_code_for(:basis)) },
+        { field: "len_unit_cd", headerName: "길이단위코드", minWidth: 125, refData: common_code_map(unit_code_for(:len)) },
         { field: "pckg_qty", headerName: "포장수량", minWidth: 110, type: "numericColumn" },
         { field: "tot_wgt_kg", headerName: "총중량(KG)", minWidth: 120, type: "numericColumn" },
         { field: "net_wgt_kg", headerName: "순중량(KG)", minWidth: 120, type: "numericColumn" },
@@ -91,26 +91,26 @@ class Std::ClientItemCode::PageComponent < Std::BasePageComponent
           target: "fieldGoodsnmCd",
           placeholder: "품명코드 선택"
         },
-        { field: "danger_yn_cd", type: "select", label: "위험물여부", options: yn_options, include_blank: false, required: true, target: "fieldDangerYnCd" },
-        { field: "png_yn_cd", type: "select", label: "포장여부", options: yn_options, include_blank: false, required: true, target: "fieldPngYnCd" },
-        { field: "mstair_lading_yn_cd", type: "select", label: "계단적재여부", options: yn_options, include_blank: false, required: true, target: "fieldMstairLadingYnCd" },
-        { field: "if_yn_cd", type: "select", label: "인터페이스여부", options: yn_options, include_blank: false, required: true, target: "fieldIfYnCd" },
-        { field: "wgt_unit_cd", type: "select", label: "중량단위코드", options: common_code_options("STD_WGT_UNIT"), include_blank: true, target: "fieldWgtUnitCd" },
-        { field: "qty_unit_cd", type: "select", label: "수량단위코드", options: common_code_options("STD_QTY_UNIT"), include_blank: true, target: "fieldQtyUnitCd" },
-        { field: "tmpt_unit_cd", type: "select", label: "온도단위코드", options: common_code_options("STD_TMPT_UNIT"), include_blank: true, target: "fieldTmptUnitCd" },
-        { field: "vol_unit_cd", type: "select", label: "부피단위코드", options: common_code_options("STD_VOL_UNIT"), include_blank: true, target: "fieldVolUnitCd" },
-        { field: "basis_unit_cd", type: "select", label: "기본단위코드", options: common_code_options("STD_BASIS_UNIT"), include_blank: true, target: "fieldBasisUnitCd" },
-        { field: "len_unit_cd", type: "select", label: "길이단위코드", options: common_code_options("STD_LEN_UNIT"), include_blank: true, target: "fieldLenUnitCd" },
-        { field: "pckg_qty", type: "number", label: "포장수량", step: "0.001", min: "0", target: "fieldPckgQty" },
-        { field: "tot_wgt_kg", type: "number", label: "총중량(KG)", step: "0.001", min: "0", target: "fieldTotWgtKg" },
-        { field: "net_wgt_kg", type: "number", label: "순중량(KG)", step: "0.001", min: "0", target: "fieldNetWgtKg" },
-        { field: "vessel_tmpt_c", type: "number", label: "용기온도(C)", step: "0.001", target: "fieldVesselTmptC" },
-        { field: "vessel_width_m", type: "number", label: "용기가로(M)", step: "0.001", min: "0", target: "fieldVesselWidthM" },
-        { field: "vessel_vert_m", type: "number", label: "용기세로(M)", step: "0.001", min: "0", target: "fieldVesselVertM" },
-        { field: "vessel_hght_m", type: "number", label: "용기높이(M)", step: "0.001", min: "0", target: "fieldVesselHghtM" },
-        { field: "vessel_vol_cbm", type: "number", label: "용기부피(CBM)", step: "0.001", min: "0", target: "fieldVesselVolCbm" },
-        { field: "use_yn_cd", type: "select", label: "사용여부", options: yn_options, include_blank: false, required: true, target: "fieldUseYnCd" },
-        { field: "prod_nm_cd", type: "input", label: "제조자명", required: true, maxlength: 100, target: "fieldProdNmCd" },
+        { field: "danger_yn_cd", type: "select", label: "위험물여부", options: yn_options, include_blank: false, required: true, target: "fieldDangerYnCd", span: middle_field_span, tom_select: false },
+        { field: "png_yn_cd", type: "select", label: "포장여부", options: yn_options, include_blank: false, required: true, target: "fieldPngYnCd", span: middle_field_span, tom_select: false },
+        { field: "mstair_lading_yn_cd", type: "select", label: "계단적재여부", options: yn_options, include_blank: false, required: true, target: "fieldMstairLadingYnCd", span: middle_field_span, tom_select: false },
+        { field: "if_yn_cd", type: "select", label: "인터페이스여부", options: yn_options, include_blank: false, required: true, target: "fieldIfYnCd", span: middle_field_span, tom_select: false },
+        { field: "wgt_unit_cd", type: "select", label: "중량단위코드", options: common_code_options(unit_code_for(:wgt)), include_blank: true, target: "fieldWgtUnitCd", span: middle_field_span, tom_select: false },
+        { field: "qty_unit_cd", type: "select", label: "수량단위코드", options: common_code_options(unit_code_for(:qty)), include_blank: true, target: "fieldQtyUnitCd", span: middle_field_span, tom_select: false },
+        { field: "tmpt_unit_cd", type: "select", label: "온도단위코드", options: common_code_options(unit_code_for(:tmpt)), include_blank: true, target: "fieldTmptUnitCd", span: middle_field_span, tom_select: false },
+        { field: "vol_unit_cd", type: "select", label: "부피단위코드", options: common_code_options(unit_code_for(:vol)), include_blank: true, target: "fieldVolUnitCd", span: middle_field_span, tom_select: false },
+        { field: "basis_unit_cd", type: "select", label: "기본단위코드", options: common_code_options(unit_code_for(:basis)), include_blank: true, target: "fieldBasisUnitCd", span: middle_field_span, tom_select: false },
+        { field: "len_unit_cd", type: "select", label: "길이단위코드", options: common_code_options(unit_code_for(:len)), include_blank: true, target: "fieldLenUnitCd", span: middle_field_span, tom_select: false },
+        { field: "pckg_qty", type: "number", label: "포장수량", step: "0.001", min: "0", target: "fieldPckgQty", span: middle_field_span },
+        { field: "tot_wgt_kg", type: "number", label: "총중량(KG)", step: "0.001", min: "0", target: "fieldTotWgtKg", span: middle_field_span },
+        { field: "net_wgt_kg", type: "number", label: "순중량(KG)", step: "0.001", min: "0", target: "fieldNetWgtKg", span: middle_field_span },
+        { field: "vessel_tmpt_c", type: "number", label: "용기온도(C)", step: "0.001", target: "fieldVesselTmptC", span: middle_field_span },
+        { field: "vessel_width_m", type: "number", label: "용기가로(M)", step: "0.001", min: "0", target: "fieldVesselWidthM", span: middle_field_span },
+        { field: "vessel_vert_m", type: "number", label: "용기세로(M)", step: "0.001", min: "0", target: "fieldVesselVertM", span: middle_field_span },
+        { field: "vessel_hght_m", type: "number", label: "용기높이(M)", step: "0.001", min: "0", target: "fieldVesselHghtM", span: middle_field_span },
+        { field: "vessel_vol_cbm", type: "number", label: "용기부피(CBM)", step: "0.001", min: "0", target: "fieldVesselVolCbm", span: middle_field_span },
+        { field: "use_yn_cd", type: "select", label: "사용여부", options: yn_options, include_blank: false, required: true, target: "fieldUseYnCd", span: middle_field_span, tom_select: false },
+        { field: "prod_nm_cd", type: "input", label: "제조자명", required: true, maxlength: 100, target: "fieldProdNmCd", span: middle_field_span },
         { field: "regr_nm_cd", type: "input", label: "등록자명", disabled: true, target: "fieldRegrNmCd" },
         { field: "reg_date", type: "input", label: "등록일시", disabled: true, target: "fieldRegDate" },
         { field: "mdfr_nm_cd", type: "input", label: "수정자명", disabled: true, target: "fieldMdfrNmCd" },
@@ -120,5 +120,39 @@ class Std::ClientItemCode::PageComponent < Std::BasePageComponent
 
     def yn_options
       common_code_options("CMM_USE_YN")
+    end
+
+    def middle_field_span
+      "24 s:12 m:8"
+    end
+
+    def unit_code_for(type)
+      @unit_code_for ||= {
+        wgt: resolved_unit_code("24", "STD_WGT_UNIT"),
+        qty: resolved_unit_code("21", "STD_QTY_UNIT"),
+        tmpt: resolved_unit_code("22", "STD_TMPT_UNIT"),
+        vol: resolved_unit_code("23", "STD_VOL_UNIT"),
+        basis: resolved_unit_code("20", "STD_BASIS_UNIT", require_alpha_value: true),
+        len: resolved_unit_code("19", "STD_LEN_UNIT")
+      }
+      @unit_code_for.fetch(type)
+    end
+
+    def resolved_unit_code(primary_code, fallback_code, require_alpha_value: false)
+      values = common_code_values(primary_code)
+
+      if values.present?
+        if require_alpha_value
+          if values.any? { |value| value.to_s.match?(/[A-Z]/i) }
+            primary_code
+          else
+            fallback_code
+          end
+        else
+          primary_code
+        end
+      else
+        fallback_code
+      end
     end
 end
