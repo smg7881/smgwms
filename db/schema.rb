@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_03_153000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_03_171000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -1298,6 +1298,26 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_03_153000) do
     t.index ["use_yn_cd"], name: "index_std_work_routings_on_use_yn_cd"
     t.index ["wrk_rt_cd"], name: "index_std_work_routings_on_wrk_rt_cd", unique: true
     t.index ["wrk_rt_nm"], name: "index_std_work_routings_on_wrk_rt_nm"
+  end
+
+  create_table "std_work_steps", force: :cascade do |t|
+    t.text "conts_cd"
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "rmk_cd", limit: 500
+    t.integer "sort_seq", default: 0, null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn_cd", limit: 1, default: "Y", null: false
+    t.string "work_step_cd", limit: 30, null: false
+    t.string "work_step_level1_cd", limit: 30, null: false
+    t.string "work_step_level2_cd", limit: 30, null: false
+    t.string "work_step_nm", limit: 150, null: false
+    t.index ["use_yn_cd"], name: "index_std_work_steps_on_use_yn_cd"
+    t.index ["work_step_cd"], name: "index_std_work_steps_on_work_step_cd", unique: true
+    t.index ["work_step_level1_cd"], name: "index_std_work_steps_on_work_step_level1_cd"
+    t.index ["work_step_level2_cd"], name: "index_std_work_steps_on_work_step_level2_cd"
+    t.index ["work_step_nm"], name: "index_std_work_steps_on_work_step_nm"
   end
 
   create_table "std_workplaces", force: :cascade do |t|

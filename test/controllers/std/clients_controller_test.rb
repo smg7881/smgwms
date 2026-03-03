@@ -126,7 +126,7 @@ class Std::ClientsControllerTest < ActionDispatch::IntegrationTest
           use_yn_cd: "Y"
         }
       ],
-      rowsToDelete: ["CL000011"]
+      rowsToDelete: [ "CL000011" ]
     }, as: :json
 
     assert_response :success
@@ -152,7 +152,7 @@ class Std::ClientsControllerTest < ActionDispatch::IntegrationTest
     )
 
     post batch_save_contacts_std_client_url(client.bzac_cd), params: {
-      rowsToInsert: [{ nm_cd: "Manager One", email_cd: "manager@example.com", rpt_yn_cd: "Y", use_yn_cd: "Y" }],
+      rowsToInsert: [ { nm_cd: "Manager One", email_cd: "manager@example.com", rpt_yn_cd: "Y", use_yn_cd: "Y" } ],
       rowsToUpdate: [],
       rowsToDelete: []
     }, as: :json
@@ -164,7 +164,7 @@ class Std::ClientsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Manager One", contacts.first["nm_cd"]
 
     post batch_save_workplaces_std_client_url(client.bzac_cd), params: {
-      rowsToInsert: [{ workpl_nm_cd: "Seoul WH", workpl_sctn_cd: "MAIN", use_yn_cd: "Y" }],
+      rowsToInsert: [ { workpl_nm_cd: "Seoul WH", workpl_sctn_cd: "MAIN", use_yn_cd: "Y" } ],
       rowsToUpdate: [],
       rowsToDelete: []
     }, as: :json

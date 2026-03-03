@@ -138,5 +138,4 @@ class Std::BusinessCertificate::PageComponent < Std::BasePageComponent
         { field: "update_time", type: "input", label: "수정일시", readonly: true, target: "fieldUpdateTime" }
       ]
     end
-
 end

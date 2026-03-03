@@ -75,7 +75,7 @@ class Om::CustomerOrderOfficersControllerTest < ActionDispatch::IntegrationTest
           use_yn: "Y"
         }
       ],
-      rowsToDelete: [row_to_delete.id]
+      rowsToDelete: [ row_to_delete.id ]
     }, as: :json
 
     assert_response :success

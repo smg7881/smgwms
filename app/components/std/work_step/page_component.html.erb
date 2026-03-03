@@ -1,0 +1,57 @@
+<div data-controller="std-work-step-crud"
+     data-std-work-step-crud-create-url-value="<%= create_url %>"
+     data-std-work-step-crud-update-url-value="<%= update_url %>"
+     data-std-work-step-crud-delete-url-value="<%= delete_url %>">
+  <%= render Ui::SearchFormComponent.new(
+    url: create_url,
+    fields: search_fields,
+    cols: 3,
+    enable_collapse: true
+  ) %>
+
+  <%= render Ui::GridHeaderComponent.new(
+    icon: "workflow", title: "기본작업단계 목록", grid_id: "std-work-step",
+    buttons: [
+      { label: "작업단계 추가", class: "btn btn-sm btn-primary", action: "click->std-work-step-crud#openCreate" }
+    ]
+  ) %>
+
+  <%= render Ui::AgGridComponent.new(
+    columns: columns,
+    url: grid_url,
+    height: "calc(100vh - 370px)",
+    page_size: 20,
+    grid_id: "std-work-step"
+  ) %>
+
+  <%= render Ui::ModalShellComponent.new(
+    controller: "std-work-step-crud",
+    title: "기본작업단계 추가",
+    save_form_id: "std-work-step-crud-form",
+    cancel_role: "cancel",
+    save_role: "save",
+    width: "900px"
+  ) do |modal| %>
+    <% modal.with_body do %>
+      <input type="hidden" data-std-work-step-crud-target="fieldId" />
+
+      <%= render Ui::ResourceFormComponent.new(
+        model: StdWorkStep.new,
+        url: "#",
+        cols: 2,
+        show_buttons: false,
+        target_controller: "std_work_step_crud",
+        fields: form_fields,
+        form_data: {
+          std_work_step_crud_target: "form",
+          action: "submit->resource-form#submit submit->std-work-step-crud#submit"
+        },
+        form_html: {
+          id: "std-work-step-crud-form",
+          novalidate: true,
+          autocomplete: "off"
+        }
+      ) %>
+    <% end %>
+  <% end %>
+</div>

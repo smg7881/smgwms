@@ -82,7 +82,7 @@ class Std::InterfaceInfosControllerTest < ActionDispatch::IntegrationTest
           use_yn_cd: "Y"
         }
       ],
-      rowsToDelete: ["V0000000002"]
+      rowsToDelete: [ "V0000000002" ]
     }, as: :json
 
     assert_response :success

@@ -73,7 +73,7 @@ class Std::BusinessCertificatesControllerTest < ActionDispatch::IntegrationTest
           use_yn_cd: "Y"
         }
       ],
-      rowsToDelete: ["BZ000011"]
+      rowsToDelete: [ "BZ000011" ]
     }, as: :json
 
     assert_response :success

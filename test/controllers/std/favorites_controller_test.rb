@@ -47,18 +47,18 @@ class Std::FavoritesControllerTest < ActionDispatch::IntegrationTest
     )
 
     post batch_save_std_favorites_url, params: {
-      rowsToInsert: [{ user_id_code: "USER01", menu_cd: "OVERVIEW", menu_nm: "Overview", user_favor_menu_grp: "NEW", sort_seq: 2, use_yn: "Y" }],
-      rowsToUpdate: [{ user_id_code: "USER01", menu_cd: "SYS_MENU", menu_nm: "Menu Management", user_favor_menu_grp: "NEW", sort_seq: 9, use_yn: "Y" }],
-      rowsToDelete: [{ user_id_code: "USER01", menu_cd: "SYS_MENU" }]
+      rowsToInsert: [ { user_id_code: "USER01", menu_cd: "OVERVIEW", menu_nm: "Overview", user_favor_menu_grp: "NEW", sort_seq: 2, use_yn: "Y" } ],
+      rowsToUpdate: [ { user_id_code: "USER01", menu_cd: "SYS_MENU", menu_nm: "Menu Management", user_favor_menu_grp: "NEW", sort_seq: 9, use_yn: "Y" } ],
+      rowsToDelete: [ { user_id_code: "USER01", menu_cd: "SYS_MENU" } ]
     }, as: :json
     assert_response :success
     assert_equal "N", StdUserFavorite.find_by!(user_id_code: "USER01", menu_cd: "SYS_MENU").use_yn
     assert StdUserFavorite.exists?(user_id_code: "USER01", menu_cd: "OVERVIEW")
 
     post batch_save_groups_std_favorites_url, params: {
-      rowsToInsert: [{ user_id_code: "USER01", group_nm: "NEW", use_yn: "Y" }],
-      rowsToUpdate: [{ user_id_code: "USER01", group_nm: "OLD", use_yn: "Y" }],
-      rowsToDelete: [{ user_id_code: "USER01", group_nm: "OLD" }]
+      rowsToInsert: [ { user_id_code: "USER01", group_nm: "NEW", use_yn: "Y" } ],
+      rowsToUpdate: [ { user_id_code: "USER01", group_nm: "OLD", use_yn: "Y" } ],
+      rowsToDelete: [ { user_id_code: "USER01", group_nm: "OLD" } ]
     }, as: :json
     assert_response :success
     assert_equal "N", StdUserFavoriteGroup.find_by!(user_id_code: "USER01", group_nm: "OLD").use_yn

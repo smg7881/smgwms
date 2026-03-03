@@ -130,7 +130,7 @@ class Std::CustomerClientsControllerTest < ActionDispatch::IntegrationTest
     )
 
     post batch_save_contacts_std_customer_client_url(customer.bzac_cd), params: {
-      rowsToInsert: [{ nm_cd: "담당자A", rpt_yn_cd: "Y", use_yn_cd: "Y" }],
+      rowsToInsert: [ { nm_cd: "담당자A", rpt_yn_cd: "Y", use_yn_cd: "Y" } ],
       rowsToUpdate: [],
       rowsToDelete: []
     }, as: :json
@@ -142,7 +142,7 @@ class Std::CustomerClientsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "담당자A", contacts.first["nm_cd"]
 
     post batch_save_workplaces_std_customer_client_url(customer.bzac_cd), params: {
-      rowsToInsert: [{ workpl_nm_cd: "고객작업장A", workpl_sctn_cd: "MAIN", use_yn_cd: "Y" }],
+      rowsToInsert: [ { workpl_nm_cd: "고객작업장A", workpl_sctn_cd: "MAIN", use_yn_cd: "Y" } ],
       rowsToUpdate: [],
       rowsToDelete: []
     }, as: :json

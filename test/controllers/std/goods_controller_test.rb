@@ -22,9 +22,9 @@ class Std::GoodsControllerTest < ActionDispatch::IntegrationTest
     StdGood.create!(goods_cd: "GD000011", goods_nm: "Delete", use_yn_cd: "Y")
 
     post batch_save_std_goods_url, params: {
-      rowsToInsert: [{ goods_cd: "GD000012", goods_nm: "New Goods", use_yn_cd: "Y" }],
-      rowsToUpdate: [{ goods_cd: "GD000010", goods_nm: "After", use_yn_cd: "Y" }],
-      rowsToDelete: ["GD000011"]
+      rowsToInsert: [ { goods_cd: "GD000012", goods_nm: "New Goods", use_yn_cd: "Y" } ],
+      rowsToUpdate: [ { goods_cd: "GD000010", goods_nm: "After", use_yn_cd: "Y" } ],
+      rowsToDelete: [ "GD000011" ]
     }, as: :json
 
     assert_response :success

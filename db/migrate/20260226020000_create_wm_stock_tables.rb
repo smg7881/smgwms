@@ -41,7 +41,7 @@ class CreateWmStockTables < ActiveRecord::Migration[8.1]
       t.decimal :hold_qty,        precision: 18, scale: 3, default: 0, null: false, comment: "보류물량"
       t.string  :create_by,       limit: 50,               comment: "생성자"
       t.datetime :create_time,                             comment: "생성일시"
-      t.string  :update_by,       limit: 50,               comment: "수정자"
+      t.string :update_by,       limit: 50,               comment: "수정자"
       t.datetime :update_time,                             comment: "수정일시"
     end
 
@@ -63,7 +63,7 @@ class CreateWmStockTables < ActiveRecord::Migration[8.1]
       t.decimal :hold_qty,        precision: 18, scale: 3, default: 0, null: false, comment: "보류물량"
       t.string  :create_by,       limit: 50,               comment: "생성자"
       t.datetime :create_time,                             comment: "생성일시"
-      t.string  :update_by,       limit: 50,               comment: "수정자"
+      t.string :update_by,       limit: 50,               comment: "수정자"
       t.datetime :update_time,                             comment: "수정일시"
     end
 
@@ -84,7 +84,7 @@ class CreateWmStockTables < ActiveRecord::Migration[8.1]
       t.decimal :hold_qty,        precision: 18, scale: 3, default: 0, null: false, comment: "보류물량"
       t.string  :create_by,       limit: 50,               comment: "생성자"
       t.datetime :create_time,                             comment: "생성일시"
-      t.string  :update_by,       limit: 50,               comment: "수정자"
+      t.string :update_by,       limit: 50,               comment: "수정자"
       t.datetime :update_time,                             comment: "수정일시"
     end
 

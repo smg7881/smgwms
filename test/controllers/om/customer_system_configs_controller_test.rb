@@ -68,7 +68,7 @@ class Om::CustomerSystemConfigsControllerTest < ActionDispatch::IntegrationTest
           use_yn: "Y"
         }
       ],
-      rowsToDelete: [existing.id]
+      rowsToDelete: [ existing.id ]
     }, as: :json
 
     assert_response :success

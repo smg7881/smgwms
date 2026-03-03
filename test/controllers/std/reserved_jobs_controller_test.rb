@@ -43,9 +43,9 @@ class Std::ReservedJobsControllerTest < ActionDispatch::IntegrationTest
     )
 
     post batch_save_std_reserved_jobs_url, params: {
-      rowsToInsert: [{ sys_sctn_cd: "WMS", rsv_work_nm_cd: "New Job", rsv_work_desc_cd: "Desc", rsv_work_cycle_cd: "DAILY", use_yn_cd: "Y" }],
-      rowsToUpdate: [{ sys_sctn_cd: "WMS", rsv_work_no: "RW000010", rsv_work_nm_cd: "After", rsv_work_desc_cd: "Desc", rsv_work_cycle_cd: "DAILY", use_yn_cd: "Y" }],
-      rowsToDelete: ["RW000011"]
+      rowsToInsert: [ { sys_sctn_cd: "WMS", rsv_work_nm_cd: "New Job", rsv_work_desc_cd: "Desc", rsv_work_cycle_cd: "DAILY", use_yn_cd: "Y" } ],
+      rowsToUpdate: [ { sys_sctn_cd: "WMS", rsv_work_no: "RW000010", rsv_work_nm_cd: "After", rsv_work_desc_cd: "Desc", rsv_work_cycle_cd: "DAILY", use_yn_cd: "Y" } ],
+      rowsToDelete: [ "RW000011" ]
     }, as: :json
 
     assert_response :success

@@ -122,6 +122,7 @@ Rails.application.routes.draw do
         post :batch_save, on: :collection
       end
     end
+    resources :work_steps, controller: :work_steps, only: [ :index, :create, :update, :destroy ]
     resources :workplaces, controller: :workplaces, only: [ :index, :create, :update, :destroy ] do
       post :batch_save, on: :collection
     end

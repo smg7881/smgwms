@@ -63,7 +63,7 @@ class CreateWmGrPrarTables < ActiveRecord::Migration[8.1]
       t.string  :rmk,              limit: 500,              comment: "비고"
       t.string  :create_by,        limit: 50,               comment: "생성자"
       t.datetime :create_time,                              comment: "생성일시"
-      t.string  :update_by,        limit: 50,               comment: "수정자"
+      t.string :update_by,        limit: 50,               comment: "수정자"
       t.datetime :update_time,                              comment: "수정일시"
     end
 

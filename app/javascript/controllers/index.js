@@ -48,6 +48,7 @@ const CONTROLLERS = [
   ["std-customer-client-grid", "controllers/std/customer_client_grid_controller"],
   ["std-workplace-grid", "controllers/std/workplace_grid_controller"],
   ["std-workplace-crud", "controllers/std/workplace_crud_controller"],
+  ["std-work-step-crud", "controllers/std/work_step_crud_controller"],
   ["std-region-grid", "controllers/std/region_grid_controller"],
   ["std-zipcode-crud", "controllers/std/zipcode_crud_controller"],
   ["std-region-zip-grid", "controllers/std/region_zip_grid_controller"],

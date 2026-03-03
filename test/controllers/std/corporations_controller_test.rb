@@ -49,7 +49,7 @@ class Std::CorporationsControllerTest < ActionDispatch::IntegrationTest
       rowsToUpdate: [
         { corp_cd: "CP000010", corp_nm: "After", indstype_cd: "Industry", bizcond_cd: "Condition", rptr_nm_cd: "CEO", use_yn_cd: "Y" }
       ],
-      rowsToDelete: ["CP000011"]
+      rowsToDelete: [ "CP000011" ]
     }, as: :json
 
     assert_response :success
@@ -77,7 +77,7 @@ class Std::CorporationsControllerTest < ActionDispatch::IntegrationTest
     )
 
     post batch_save_country_infos_std_corporation_url(corp.corp_cd), params: {
-      rowsToInsert: [{ ctry_cd: "US", rpt_yn_cd: "Y", use_yn_cd: "Y" }],
+      rowsToInsert: [ { ctry_cd: "US", rpt_yn_cd: "Y", use_yn_cd: "Y" } ],
       rowsToUpdate: [],
       rowsToDelete: []
     }, as: :json

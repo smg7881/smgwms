@@ -69,5 +69,4 @@ class Wm::Area::PageComponent < Wm::BasePageComponent
         { field: "create_time", headerName: "생성일시", minWidth: 170, formatter: "datetime", editable: false }
       ]
     end
-
 end
