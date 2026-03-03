@@ -22,14 +22,11 @@ export default class extends BaseGridController {
     super.connect()
     // handleDelete는 ModalMixin에서 일반 메서드로 정의되어 있으므로 this 바인딩이 필요합니다.
     this.handleDelete = this.handleDelete.bind(this)
-    this.modalHiddenForLookup = false
     this.connectBase({
       events: [
         { name: "std-client-item-code-crud:edit", handler: this.handleEdit },
         { name: "std-client-item-code-crud:delete", handler: this.handleDelete },
-        { name: "search-popup:selected", handler: this.handlePopupSelected },
-        { name: "search-popup:opening", handler: this.handlePopupOpening },
-        { name: "search-popup:closed", handler: this.handlePopupClosed }
+        { name: "search-popup:selected", handler: this.handlePopupSelected }
       ]
     })
   }
@@ -118,16 +115,6 @@ export default class extends BaseGridController {
     }
   }
 
-  handlePopupOpening = (event) => {
-    if (!this.isClientLookupEvent(event)) return
-    this.hideModalForLookupPopup()
-  }
-
-  handlePopupClosed = (event) => {
-    if (!this.isClientLookupEvent(event)) return
-    this.restoreModalAfterLookupPopup()
-  }
-
   resetForm() {
     this.formTarget.reset()
     this.fieldIdTarget.value = ""
@@ -172,28 +159,6 @@ export default class extends BaseGridController {
     this.setFieldValue("reg_date", this.formatDateTime(data.reg_date))
     this.setFieldValue("mdfr_nm_cd", data.mdfr_nm_cd || "")
     this.setFieldValue("chgdt", this.formatDateTime(data.chgdt))
-  }
-
-  isClientLookupEvent(event) {
-    const fieldGroup = event.target?.closest?.("[data-field-name]")
-    if (!fieldGroup) return false
-
-    return fieldGroup.dataset.fieldName === "bzac_cd"
-  }
-
-  hideModalForLookupPopup() {
-    if (!this.hasOverlayTarget || this.modalHiddenForLookup) return
-    if (!this.overlayTarget.open) return
-
-    this.modalHiddenForLookup = true
-    this.closeModal()
-  }
-
-  restoreModalAfterLookupPopup() {
-    if (!this.hasOverlayTarget || !this.modalHiddenForLookup) return
-
-    this.modalHiddenForLookup = false
-    this.openModal()
   }
 
   currentActor() {

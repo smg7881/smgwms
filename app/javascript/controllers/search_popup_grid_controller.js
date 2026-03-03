@@ -1,4 +1,4 @@
-﻿import { Controller } from "@hotwired/stimulus"
+import { Controller } from "@hotwired/stimulus"
 import { showAlert } from "components/ui/alert"
 import { GridEventManager } from "controllers/grid/grid_event_manager"
 
@@ -10,30 +10,16 @@ export default class extends Controller {
     this.gridApi = null
     this.gridController = null
 
-    this.messageListener = (event) => {
-      if (event.data?.source === "search-popup-modal" && event.data?.type === "request-select") {
-        if (this.gridApi) {
-          const rows = this.gridApi.getSelectedRows()
-          if (rows && rows.length > 0) {
-            this.selectRow(rows[0])
-          } else {
-            showAlert("조회된 목록에서 항목을 먼저 선택하세요.")
-          }
-        } else {
-          showAlert("목록을 불러오는 중입니다. 잠시 후 다시 시도하세요.")
-        }
-      }
-    }
-    window.addEventListener("message", this.messageListener)
+    // popup_manager.js의 "선택" 버튼 클릭 시 현재 선택 행 제출 요청 수신
+    this._boundRequestSelect = this._handleRequestSelect.bind(this)
+    this.element.addEventListener("popup:request-select", this._boundRequestSelect)
   }
 
   disconnect() {
     this.gridEvents.unbindAll()
     this.gridApi = null
     this.gridController = null
-    if (this.messageListener) {
-      window.removeEventListener("message", this.messageListener)
-    }
+    this.element.removeEventListener("popup:request-select", this._boundRequestSelect)
   }
 
   registerGrid(event) {
@@ -56,14 +42,8 @@ export default class extends Controller {
   }
 
   closeModal() {
-    if (this.isEmbeddedPopup()) {
-      this.postToParent("search-popup-close")
-      return
-    }
-
-    const modal = document.getElementById("search-popup-modal")
-    if (!modal) return
-    modal.dispatchEvent(new CustomEvent("search-popup:close", { bubbles: true }))
+    // CustomEvent를 버블링시켜 popup_manager.js의 dialog까지 전달
+    this.element.dispatchEvent(new CustomEvent("popup:close", { bubbles: true }))
   }
 
   selectFromRenderer(event) {
@@ -103,37 +83,25 @@ export default class extends Controller {
       upper_corp_nm: row.upper_corp_nm
     }
 
-    if (this.isEmbeddedPopup()) {
-      this.postToParent("search-popup-select", detail)
-      return
-    }
-
-    const modal = document.getElementById("search-popup-modal")
-    if (!modal) return
-
-    modal.dispatchEvent(new CustomEvent("search-popup:select", {
+    // turbo-frame은 같은 document이므로 CustomEvent를 직접 버블링하여 dialog까지 전달
+    this.element.dispatchEvent(new CustomEvent("popup:select", {
       bubbles: true,
       detail
     }))
   }
 
-  isEmbeddedPopup() {
-    try {
-      return window.parent && window.parent !== window
-    } catch (_error) {
-      return false
-    }
-  }
+  // ── private ───────────────────────────────────────────────────────────
 
-  postToParent(type, detail = null) {
-    try {
-      window.parent.postMessage({
-        source: "search-popup-iframe",
-        type,
-        detail
-      }, window.location.origin)
-    } catch (_error) {
-      // noop
+  _handleRequestSelect() {
+    if (this.gridApi) {
+      const rows = this.gridApi.getSelectedRows()
+      if (rows && rows.length > 0) {
+        this.selectRow(rows[0])
+      } else {
+        showAlert("조회된 목록에서 항목을 먼저 선택하세요.")
+      }
+    } else {
+      showAlert("목록을 불러오는 중입니다. 잠시 후 다시 시도하세요.")
     }
   }
 }

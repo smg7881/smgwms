@@ -14,6 +14,7 @@
 import { showAlert, confirmAction } from "components/ui/alert"
 import { requestJson as requestJsonCore } from "controllers/grid/core/http_client"
 import { syncAllPopupDisplaysFromCodes } from "controllers/grid/grid_popup_utils"
+import { PopupManager } from "controllers/popup/popup_manager"
 
 export const ModalMixin = {
   // 공통 이벤트 등록:
@@ -67,35 +68,20 @@ export const ModalMixin = {
   },
 
   // 모달(dialog)을 화면에 표시합니다.
+  // PopupManager._openInline()에 위임하여 일관된 dialog 처리를 보장합니다.
   openModal() {
-    const overlay = this.overlayTarget
-    overlay.showModal()
-    overlay.style.display = "flex"
-    overlay.style.position = "fixed"
-    overlay.style.inset = "0"
-    overlay.style.width = "100%"
-    overlay.style.height = "100%"
-    overlay.style.maxWidth = "100%"
-    overlay.style.maxHeight = "100%"
-    overlay.style.alignItems = "center"
-    overlay.style.justifyContent = "center"
-    overlay.style.padding = "0"
-    overlay.style.border = "none"
-    overlay.style.background = "transparent"
+    this._popupInstance = PopupManager.open({ dialogEl: this.overlayTarget })
   },
 
   // 모달을 닫고 진행 중이던 드래그 상태를 모두 초기화합니다.
   closeModal() {
-    const overlay = this.overlayTarget
-    overlay.close()
-    overlay.style.cssText = ""
+    this._popupInstance?.close()
+    this._popupInstance = null
     this.endDrag()
   },
 
-  // dialog 배경(backdrop) 클릭 감지 — 내부 클릭은 target이 dialog가 아니므로 무시됩니다.
-  onBackdropClick(event) {
-    if (event.target === this.overlayTarget) this.closeModal()
-  },
+  // backdrop 클릭 무시 — 팝업 외부 클릭으로 닫히지 않습니다.
+  onBackdropClick(_event) {},
 
   // 이벤트 버블링을 방지하는 범용 유틸리티 함수. 특정 요소 클릭 시 부모로 이벤트가 전파되는 것을 막을 때 사용합니다.
   stopPropagation(event) {

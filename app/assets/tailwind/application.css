@@ -1528,6 +1528,12 @@ dialog.app-modal-dialog::backdrop {
   background: rgba(0, 0, 0, 0.5);
 }
 
+/* 검색 팝업(popup_manager)은 부모 CRUD 모달 위에서 열리므로 backdrop을 투명 처리.
+   부모 모달의 backdrop이 이미 배경 딤(dim) 역할을 담당합니다. */
+dialog#popup-manager-dialog::backdrop {
+  background: transparent;
+}
+
 /* ── Phase 5: DaisyUI 테마 변수 (dark) ── */
 [data-theme="dark"] {
   --color-base-100: #0f1117;
