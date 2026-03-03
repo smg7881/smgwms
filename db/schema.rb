@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_03_091500) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_03_153000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -1297,13 +1297,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_03_091500) do
   end
 
   create_table "std_zip_codes", force: :cascade do |t|
+    t.string "addr_ri", limit: 80
+    t.string "apt_bild_nm", limit: 120
+    t.date "chg_ymd"
     t.string "create_by", limit: 50
     t.datetime "create_time"
     t.string "ctry_cd", limit: 10, null: false
+    t.string "dong_houseno_end", limit: 20
+    t.string "dong_rng_strt", limit: 20
+    t.string "end_houseno_mnst", limit: 20
+    t.string "end_houseno_wek", limit: 20
     t.string "eupdiv", limit: 80
+    t.string "iland_san", limit: 10
+    t.string "san_houseno", limit: 20
     t.integer "seq_no", default: 1, null: false
     t.string "sgng", limit: 80
     t.string "sido", limit: 80
+    t.string "strt_houseno_mnst", limit: 20
+    t.string "strt_houseno_wek", limit: 20
     t.string "update_by", limit: 50
     t.datetime "update_time"
     t.string "use_yn_cd", limit: 1, default: "Y", null: false
@@ -1552,18 +1563,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_03_091500) do
   end
 
   create_table "wm_cust_rules", force: :cascade do |t|
-    t.string "aply_yn", limit: 1, default: "Y", null: false
-    t.string "create_by", limit: 50
-    t.datetime "create_time"
-    t.string "cust_cd", limit: 50, null: false
-    t.string "inout_sctn", limit: 50, null: false
-    t.string "inout_type", limit: 50, null: false
-    t.string "remark", limit: 500
-    t.string "rule_sctn", limit: 50, null: false
-    t.string "update_by", limit: 50
-    t.datetime "update_time"
-    t.string "workpl_cd", limit: 50, null: false
-    t.index ["workpl_cd", "cust_cd", "inout_sctn", "inout_type", "rule_sctn"], name: "idx_wm_cust_rules_unique", unique: true
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "wm_cust_stock_attrs", force: :cascade do |t|
@@ -1579,6 +1580,36 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_03_091500) do
     t.datetime "update_time"
     t.string "use_yn", limit: 1, default: "Y", null: false
     t.index ["cust_cd", "inout_sctn", "stock_attr_sctn"], name: "idx_wm_cust_stock_attrs_uk", unique: true
+  end
+
+  create_table "wm_customer_rules", force: :cascade do |t|
+    t.string "aply_yn"
+    t.datetime "created_at", null: false
+    t.string "cust_cd"
+    t.string "inout_sctn"
+    t.string "inout_type"
+    t.string "rmk"
+    t.string "rule_sctn"
+    t.datetime "updated_at", null: false
+    t.string "workpl_cd"
+  end
+
+  create_table "wm_customer_stock_attributes", force: :cascade do |t|
+    t.string "attr_desc", limit: 200
+    t.string "corp_cd", limit: 20, null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.datetime "created_at", null: false
+    t.bigint "cust_id", null: false
+    t.string "inout_sctn_cd", limit: 10, null: false
+    t.string "rel_col_nm", limit: 50
+    t.string "rel_tbl_nm", limit: 50
+    t.string "stock_attr_sctn_cd", limit: 10, null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.datetime "updated_at", null: false
+    t.string "use_yn", limit: 1, default: "Y", null: false
+    t.index ["corp_cd", "cust_id", "inout_sctn_cd", "stock_attr_sctn_cd"], name: "idx_wm_cust_stock_attr_unique", unique: true
   end
 
   create_table "wm_locations", force: :cascade do |t|

@@ -1,15 +1,15 @@
 class StdZipCode < ApplicationRecord
+  include Std::Auditable
+
   self.table_name = "std_zip_codes"
 
   validates :ctry_cd, presence: true, length: { maximum: 10 }
   validates :zipcd, presence: true, length: { maximum: 20 }
-  validates :seq_no, presence: true, numericality: { only_integer: true }
+  validates :seq_no, presence: true, numericality: { only_integer: true, greater_than: 0 }
   validates :seq_no, uniqueness: { scope: [ :ctry_cd, :zipcd ] }
   validates :use_yn_cd, inclusion: { in: %w[Y N] }
 
   before_validation :normalize_fields
-  before_save :assign_audit_fields
-  before_create :assign_create_fields
 
   scope :ordered, -> { order(:ctry_cd, :zipcd, :seq_no) }
   scope :active, -> { where(use_yn_cd: "Y") }
@@ -18,11 +18,21 @@ class StdZipCode < ApplicationRecord
     def normalize_fields
       self.ctry_cd = ctry_cd.to_s.strip.upcase
       self.zipcd = zipcd.to_s.strip.upcase
-      self.seq_no = seq_no.to_i
+      self.seq_no = normalize_seq_no(seq_no)
       self.zipaddr = zipaddr.to_s.strip.presence
       self.sido = sido.to_s.strip.presence
       self.sgng = sgng.to_s.strip.presence
       self.eupdiv = eupdiv.to_s.strip.presence
+      self.addr_ri = addr_ri.to_s.strip.presence
+      self.iland_san = iland_san.to_s.strip.presence
+      self.san_houseno = san_houseno.to_s.strip.presence
+      self.apt_bild_nm = apt_bild_nm.to_s.strip.presence
+      self.strt_houseno_wek = strt_houseno_wek.to_s.strip.presence
+      self.strt_houseno_mnst = strt_houseno_mnst.to_s.strip.presence
+      self.end_houseno_wek = end_houseno_wek.to_s.strip.presence
+      self.end_houseno_mnst = end_houseno_mnst.to_s.strip.presence
+      self.dong_rng_strt = dong_rng_strt.to_s.strip.presence
+      self.dong_houseno_end = dong_houseno_end.to_s.strip.presence
       self.use_yn_cd = normalize_yn(use_yn_cd, default_value: "Y")
     end
 
@@ -35,25 +45,12 @@ class StdZipCode < ApplicationRecord
       end
     end
 
-    def assign_audit_fields
-      actor = current_actor
-      self.update_by = actor
-      self.update_time = Time.current
-    end
-
-    def assign_create_fields
-      actor = current_actor
-      self.create_by = actor
-      self.create_time = Time.current
-    end
-
-    def current_actor
-      if Current.user&.user_id_code.present?
-        Current.user.user_id_code
-      elsif Current.user&.email_address.present?
-        Current.user.email_address
+    def normalize_seq_no(value)
+      normalized = value.to_s.strip
+      if normalized.present? && normalized.match?(/\A\d+\z/)
+        normalized.to_i
       else
-        "system"
+        nil
       end
     end
 end

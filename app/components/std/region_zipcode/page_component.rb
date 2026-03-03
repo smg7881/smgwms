@@ -33,10 +33,7 @@ class Std::RegionZipcode::PageComponent < Std::BasePageComponent
           label: "* 권역",
           popup_type: "region",
           code_field: "regn_cd",
-          placeholder: "권역 선택",
-          span: "24 m:12",
-          code_width: "110px",
-          button_width: "40px"
+          placeholder: "권역 선택"
         },
         {
           field: "corp_nm",
@@ -44,10 +41,7 @@ class Std::RegionZipcode::PageComponent < Std::BasePageComponent
           label: "* 법인",
           popup_type: "corp",
           code_field: "corp_cd",
-          placeholder: "법인 선택",
-          span: "24 m:12",
-          code_width: "110px",
-          button_width: "40px"
+          placeholder: "법인 선택"
         }
       ]
     end
@@ -60,24 +54,19 @@ class Std::RegionZipcode::PageComponent < Std::BasePageComponent
           label: "* 국가",
           popup_type: "country",
           code_field: "ctry_cd",
-          placeholder: "국가 선택",
-          span: "24 m:12",
-          code_width: "100px",
-          button_width: "40px"
+          placeholder: "국가 선택"
         },
         {
           field: "zipcd",
           type: "input",
           label: "우편번호",
-          placeholder: "우편번호",
-          span: "24 m:6"
+          placeholder: "우편번호"
         },
         {
           field: "zipaddr",
           type: "input",
           label: "우편주소",
-          placeholder: "우편주소",
-          span: "24 m:6"
+          placeholder: "우편주소"
         }
       ]
     end

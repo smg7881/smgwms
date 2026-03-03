@@ -1,0 +1,57 @@
+<div data-controller="std-zipcode-crud"
+     data-std-zipcode-crud-create-url-value="<%= create_url %>"
+     data-std-zipcode-crud-update-url-value="<%= update_url %>"
+     data-std-zipcode-crud-delete-url-value="<%= delete_url %>">
+  <%= render Ui::SearchFormComponent.new(
+    url: create_url,
+    fields: search_fields,
+    cols: 4,
+    enable_collapse: true
+  ) %>
+
+  <%= render Ui::GridHeaderComponent.new(
+    icon: "mail", title: "우편번호 목록", grid_id: "std-zipcodes",
+    buttons: [
+      { label: "신규", class: "btn btn-sm btn-primary", action: "click->std-zipcode-crud#openCreate" }
+    ]
+  ) %>
+
+  <%= render Ui::AgGridComponent.new(
+    columns: columns,
+    url: grid_url,
+    height: "calc(100vh - 370px)",
+    page_size: 20,
+    grid_id: "std-zipcodes"
+  ) %>
+
+  <%= render Ui::ModalShellComponent.new(
+    controller: "std-zipcode-crud",
+    title: "우편번호 등록",
+    save_form_id: "std-zipcode-crud-form",
+    cancel_role: "cancel",
+    save_role: "save",
+    width: "1100px"
+  ) do |modal| %>
+    <% modal.with_body do %>
+      <input type="hidden" data-std-zipcode-crud-target="fieldId" />
+
+      <%= render Ui::ResourceFormComponent.new(
+        model: StdZipCode.new,
+        url: "#",
+        cols: 2,
+        show_buttons: false,
+        target_controller: "std_zipcode_crud",
+        fields: form_fields,
+        form_data: {
+          std_zipcode_crud_target: "form",
+          action: "submit->resource-form#submit submit->std-zipcode-crud#submit"
+        },
+        form_html: {
+          id: "std-zipcode-crud-form",
+          novalidate: true,
+          autocomplete: "off"
+        }
+      ) %>
+    <% end %>
+  <% end %>
+</div>

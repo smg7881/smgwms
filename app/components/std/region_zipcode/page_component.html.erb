@@ -11,14 +11,22 @@
     <%= render Ui::SearchFormComponent.new(
       url: create_url,
       fields: top_search_fields,
-      cols: 2,
+      cols: 3,
       enable_collapse: false,
-      show_buttons: true,
-      class: "std-region-zip-search-form"
+      show_buttons: true
     ) %>
   </section>
 
   <section class="min-w-0">
+    <%= render Ui::GridHeaderComponent.new(
+      icon: "map",
+      title: "권역 할당 우편번호",
+      grid_id: "std-region-zip-mapped",
+      buttons: [
+        { label: "저장", class: "btn btn-sm btn-success", action: "click->std-region-zip-grid#save" }
+      ]
+    ) %>
+
     <%= render Ui::AgGridComponent.new(
       columns: mapped_columns,
       row_data: [],
@@ -49,14 +57,19 @@
     <%= render Ui::SearchFormComponent.new(
       url: create_url,
       fields: bottom_search_fields,
-      cols: 3,
+      cols: 4,
       enable_collapse: false,
-      show_buttons: true,
-      class: "std-region-zip-search-form"
+      show_buttons: true
     ) %>
   </section>
 
   <section class="min-w-0">
+    <%= render Ui::GridHeaderComponent.new(
+      icon: "map",
+      title: "미할당 우편번호",
+      grid_id: "std-region-zip-unmapped"
+    ) %>
+
     <%= render Ui::AgGridComponent.new(
       columns: unmapped_columns,
       row_data: [],
@@ -67,8 +80,4 @@
       data: { std_region_zip_grid_target: "unmappedGrid" }
     ) %>
   </section>
-
-  <div class="flex justify-end pt-2">
-    <button type="button" class="btn btn-sm btn-success w-16" data-action="click->std-region-zip-grid#save">저장</button>
-  </div>
 </div>

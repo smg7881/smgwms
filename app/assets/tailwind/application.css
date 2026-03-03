@@ -1104,41 +1104,6 @@ trix-editor {
   justify-content: flex-end;
 }
 
-.std-region-zip-search-form {
-  margin-bottom: 0 !important;
-  padding: 10px !important;
-}
-
-.std-region-zip-search-form .grid {
-  gap: 8px 10px;
-}
-
-.std-region-zip-search-form [data-search-form-target="fieldGroup"] label {
-  font-size: 12px;
-  color: var(--color-text-secondary);
-}
-
-.std-region-zip-search-form .form-grid-input,
-.std-region-zip-search-form .form-grid-select {
-  min-height: 32px;
-  padding-top: 6px;
-  padding-bottom: 6px;
-  font-size: 13px;
-}
-
-.std-region-zip-search-form [data-search-form-target="buttonGroup"] {
-  margin-top: 4px;
-  gap: 6px;
-}
-
-.std-region-zip-search-form [data-search-form-target="searchBtn"],
-.std-region-zip-search-form [data-search-form-target="resetBtn"],
-.std-region-zip-search-form [data-search-form-target="collapseBtn"] {
-  min-height: 28px;
-  font-size: 12px;
-  padding: 4px 10px;
-}
-
 /* ── Phase 0: Radio / Checkbox custom inputs ── */
 .radio-input {
   appearance: none;

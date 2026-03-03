@@ -122,6 +122,7 @@ Rails.application.routes.draw do
     resources :regions, controller: :regions, only: [ :index ] do
       post :batch_save, on: :collection
     end
+    resources :zipcodes, controller: :zipcodes, only: [ :index, :create, :update, :destroy ]
     resources :region_zipcodes, controller: :region_zipcodes, only: [ :index ] do
       collection do
         get :mapped_zipcodes
