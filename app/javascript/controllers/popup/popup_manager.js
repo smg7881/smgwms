@@ -28,7 +28,6 @@ function buildFrameSrc(baseUrl, keyword) {
   const url = new URL(baseUrl, window.location.origin)
   const text = String(keyword ?? "").trim()
   if (text.length > 0) url.searchParams.set("q", text)
-  // turbo-frame 요청임을 서버에 알려 레이아웃 없이 렌더링
   url.searchParams.set("frame", POPUP_FRAME_ID)
   return `${url.pathname}${url.search}${url.hash}`
 }

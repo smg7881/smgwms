@@ -1,7 +1,7 @@
 class SearchPopupsController < ApplicationController
   def show
     @type = params[:type].to_s.strip.downcase
-    @frame = params[:frame].presence || "search_popup_frame"
+    @frame = resolved_frame_id
 
     # 팝업 호출 시 ?q=xxx 문자열 검색어가 넘어오면, 폼 호환성을 위해 Hash로 변환
     if params[:q].is_a?(String)
@@ -58,6 +58,16 @@ class SearchPopupsController < ApplicationController
   end
 
   private
+    def resolved_frame_id
+      frame = params[:frame].to_s.strip
+      return frame if frame.present?
+
+      turbo_frame = request.headers["Turbo-Frame"].to_s.strip
+      return turbo_frame if turbo_frame.present?
+
+      "search_popup_frame"
+    end
+
     def popup_layout?
       if params[:popup].present?
         "popup"
