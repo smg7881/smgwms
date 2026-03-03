@@ -1,6 +1,5 @@
 import BaseGridController from "controllers/base_grid_controller"
-import { showAlert, confirmAction } from "components/ui/alert"
-import { syncAllPopupDisplaysFromCodes } from "controllers/grid/grid_popup_utils"
+import { showAlert } from "components/ui/alert"
 
 export default class extends BaseGridController {
   static resourceName = "sellbuy_attribute"
@@ -68,34 +67,27 @@ export default class extends BaseGridController {
     this.fieldSellbuyAttrCdTarget.value = sellbuyAttrCd
     this.fieldSellbuyAttrCdTarget.readOnly = true
 
-    this.setFieldValue("corp_cd", data.corp_cd || "")
-    this.setFieldValue("sellbuy_attr_nm", data.sellbuy_attr_nm || "")
-    this.setFieldValue("rdtn_nm", data.rdtn_nm || "")
-    this.setFieldValue("sellbuy_attr_eng_nm", data.sellbuy_attr_eng_nm || "")
-    this.setFieldValue("upper_sellbuy_attr_cd", data.upper_sellbuy_attr_cd || "")
+    this.setFieldValues({
+      corp_cd: data.corp_cd || "",
+      sellbuy_attr_nm: data.sellbuy_attr_nm || "",
+      rdtn_nm: data.rdtn_nm || "",
+      sellbuy_attr_eng_nm: data.sellbuy_attr_eng_nm || "",
+      upper_sellbuy_attr_cd: data.upper_sellbuy_attr_cd || ""
+    })
     this.setUpperSellbuyName(data.upper_sellbuy_attr_nm || "")
 
-    this.setFieldValue("sell_yn_cd", data.sell_yn_cd || "N")
-    this.setFieldValue("pur_yn_cd", data.pur_yn_cd || "N")
-    this.setFieldValue("tran_yn_cd", data.tran_yn_cd || "N")
-    this.setFieldValue("fis_air_yn_cd", data.fis_air_yn_cd || "N")
-    this.setFieldValue("strg_yn_cd", data.strg_yn_cd || "N")
-    this.setFieldValue("cgwrk_yn_cd", data.cgwrk_yn_cd || "N")
-    this.setFieldValue("fis_shpng_yn_cd", data.fis_shpng_yn_cd || "N")
-    this.setFieldValue("dc_extr_yn_cd", data.dc_extr_yn_cd || "N")
-    this.setFieldValue("tax_payfor_yn_cd", data.tax_payfor_yn_cd || "N")
-    this.setFieldValue("lumpsum_yn_cd", data.lumpsum_yn_cd || "N")
-    this.setFieldValue("dcnct_reg_pms_yn_cd", data.dcnct_reg_pms_yn_cd || "N")
-    this.setFieldValue("use_yn_cd", data.use_yn_cd || "Y")
-
-    this.setFieldValue("sell_dr_acct_cd", data.sell_dr_acct_cd || "")
-    this.setFieldValue("sell_cr_acct_cd", data.sell_cr_acct_cd || "")
-    this.setFieldValue("pur_dr_acct_cd", data.pur_dr_acct_cd || "")
-    this.setFieldValue("pur_cr_acct_cd", data.pur_cr_acct_cd || "")
-    this.setFieldValue("sys_sctn_cd", data.sys_sctn_cd || "")
-    this.setFieldValue("ndcsn_sell_cr_acct_cd", data.ndcsn_sell_cr_acct_cd || "")
-    this.setFieldValue("ndcsn_cost_dr_acct_cd", data.ndcsn_cost_dr_acct_cd || "")
-    this.setFieldValue("rmk_cd", data.rmk_cd || "")
+    this.setDefaultFlagValues(data)
+    this.setFieldValues({
+      use_yn_cd: data.use_yn_cd || "Y",
+      sell_dr_acct_cd: data.sell_dr_acct_cd || "",
+      sell_cr_acct_cd: data.sell_cr_acct_cd || "",
+      pur_dr_acct_cd: data.pur_dr_acct_cd || "",
+      pur_cr_acct_cd: data.pur_cr_acct_cd || "",
+      sys_sctn_cd: data.sys_sctn_cd || "",
+      ndcsn_sell_cr_acct_cd: data.ndcsn_sell_cr_acct_cd || "",
+      ndcsn_cost_dr_acct_cd: data.ndcsn_cost_dr_acct_cd || "",
+      rmk_cd: data.rmk_cd || ""
+    })
     this.setAuditValues(data)
 
     this.syncPopupDisplaysFromCodes()
@@ -108,12 +100,14 @@ export default class extends BaseGridController {
     this.fieldSellbuyAttrCdTarget.value = ""
     this.fieldSellbuyAttrCdTarget.readOnly = true
     this.setDefaultFlagValues()
-    this.setFieldValue("use_yn_cd", "Y")
-    this.setFieldValue("upper_sellbuy_attr_nm", "")
-    this.setFieldValue("create_by", "")
-    this.setFieldValue("create_time", "")
-    this.setFieldValue("update_by", "")
-    this.setFieldValue("update_time", "")
+    this.setFieldValues({
+      use_yn_cd: "Y",
+      upper_sellbuy_attr_nm: "",
+      create_by: "",
+      create_time: "",
+      update_by: "",
+      update_time: ""
+    })
     this.syncPopupDisplaysFromCodes()
   }
 
@@ -161,25 +155,20 @@ export default class extends BaseGridController {
     await super.save()
   }
 
-  setFieldValue(fieldName, value) {
-    const input = this.formTarget.querySelector(`[name='sellbuy_attribute[${fieldName}]']`)
-    if (!input) return
-
-    input.value = value
-  }
-
-  setDefaultFlagValues() {
-    this.setFieldValue("sell_yn_cd", "N")
-    this.setFieldValue("pur_yn_cd", "N")
-    this.setFieldValue("tran_yn_cd", "N")
-    this.setFieldValue("fis_air_yn_cd", "N")
-    this.setFieldValue("strg_yn_cd", "N")
-    this.setFieldValue("cgwrk_yn_cd", "N")
-    this.setFieldValue("fis_shpng_yn_cd", "N")
-    this.setFieldValue("dc_extr_yn_cd", "N")
-    this.setFieldValue("tax_payfor_yn_cd", "N")
-    this.setFieldValue("lumpsum_yn_cd", "N")
-    this.setFieldValue("dcnct_reg_pms_yn_cd", "N")
+  setDefaultFlagValues(data = {}) {
+    this.setFieldValues({
+      sell_yn_cd: data.sell_yn_cd || "N",
+      pur_yn_cd: data.pur_yn_cd || "N",
+      tran_yn_cd: data.tran_yn_cd || "N",
+      fis_air_yn_cd: data.fis_air_yn_cd || "N",
+      strg_yn_cd: data.strg_yn_cd || "N",
+      cgwrk_yn_cd: data.cgwrk_yn_cd || "N",
+      fis_shpng_yn_cd: data.fis_shpng_yn_cd || "N",
+      dc_extr_yn_cd: data.dc_extr_yn_cd || "N",
+      tax_payfor_yn_cd: data.tax_payfor_yn_cd || "N",
+      lumpsum_yn_cd: data.lumpsum_yn_cd || "N",
+      dcnct_reg_pms_yn_cd: data.dcnct_reg_pms_yn_cd || "N"
+    })
   }
 
   setAuditPreviewForCreate() {
@@ -223,33 +212,12 @@ export default class extends BaseGridController {
     }
   }
 
-  syncPopupDisplaysFromCodes() {
-    syncAllPopupDisplaysFromCodes(this.element)
-  }
-
   normalizeCode(value) {
     return String(value || "").trim().toUpperCase()
   }
 
   normalizeName(value) {
     return String(value || "").trim()
-  }
-
-  formatDateTime(value) {
-    if (!value) return ""
-
-    const date = value instanceof Date ? value : new Date(value)
-    if (Number.isNaN(date.getTime())) {
-      return String(value)
-    }
-
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, "0")
-    const day = String(date.getDate()).padStart(2, "0")
-    const hour = String(date.getHours()).padStart(2, "0")
-    const minute = String(date.getMinutes()).padStart(2, "0")
-    const second = String(date.getSeconds()).padStart(2, "0")
-    return `${year}-${month}-${day} ${hour}:${minute}:${second}`
   }
 
   currentActor() {

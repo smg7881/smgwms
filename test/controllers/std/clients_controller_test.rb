@@ -3,6 +3,10 @@ require "test_helper"
 class Std::ClientsControllerTest < ActionDispatch::IntegrationTest
   setup do
     post session_path, params: { email_address: "admin@example.com", password: "password" }
+    StdCm04004.delete_all
+    StdBzacOfcr.delete_all
+    StdBzacWorkpl.delete_all
+    StdBzacMst.delete_all
   end
 
   test "index responds to html and json" do
@@ -172,34 +176,40 @@ class Std::ClientsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Seoul WH", workplaces.first["workpl_nm_cd"]
   end
 
-  test "sections endpoint filters by section group using upper_detail_code" do
-    AdmCodeHeader.find_or_create_by!(code: "STD_BZAC_SCTN", code_name: "거래처구분") do |header|
-      header.use_yn = "Y"
-    end
+test "index json filters by section group" do
+  StdBzacMst.create!(
+    bzac_cd: "CL000031",
+    bzac_nm: "Customer Client",
+    mngt_corp_cd: "CORP01",
+    bizman_no: "3131313131",
+    bzac_sctn_grp_cd: "CUSTOMER",
+    bzac_sctn_cd: "DOMESTIC",
+    bzac_kind_cd: "CORP",
+    ctry_cd: "KR",
+    rpt_sales_emp_cd: "EMP01",
+    aply_strt_day_cd: Date.current,
+    use_yn_cd: "Y"
+  )
+  StdBzacMst.create!(
+    bzac_cd: "CL000032",
+    bzac_nm: "Partner Client",
+    mngt_corp_cd: "CORP01",
+    bizman_no: "3232323232",
+    bzac_sctn_grp_cd: "PARTNER",
+    bzac_sctn_cd: "SUPPLIER",
+    bzac_kind_cd: "CORP",
+    ctry_cd: "KR",
+    rpt_sales_emp_cd: "EMP01",
+    aply_strt_day_cd: Date.current,
+    use_yn_cd: "Y"
+  )
 
-    AdmCodeDetail.create!(
-      code: "STD_BZAC_SCTN",
-      detail_code: "DOMESTIC",
-      detail_code_name: "Domestic",
-      upper_detail_code: "CUSTOMER",
-      sort_order: 1,
-      use_yn: "Y"
-    )
-    AdmCodeDetail.create!(
-      code: "STD_BZAC_SCTN",
-      detail_code: "SUPPLIER",
-      detail_code_name: "Supplier",
-      upper_detail_code: "PARTNER",
-      sort_order: 2,
-      use_yn: "Y"
-    )
+  get std_clients_url(format: :json), params: { q: { bzac_sctn_grp_cd: "CUSTOMER" } }
+  assert_response :success
 
-    get sections_std_clients_url(format: :json), params: { bzac_sctn_grp_cd: "CUSTOMER" }
-    assert_response :success
-
-    rows = JSON.parse(response.body)
-    assert_equal [ "DOMESTIC" ], rows.map { |row| row["detail_code"] }
-  end
+  rows = JSON.parse(response.body)
+  assert_equal [ "CL000031" ], rows.map { |row| row["bzac_cd"] }
+end
 
   test "non-admin without permission cannot access endpoints" do
     delete session_path

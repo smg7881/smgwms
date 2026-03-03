@@ -10,7 +10,7 @@ class Ui::ResourceFormComponentTest < ViewComponent::TestCase
     ))
 
     assert_selector '[data-controller~="resource-form"]'
-    assert_selector ".bg-bg-secondary"
+    assert_selector ".max-w-full.overflow-x-visible.w-full"
     assert_selector ".grid.grid-cols-24"
   end
 

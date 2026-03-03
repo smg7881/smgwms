@@ -528,8 +528,13 @@ a:hover {
 }
 
 .ag-lookup-cell__input:focus {
-  @apply outline-none border-accent;
-  box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.2);
+  @apply outline-none border-transparent;
+  box-shadow: none;
+}
+
+.ag-lookup-cell__input:focus-visible {
+  @apply outline-none border-transparent;
+  box-shadow: none;
 }
 
 .ag-lookup-cell__input:disabled {

@@ -1,5 +1,4 @@
 import BaseGridController from "controllers/base_grid_controller"
-import { syncAllPopupDisplaysFromCodes } from "controllers/grid/grid_popup_utils"
 
 export default class extends BaseGridController {
   static resourceName = "client_item_code"
@@ -9,8 +8,7 @@ export default class extends BaseGridController {
   static targets = [
     ...BaseGridController.targets,
     "overlay", "modal", "modalTitle", "form",
-    "fieldId", "fieldItemCd", "fieldBzacCd", "fieldBzacNm",
-    "fieldGoodsnmCd", "fieldGoodsnmNm"
+    "fieldId", "fieldItemCd", "fieldBzacCd", "fieldGoodsnmCd"
   ]
 
   static values = {
@@ -24,11 +22,14 @@ export default class extends BaseGridController {
     super.connect()
     // handleDelete는 ModalMixin에서 일반 메서드로 정의되어 있으므로 this 바인딩이 필요합니다.
     this.handleDelete = this.handleDelete.bind(this)
+    this.modalHiddenForLookup = false
     this.connectBase({
       events: [
         { name: "std-client-item-code-crud:edit", handler: this.handleEdit },
         { name: "std-client-item-code-crud:delete", handler: this.handleDelete },
-        { name: "search-popup:selected", handler: this.handlePopupSelected }
+        { name: "search-popup:selected", handler: this.handlePopupSelected },
+        { name: "search-popup:opening", handler: this.handlePopupOpening },
+        { name: "search-popup:closed", handler: this.handlePopupClosed }
       ]
     })
   }
@@ -44,11 +45,10 @@ export default class extends BaseGridController {
     this.mode = "create"
     this.fieldItemCdTarget.readOnly = false
 
-    this.setFieldValue("use_yn_cd", "Y")
-    this.setFieldValue("danger_yn_cd", "N")
-    this.setFieldValue("png_yn_cd", "N")
-    this.setFieldValue("mstair_lading_yn_cd", "N")
-    this.setFieldValue("if_yn_cd", "N")
+    this.setFieldValues({
+      use_yn_cd: "Y",
+      ...this.defaultYnFlags()
+    })
 
     const selectedBzacCd = this.selectedClientCodeFromSearch()
     if (selectedBzacCd && this.hasFieldBzacCdTarget) {
@@ -72,32 +72,30 @@ export default class extends BaseGridController {
     this.fieldItemCdTarget.value = data.item_cd || ""
     this.fieldItemCdTarget.readOnly = true
 
-    this.setFieldValue("item_nm", data.item_nm || "")
-    this.setFieldValue("bzac_cd", data.bzac_cd || "")
-    this.setFieldValue("bzac_nm", data.bzac_nm || "")
-    this.setFieldValue("goodsnm_cd", data.goodsnm_cd || "")
-    this.setFieldValue("goodsnm_nm", data.goodsnm_nm || "")
-
-    this.setFieldValue("danger_yn_cd", data.danger_yn_cd || "N")
-    this.setFieldValue("png_yn_cd", data.png_yn_cd || "N")
-    this.setFieldValue("mstair_lading_yn_cd", data.mstair_lading_yn_cd || "N")
-    this.setFieldValue("if_yn_cd", data.if_yn_cd || "N")
-    this.setFieldValue("wgt_unit_cd", data.wgt_unit_cd || "")
-    this.setFieldValue("qty_unit_cd", data.qty_unit_cd || "")
-    this.setFieldValue("tmpt_unit_cd", data.tmpt_unit_cd || "")
-    this.setFieldValue("vol_unit_cd", data.vol_unit_cd || "")
-    this.setFieldValue("basis_unit_cd", data.basis_unit_cd || "")
-    this.setFieldValue("len_unit_cd", data.len_unit_cd || "")
-    this.setFieldValue("pckg_qty", data.pckg_qty ?? "")
-    this.setFieldValue("tot_wgt_kg", data.tot_wgt_kg ?? "")
-    this.setFieldValue("net_wgt_kg", data.net_wgt_kg ?? "")
-    this.setFieldValue("vessel_tmpt_c", data.vessel_tmpt_c ?? "")
-    this.setFieldValue("vessel_width_m", data.vessel_width_m ?? "")
-    this.setFieldValue("vessel_vert_m", data.vessel_vert_m ?? "")
-    this.setFieldValue("vessel_hght_m", data.vessel_hght_m ?? "")
-    this.setFieldValue("vessel_vol_cbm", data.vessel_vol_cbm ?? "")
-    this.setFieldValue("use_yn_cd", data.use_yn_cd || "Y")
-    this.setFieldValue("prod_nm_cd", data.prod_nm_cd || "")
+    this.setFieldValues({
+      item_nm: data.item_nm || "",
+      bzac_cd: data.bzac_cd || "",
+      bzac_lookup: data.bzac_nm || data.bzac_cd || "",
+      goodsnm_cd: data.goodsnm_cd || "",
+      goods_lookup: data.goodsnm_nm || data.goodsnm_cd || "",
+      ...this.defaultYnFlags(data),
+      wgt_unit_cd: data.wgt_unit_cd || "",
+      qty_unit_cd: data.qty_unit_cd || "",
+      tmpt_unit_cd: data.tmpt_unit_cd || "",
+      vol_unit_cd: data.vol_unit_cd || "",
+      basis_unit_cd: data.basis_unit_cd || "",
+      len_unit_cd: data.len_unit_cd || "",
+      pckg_qty: data.pckg_qty ?? "",
+      tot_wgt_kg: data.tot_wgt_kg ?? "",
+      net_wgt_kg: data.net_wgt_kg ?? "",
+      vessel_tmpt_c: data.vessel_tmpt_c ?? "",
+      vessel_width_m: data.vessel_width_m ?? "",
+      vessel_vert_m: data.vessel_vert_m ?? "",
+      vessel_hght_m: data.vessel_hght_m ?? "",
+      vessel_vol_cbm: data.vessel_vol_cbm ?? "",
+      use_yn_cd: data.use_yn_cd || "Y",
+      prod_nm_cd: data.prod_nm_cd || ""
+    })
 
     this.setAuditValues(data)
     this.syncPopupDisplaysFromCodes()
@@ -111,30 +109,39 @@ export default class extends BaseGridController {
     const fieldName = fieldGroup.dataset.fieldName
     const displayName = String(event.detail?.name ?? event.detail?.display ?? "").trim()
     if (fieldName === "bzac_cd") {
-      this.setFieldValue("bzac_nm", displayName)
+      this.setFieldValue("bzac_lookup", displayName)
       return
     }
 
     if (fieldName === "goodsnm_cd") {
-      this.setFieldValue("goodsnm_nm", displayName)
+      this.setFieldValue("goods_lookup", displayName)
     }
+  }
+
+  handlePopupOpening = (event) => {
+    if (!this.isClientLookupEvent(event)) return
+    this.hideModalForLookupPopup()
+  }
+
+  handlePopupClosed = (event) => {
+    if (!this.isClientLookupEvent(event)) return
+    this.restoreModalAfterLookupPopup()
   }
 
   resetForm() {
     this.formTarget.reset()
     this.fieldIdTarget.value = ""
     this.fieldItemCdTarget.readOnly = false
-    this.setFieldValue("bzac_nm", "")
-    this.setFieldValue("goodsnm_nm", "")
-    this.setFieldValue("danger_yn_cd", "N")
-    this.setFieldValue("png_yn_cd", "N")
-    this.setFieldValue("mstair_lading_yn_cd", "N")
-    this.setFieldValue("if_yn_cd", "N")
-    this.setFieldValue("use_yn_cd", "Y")
-    this.setFieldValue("regr_nm_cd", "")
-    this.setFieldValue("reg_date", "")
-    this.setFieldValue("mdfr_nm_cd", "")
-    this.setFieldValue("chgdt", "")
+    this.setFieldValues({
+      bzac_lookup: "",
+      goods_lookup: "",
+      ...this.defaultYnFlags(),
+      use_yn_cd: "Y",
+      regr_nm_cd: "",
+      reg_date: "",
+      mdfr_nm_cd: "",
+      chgdt: ""
+    })
     this.syncPopupDisplaysFromCodes()
   }
 
@@ -142,11 +149,13 @@ export default class extends BaseGridController {
     return this.getSearchFormValue("bzac_cd")
   }
 
-  setFieldValue(fieldName, value) {
-    const input = this.formTarget.querySelector(`[name='client_item_code[${fieldName}]']`)
-    if (!input) return
-
-    input.value = value
+  defaultYnFlags(data = {}) {
+    return {
+      danger_yn_cd: data.danger_yn_cd || "N",
+      png_yn_cd: data.png_yn_cd || "N",
+      mstair_lading_yn_cd: data.mstair_lading_yn_cd || "N",
+      if_yn_cd: data.if_yn_cd || "N"
+    }
   }
 
   setAuditPreviewForCreate() {
@@ -165,25 +174,26 @@ export default class extends BaseGridController {
     this.setFieldValue("chgdt", this.formatDateTime(data.chgdt))
   }
 
-  syncPopupDisplaysFromCodes() {
-    syncAllPopupDisplaysFromCodes(this.element)
+  isClientLookupEvent(event) {
+    const fieldGroup = event.target?.closest?.("[data-field-name]")
+    if (!fieldGroup) return false
+
+    return fieldGroup.dataset.fieldName === "bzac_cd"
   }
 
-  formatDateTime(value) {
-    if (!value) return ""
+  hideModalForLookupPopup() {
+    if (!this.hasOverlayTarget || this.modalHiddenForLookup) return
+    if (!this.overlayTarget.open) return
 
-    const date = value instanceof Date ? value : new Date(value)
-    if (Number.isNaN(date.getTime())) {
-      return String(value)
-    }
+    this.modalHiddenForLookup = true
+    this.closeModal()
+  }
 
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, "0")
-    const day = String(date.getDate()).padStart(2, "0")
-    const hour = String(date.getHours()).padStart(2, "0")
-    const minute = String(date.getMinutes()).padStart(2, "0")
-    const second = String(date.getSeconds()).padStart(2, "0")
-    return `${year}-${month}-${day} ${hour}:${minute}:${second}`
+  restoreModalAfterLookupPopup() {
+    if (!this.hasOverlayTarget || !this.modalHiddenForLookup) return
+
+    this.modalHiddenForLookup = false
+    this.openModal()
   }
 
   currentActor() {

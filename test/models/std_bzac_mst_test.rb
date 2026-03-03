@@ -1,11 +1,15 @@
 require "test_helper"
 
 class StdBzacMstTest < ActiveSupport::TestCase
+  setup do
+    StdBzacMst.delete_all
+  end
+
   def base_attributes
     {
       bzac_nm: "Alpha Client",
       mngt_corp_cd: "corp01",
-      bizman_no: "123-45-67890",
+      bizman_no: "918-27-36450",
       bzac_sctn_grp_cd: "customer",
       bzac_sctn_cd: "domestic",
       bzac_kind_cd: "corp",
@@ -36,7 +40,7 @@ class StdBzacMstTest < ActiveSupport::TestCase
         bzac_cd: " ab01 ",
         bzac_sctn_grp_cd: " customer ",
         bzac_sctn_cd: " domestic ",
-        bizman_no: "123-45-67890",
+        bizman_no: "918-27-36450",
         use_yn_cd: " y "
       )
     )
@@ -44,26 +48,26 @@ class StdBzacMstTest < ActiveSupport::TestCase
     assert_equal "AB01", client.bzac_cd
     assert_equal "CUSTOMER", client.bzac_sctn_grp_cd
     assert_equal "DOMESTIC", client.bzac_sctn_cd
-    assert_equal "1234567890", client.bizman_no
+    assert_equal "9182736450", client.bizman_no
     assert_equal "Y", client.use_yn_cd
   end
 
   test "requires unique business number when representative client is blank" do
-    StdBzacMst.create!(base_attributes.merge(bzac_cd: "CL000001", bizman_no: "1234567890"))
+    StdBzacMst.create!(base_attributes.merge(bzac_cd: "CL000001", bizman_no: "9090909090"))
 
-    duplicate = StdBzacMst.new(base_attributes.merge(bzac_cd: "CL000002", bizman_no: "1234567890"))
+    duplicate = StdBzacMst.new(base_attributes.merge(bzac_cd: "CL000002", bizman_no: "9090909090"))
 
     assert_not duplicate.valid?
     assert_includes duplicate.errors[:bizman_no], "must be unique when representative client is blank"
   end
 
   test "allows duplicated business number when representative client exists" do
-    StdBzacMst.create!(base_attributes.merge(bzac_cd: "CL000001", bizman_no: "1234567890"))
+    StdBzacMst.create!(base_attributes.merge(bzac_cd: "CL000001", bizman_no: "9191919191"))
 
     follower = StdBzacMst.new(
       base_attributes.merge(
         bzac_cd: "CL000002",
-        bizman_no: "1234567890",
+        bizman_no: "9191919191",
         rpt_bzac_cd: "CL000001"
       )
     )

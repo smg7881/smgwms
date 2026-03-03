@@ -13,6 +13,7 @@
  */
 import { showAlert, confirmAction } from "components/ui/alert"
 import { requestJson as requestJsonCore } from "controllers/grid/core/http_client"
+import { syncAllPopupDisplaysFromCodes } from "controllers/grid/grid_popup_utils"
 
 export const ModalMixin = {
   // 공통 이벤트 등록:
@@ -278,6 +279,45 @@ export const ModalMixin = {
 
   // 모달 닫기나 저장 이후 등, AG-Grid 목록을 다시 불러오는(refresh) 기능.
   // BaseGridController.refreshGrid(name)과 이름 충돌을 피하기 위해 별도 명칭 사용.
+  setFieldValue(fieldName, value) {
+    if (!this.hasFormTarget) return
+
+    const resourceName = this.constructor.resourceName
+    if (!resourceName) return
+
+    const input = this.formTarget.querySelector(`[name='${resourceName}[${fieldName}]']`)
+    if (!input) return
+
+    input.value = value
+  },
+
+  setFieldValues(values = {}) {
+    Object.entries(values).forEach(([fieldName, value]) => {
+      this.setFieldValue(fieldName, value)
+    })
+  },
+
+  syncPopupDisplaysFromCodes() {
+    syncAllPopupDisplaysFromCodes(this.element)
+  },
+
+  formatDateTime(value) {
+    if (!value) return ""
+
+    const date = value instanceof Date ? value : new Date(value)
+    if (Number.isNaN(date.getTime())) {
+      return String(value)
+    }
+
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, "0")
+    const day = String(date.getDate()).padStart(2, "0")
+    const hour = String(date.getHours()).padStart(2, "0")
+    const minute = String(date.getMinutes()).padStart(2, "0")
+    const second = String(date.getSeconds()).padStart(2, "0")
+    return `${year}-${month}-${day} ${hour}:${minute}:${second}`
+  },
+
   _refreshModalGrid() {
     const agGridEl = this.element.querySelector("[data-controller='ag-grid']")
     if (agGridEl) {

@@ -54,8 +54,8 @@ class SearchPopupsSellbuyAttributesTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "매출입항목명"
     assert_includes response.body, "운송여부"
     assert_includes response.body, "보관여부"
-    assert_includes response.body, 'name="search_popup_form[sellbuy_attr_cd]"'
-    assert_includes response.body, 'name="search_popup_form[sellbuy_attr_nm]"'
+    assert_includes response.body, 'name="q[sellbuy_attr_cd]"'
+    assert_includes response.body, 'name="q[sellbuy_attr_nm]"'
   end
 
   test "sellbuy attribute popup defaults use_yn to Y and filters rows" do
@@ -73,7 +73,7 @@ class SearchPopupsSellbuyAttributesTest < ActionDispatch::IntegrationTest
   test "sellbuy attribute popup supports transport/storage filters" do
     get search_popup_path("sellbuy_attr"), params: {
       format: :json,
-      search_popup_form: {
+      q: {
         corp_cd: "SPC01",
         tran_yn: "Y",
         strg_yn: "N",

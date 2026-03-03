@@ -22,7 +22,10 @@ export default class extends Controller {
     }
 
     let selection = null
+    let lookupOpened = false
     try {
+      lookupOpened = true
+      this.element.dispatchEvent(new CustomEvent("search-popup:opening", { bubbles: true }))
       selection = await openLookupPopup({
         type: this.typeValue,
         url: this.urlValue,
@@ -33,6 +36,10 @@ export default class extends Controller {
       console.error("[search-popup] failed to open lookup modal", error)
       this.openFallbackWindow()
       return
+    } finally {
+      if (lookupOpened) {
+        this.element.dispatchEvent(new CustomEvent("search-popup:closed", { bubbles: true }))
+      }
     }
 
     if (selection) {

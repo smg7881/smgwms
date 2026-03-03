@@ -109,7 +109,7 @@ class SearchPopupsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, 'data-controller="search-popup-grid"'
     assert_includes response.body, 'data-controller="ag-grid"'
-    assert_includes response.body, 'name="search_popup_form[display]"'
+    assert_includes response.body, 'name="q[display]"'
   end
 
   test "country popup json includes code and name fields" do
@@ -126,7 +126,7 @@ class SearchPopupsControllerTest < ActionDispatch::IntegrationTest
   test "country popup applies keyword from popup form display field" do
     get search_popup_path("country"), params: {
       format: :json,
-      search_popup_form: { display: "다른" }
+      q: { display: "다른" }
     }
 
     assert_response :success
@@ -138,9 +138,9 @@ class SearchPopupsControllerTest < ActionDispatch::IntegrationTest
     get search_popup_path("corp")
 
     assert_response :success
-    assert_includes response.body, 'name="search_popup_form[corp_cd]"'
-    assert_includes response.body, 'name="search_popup_form[corp_nm]"'
-    assert_includes response.body, 'name="search_popup_form[use_yn]"'
+    assert_includes response.body, 'name="q[corp_cd]"'
+    assert_includes response.body, 'name="q[corp_nm]"'
+    assert_includes response.body, 'name="q[use_yn]"'
     assert_includes response.body, "법인코드"
     assert_includes response.body, "사업자등록번호"
   end
@@ -163,7 +163,7 @@ class SearchPopupsControllerTest < ActionDispatch::IntegrationTest
   test "corp popup filters by corp_cd and corp_nm and returns PRD columns" do
     get search_popup_path("corp"), params: {
       format: :json,
-      search_popup_form: { corp_cd: "P01", corp_nm: "본사", use_yn: "Y" }
+      q: { corp_cd: "P01", corp_nm: "본사", use_yn: "Y" }
     }
 
     assert_response :success
@@ -199,10 +199,10 @@ class SearchPopupsControllerTest < ActionDispatch::IntegrationTest
     get search_popup_path("financial_institution")
 
     assert_response :success
-    assert_includes response.body, 'name="search_popup_form[ctry_cd]"'
-    assert_includes response.body, 'name="search_popup_form[fnc_or_cd]"'
-    assert_includes response.body, 'name="search_popup_form[fnc_or_nm]"'
-    assert_includes response.body, 'name="search_popup_form[use_yn]"'
+    assert_includes response.body, 'name="q[ctry_cd]"'
+    assert_includes response.body, 'name="q[fnc_or_cd]"'
+    assert_includes response.body, 'name="q[fnc_or_nm]"'
+    assert_includes response.body, 'name="q[use_yn]"'
     assert_includes response.body, "금융기관코드"
     assert_includes response.body, "금융기관영문명"
   end
@@ -210,7 +210,7 @@ class SearchPopupsControllerTest < ActionDispatch::IntegrationTest
   test "financial institution popup defaults use_yn to Y and filters rows" do
     get search_popup_path("financial_institution"), params: {
       format: :json,
-      search_popup_form: { ctry_cd: "KR", fnc_or_nm: "산업", use_yn: "Y" }
+      q: { ctry_cd: "KR", fnc_or_nm: "산업", use_yn: "Y" }
     }
 
     assert_response :success

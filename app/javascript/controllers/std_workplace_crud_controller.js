@@ -1,6 +1,5 @@
 import BaseGridController from "controllers/base_grid_controller"
-import { showAlert, confirmAction } from "components/ui/alert"
-import { syncAllPopupDisplaysFromCodes } from "controllers/grid/grid_popup_utils"
+import { showAlert } from "components/ui/alert"
 
 export default class extends BaseGridController {
   static resourceName = "workplace"
@@ -180,7 +179,4 @@ export default class extends BaseGridController {
     }
   }
 
-  syncPopupDisplaysFromCodes() {
-    syncAllPopupDisplaysFromCodes(this.element)
-  }
 }

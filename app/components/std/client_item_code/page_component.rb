@@ -81,7 +81,6 @@ class Std::ClientItemCode::PageComponent < Std::BasePageComponent
           target: "fieldBzacCd",
           placeholder: "거래처 선택"
         },
-        { field: "bzac_nm", type: "input", label: "거래처명", disabled: true, target: "fieldBzacNm" },
         {
           field: "goods_lookup",
           type: "popup",
@@ -92,7 +91,6 @@ class Std::ClientItemCode::PageComponent < Std::BasePageComponent
           target: "fieldGoodsnmCd",
           placeholder: "품명코드 선택"
         },
-        { field: "goodsnm_nm", type: "input", label: "품명명", disabled: true, target: "fieldGoodsnmNm" },
         { field: "danger_yn_cd", type: "select", label: "위험물여부", options: yn_options, include_blank: false, required: true, target: "fieldDangerYnCd" },
         { field: "png_yn_cd", type: "select", label: "포장여부", options: yn_options, include_blank: false, required: true, target: "fieldPngYnCd" },
         { field: "mstair_lading_yn_cd", type: "select", label: "계단적재여부", options: yn_options, include_blank: false, required: true, target: "fieldMstairLadingYnCd" },

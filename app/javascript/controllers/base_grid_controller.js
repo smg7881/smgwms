@@ -230,6 +230,28 @@ export default class BaseGridController extends Controller {
     return false
   }
 
+  async saveRows({
+    manager = this.manager,
+    batchUrl = this.batchUrlValue,
+    saveMessage = this.saveMessage,
+    emptyMessage = "변경된 데이터가 없습니다.",
+    onSuccess = () => this.reloadRows()
+  } = {}) {
+    if (!manager) return false
+    if (!batchUrl) {
+      showAlert("저장 URL이 설정되지 않았습니다.")
+      return false
+    }
+
+    return this.saveRowsWith({
+      manager,
+      batchUrl,
+      saveMessage,
+      emptyMessage,
+      onSuccess
+    })
+  }
+
   async saveRowsWith({
     manager,
     batchUrl,
@@ -600,4 +622,3 @@ export default class BaseGridController extends Controller {
 
 Object.assign(BaseGridController.prototype, ModalMixin)
 Object.assign(BaseGridController.prototype, ExcelDownloadable)
-
