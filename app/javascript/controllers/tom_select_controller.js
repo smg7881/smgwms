@@ -8,13 +8,13 @@ import { Controller } from "@hotwired/stimulus"
  * <select> 요소에 Tom Select를 초기화합니다.
  *
  * Values:
- *   searchable   : 검색 입력 허용 여부 (기본: true)
+ *   searchable   : 검색 입력 허용 여부 (기본: false)
  *   multi        : 다중 선택 허용 여부 (기본: false)
  *   placeholder  : 플레이스홀더 텍스트 (기본: "")
  */
 export default class extends Controller {
   static values = {
-    searchable: { type: Boolean, default: true },
+    searchable: { type: Boolean, default: false },
     multi: { type: Boolean, default: false },
     placeholder: { type: String, default: "" },
   }
@@ -63,11 +63,15 @@ export default class extends Controller {
     // single select: 닫힌 상태에서 검색 input 숨기고 선택값만 표시
     if (!this.multiValue) {
       this.#hideInput()
-      this.#ts.on('dropdown_open', () => {
-        this.#showInput()
-        this.#ts?.positionDropdown?.()
-      })
-      this.#ts.on('dropdown_close', () => this.#hideInput())
+      if (this.searchableValue) {
+        this.#ts.on('dropdown_open', () => {
+          this.#showInput()
+          this.#ts?.positionDropdown?.()
+        })
+        this.#ts.on('dropdown_close', () => this.#hideInput())
+      } else {
+        this.#ts.on('dropdown_open', () => this.#ts?.positionDropdown?.())
+      }
     } else {
       this.#ts.on('dropdown_open', () => this.#ts?.positionDropdown?.())
     }
@@ -83,8 +87,8 @@ export default class extends Controller {
       const spaceAbove = rect.top
 
       dropdown.style.position = 'fixed'
-      dropdown.style.width  = rect.width + 'px'
-      dropdown.style.left   = rect.left + 'px'
+      dropdown.style.width = rect.width + 'px'
+      dropdown.style.left = rect.left + 'px'
       dropdown.style.zIndex = '9999'
 
       const enoughBelow = spaceBelow >= naturalHeight
@@ -125,7 +129,13 @@ export default class extends Controller {
   #showInput() {
     const input = this.#ts?.control?.querySelector('input')
     const items = this.#ts?.control?.querySelectorAll('.item')
-    if (input) input.style.cssText = ''
+    if (input) {
+      if (this.searchableValue) {
+        input.style.cssText = ''
+      } else {
+        this.#hideInputCompletely(input)
+      }
+    }
     items?.forEach(el => { el.style.display = 'none' })
   }
 
@@ -133,12 +143,25 @@ export default class extends Controller {
     const input = this.#ts?.control?.querySelector('input')
     const items = this.#ts?.control?.querySelectorAll('.item')
     if (input) {
-      input.style.width = '0'
-      input.style.minWidth = '0'
-      input.style.opacity = '0'
-      input.style.position = 'absolute'
-      input.style.pointerEvents = 'none'
+      if (this.searchableValue) {
+        input.style.width = '0'
+        input.style.minWidth = '0'
+        input.style.opacity = '0'
+        input.style.position = 'absolute'
+        input.style.pointerEvents = 'none'
+      } else {
+        this.#hideInputCompletely(input)
+      }
     }
     items?.forEach(el => { el.style.display = '' })
+  }
+
+  #hideInputCompletely(input) {
+    input.style.setProperty('display', 'none', 'important')
+    input.style.width = '0'
+    input.style.minWidth = '0'
+    input.style.opacity = '0'
+    input.style.position = 'absolute'
+    input.style.pointerEvents = 'none'
   }
 }

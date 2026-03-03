@@ -56,7 +56,8 @@ class System::Notice::PageComponent < System::BasePageComponent
           required: true,
           include_blank: true,
           options: common_code_options("NOTICE_CATEGORY"),
-          target: "fieldCategoryCode"
+          target: "fieldCategoryCode",
+          tom_select: false
         },
         { field: "title", type: "input", span: "24", label: "제목", required: true, maxlength: 200, target: "fieldTitle" },
         {

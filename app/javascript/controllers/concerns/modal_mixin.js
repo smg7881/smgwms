@@ -269,9 +269,7 @@ export const ModalMixin = {
     if (!this.hasFormTarget) return
 
     const resourceName = this.constructor.resourceName
-    if (!resourceName) return
-
-    const input = this.formTarget.querySelector(`[name='${resourceName}[${fieldName}]']`)
+    const input = this.findFieldInput(resourceName, fieldName)
     if (!input) return
 
     const normalizedValue = value == null ? "" : value
@@ -300,6 +298,20 @@ export const ModalMixin = {
     Object.entries(values).forEach(([fieldName, value]) => {
       this.setFieldValue(fieldName, value)
     })
+  },
+
+  findFieldInput(resourceName, fieldName) {
+    let input = null
+
+    if (resourceName) {
+      input = this.formTarget.querySelector(`[name='${resourceName}[${fieldName}]']`)
+    }
+
+    if (!input) {
+      input = this.formTarget.querySelector(`[name$='[${fieldName}]']`)
+    }
+
+    return input
   },
 
   syncPopupDisplaysFromCodes() {

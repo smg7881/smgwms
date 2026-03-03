@@ -171,7 +171,7 @@ a:hover {
 
 /* ── Form grid: input/select base styles ── */
 .form-grid-input,
-.form-grid-select {
+select.form-grid-select {
   @apply w-full border border-[#374151] rounded bg-[#1f2937] text-white outline-none;
   padding: 4px 10px !important;
   font-size: 13px !important;
@@ -181,7 +181,7 @@ a:hover {
 }
 
 .form-grid-input:focus,
-.form-grid-select:focus {
+select.form-grid-select:focus {
   @apply ring-2 ring-[#3b82f6] border-transparent outline-none;
 }
 
@@ -191,18 +191,18 @@ a:hover {
 
 /* ── Search form: compact input/select ── */
 [data-controller="search-form"] .form-grid-input,
-[data-controller="search-form"] .form-grid-select {
+[data-controller="search-form"] select.form-grid-select {
   font-size: 13px !important;
   padding: 2px 8px !important;
   height: 30px !important;
 }
 
-[data-controller="search-form"] .form-grid-select {
+[data-controller="search-form"] select.form-grid-select {
   padding-right: 28px;
 }
 
 /* Select 드롭다운 오른쪽 여백 조정 */
-.form-grid-select {
+select.form-grid-select {
   padding-right: 2.5rem;
 }
 
@@ -1080,14 +1080,14 @@ trix-editor {
 }
 
 .std-client-resource-form .form-grid-input,
-.std-client-resource-form .form-grid-select {
+.std-client-resource-form select.form-grid-select {
   background: rgba(15, 19, 28, 0.95);
   border-color: #3a4658;
   color: var(--color-text-primary);
 }
 
 .std-client-resource-form .form-grid-input:disabled,
-.std-client-resource-form .form-grid-select:disabled {
+.std-client-resource-form select.form-grid-select:disabled {
   background: rgba(10, 13, 20, 0.9);
   color: #6f7b89;
   border-color: #2d3644;

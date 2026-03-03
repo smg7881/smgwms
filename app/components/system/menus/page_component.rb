@@ -52,6 +52,7 @@ class System::Menus::PageComponent < System::BasePageComponent
           label: "타입",
           include_blank: false,
           options: common_code_options("MENU_TYPE"),
+          searchable: true,
           target: "fieldMenuType"
         },
         {
@@ -60,6 +61,7 @@ class System::Menus::PageComponent < System::BasePageComponent
           label: "사용여부",
           include_blank: false,
           options: common_code_options("CMM_USE_YN"),
+          searchable: true,
           target: "fieldUseYn"
         },
         { field: "tab_id", type: "input", label: "탭 ID", maxlength: 50, target: "fieldTabId" }

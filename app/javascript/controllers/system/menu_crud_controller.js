@@ -54,7 +54,7 @@ export default class extends BaseGridController {
     this.modalTitleTarget.textContent = "최상위 메뉴 추가"
     this.fieldParentCdTarget.value = "" // 부모 코드 널값
     this.fieldMenuLevelTarget.value = 1 // 최상위이므로 Level은 1
-    this.fieldMenuTypeTarget.value = "FOLDER" // 최상위는 진입 링크가 없고 폴더니깐 FOLDER 타입 할당 강제
+    this.setFieldValue("menu_type", "FOLDER") // Tom Select UI와 값 동기화
     this.fieldMenuCdTarget.readOnly = false // 코드는 신규작성이므로 활짝오픈
     this.mode = "create"
     this.openModal()
@@ -75,7 +75,7 @@ export default class extends BaseGridController {
     // 부모의 뎁스보다 한 단계 등급을 낮춰(숫자는 더해) 자식 뎁스로 세팅함
     this.fieldMenuLevelTarget.value = Number(parentLevel || 1) + 1
     // 하위라는 것은 보통 클릭해서 타고 들어가는 링크 단위일 확률이 높으므로 MENU로 세팅
-    this.fieldMenuTypeTarget.value = "MENU"
+    this.setFieldValue("menu_type", "MENU")
     this.fieldMenuCdTarget.readOnly = false
     this.mode = "create"
     this.openModal() // 모달 오픈!
@@ -98,8 +98,8 @@ export default class extends BaseGridController {
     this.fieldMenuIconTarget.value = data.menu_icon || ""
     this.fieldSortOrderTarget.value = data.sort_order
     this.fieldMenuLevelTarget.value = data.menu_level
-    this.fieldMenuTypeTarget.value = data.menu_type
-    this.fieldUseYnTarget.value = data.use_yn
+    this.setFieldValue("menu_type", data.menu_type)
+    this.setFieldValue("use_yn", data.use_yn)
     this.fieldTabIdTarget.value = data.tab_id || ""
 
     this.mode = "update" // 업데이트 모드 전환 후
@@ -111,6 +111,6 @@ export default class extends BaseGridController {
     this.formTarget.reset() // DOM clear
     this.fieldIdTarget.value = ""
     this.fieldSortOrderTarget.value = 0
-    this.fieldUseYnTarget.value = "Y" // 디폴트 Y할당
+    this.setFieldValue("use_yn", "Y") // Tom Select UI와 값 동기화
   }
 }
