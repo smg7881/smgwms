@@ -36,10 +36,13 @@ export default class extends Controller {
       this.element.tomselect.destroy()
     }
 
+    // <dialog> 내부에 있을 때: dialog는 CSS top-layer에 있으므로
+    // 드롭다운도 dialog 안에 있어야 top-layer에서 렌더링됨
+    const closestDialog = this.element.closest('dialog')
     const config = {
       allowEmptyOption: true,
       placeholder: this.placeholderValue || undefined,
-      dropdownParent: document.body,
+      dropdownParent: closestDialog || document.body,
       plugins: [],
     }
 

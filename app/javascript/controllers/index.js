@@ -45,6 +45,7 @@ const CONTROLLERS = [
   ["user-menu-role-grid", "controllers/system/user_menu_role_grid_controller"],
   ["lucide", "controllers/lucide_controller"],
   ["client-grid", "controllers/std/client_grid_controller"],
+  ["std-customer-client-grid", "controllers/std/std_customer_client_grid_controller"],
   ["std-workplace-grid", "controllers/std/std_workplace_grid_controller"],
   ["std-workplace-crud", "controllers/std/std_workplace_crud_controller"],
   ["std-region-grid", "controllers/std/std_region_grid_controller"],

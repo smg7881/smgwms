@@ -166,6 +166,18 @@ Rails.application.routes.draw do
         post :batch_save_workplaces
       end
     end
+    resources :customer_clients, controller: :customer_clients, only: [ :index ] do
+      collection do
+        post :batch_save
+      end
+
+      member do
+        get :contacts
+        get :workplaces
+        post :batch_save_contacts
+        post :batch_save_workplaces
+      end
+    end
     resources :purchase_contracts, controller: :purchase_contracts, only: [ :index ] do
       collection do
         post :batch_save
