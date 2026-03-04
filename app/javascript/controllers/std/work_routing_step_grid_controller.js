@@ -137,6 +137,7 @@ export default class extends BaseGridController {
         wrk_rt_cd: "",
         seq_no: null,
         work_step_cd: "",
+        work_step_nm: "",
         work_step_level1_cd: "",
         work_step_level2_cd: "",
         use_yn_cd: "Y",
@@ -263,6 +264,44 @@ export default class extends BaseGridController {
 
   blockDetailActionIfMasterChanged() {
     return blockIfPendingChanges(this.masterManager, "마스터 작업경로")
+  }
+
+  handleLookupSelected(event) {
+    const rowNode = event?.detail?.rowNode
+    const colDef = event?.detail?.colDef
+    const selection = event?.detail?.selection || {}
+    if (!rowNode || !colDef) {
+      return
+    }
+
+    const popupType = colDef?.context?.lookup_popup_type
+    const field = colDef?.field
+    const codeField = colDef?.context?.lookup_code_field || field
+    if (popupType !== "work_step" || (codeField !== "work_step_cd" && field !== "work_step_cd")) {
+      return
+    }
+
+    const selectedWorkStepNm = String(
+      selection.work_step_nm ?? selection.name ?? selection.display ?? ""
+    ).trim()
+    const selectedLevel1Code = String(
+      selection.work_step_level1_cd ?? selection.workStepLevel1Cd ?? ""
+    ).trim().toUpperCase()
+    const selectedLevel2Code = String(
+      selection.work_step_level2_cd ?? selection.workStepLevel2Cd ?? ""
+    ).trim().toUpperCase()
+
+    rowNode.setDataValue("work_step_nm", selectedWorkStepNm)
+    rowNode.setDataValue("work_step_level1_cd", selectedLevel1Code)
+    rowNode.setDataValue("work_step_level2_cd", selectedLevel2Code)
+
+    if (this.detailManager?.api) {
+      this.detailManager.api.refreshCells({
+        rowNodes: [rowNode],
+        columns: ["work_step_cd", "work_step_level1_cd", "work_step_level2_cd"],
+        force: true
+      })
+    }
   }
 
   handleMasterCellValueChanged(event) {

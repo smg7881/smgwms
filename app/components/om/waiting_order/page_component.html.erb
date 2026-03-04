@@ -1,56 +1,54 @@
-  <!-- 검색조건 영역 -->
-  <div class="mb-5">
-    <%= render Ui::SearchFormComponent.new(
-      url: collection_path(format: :json),
-      fields: search_fields,
-      cols: 4,
-      enable_collapse: true
-    ) %>
-  </div>
+<div class="om-waiting-order-screen"
+     data-controller="om-waiting-order-grid"
+     data-action="ag-grid:ready->om-waiting-order-grid#registerGrid"
+     data-om-waiting-order-grid-detail-list-url-template-value="<%= detail_list_url_template %>"
+     data-om-waiting-order-grid-detail-batch-url-template-value="<%= detail_batch_save_url_template %>">
+  <%= render Ui::SearchFormComponent.new(
+    url: create_url,
+    fields: search_fields,
+    cols: 4,
+    enable_collapse: true
+  ) %>
 
-  <!-- 에이지 그리드 -->
-  <div class="mt-4 flex flex-col flex-1 h-full min-h-[500px]" 
-       data-controller="om-waiting-order-grid"
-       data-om-waiting-order-grid-distribute-url-value="<%= distribute_path %>">
-    
-    <!-- 그리드 헤더 -->
+  <section class="mt-4">
     <%= render Ui::GridHeaderComponent.new(
-      icon: "list", title: "대기오더 목록", grid_id: "om-waiting-order",
-      class: "flex items-center justify-between gap-3 mb-3",
-      icon_class: "w-4 h-4 text-gray-500",
-      buttons: [
-        { label: "오더분배", class: "btn btn-sm btn-primary", action: "click->om-waiting-order-grid#distributeOrders" },
-        { label: "가용재고조회", class: "btn btn-sm btn-secondary", action: "click->om-waiting-order-grid#checkAvailableStock" }
-      ]
+      icon: "list", title: "대기오더목록", grid_id: "om-waiting-order-master",
+      class: "flex items-center justify-between gap-3 mb-3 mt-2"
     ) %>
 
-    <!-- 마스터 그리드 -->
     <%= render Ui::AgGridComponent.new(
+      columns: master_columns,
       url: grid_url,
-      columns: [
-        { field: "ord_stat_cd", headerName: "오더상태", width: 100 },
-        { field: "ord_no", headerName: "오더번호", width: 130 },
-        { field: "ord_type_cd", headerName: "오더유형", width: 100 },
-        { field: "create_time", headerName: "오더생성일시", width: 150 },
-        { field: "aptd_req_ymd", headerName: "고객납기요청", width: 120 },
-        { field: "dpt_ar_nm", headerName: "출발지", width: 150 },
-        { field: "arv_ar_nm", headerName: "도착지", width: 150 },
-        { field: "item_cd", headerName: "아이템코드", width: 120 },
-        { field: "item_nm", headerName: "아이템명", width: 200 },
-        { field: "ord_qty", headerName: "오더수량", headerClass: "text-right", cellClass: "text-right", type: "numericColumn" },
-        { field: "avail_qty", headerName: "가용재고", headerClass: "text-right text-blue-600 font-bold", cellClass: "text-right text-blue-600 font-bold", type: "numericColumn" },
-        { field: "dist_qty", headerName: "분배 수량 (입력)", editable: true, headerClass: "text-right text-green-600 bg-green-50", cellClass: "text-right bg-green-50", type: "numericColumn",
-          valueParser: "Number(newValue)",
-          valueSetter: "params.data.dist_qty = Math.min(Number(newValue) || 0, Math.min(params.data.avail_qty || 0, params.data.ord_qty || 0)); return true;"
-        },
-        { field: "remain_qty", headerName: "잔여수량", headerClass: "text-right text-red-500", cellClass: "text-right text-red-500", type: "numericColumn",
-          valueGetter: "Number(data.ord_qty || 0) - Number(data.dist_qty || 0)"
-        }
-      ],
-      row_selection: "multiple",
-      data: {
-        om_waiting_order_grid_target: "grid",
-        action: "ag-grid:ready->om-waiting-order-grid#registerGrid search-form:success@window->om-waiting-order-grid#reloadRows"
-      }
+      height: "260px",
+      page_size: 20,
+      row_selection: "single",
+      grid_id: "om-waiting-order-master",
+      data: { om_waiting_order_grid_target: "masterGrid" }
     ) %>
-  </div>
+  </section>
+
+  <section class="mt-5">
+    <%= render Ui::GridHeaderComponent.new(
+      icon: "list-tree", title: "대기오더상세", grid_id: "om-waiting-order-detail",
+      class: "flex items-center justify-between gap-3 mb-3 mt-2",
+      buttons: [
+        { label: "가용재고조회", class: "btn btn-sm btn-secondary", action: "click->om-waiting-order-grid#checkAvailableStock" },
+        { label: "오더분배", class: "btn btn-sm btn-primary", action: "click->om-waiting-order-grid#distributeDetailRows" }
+      ]
+    ) do |header| %>
+      <% header.with_subtitle do %>
+        <p class="text-text-secondary text-xs" data-om-waiting-order-grid-target="selectedOrderLabel"><%= selected_order_label %></p>
+      <% end %>
+    <% end %>
+
+    <%= render Ui::AgGridComponent.new(
+      columns: detail_columns,
+      row_data: [],
+      height: "calc(100vh - 500px)",
+      pagination: false,
+      row_selection: "single",
+      grid_id: "om-waiting-order-detail",
+      data: { om_waiting_order_grid_target: "detailGrid" }
+    ) %>
+  </section>
+</div>

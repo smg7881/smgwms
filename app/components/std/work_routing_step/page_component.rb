@@ -143,13 +143,14 @@ class Std::WorkRoutingStep::PageComponent < Std::BasePageComponent
         {
           field: "work_step_cd",
           headerName: "작업단계코드",
-          minWidth: 140,
+          minWidth: 170,
           editable: true,
-          cellEditor: "agSelectCellEditor",
-          cellEditorParams: { values: common_code_values("181") },
-          formatter: "codeLabel",
-          context: { codeMap: common_code_map("181") }
+          lookup_popup_type: "work_step",
+          lookup_name_field: "work_step_nm",
+          lookup_code_field: "work_step_cd",
+          lookup_popup_title: "기준작업관리 조회"
         },
+        { field: "work_step_nm", headerName: "작업단계명", minWidth: 180, editable: false, hide: true },
         {
           field: "work_step_level1_cd",
           headerName: "작업단계Level1",

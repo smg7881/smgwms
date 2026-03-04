@@ -22,6 +22,10 @@ class SearchPopupForm
   attribute :bzac_sctn_grp_cd, :string
   attribute :bzac_sctn_cd, :string
   attribute :biz_no, :string
+  attribute :work_step_cd, :string
+  attribute :work_step_nm, :string
+  attribute :work_step_level1_cd, :string
+  attribute :work_step_level2_cd, :string
 
   def persisted?
     false

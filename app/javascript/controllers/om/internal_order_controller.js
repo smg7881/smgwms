@@ -1,403 +1,738 @@
-﻿import { Controller } from "@hotwired/stimulus"
-import { showAlert, confirmAction } from "components/ui/alert"
+import BaseGridController from "controllers/base_grid_controller"
+import { showAlert } from "components/ui/alert"
+import {
+  collectRows,
+  fetchJson,
+  hasChanges,
+  postJson,
+  refreshSelectionLabel,
+  setManagerRowData
+} from "controllers/grid/grid_utils"
 import { switchTab, activateTab } from "controllers/ui_utils"
-export default class extends Controller {
-  static values = {
-    searchUrl: String,
-    createUrl: String,
-    updateUrl: String,
-    cancelUrl: String
-  }
+import {
+  bindDetailFieldEvents,
+  unbindDetailFieldEvents,
+  fillDetailForm as fillDetailFormUtil,
+  clearDetailForm as clearDetailFormUtil,
+  syncDetailField as syncDetailFieldUtil,
+  toDateInputValue,
+  markCurrentMasterRowUpdated,
+  refreshMasterRowCells
+} from "controllers/grid/grid_form_utils"
 
+const CODE_FIELDS = [
+  "ord_no",
+  "ord_stat_cd",
+  "ord_type_cd",
+  "bilg_cust_cd",
+  "ctrt_cust_cd",
+  "ord_reason_cd",
+  "ord_exec_dept_cd",
+  "ord_exec_ofcr_cd",
+  "dpt_type_cd",
+  "dpt_cd",
+  "arv_type_cd",
+  "arv_cd"
+]
+const DATE_FIELDS = ["strt_req_ymd"]
+const DATETIME_FIELDS = ["aptd_req_dtm"]
+const MAX_ITEM_ROWS = 20
+
+export default class extends BaseGridController {
   static targets = [
-    "searchOrdNo",
-    "headerForm",
-    "saveBtn", "cancelBtn",
-    "fieldOrdNo", "fieldOrdStatCd", "fieldCreateTime",
-    "fieldCtrtNo", "fieldOrdTypeCd", "fieldBilgCustCd", "fieldBilgCustNm",
-    "fieldCtrtCustCd", "fieldCtrtCustNm", "fieldOrdReasonCd",
-    "fieldOrdExecDeptCd", "fieldOrdExecDeptNm",
-    "fieldOrdExecOfcrCd", "fieldOrdExecOfcrNm", "fieldRemk",
-    "bilgCustSearchBtn", "ctrtCustSearchBtn",
-    "fieldDptTypeCd", "fieldDptCd", "fieldDptZipCd", "fieldDptAddr", "fieldStrtReqYmd",
-    "fieldArvTypeCd", "fieldArvCd", "fieldArvZipCd", "fieldArvAddr", "fieldAptdReqDtm",
-    "tabButton", "tabPanel",
-    "itemGrid"
+    ...BaseGridController.targets,
+    "masterGrid",
+    "itemsGrid",
+    "selectedOrderLabel",
+    "detailField",
+    "tabButton",
+    "tabPanel"
   ]
 
-  // lifecycle
+  static values = {
+    ...BaseGridController.values,
+    masterBatchUrl: String,
+    itemListUrlTemplate: String,
+    selectedOrder: String
+  }
+
   connect() {
-    this.#mode = "view"
-    this.#currentOrderId = null
-    this.#itemGridApi = null
-    this.#setFormDisabled(true)
+    super.connect()
+
+    this.currentMasterRow = null
+    this.activeTab = "location"
+    this._registerGridRetryTimer = null
+
+    bindDetailFieldEvents(this, null, (event) => {
+      syncDetailFieldUtil(event, this)
+    })
+
+    this.registerExistingGrids()
+    this._registerGridRetryTimer = setTimeout(() => {
+      this.registerExistingGrids()
+    }, 150)
+
+    this.activateTab("location")
+    this.clearDetailForm()
+    this.clearItemRows()
+    this.refreshSelectedOrderLabel()
   }
 
-  registerItemGrid(event) {
-    const gridElement = this.itemGridTarget
-    const agGridController = this.application.getControllerForElementAndIdentifier(gridElement, "ag-grid")
-    if (agGridController) {
-      this.#itemGridApi = agGridController.gridOptions?.api || null
+  disconnect() {
+    if (this._registerGridRetryTimer) {
+      clearTimeout(this._registerGridRetryTimer)
+      this._registerGridRetryTimer = null
+    }
+
+    unbindDetailFieldEvents(this)
+    this.currentMasterRow = null
+
+    super.disconnect()
+  }
+
+  gridRoles() {
+    return {
+      master: {
+        target: "masterGrid",
+        manager: this.masterManagerConfig(),
+        masterKeyField: "ord_no"
+      },
+      items: {
+        target: "itemsGrid",
+        manager: this.itemManagerConfig(),
+        parentGrid: "master",
+        onMasterRowChange: (rowData) => this.handleMasterRowChange(rowData),
+        detailLoader: async (rowData) => this.fetchItemRows(rowData)
+      }
     }
   }
 
-  // actions
-  async search() {
-    const ordNo = this.searchOrdNoTarget.value.trim()
-    if (!ordNo) {
-      showAlert("오더번호를 입력하세요.")
-      this.searchOrdNoTarget.focus()
+  masterManagerConfig() {
+    return {
+      pkFields: ["ord_no"],
+      fields: {
+        ord_no: "trimUpper",
+        ord_stat_cd: "trimUpperDefault:WAIT",
+        ctrt_no: "trim",
+        ord_type_cd: "trimUpper",
+        bilg_cust_cd: "trimUpper",
+        ctrt_cust_cd: "trimUpper",
+        ord_reason_cd: "trimUpper",
+        ord_exec_dept_cd: "trimUpper",
+        ord_exec_dept_nm: "trim",
+        ord_exec_ofcr_cd: "trimUpper",
+        ord_exec_ofcr_nm: "trim",
+        remk: "trim",
+        dpt_type_cd: "trimUpper",
+        dpt_cd: "trimUpper",
+        dpt_zip_cd: "trim",
+        dpt_addr: "trim",
+        strt_req_ymd: "trim",
+        arv_type_cd: "trimUpper",
+        arv_cd: "trimUpper",
+        arv_zip_cd: "trim",
+        arv_addr: "trim",
+        aptd_req_dtm: "trim",
+        wait_ord_internal_yn: "trimUpperDefault:N",
+        cancel_yn: "trimUpperDefault:N"
+      },
+      defaultRow: {
+        ord_no: "",
+        ord_stat_cd: "WAIT",
+        ctrt_no: "",
+        ord_type_cd: "",
+        bilg_cust_cd: "",
+        ctrt_cust_cd: "",
+        ord_reason_cd: "",
+        ord_exec_dept_cd: "",
+        ord_exec_dept_nm: "",
+        ord_exec_ofcr_cd: "",
+        ord_exec_ofcr_nm: "",
+        remk: "",
+        dpt_type_cd: "",
+        dpt_cd: "",
+        dpt_zip_cd: "",
+        dpt_addr: "",
+        strt_req_ymd: "",
+        arv_type_cd: "",
+        arv_cd: "",
+        arv_zip_cd: "",
+        arv_addr: "",
+        aptd_req_dtm: "",
+        wait_ord_internal_yn: "N",
+        cancel_yn: "N",
+        items: []
+      },
+      blankCheckFields: ["ctrt_no", "bilg_cust_cd", "ctrt_cust_cd"],
+      comparableFields: [
+        "ctrt_no",
+        "ord_type_cd",
+        "bilg_cust_cd",
+        "ctrt_cust_cd",
+        "ord_reason_cd",
+        "ord_exec_dept_cd",
+        "ord_exec_dept_nm",
+        "ord_exec_ofcr_cd",
+        "ord_exec_ofcr_nm",
+        "remk",
+        "dpt_type_cd",
+        "dpt_cd",
+        "dpt_zip_cd",
+        "dpt_addr",
+        "strt_req_ymd",
+        "arv_type_cd",
+        "arv_cd",
+        "arv_zip_cd",
+        "arv_addr",
+        "aptd_req_dtm"
+      ],
+      validationRules: {
+        requiredFields: ["ord_type_cd", "bilg_cust_cd", "ctrt_cust_cd", "dpt_type_cd", "dpt_cd", "arv_type_cd", "arv_cd"],
+        fieldLabels: {
+          ord_type_cd: "오더유형",
+          bilg_cust_cd: "청구고객",
+          ctrt_cust_cd: "계약고객",
+          dpt_type_cd: "출발지 유형",
+          dpt_cd: "출발지 코드",
+          arv_type_cd: "도착지 유형",
+          arv_cd: "도착지 코드"
+        }
+      },
+      firstEditCol: "ctrt_no",
+      pkLabels: { ord_no: "오더번호" },
+      onCellValueChanged: (event) => this.normalizeMasterField(event)
+    }
+  }
+
+  itemManagerConfig() {
+    return {
+      pkFields: ["seq_no"],
+      fields: {
+        seq_no: "number",
+        item_cd: "trimUpper",
+        item_nm: "trim",
+        basis_unit_cd: "trimUpper",
+        ord_qty: "number",
+        qty_unit_cd: "trimUpper",
+        ord_wgt: "number",
+        wgt_unit_cd: "trimUpper",
+        ord_vol: "number",
+        vol_unit_cd: "trimUpper"
+      },
+      defaultRow: {
+        seq_no: null,
+        item_cd: "",
+        item_nm: "",
+        basis_unit_cd: "",
+        ord_qty: 0,
+        qty_unit_cd: "",
+        ord_wgt: 0,
+        wgt_unit_cd: "",
+        ord_vol: 0,
+        vol_unit_cd: ""
+      },
+      blankCheckFields: ["item_cd", "item_nm"],
+      comparableFields: [
+        "item_cd",
+        "item_nm",
+        "basis_unit_cd",
+        "ord_qty",
+        "qty_unit_cd",
+        "ord_wgt",
+        "wgt_unit_cd",
+        "ord_vol",
+        "vol_unit_cd"
+      ],
+      validationRules: {
+        requiredFields: ["item_cd"],
+        fieldLabels: { item_cd: "아이템코드" }
+      },
+      firstEditCol: "item_cd",
+      onCellValueChanged: (event) => this.handleItemCellChanged(event)
+    }
+  }
+
+  get masterManager() {
+    return this.gridManager("master")
+  }
+
+  get manager() {
+    return this.masterManager
+  }
+
+  set manager(_v) {
+    // BaseGridController 단일 그리드 호환 대입 흡수
+  }
+
+  get itemManager() {
+    return this.gridManager("items")
+  }
+
+  beforeSearchReset() {
+    this.selectedOrderValue = ""
+    this.currentMasterRow = null
+    this.refreshSelectedOrderLabel()
+    this.clearDetailForm()
+    this.clearItemRows()
+  }
+
+  handleMasterRowChange(rowData) {
+    this.syncCurrentItemsToMaster()
+
+    this.currentMasterRow = rowData || null
+    this.selectedOrderValue = rowData?.ord_no || ""
+    this.refreshSelectedOrderLabel()
+
+    if (!rowData) {
+      this.clearDetailForm()
       return
     }
 
-    try {
-      const url = `${this.searchUrlValue}?q[ord_no]=${encodeURIComponent(ordNo)}`
-      const response = await fetch(url, {
-        headers: { "Accept": "application/json", "X-CSRF-Token": this.#csrfToken }
-      })
-      const result = await response.json()
+    this.fillDetailForm(rowData)
+  }
 
-      if (response.ok && result.success) {
-        this.#loadOrderData(result.data)
-      } else {
-        showAlert(result.message || "오더를 찾을 수 없습니다.")
+  addMasterRow() {
+    this.addRow({
+      manager: this.masterManager,
+      config: { startCol: "ctrt_no" },
+      onAdded: (rowData) => {
+        this.activateTab("location")
+        this.handleMasterRowChange(rowData)
       }
-    } catch (error) {
-      console.error("[om-internal-order] search error:", error)
-      showAlert("서버 연결에 실패했습니다.")
-    }
+    })
   }
 
-  newOrder() {
-    this.#mode = "create"
-    this.#currentOrderId = null
-    this.#clearForm()
-    this.#setFormDisabled(false)
-    this.fieldOrdNoTarget.value = ""
-    this.fieldOrdStatCdTarget.value = ""
-    this.fieldCreateTimeTarget.value = ""
-
-    if (this.#itemGridApi) {
-      this.#itemGridApi.setGridOption("rowData", [])
-    }
+  deleteMasterRows() {
+    this.deleteRows({ manager: this.masterManager })
   }
 
-  async saveOrder() {
-    const payload = this.#collectPayload()
-
-    const isCreate = this.#mode === "create"
-    const url = isCreate ? this.createUrlValue : this.updateUrlValue.replace(":id", this.#currentOrderId)
-    const method = isCreate ? "POST" : "PATCH"
-
-    try {
-      const response = await this.#requestJson(url, method, payload)
-      const result = await response.json()
-
-      if (response.ok && result.success) {
-        showAlert(result.message)
-        this.#loadOrderData(result.data)
-      } else {
-        const errors = result.errors ? result.errors.join("\n") : (result.message || "저장에 실패했습니다.")
-        showAlert(errors)
-      }
-    } catch (error) {
-      console.error("[om-internal-order] save error:", error)
-      showAlert("서버 연결에 실패했습니다.")
-    }
-  }
-
-  async cancelOrder() {
-    if (!this.#currentOrderId) {
-      showAlert("취소할 오더가 선택되지 않았습니다.")
+  async saveMasterRows() {
+    if (!this.masterManager) return
+    if (!this.masterBatchUrlValue) {
+      showAlert("저장 URL이 설정되지 않았습니다.")
       return
     }
 
-    if (!confirmAction("이 오더를 취소하시겠습니까?")) {
+    this.masterManager.stopEditing?.()
+    this.itemManager?.stopEditing?.()
+    this.syncCurrentItemsToMaster()
+
+    const validationResult = this.masterManager.validateRows()
+    if (!validationResult.valid) {
+      const summary = this.masterManager.formatValidationSummary(validationResult.errors, { maxItems: 3 })
+      if (validationResult.firstError) {
+        this.masterManager.focusValidationError(validationResult.firstError)
+      }
+      showAlert("Validation", summary, "warning")
       return
     }
 
-    try {
-      const url = this.cancelUrlValue.replace(":id", this.#currentOrderId)
-      const response = await this.#requestJson(url, "POST", {})
-      const result = await response.json()
-
-      if (response.ok && result.success) {
-        showAlert(result.message)
-        this.#loadOrderData(result.data)
-      } else {
-        showAlert(result.message || "취소에 실패했습니다.")
-      }
-    } catch (error) {
-      console.error("[om-internal-order] cancel error:", error)
-      showAlert("오류가 발생했습니다.")
+    const operations = this.buildMasterOperations()
+    if (!hasChanges(operations)) {
+      showAlert("변경된 데이터가 없습니다.")
+      return
     }
-  }
 
-  switchTab(event) {
-    switchTab(event, this)
+    const result = await postJson(this.masterBatchUrlValue, operations)
+    if (!result) return
 
-    const tab = this.activeTab
-    if (tab === "items") {
-      // AG Grid는 hidden 상태에서 사이즈를 못 잡으므로 refresh
-      if (this.#itemGridApi) {
-        setTimeout(() => this.#itemGridApi.sizeColumnsToFit(), 100)
-      }
-    }
-  }
-
-  activateTab(tab) {
-    activateTab(tab, this)
-
-    if (tab === "items") {
-      if (this.#itemGridApi) {
-        setTimeout(() => this.#itemGridApi.sizeColumnsToFit(), 100)
-      }
-    }
+    showAlert(result.message || "내부오더 데이터가 저장되었습니다.")
+    this.refreshGrid("master")
   }
 
   addItemRow() {
-    if (!this.#itemGridApi) return
+    if (!this.itemManager?.api) return
+    if (!this.currentMasterRow) {
+      showAlert("내부오더를 먼저 선택하세요.")
+      return
+    }
 
-    const allRows = []
-    this.#itemGridApi.forEachNode(node => allRows.push(node.data))
-
-    if (allRows.length >= 20) {
+    const rows = this.collectItemRowsFromGrid()
+    if (rows.length >= MAX_ITEM_ROWS) {
       showAlert("아이템은 최대 20건까지 등록 가능합니다.")
       return
     }
 
-    const nextSeq = allRows.length + 1
-    this.#itemGridApi.applyTransaction({
-      add: [{ seq_no: nextSeq, item_cd: "", item_nm: "", ord_qty: 0, ord_wgt: 0, ord_vol: 0 }]
+    const nextSeq = this.nextItemSeq(rows)
+    this.itemManager.api.applyTransaction({
+      add: [{
+        seq_no: nextSeq,
+        item_cd: "",
+        item_nm: "",
+        basis_unit_cd: "",
+        ord_qty: 0,
+        qty_unit_cd: "",
+        ord_wgt: 0,
+        wgt_unit_cd: "",
+        ord_vol: 0,
+        vol_unit_cd: ""
+      }]
     })
+
+    const rowIndex = this.itemManager.api.getDisplayedRowCount() - 1
+    if (rowIndex >= 0) {
+      this.itemManager.api.startEditingCell({ rowIndex, colKey: "item_cd" })
+    }
+
+    this.syncCurrentItemsToMaster()
+    this.markCurrentMasterAsUpdated()
   }
 
   deleteItemRows() {
-    if (!this.#itemGridApi) return
+    if (!this.itemManager?.api) return
 
-    const selected = this.#itemGridApi.getSelectedRows()
+    const selected = this.itemManager.api.getSelectedRows()
     if (selected.length === 0) {
-      showAlert("삭제할 행을 선택하세요.")
+      showAlert("삭제할 아이템 행을 선택하세요.")
       return
     }
 
-    this.#itemGridApi.applyTransaction({ remove: selected })
-    this.#renumberItems()
+    this.itemManager.api.applyTransaction({ remove: selected })
+    this.renumberItems()
+    this.syncCurrentItemsToMaster()
+    this.markCurrentMasterAsUpdated()
   }
 
-  onDptTypeChange() {
-    // 출발지 유형 변경 시 코드 필드 초기화
-    this.fieldDptCdTarget.value = ""
-    this.fieldDptZipCdTarget.value = ""
-    this.fieldDptAddrTarget.value = ""
+  preventDetailSubmit(event) {
+    event.preventDefault()
   }
 
-  onArvTypeChange() {
-    // 도착지 유형 변경 시 코드 필드 초기화
-    this.fieldArvCdTarget.value = ""
-    this.fieldArvZipCdTarget.value = ""
-    this.fieldArvAddrTarget.value = ""
+  switchTab(event) {
+    switchTab(event, this)
+    this.resizeItemsGridWhenVisible()
   }
 
-  // private
-  #mode = "view"
-  #currentOrderId = null
-  #itemGridApi = null
-
-  get #csrfToken() {
-    return document.querySelector("[name='csrf-token']")?.content || ""
+  activateTab(tab) {
+    activateTab(tab, this)
+    this.resizeItemsGridWhenVisible()
   }
 
-  async #requestJson(url, method, body) {
-    return fetch(url, {
-      method,
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "X-CSRF-Token": this.#csrfToken
-      },
-      body: JSON.stringify(body)
+  fillDetailForm(rowData) {
+    fillDetailFormUtil(this, rowData)
+  }
+
+  clearDetailForm() {
+    clearDetailFormUtil(this)
+  }
+
+  clearItemRows() {
+    setManagerRowData(this.itemManager, [])
+  }
+
+  refreshSelectedOrderLabel() {
+    if (!this.hasSelectedOrderLabelTarget) return
+
+    refreshSelectionLabel(this.selectedOrderLabelTarget, this.selectedOrderValue, "내부오더", "내부오더를 먼저 선택하세요.")
+  }
+
+  normalizeValueForInput(fieldName, rawValue) {
+    if (rawValue == null) return ""
+
+    if (DATE_FIELDS.includes(fieldName)) {
+      return toDateInputValue(rawValue)
+    }
+
+    if (DATETIME_FIELDS.includes(fieldName)) {
+      return this.formatDateTimeForInput(rawValue)
+    }
+
+    return rawValue.toString()
+  }
+
+  normalizeDetailFieldValue(fieldName, rawValue) {
+    const value = (rawValue || "").toString()
+
+    if (CODE_FIELDS.includes(fieldName)) {
+      return value.trim().toUpperCase()
+    }
+
+    if (DATE_FIELDS.includes(fieldName)) {
+      return this.normalizeDateStoreValue(value)
+    }
+
+    if (DATETIME_FIELDS.includes(fieldName)) {
+      return this.normalizeDateTimeStoreValue(value)
+    }
+
+    if (fieldName === "remk") {
+      return value
+    }
+
+    return value.trim()
+  }
+
+  async fetchItemRows(rowData) {
+    if (!rowData || rowData.__is_deleted) return []
+
+    if (Array.isArray(rowData.items)) {
+      return rowData.items.map((row) => ({ ...row }))
+    }
+
+    const ordNo = (rowData.ord_no || "").toString().trim()
+    if (ordNo === "" || rowData.__is_new) {
+      return []
+    }
+
+    try {
+      const url = this.itemListUrlTemplateValue.replace(":id", encodeURIComponent(ordNo))
+      const rows = await fetchJson(url)
+      const normalized = Array.isArray(rows) ? rows : []
+      rowData.items = normalized.map((row) => ({ ...row }))
+      return normalized
+    } catch {
+      showAlert("아이템 목록 조회에 실패했습니다.")
+      return []
+    }
+  }
+
+  handleItemCellChanged(event) {
+    const field = event?.colDef?.field
+    const row = event?.node?.data
+    if (!field || !row) return
+
+    if (field === "item_cd" || field.endsWith("_cd")) {
+      row[field] = (row[field] || "").toString().trim().toUpperCase()
+    }
+
+    if (field === "item_nm") {
+      row[field] = (row[field] || "").toString().trim()
+    }
+
+    this.syncCurrentItemsToMaster()
+    this.markCurrentMasterAsUpdated()
+
+    this.itemManager.api?.refreshCells({
+      rowNodes: [event.node],
+      columns: [field],
+      force: true
     })
   }
 
-  #loadOrderData(data) {
-    this.#mode = data.cancel_yn === "Y" ? "view" : "edit"
-    this.#currentOrderId = data.id
-    const isCancelled = data.cancel_yn === "Y"
+  normalizeMasterField(event) {
+    const field = event?.colDef?.field
+    if (!field || !event?.node?.data) return
 
-    // 헤더 읽기전용 필드
-    this.fieldOrdNoTarget.value = data.ord_no || ""
-    this.fieldOrdStatCdTarget.value = data.ord_stat_cd || ""
-    this.fieldCreateTimeTarget.value = data.create_time || ""
-
-    // 헤더 편집 필드
-    this.fieldCtrtNoTarget.value = data.ctrt_no || ""
-    this.fieldOrdTypeCdTarget.value = data.ord_type_cd || ""
-    this.fieldBilgCustCdTarget.value = data.bilg_cust_cd || ""
-    this.fieldCtrtCustCdTarget.value = data.ctrt_cust_cd || ""
-    this.fieldOrdReasonCdTarget.value = data.ord_reason_cd || ""
-    this.fieldOrdExecDeptCdTarget.value = data.ord_exec_dept_cd || ""
-    this.fieldOrdExecDeptNmTarget.value = data.ord_exec_dept_nm || ""
-    this.fieldOrdExecOfcrCdTarget.value = data.ord_exec_ofcr_cd || ""
-    this.fieldOrdExecOfcrNmTarget.value = data.ord_exec_ofcr_nm || ""
-    this.fieldRemkTarget.value = data.remk || ""
-
-    // 출도착지
-    this.fieldDptTypeCdTarget.value = data.dpt_type_cd || ""
-    this.fieldDptCdTarget.value = data.dpt_cd || ""
-    this.fieldDptZipCdTarget.value = data.dpt_zip_cd || ""
-    this.fieldDptAddrTarget.value = data.dpt_addr || ""
-    if (data.strt_req_ymd) {
-      this.fieldStrtReqYmdTarget.value = this.#formatDateForInput(data.strt_req_ymd)
-    } else {
-      this.fieldStrtReqYmdTarget.value = ""
+    const row = event.node.data
+    if (CODE_FIELDS.includes(field)) {
+      row[field] = (row[field] || "").toString().trim().toUpperCase()
+    } else if (DATE_FIELDS.includes(field)) {
+      row[field] = this.normalizeDateStoreValue(row[field])
+    } else if (DATETIME_FIELDS.includes(field)) {
+      row[field] = this.normalizeDateTimeStoreValue(row[field])
     }
 
-    this.fieldArvTypeCdTarget.value = data.arv_type_cd || ""
-    this.fieldArvCdTarget.value = data.arv_cd || ""
-    this.fieldArvZipCdTarget.value = data.arv_zip_cd || ""
-    this.fieldArvAddrTarget.value = data.arv_addr || ""
-    if (data.aptd_req_dtm) {
-      this.fieldAptdReqDtmTarget.value = this.#formatDateTimeForInput(data.aptd_req_dtm)
-    } else {
-      this.fieldAptdReqDtmTarget.value = ""
-    }
+    const api = this.masterManager?.api
+    if (!api) return
 
-    // 아이템
-    if (this.#itemGridApi && data.items) {
-      this.#itemGridApi.setGridOption("rowData", data.items)
-    }
-
-    this.#setFormDisabled(isCancelled)
+    api.refreshCells({
+      rowNodes: [event.node],
+      columns: [field],
+      force: true
+    })
   }
 
-  #clearForm() {
-    const targets = [
-      "fieldOrdNo", "fieldOrdStatCd", "fieldCreateTime",
-      "fieldCtrtNo", "fieldBilgCustCd", "fieldBilgCustNm",
-      "fieldCtrtCustCd", "fieldCtrtCustNm",
-      "fieldOrdExecDeptCd", "fieldOrdExecDeptNm",
-      "fieldOrdExecOfcrCd", "fieldOrdExecOfcrNm", "fieldRemk",
-      "fieldDptCd", "fieldDptZipCd", "fieldDptAddr", "fieldStrtReqYmd",
-      "fieldArvCd", "fieldArvZipCd", "fieldArvAddr", "fieldAptdReqDtm"
-    ]
-    targets.forEach(name => {
-      if (this[`has${name.charAt(0).toUpperCase() + name.slice(1)}Target`]) {
-        this[`${name}Target`].value = ""
-      }
-    })
-
-    // select 필드 초기화
-    if (this.hasFieldOrdTypeCdTarget) this.fieldOrdTypeCdTarget.value = ""
-    if (this.hasFieldOrdReasonCdTarget) this.fieldOrdReasonCdTarget.value = ""
-    if (this.hasFieldDptTypeCdTarget) this.fieldDptTypeCdTarget.value = ""
-    if (this.hasFieldArvTypeCdTarget) this.fieldArvTypeCdTarget.value = ""
-  }
-
-  #setFormDisabled(disabled) {
-    const editableFields = [
-      "fieldCtrtNo", "fieldOrdExecDeptCd", "fieldOrdExecDeptNm",
-      "fieldOrdExecOfcrCd", "fieldOrdExecOfcrNm", "fieldRemk",
-      "fieldDptCd", "fieldDptZipCd", "fieldDptAddr", "fieldStrtReqYmd",
-      "fieldArvCd", "fieldArvZipCd", "fieldArvAddr", "fieldAptdReqDtm"
-    ]
-    const selectFields = [
-      "fieldOrdTypeCd", "fieldOrdReasonCd", "fieldDptTypeCd", "fieldArvTypeCd"
-    ]
-
-    editableFields.forEach(name => {
-      const targetName = `${name}Target`
-      if (this[`has${name.charAt(0).toUpperCase() + name.slice(1)}Target`]) {
-        this[targetName].disabled = disabled
-      }
-    })
-
-    selectFields.forEach(name => {
-      const targetName = `${name}Target`
-      if (this[`has${name.charAt(0).toUpperCase() + name.slice(1)}Target`]) {
-        this[targetName].disabled = disabled
-      }
-    })
-
-    // 팝업 버튼
-    if (this.hasBilgCustSearchBtnTarget) this.bilgCustSearchBtnTarget.disabled = disabled
-    if (this.hasCtrtCustSearchBtnTarget) this.ctrtCustSearchBtnTarget.disabled = disabled
-    // 고객코드 필드
-    if (this.hasFieldBilgCustCdTarget) this.fieldBilgCustCdTarget.disabled = disabled
-    if (this.hasFieldCtrtCustCdTarget) this.fieldCtrtCustCdTarget.disabled = disabled
-  }
-
-  #collectPayload() {
-    const order = {
-      ctrt_no: this.fieldCtrtNoTarget.value,
-      ord_type_cd: this.fieldOrdTypeCdTarget.value,
-      bilg_cust_cd: this.fieldBilgCustCdTarget.value,
-      ctrt_cust_cd: this.fieldCtrtCustCdTarget.value,
-      ord_reason_cd: this.fieldOrdReasonCdTarget.value,
-      ord_exec_dept_cd: this.fieldOrdExecDeptCdTarget.value,
-      ord_exec_dept_nm: this.fieldOrdExecDeptNmTarget.value,
-      ord_exec_ofcr_cd: this.fieldOrdExecOfcrCdTarget.value,
-      ord_exec_ofcr_nm: this.fieldOrdExecOfcrNmTarget.value,
-      remk: this.fieldRemkTarget.value,
-      dpt_type_cd: this.fieldDptTypeCdTarget.value,
-      dpt_cd: this.fieldDptCdTarget.value,
-      dpt_zip_cd: this.fieldDptZipCdTarget.value,
-      dpt_addr: this.fieldDptAddrTarget.value,
-      strt_req_ymd: this.#formatDateToYmd(this.fieldStrtReqYmdTarget.value),
-      arv_type_cd: this.fieldArvTypeCdTarget.value,
-      arv_cd: this.fieldArvCdTarget.value,
-      arv_zip_cd: this.fieldArvZipCdTarget.value,
-      arv_addr: this.fieldArvAddrTarget.value,
-      aptd_req_dtm: this.#formatDateTimeToDtm(this.fieldAptdReqDtmTarget.value)
+  buildMasterOperations() {
+    const api = this.masterManager?.api
+    if (!api) {
+      return { rowsToInsert: [], rowsToUpdate: [], rowsToDelete: [] }
     }
 
-    const items = []
-    if (this.#itemGridApi) {
-      this.#itemGridApi.forEachNode(node => {
-        if (node.data.item_cd) {
-          items.push(node.data)
+    const rowsToInsert = []
+    const rowsToUpdate = []
+    const rowsToDelete = []
+    const rows = collectRows(api)
+
+    rows.forEach((row) => {
+      if (row.__is_deleted) {
+        if (!row.__is_new && row.ord_no) {
+          rowsToDelete.push(row.ord_no.toString().trim().toUpperCase())
         }
-      })
-    }
+        return
+      }
 
-    return { order, items }
+      if (row.__is_new) {
+        if (this.isBlankMasterRow(row)) return
+        rowsToInsert.push(this.serializeMasterRow(row))
+        return
+      }
+
+      if (row.__is_updated) {
+        rowsToUpdate.push(this.serializeMasterRow(row))
+      }
+    })
+
+    return {
+      rowsToInsert,
+      rowsToUpdate,
+      rowsToDelete: [...new Set(rowsToDelete)]
+    }
   }
 
-  #renumberItems() {
-    if (!this.#itemGridApi) return
+  serializeMasterRow(row) {
+    const items = Array.isArray(row.items) ? row.items : []
+
+    return {
+      ord_no: (row.ord_no || "").toString().trim().toUpperCase(),
+      ord_stat_cd: (row.ord_stat_cd || "WAIT").toString().trim().toUpperCase(),
+      ctrt_no: (row.ctrt_no || "").toString().trim(),
+      ord_type_cd: (row.ord_type_cd || "").toString().trim().toUpperCase(),
+      bilg_cust_cd: (row.bilg_cust_cd || "").toString().trim().toUpperCase(),
+      ctrt_cust_cd: (row.ctrt_cust_cd || "").toString().trim().toUpperCase(),
+      ord_reason_cd: (row.ord_reason_cd || "").toString().trim().toUpperCase(),
+      ord_exec_dept_cd: (row.ord_exec_dept_cd || "").toString().trim().toUpperCase(),
+      ord_exec_dept_nm: (row.ord_exec_dept_nm || "").toString().trim(),
+      ord_exec_ofcr_cd: (row.ord_exec_ofcr_cd || "").toString().trim().toUpperCase(),
+      ord_exec_ofcr_nm: (row.ord_exec_ofcr_nm || "").toString().trim(),
+      remk: (row.remk || "").toString(),
+      dpt_type_cd: (row.dpt_type_cd || "").toString().trim().toUpperCase(),
+      dpt_cd: (row.dpt_cd || "").toString().trim().toUpperCase(),
+      dpt_zip_cd: (row.dpt_zip_cd || "").toString().trim(),
+      dpt_addr: (row.dpt_addr || "").toString().trim(),
+      strt_req_ymd: this.normalizeDateStoreValue(row.strt_req_ymd),
+      arv_type_cd: (row.arv_type_cd || "").toString().trim().toUpperCase(),
+      arv_cd: (row.arv_cd || "").toString().trim().toUpperCase(),
+      arv_zip_cd: (row.arv_zip_cd || "").toString().trim(),
+      arv_addr: (row.arv_addr || "").toString().trim(),
+      aptd_req_dtm: this.normalizeDateTimeStoreValue(row.aptd_req_dtm),
+      wait_ord_internal_yn: "N",
+      cancel_yn: (row.cancel_yn || "N").toString().trim().toUpperCase() || "N",
+      items: items.slice(0, MAX_ITEM_ROWS).map((item, index) => this.normalizeItemRow(item, index + 1))
+    }
+  }
+
+  normalizeItemRow(item, seqNo) {
+    const safeItem = item || {}
+    return {
+      seq_no: Number(safeItem.seq_no) > 0 ? Number(safeItem.seq_no) : seqNo,
+      item_cd: (safeItem.item_cd || "").toString().trim().toUpperCase(),
+      item_nm: (safeItem.item_nm || "").toString().trim(),
+      basis_unit_cd: (safeItem.basis_unit_cd || "").toString().trim().toUpperCase(),
+      ord_qty: this.numberOrZero(safeItem.ord_qty),
+      qty_unit_cd: (safeItem.qty_unit_cd || "").toString().trim().toUpperCase(),
+      ord_wgt: this.numberOrZero(safeItem.ord_wgt),
+      wgt_unit_cd: (safeItem.wgt_unit_cd || "").toString().trim().toUpperCase(),
+      ord_vol: this.numberOrZero(safeItem.ord_vol),
+      vol_unit_cd: (safeItem.vol_unit_cd || "").toString().trim().toUpperCase()
+    }
+  }
+
+  numberOrZero(value) {
+    const number = Number(value)
+    if (Number.isNaN(number)) return 0
+    return number
+  }
+
+  isBlankMasterRow(row) {
+    const keys = ["ctrt_no", "ord_type_cd", "bilg_cust_cd", "ctrt_cust_cd", "dpt_cd", "arv_cd"]
+    return keys.every((key) => (row[key] || "").toString().trim() === "")
+  }
+
+  isBlankItemRow(row) {
+    const itemCd = (row.item_cd || "").toString().trim()
+    const itemNm = (row.item_nm || "").toString().trim()
+    return itemCd === "" && itemNm === ""
+  }
+
+  syncCurrentItemsToMaster() {
+    if (!this.currentMasterRow) return
+
+    this.currentMasterRow.items = this.collectItemRowsFromGrid()
+  }
+
+  collectItemRowsFromGrid() {
+    const api = this.itemManager?.api
+    if (!api) return []
+
+    const rows = []
+    api.forEachNode((node) => {
+      if (!node?.data || node.data.__is_deleted) return
+      if (this.isBlankItemRow(node.data)) return
+      rows.push(this.normalizeItemRow(node.data, rows.length + 1))
+    })
+    return rows
+  }
+
+  nextItemSeq(rows) {
+    if (!Array.isArray(rows) || rows.length === 0) return 1
+    return rows.reduce((max, row) => Math.max(max, Number(row.seq_no) || 0), 0) + 1
+  }
+
+  renumberItems() {
+    const api = this.itemManager?.api
+    if (!api) return
+
     let seq = 1
-    this.#itemGridApi.forEachNode(node => {
-      node.setDataValue("seq_no", seq++)
+    api.forEachNode((node) => {
+      if (!node?.data || node.data.__is_deleted) return
+      node.setDataValue("seq_no", seq)
+      seq += 1
     })
   }
 
-  #formatDateForInput(ymd) {
-    // YYYYMMDD -> YYYY-MM-DD
-    if (!ymd) return ""
-    if (ymd.length === 8) {
-      return `${ymd.substring(0, 4)}-${ymd.substring(4, 6)}-${ymd.substring(6, 8)}`
+  markCurrentMasterAsUpdated() {
+    markCurrentMasterRowUpdated(this)
+    refreshMasterRowCells(this, ["__row_status"])
+  }
+
+  resizeItemsGridWhenVisible() {
+    if (this.activeTab !== "items") return
+    const api = this.itemManager?.api
+    if (!api) return
+
+    setTimeout(() => {
+      api.sizeColumnsToFit?.()
+    }, 50)
+  }
+
+  formatDateTimeForInput(rawValue) {
+    const value = (rawValue || "").toString().trim()
+    if (value === "") return ""
+
+    const compact = value.replace(/[^0-9]/g, "")
+    if (compact.length >= 12) {
+      const yyyy = compact.slice(0, 4)
+      const mm = compact.slice(4, 6)
+      const dd = compact.slice(6, 8)
+      const hh = compact.slice(8, 10)
+      const mi = compact.slice(10, 12)
+      return `${yyyy}-${mm}-${dd}T${hh}:${mi}`
     }
-    return ymd
+
+    return value
   }
 
-  #formatDateTimeForInput(dtm) {
-    // YYYYMMDDHHMMSS -> YYYY-MM-DDTHH:MM
-    if (!dtm) return ""
-    if (dtm.length >= 12) {
-      return `${dtm.substring(0, 4)}-${dtm.substring(4, 6)}-${dtm.substring(6, 8)}T${dtm.substring(8, 10)}:${dtm.substring(10, 12)}`
+  normalizeDateStoreValue(rawValue) {
+    const normalized = toDateInputValue(rawValue)
+    if (normalized === "") return ""
+    return normalized.replace(/-/g, "")
+  }
+
+  normalizeDateTimeStoreValue(rawValue) {
+    const source = (rawValue || "").toString().trim()
+    if (source === "") return ""
+
+    const compact = source.replace(/[^0-9]/g, "")
+    if (compact.length >= 14) {
+      return compact.slice(0, 14)
     }
-    return dtm
+    if (compact.length >= 12) {
+      return `${compact.slice(0, 12)}00`
+    }
+    return compact
   }
 
-  #formatDateToYmd(value) {
-    // YYYY-MM-DD -> YYYYMMDD
-    if (!value) return ""
-    return value.replace(/-/g, "")
-  }
+  registerExistingGrids() {
+    const gridElements = this.element.querySelectorAll("[data-controller='ag-grid']")
+    gridElements.forEach((gridElement) => {
+      const gridController = this.application.getControllerForElementAndIdentifier(gridElement, "ag-grid")
+      const api = gridController?.api || gridController?.gridApi || gridController?.gridOptions?.api
+      if (!api) return
 
-  #formatDateTimeToDtm(value) {
-    // YYYY-MM-DDTHH:MM -> YYYYMMDDHHMMSS
-    if (!value) return ""
-    return value.replace(/[-T:]/g, "").padEnd(14, "0")
+      this.registerGrid({
+        target: gridElement,
+        detail: { api, controller: gridController }
+      })
+    })
   }
 }
+

@@ -23,6 +23,13 @@ function applyLoadErrorOverlay(api) {
   api.showNoRowsOverlay()
 }
 
+function normalizeClientRows(payload) {
+  if (Array.isArray(payload)) return payload
+  if (payload && Array.isArray(payload.data)) return payload.data
+  if (payload && Array.isArray(payload.rows)) return payload.rows
+  return []
+}
+
 export async function loadClientGridData({
   api,
   url,
@@ -35,7 +42,8 @@ export async function loadClientGridData({
   api.setGridOption("loading", true)
 
   try {
-    const rows = await fetchJson(url)
+    const payload = await fetchJson(url)
+    const rows = normalizeClientRows(payload)
     if (!isApiAlive(api) || !isCurrentApi()) return
 
     if (typeof beforeApply === "function") {
@@ -87,4 +95,3 @@ export async function loadServerGridPage({
     applyLoadErrorOverlay(api)
   }
 }
-

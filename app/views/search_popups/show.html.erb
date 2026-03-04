@@ -2,6 +2,7 @@
   financial_org_popup = %w[financial_institution fin_org financial_org fnc_or].include?(@type)
   sellbuy_attr_popup = %w[sellbuy_attr sellbuyattribute sell_buy_attr].include?(@type)
   customer_popup = %w[customer client bzac].include?(@type)
+  work_step_popup = %w[work_step workstep basic_work_step standard_work_step].include?(@type)
 
   popup_title = if @type == "corp"
     "법인 조회"
@@ -11,6 +12,8 @@
     "금융기관 조회"
   elsif sellbuy_attr_popup
     "매출입항목 조회"
+  elsif work_step_popup
+    "기준작업관리 조회"
   else
     "조회"
   end
@@ -336,6 +339,79 @@
         upper_sellbuy_attr_nm: row[:upper_sellbuy_attr_nm],
         tran_yn: row[:tran_yn],
         strg_yn: row[:strg_yn],
+        use_yn: row[:use_yn]
+      }
+    end
+  elsif work_step_popup
+    popup_fields = [
+      {
+        field: "work_step_cd",
+        type: "input",
+        label: "작업단계코드",
+        placeholder: "작업단계코드 입력"
+      },
+      {
+        field: "work_step_nm",
+        type: "input",
+        label: "작업단계명",
+        placeholder: "작업단계명 입력"
+      },
+      {
+        field: "work_step_level1_cd",
+        type: "input",
+        label: "작업단계 Level1",
+        placeholder: "작업단계 Level1 코드"
+      },
+      {
+        field: "work_step_level2_cd",
+        type: "input",
+        label: "작업단계 Level2",
+        placeholder: "작업단계 Level2 코드"
+      },
+      {
+        field: "use_yn",
+        type: "select",
+        label: "사용여부",
+        options: [
+          { label: "Y", value: "Y" },
+          { label: "N", value: "N" }
+        ],
+        include_blank: false
+      }
+    ]
+
+    popup_columns = [
+      { field: "work_step_cd", headerName: "작업단계코드", minWidth: 140, editable: false },
+      { field: "work_step_nm", headerName: "작업단계명", minWidth: 200, editable: false },
+      { field: "work_step_level1_cd", headerName: "작업단계 Level1 코드", minWidth: 160, editable: false },
+      { field: "work_step_level1_nm", headerName: "작업단계 Level1 명", minWidth: 170, editable: false },
+      { field: "work_step_level2_cd", headerName: "작업단계 Level2 코드", minWidth: 160, editable: false },
+      { field: "work_step_level2_nm", headerName: "작업단계 Level2 명", minWidth: 170, editable: false },
+      {
+        field: "__select",
+        headerName: "선택",
+        minWidth: 90,
+        maxWidth: 90,
+        editable: false,
+        sortable: false,
+        filter: false,
+        resizable: false,
+        cellStyle: { textAlign: "center" },
+        cellRenderer: "popupSelectCellRenderer"
+      }
+    ]
+
+    popup_rows = @rows.map do |row|
+      {
+        code: row[:work_step_cd] || row[:code],
+        name: row[:work_step_nm] || row[:name],
+        display: row[:work_step_nm] || row[:display],
+        work_step_cd: row[:work_step_cd] || row[:code],
+        work_step_nm: row[:work_step_nm] || row[:name],
+        work_step_level1_cd: row[:work_step_level1_cd],
+        work_step_level1_nm: row[:work_step_level1_nm],
+        work_step_level2_cd: row[:work_step_level2_cd],
+        work_step_level2_nm: row[:work_step_level2_nm],
         use_yn: row[:use_yn]
       }
     end

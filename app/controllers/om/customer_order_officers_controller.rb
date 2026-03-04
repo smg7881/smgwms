@@ -94,7 +94,7 @@ class Om::CustomerOrderOfficersController < Om::BaseController
     end
 
     def build_search_form
-      form = Om::CustomerOrderOfficerSearchForm.new(search_params.to_h)
+      form = customer_order_officer_search_form_class.new(search_params.to_h)
       if form.dept_cd.present?
         form.dept_nm = dept_name_for(form.dept_cd)
       end
@@ -102,6 +102,13 @@ class Om::CustomerOrderOfficersController < Om::BaseController
         form.cust_nm = customer_name_for(form.cust_cd)
       end
       form
+    end
+
+    def customer_order_officer_search_form_class
+      ::Om::CustomerOrderOfficerSearchForm
+    rescue NameError
+      require_dependency Rails.root.join("app/models/om/customer_order_officer_search_form").to_s
+      ::Om::CustomerOrderOfficerSearchForm
     end
 
     def search_params

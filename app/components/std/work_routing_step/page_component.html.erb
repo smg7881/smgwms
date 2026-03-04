@@ -1,5 +1,5 @@
 <div data-controller="std-work-routing-step-grid"
-     data-action="ag-grid:ready->std-work-routing-step-grid#registerGrid"
+     data-action="ag-grid:ready->std-work-routing-step-grid#registerGrid ag-grid:lookup-selected->std-work-routing-step-grid#handleLookupSelected"
      data-std-work-routing-step-grid-master-batch-url-value="<%= master_batch_save_url %>"
      data-std-work-routing-step-grid-detail-batch-url-template-value="<%= detail_batch_save_url_template %>"
      data-std-work-routing-step-grid-detail-list-url-template-value="/std/work_routing_steps/:id/details.json"

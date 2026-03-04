@@ -283,7 +283,10 @@ Rails.application.routes.draw do
       end
     end
     resources :waiting_orders, only: [ :index ] do
-      post :distribute, on: :collection
+      member do
+        get :details
+        post :batch_save
+      end
     end
     get "customer-system-config", to: redirect("/om/customer_system_configs")
     resources :customer_system_configs, only: [ :index ] do
@@ -296,7 +299,11 @@ Rails.application.routes.draw do
       post :batch_save, on: :collection
     end
     resources :internal_orders, only: [ :index, :create, :update ] do
+      collection do
+        post :batch_save
+      end
       member do
+        get :items
         post :cancel
       end
     end

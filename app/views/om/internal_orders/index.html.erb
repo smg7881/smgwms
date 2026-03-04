@@ -1,6 +1,7 @@
 <%= turbo_frame_tag "main-content" do %>
   <%= render Om::InternalOrder::PageComponent.new(
     query_params: request.query_parameters,
-    search_form: @search_form
+    selected_order: @selected_order
   ) %>
 <% end %>
+

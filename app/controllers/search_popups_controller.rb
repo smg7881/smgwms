@@ -15,6 +15,8 @@ class SearchPopupsController < ApplicationController
         params[:q][:sellbuy_attr_nm] = keyword
       elsif customer_popup?
         params[:q][:bzac_nm] = keyword
+      elsif work_step_popup?
+        params[:q][:work_step_nm] = keyword
       else
         params[:q][:display] = keyword
       end
@@ -44,6 +46,12 @@ class SearchPopupsController < ApplicationController
             ofcr_nm: row[:ofcr_nm],
             tel_no: row[:tel_no],
             bilg_bzac_cd: row[:bilg_bzac_cd],
+            work_step_cd: row[:work_step_cd],
+            work_step_nm: row[:work_step_nm],
+            work_step_level1_cd: row[:work_step_level1_cd],
+            work_step_level1_nm: row[:work_step_level1_nm],
+            work_step_level2_cd: row[:work_step_level2_cd],
+            work_step_level2_nm: row[:work_step_level2_nm],
             head_office_yn: row[:head_office_yn],
             ctry: row[:ctry],
             ctry_cd: row[:ctry_cd],
@@ -99,7 +107,8 @@ class SearchPopupsController < ApplicationController
         :display, :code, :corp_cd, :corp_nm, :use_yn,
         :ctry_cd, :fnc_or_cd, :fnc_or_nm,
         :sellbuy_attr_cd, :sellbuy_attr_nm, :tran_yn, :strg_yn,
-        :bzac_cd, :bzac_nm, :head_office_yn, :bzac_sctn_grp_cd, :bzac_sctn_cd, :biz_no
+        :bzac_cd, :bzac_nm, :head_office_yn, :bzac_sctn_grp_cd, :bzac_sctn_cd, :biz_no,
+        :work_step_cd, :work_step_nm, :work_step_level1_cd, :work_step_level2_cd
       )
     end
 
@@ -118,6 +127,10 @@ class SearchPopupsController < ApplicationController
 
     def customer_popup?
       %w[customer client bzac].include?(@type)
+    end
+
+    def work_step_popup?
+      %w[work_step workstep basic_work_step standard_work_step].include?(@type)
     end
 
     def normalized_use_yn(value)
@@ -179,6 +192,14 @@ class SearchPopupsController < ApplicationController
           use_yn: normalized_use_yn(popup_form_params[:use_yn]),
           biz_no: popup_form_params[:biz_no].to_s.gsub(/[^0-9]/, "").presence
         )
+      elsif work_step_popup?
+        SearchPopupForm.new(
+          work_step_cd: popup_form_params[:work_step_cd].to_s.strip.upcase.presence,
+          work_step_nm: popup_form_params[:work_step_nm].to_s.strip.presence,
+          work_step_level1_cd: popup_form_params[:work_step_level1_cd].to_s.strip.upcase.presence,
+          work_step_level2_cd: popup_form_params[:work_step_level2_cd].to_s.strip.upcase.presence,
+          use_yn: normalized_use_yn(popup_form_params[:use_yn])
+        )
       else
         SearchPopupForm.new(
           display: lookup_keyword,
@@ -203,6 +224,8 @@ class SearchPopupsController < ApplicationController
         sellbuy_attr_rows
       elsif customer_popup?
         customer_rows
+      elsif work_step_popup?
+        work_step_rows
       else
         generic_rows(type)
       end
@@ -543,6 +566,52 @@ class SearchPopupsController < ApplicationController
 
       StdGood.where(use_yn_cd: "Y").ordered.filter_map do |row|
         build_generic_row(code: row.goods_cd, name: row.goods_nm)
+      end
+    rescue ActiveRecord::StatementInvalid
+      []
+    end
+
+    def work_step_rows
+      return [] unless defined?(StdWorkStep) && StdWorkStep.table_exists?
+
+      scope = StdWorkStep.ordered
+      if @popup_form.work_step_cd.present?
+        scope = scope.where("work_step_cd LIKE ?", "%#{@popup_form.work_step_cd}%")
+      end
+      if @popup_form.work_step_nm.present?
+        scope = scope.where("work_step_nm LIKE ?", "%#{@popup_form.work_step_nm}%")
+      end
+      if @popup_form.work_step_level1_cd.present?
+        scope = scope.where(work_step_level1_cd: @popup_form.work_step_level1_cd)
+      end
+      if @popup_form.work_step_level2_cd.present?
+        scope = scope.where(work_step_level2_cd: @popup_form.work_step_level2_cd)
+      end
+      if @popup_form.use_yn.present?
+        scope = scope.where(use_yn_cd: @popup_form.use_yn)
+      end
+
+      level1_name_map = code_name_map("07")
+      level2_name_map = code_name_map("08")
+
+      scope.limit(200).map do |row|
+        work_step_cd = row.work_step_cd.to_s.upcase
+        work_step_nm = row.work_step_nm.to_s.strip
+        work_step_level1_cd = row.work_step_level1_cd.to_s.upcase
+        work_step_level2_cd = row.work_step_level2_cd.to_s.upcase
+
+        {
+          code: work_step_cd,
+          name: work_step_nm,
+          display: work_step_nm,
+          work_step_cd: work_step_cd,
+          work_step_nm: work_step_nm,
+          work_step_level1_cd: work_step_level1_cd,
+          work_step_level1_nm: level1_name_map[work_step_level1_cd].to_s.presence || work_step_level1_cd,
+          work_step_level2_cd: work_step_level2_cd,
+          work_step_level2_nm: level2_name_map[work_step_level2_cd].to_s.presence || work_step_level2_cd,
+          use_yn: row.use_yn_cd.to_s.upcase
+        }.compact
       end
     rescue ActiveRecord::StatementInvalid
       []
