@@ -104,6 +104,9 @@ export default class GridCrudManager {
     const txResult = this.#api.applyTransaction({ add: [newRow], addIndex: 0 })
     hideNoRowsOverlay(this.#api) // 오버레이 지우기
 
+    // 행이 최상단에 추가되면서 밀린 기존 행들의 인덱스(순번) 재계산 반영
+    this.#api.refreshCells({ columns: ["__row_no"], force: true })
+
     // 방금 생긴 0번 행의 첫 컬럼에 에디터 포커싱 (사용자 편의성)
     this.#api.startEditingCell({ rowIndex: 0, colKey: startCol || this.#config.firstEditCol })
     return txResult
@@ -150,6 +153,8 @@ export default class GridCrudManager {
     // 신규 추가건은 즉시 DOM/State 제거
     if (rowsToRemove.length > 0) {
       this.#api.applyTransaction({ remove: rowsToRemove })
+      // DOM 리스트가 변결될 때 기존 표시중인 순번 갱신
+      this.#api.refreshCells({ columns: ["__row_no"], force: true })
     }
     // 삭제 대기건은 상태 아이콘 표출 컬럼 갱신
     if (nodesToRefresh.length > 0) {

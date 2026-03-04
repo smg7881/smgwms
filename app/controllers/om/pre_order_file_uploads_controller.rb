@@ -1,6 +1,6 @@
 class Om::PreOrderFileUploadsController < Om::BaseController
   def index
-    @form = Om::PreOrderFileUploadForm.new
+    @form = pre_order_file_upload_form_class.new
   end
 
   def preview
@@ -47,6 +47,15 @@ class Om::PreOrderFileUploadsController < Om::BaseController
   end
 
   private
+    def pre_order_file_upload_form_class
+      if defined?(::Om::PreOrderFileUploadForm)
+        ::Om::PreOrderFileUploadForm
+      else
+        load Rails.root.join("app/models/om/pre_order_file_upload_form.rb").to_s
+        ::Om::PreOrderFileUploadForm
+      end
+    end
+
     def menu_code_for_permission
       "OM_PRE_ORD_FILE_UL"
     end
