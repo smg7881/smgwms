@@ -1,0 +1,3 @@
+interface:
+  display_name: "Master-Detail Screen Pattern"
+  short_description: "system/code 기준으로 마스터-디테일 화면 구현"

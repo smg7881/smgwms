@@ -19,8 +19,8 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :posts
-  resources :reports, only: [ :index ]
+
+
   namespace :system do
     resources :excel_import_tasks, only: [ :index ] do
       member do

@@ -30,6 +30,7 @@ export default class extends Controller {
   // 내부 상태 관리를 위한 프라이빗 변수 선언 (서버사이드 페이징 관련)
   #serverPage = 1
   #serverTotal = 0
+  #localClipboardText = ""
   #suppressPaginationEvent = false // API에 의한 강제 페이지 전환 시 불필요한 이벤트 버블링 방지 플래그
 
   // HTML 레이아웃(data-ag-grid-*-value)에서 주입받는 다양한 설정값(상태 변수)들
@@ -433,14 +434,34 @@ export default class extends Controller {
   }
 
   handleCellKeyDown(event) {
-    if (event?.event?.key !== "Enter") return
+    const keyboardEvent = event?.event
+    if (!keyboardEvent) return
+    if (keyboardEvent.defaultPrevented) return
+
+    if (this.isGridCopyShortcut(keyboardEvent)) {
+      keyboardEvent.preventDefault()
+      keyboardEvent.stopPropagation()
+      this.copyCurrentCellValue(event)
+      return
+    }
+
+    if (this.isGridPasteShortcut(keyboardEvent)) {
+      keyboardEvent.preventDefault()
+      keyboardEvent.stopPropagation()
+      this.pasteCurrentCellValue(event).catch(() => {
+        this.#showToast("붙여넣기에 실패했습니다")
+      })
+      return
+    }
+
+    if (keyboardEvent.key !== "Enter") return
 
     const colDef = event?.column?.getColDef?.()
     if (!this.isLookupColumn(colDef)) return
     if (!isApiAlive(this.gridApi)) return
 
-    event.event.preventDefault()
-    event.event.stopPropagation()
+    keyboardEvent.preventDefault()
+    keyboardEvent.stopPropagation()
 
     this.gridApi.stopEditing()
 
@@ -569,6 +590,134 @@ export default class extends Controller {
     }
 
     return false
+  }
+
+  // Single-cell clipboard helpers for Ctrl/Cmd + C,V.
+  isGridCopyShortcut(keyboardEvent) {
+    if (!keyboardEvent) return false
+    if (this.isNativeInputTarget(keyboardEvent.target)) return false
+    if (!(keyboardEvent.ctrlKey || keyboardEvent.metaKey)) return false
+    if (keyboardEvent.altKey) return false
+    return String(keyboardEvent.key || "").toLowerCase() === "c"
+  }
+
+  isGridPasteShortcut(keyboardEvent) {
+    if (!keyboardEvent) return false
+    if (this.isNativeInputTarget(keyboardEvent.target)) return false
+    if (!(keyboardEvent.ctrlKey || keyboardEvent.metaKey)) return false
+    if (keyboardEvent.altKey) return false
+    return String(keyboardEvent.key || "").toLowerCase() === "v"
+  }
+
+  isNativeInputTarget(target) {
+    if (!(target instanceof HTMLElement)) return false
+    const tagName = target.tagName
+    if (tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT") return true
+    if (target.isContentEditable) return true
+    return Boolean(target.closest("[contenteditable='true']"))
+  }
+
+  copyCurrentCellValue(cellEvent) {
+    const rowNode = cellEvent?.node
+    const colDef = cellEvent?.column?.getColDef?.()
+    const field = colDef?.field
+    if (!rowNode?.data || !field) {
+      this.#showToast("복사할 수 없는 셀입니다")
+      return
+    }
+    if (field === "actions" || String(field).startsWith("__")) {
+      this.#showToast("복사할 수 없는 셀입니다")
+      return
+    }
+
+    const rawValue = rowNode.data[field]
+    const text = rawValue == null ? "" : String(rawValue)
+    this.#localClipboardText = text
+
+    this.writeTextToClipboard(text).then((ok) => {
+      if (!ok) {
+        this.#showToast("시스템 클립보드 복사에 실패했습니다")
+      }
+    }).catch(() => {
+      this.#showToast("시스템 클립보드 복사에 실패했습니다")
+    })
+  }
+
+  async pasteCurrentCellValue(cellEvent) {
+    const rowNode = cellEvent?.node
+    const colDef = cellEvent?.column?.getColDef?.()
+    const field = colDef?.field
+    if (!rowNode?.data || !field) {
+      this.#showToast("붙여넣을 수 없는 셀입니다")
+      return
+    }
+    if (!this.canPasteToCell(cellEvent, rowNode, colDef)) {
+      this.#showToast("붙여넣을 수 없는 셀입니다")
+      return
+    }
+
+    const text = await this.readTextFromClipboard()
+    if (text == null) {
+      this.#showToast("클립보드 텍스트를 읽을 수 없습니다")
+      return
+    }
+    if (String(rowNode.data[field] ?? "") === String(text)) return
+
+    rowNode.setDataValue(field, text)
+    if (isApiAlive(this.gridApi)) {
+      this.gridApi.refreshCells({
+        rowNodes: [rowNode],
+        columns: [field],
+        force: true
+      })
+    }
+  }
+
+  canPasteToCell(cellEvent, rowNode, colDef) {
+    if (!rowNode?.data || !colDef) return false
+    if (colDef.field === "actions") return false
+    if (String(colDef.field || "").startsWith("__")) return false
+
+    const column = cellEvent?.column
+    if (column?.isCellEditable) {
+      return Boolean(column.isCellEditable(rowNode))
+    }
+
+    if (typeof colDef.editable === "function") {
+      return Boolean(colDef.editable({
+        ...cellEvent,
+        node: rowNode,
+        data: rowNode.data,
+        colDef
+      }))
+    }
+
+    return Boolean(colDef.editable)
+  }
+
+  async writeTextToClipboard(text) {
+    if (!navigator?.clipboard?.writeText) return false
+    try {
+      await navigator.clipboard.writeText(text)
+      return true
+    } catch (_error) {
+      return false
+    }
+  }
+
+  async readTextFromClipboard() {
+    if (navigator?.clipboard?.readText) {
+      try {
+        const clipboardText = await navigator.clipboard.readText()
+        this.#localClipboardText = clipboardText
+        return clipboardText
+      } catch (_error) {
+        // Fallback to in-memory value
+      }
+    }
+
+    if (this.#localClipboardText == null) return null
+    return this.#localClipboardText
   }
 
   // (가상/UI전용 컬럼) "__row_status" 상태 아이콘 표기 컬럼이

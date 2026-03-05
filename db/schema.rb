@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_03_171000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_05_173704) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -540,13 +540,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_03_171000) do
     t.date "work_strt_date"
     t.index ["ord_no"], name: "index_om_work_routes_on_ord_no"
     t.index ["work_route_no"], name: "index_om_work_routes_on_work_route_no", unique: true
-  end
-
-  create_table "posts", force: :cascade do |t|
-    t.text "content"
-    t.datetime "created_at", null: false
-    t.string "title"
-    t.datetime "updated_at", null: false
   end
 
   create_table "sessions", force: :cascade do |t|

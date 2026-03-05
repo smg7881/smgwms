@@ -13,16 +13,16 @@
 
   <div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4 mb-6">
     <div class="bg-bg-secondary border border-border rounded-lg p-5">
-      <div class="text-xs text-text-secondary uppercase tracking-wide mb-2">전체 게시물</div>
-      <div class="text-[32px] font-bold text-text-primary leading-none mb-1.5"><%= number_with_delimiter(@total_posts) %></div>
+      <div class="text-xs text-text-secondary uppercase tracking-wide mb-2">전체 공지사항</div>
+      <div class="text-[32px] font-bold text-text-primary leading-none mb-1.5"><%= number_with_delimiter(@total_notices) %></div>
     </div>
     <div class="bg-bg-secondary border border-border rounded-lg p-5">
       <div class="text-xs text-text-secondary uppercase tracking-wide mb-2">오늘 작성</div>
-      <div class="text-[32px] font-bold text-accent-green leading-none mb-1.5"><%= @posts_today %></div>
+      <div class="text-[32px] font-bold text-accent-green leading-none mb-1.5"><%= @notices_today %></div>
     </div>
     <div class="bg-bg-secondary border border-border rounded-lg p-5">
       <div class="text-xs text-text-secondary uppercase tracking-wide mb-2">이번 주</div>
-      <div class="text-[32px] font-bold text-accent-cyan leading-none mb-1.5"><%= @posts_this_week %></div>
+      <div class="text-[32px] font-bold text-accent-cyan leading-none mb-1.5"><%= @notices_this_week %></div>
       <% if @week_change_pct %>
         <div class="text-xs font-semibold <%= @week_change_pct >= 0 ? 'text-accent-green' : 'text-accent-rose' %>">
           <%= @week_change_pct >= 0 ? "↑" : "↓" %> <%= @week_change_pct.abs %>%
@@ -31,13 +31,13 @@
     </div>
     <div class="bg-bg-secondary border border-border rounded-lg p-5">
       <div class="text-xs text-text-secondary uppercase tracking-wide mb-2">이번 달</div>
-      <div class="text-[32px] font-bold text-accent-amber leading-none mb-1.5"><%= @posts_this_month %></div>
+      <div class="text-[32px] font-bold text-accent-amber leading-none mb-1.5"><%= @notices_this_month %></div>
     </div>
   </div>
 
   <div class="flex items-center justify-between my-6 mb-3">
-    <h3 class="text-base font-semibold text-text-primary">최근 게시물</h3>
-    <%= link_to "전체 보기 →", posts_path, class: "btn btn-secondary btn-sm" %>
+    <h3 class="text-base font-semibold text-text-primary">최근 공지사항</h3>
+    <%= link_to "전체 보기 →", system_notice_index_path, class: "btn btn-secondary btn-sm" %>
   </div>
 
   <div class="bg-bg-secondary border border-border rounded-lg overflow-hidden">
@@ -50,17 +50,17 @@
         </tr>
       </thead>
       <tbody>
-        <% if @recent_posts.any? %>
-          <% @recent_posts.each do |post| %>
+        <% if @recent_notices.any? %>
+          <% @recent_notices.each do |notice| %>
             <tr class="hover:bg-bg-hover transition-colors">
-              <td class="px-4 py-2.5 border-b border-border-muted text-text-primary text-[13px] font-mono text-xs text-text-secondary"><%= post.id %></td>
-              <td class="px-4 py-2.5 border-b border-border-muted text-text-primary text-[13px]"><%= link_to post.title, post_path(post) %></td>
-              <td class="px-4 py-2.5 border-b border-border-muted text-text-primary text-[13px] font-mono text-xs text-text-secondary"><%= post.created_at.strftime("%Y-%m-%d %H:%M") %></td>
+              <td class="px-4 py-2.5 border-b border-border-muted text-text-primary text-[13px] font-mono text-xs text-text-secondary"><%= notice.id %></td>
+              <td class="px-4 py-2.5 border-b border-border-muted text-text-primary text-[13px]"><%= link_to notice.title, system_notice_index_path %></td>
+              <td class="px-4 py-2.5 border-b border-border-muted text-text-primary text-[13px] font-mono text-xs text-text-secondary"><%= (notice.create_time || notice.created_at)&.strftime("%Y-%m-%d %H:%M") %></td>
             </tr>
           <% end %>
         <% else %>
           <tr>
-            <td colspan="3" class="text-center text-text-muted py-10">게시물이 없습니다. <%= link_to "첫 게시물 작성하기", new_post_path %></td>
+            <td colspan="3" class="text-center text-text-muted py-10">공지사항이 없습니다. <%= link_to "공지사항 화면으로 이동", system_notice_index_path %></td>
           </tr>
         <% end %>
       </tbody>

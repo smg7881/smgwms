@@ -5,15 +5,15 @@ class DashboardController < ApplicationController
       return
     end
 
-    @total_posts      = Post.count
-    @posts_today      = Post.where(created_at: Time.current.beginning_of_day..).count
-    @posts_this_week  = Post.where(created_at: Time.current.beginning_of_week..).count
-    @posts_this_month = Post.where(created_at: Time.current.beginning_of_month..).count
-    @recent_posts     = Post.order(created_at: :desc).limit(5)
+    @total_notices      = AdmNotice.count
+    @notices_today      = AdmNotice.where(create_time: Time.current.beginning_of_day..).count
+    @notices_this_week  = AdmNotice.where(create_time: Time.current.beginning_of_week..).count
+    @notices_this_month = AdmNotice.where(create_time: Time.current.beginning_of_month..).count
+    @recent_notices     = AdmNotice.ordered.limit(5)
 
-    last_week_count   = Post.where(created_at: 1.week.ago.beginning_of_week...Time.current.beginning_of_week).count
+    last_week_count   = AdmNotice.where(create_time: 1.week.ago.beginning_of_week...Time.current.beginning_of_week).count
     if last_week_count > 0
-      @week_change_pct = ((@posts_this_week - last_week_count).to_f / last_week_count * 100).round(1)
+      @week_change_pct = ((@notices_this_week - last_week_count).to_f / last_week_count * 100).round(1)
     else
       @week_change_pct = nil
     end
