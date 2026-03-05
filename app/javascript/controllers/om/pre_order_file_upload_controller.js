@@ -1,8 +1,9 @@
 ﻿import { Controller } from "@hotwired/stimulus"
-import { showAlert, confirmAction } from "components/ui/alert"
+import { showAlert } from "components/ui/alert"
+import { AttachmentMixin } from "controllers/concerns/attachment_mixin"
 
-export default class extends Controller {
-  static targets = ["grid", "summary", "uploadFileInput"]
+class PreOrderFileUploadController extends Controller {
+  static targets = ["grid", "summary", "fieldAttachments", "existingFiles", "selectedFiles"]
 
   static values = {
     previewUrl: String,
@@ -14,6 +15,9 @@ export default class extends Controller {
   connect() {
     this.gridController = null
     this.canSave = false
+    this.initAttachment()
+    this.renderExistingFiles([])
+    this.renderSelectedFiles()
     this.updateSaveButtonState()
   }
 
@@ -77,7 +81,7 @@ export default class extends Controller {
 
       if (actionName === "save" && response.ok && data.success) {
         this.canSave = false
-        fileInput.value = ""
+        this.resetAttachment()
       } else {
         this.canSave = Boolean(data.can_save) && response.ok
       }
@@ -150,11 +154,15 @@ export default class extends Controller {
   }
 
   fileInputElement() {
-    if (this.hasUploadFileInputTarget) {
-      return this.uploadFileInputTarget
+    if (this.hasFieldAttachmentsTarget) {
+      return this.fieldAttachmentsTarget
     }
 
     return this.element.querySelector('input[type="file"][name="q[upload_file]"]')
   }
 }
+
+Object.assign(PreOrderFileUploadController.prototype, AttachmentMixin)
+
+export default PreOrderFileUploadController
 

@@ -93,7 +93,7 @@ class Om::OrderManualCompletionsController < Om::BaseController
     end
 
     def build_search_form
-      form = Om::OrderManualCompletionSearchForm.new(search_params.to_h)
+      form = order_manual_completion_search_form_class.new(search_params.to_h)
       today = Time.zone.today
       month_start = today.beginning_of_month
       month_end = today.end_of_month
@@ -127,6 +127,13 @@ class Om::OrderManualCompletionsController < Om::BaseController
 
       form.ord_no = form.ord_no.to_s.strip.upcase
       form
+    end
+
+    def order_manual_completion_search_form_class
+      Om::OrderManualCompletionSearchForm
+    rescue NameError
+      require_dependency "om/order_manual_completion_search_form"
+      Om::OrderManualCompletionSearchForm
     end
 
     def manual_completion_scope

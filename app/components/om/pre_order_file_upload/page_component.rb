@@ -30,13 +30,17 @@ class Om::PreOrderFileUpload::PageComponent < Om::BasePageComponent
       [
         {
           field: "upload_file",
-          type: "input",
-          input_type: "file",
+          type: "multi_file",
           label: "업로드 파일",
           required: true,
+          multiple: false,
+          max_files: 1,
+          max_size_mb: 50,
           accept: ".xls,.xlsx,.csv",
           help: "사전오더 업로드 파일을 선택해주세요.",
-          target: "uploadFileInput"
+          target: "fieldAttachments",
+          existing_target: "existingFiles",
+          selected_target: "selectedFiles"
         }
       ]
     end
