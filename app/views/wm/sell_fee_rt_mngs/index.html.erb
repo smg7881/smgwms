@@ -1,0 +1,6 @@
+﻿<%= turbo_frame_tag "main-content" do %>
+  <%= render Wm::SellFeeRtMngs::PageComponent.new(
+    query_params: request.query_parameters,
+    selected_fee_rt_no: params[:selected_fee_rt_no]
+  ) %>
+<% end %>

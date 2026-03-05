@@ -1,0 +1,79 @@
+﻿<div data-controller="wm-rate-retroact-grid"
+     data-action="ag-grid:ready->wm-rate-retroact-grid#registerGrid"
+     data-wm-rate-retroact-grid-detail-list-url-template-value="/wm/rate_retroacts/:rate_retroact_id/details.json"
+     data-wm-rate-retroact-grid-apply-retro-rates-url-value="<%= apply_retro_rates_url %>"
+     data-wm-rate-retroact-grid-process-retroacts-url-value="<%= process_retroacts_url %>"
+     data-wm-rate-retroact-grid-selected-master-value="<%= selected_fee_rt_no.to_s %>">
+  <%= render Ui::SearchFormComponent.new(
+    url: create_url,
+    fields: search_fields,
+    cols: 3,
+    enable_collapse: true
+  ) %>
+
+  <div class="grid grid-rows-[1fr_1fr] gap-3 h-[calc(100vh-230px)]">
+    <section class="min-h-0 flex flex-col">
+      <%= render Ui::GridHeaderComponent.new(
+        icon: "file-text",
+        title: "매출입요율 목록",
+        grid_id: "rate-retroact-master"
+      ) %>
+
+      <div class="flex-1 min-h-0">
+        <%= render Ui::AgGridComponent.new(
+          columns: master_columns,
+          url: grid_url,
+          height: "100%",
+          pagination: false,
+          row_selection: "single",
+          grid_id: "rate-retroact-master",
+          data: { wm_rate_retroact_grid_target: "masterGrid" }
+        ) %>
+      </div>
+    </section>
+
+    <section class="min-h-0 flex flex-col">
+      <%= render Ui::GridHeaderComponent.new(
+        icon: "list-tree",
+        title: "매출입실적 목록",
+        grid_id: "rate-retroact-detail",
+        buttons: [
+          { label: "소급요율검색", class: "btn btn-sm btn-info", action: "click->wm-rate-retroact-grid#openRetroRatePopup" },
+          { label: "소급요율적용", class: "btn btn-sm btn-secondary", action: "click->wm-rate-retroact-grid#applyRetroRate" },
+          { label: "소급처리", class: "btn btn-sm btn-success", action: "click->wm-rate-retroact-grid#processRetroacts" }
+        ]
+      ) do |header| %>
+        <% header.with_subtitle do %>
+          <div class="flex flex-col gap-0.5">
+            <p class="text-text-secondary text-xs" data-wm-rate-retroact-grid-target="selectedMasterLabel"><%= selected_master_label %></p>
+            <p class="text-text-secondary text-xs" data-wm-rate-retroact-grid-target="selectedRetroRateLabel"><%= selected_retro_rate_label %></p>
+          </div>
+        <% end %>
+      <% end %>
+
+      <div class="flex-1 min-h-0">
+        <% if detail_grid_url.present? %>
+          <%= render Ui::AgGridComponent.new(
+            columns: detail_columns,
+            url: detail_grid_url,
+            height: "100%",
+            pagination: false,
+            row_selection: "multiple",
+            grid_id: "rate-retroact-detail",
+            data: { wm_rate_retroact_grid_target: "detailGrid" }
+          ) %>
+        <% else %>
+          <%= render Ui::AgGridComponent.new(
+            columns: detail_columns,
+            row_data: [],
+            height: "100%",
+            pagination: false,
+            row_selection: "multiple",
+            grid_id: "rate-retroact-detail",
+            data: { wm_rate_retroact_grid_target: "detailGrid" }
+          ) %>
+        <% end %>
+      </div>
+    </section>
+  </div>
+</div>

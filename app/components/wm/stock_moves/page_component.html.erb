@@ -1,0 +1,30 @@
+<div data-controller="wm-stock-move-grid"
+     data-action="ag-grid:ready->wm-stock-move-grid#registerGrid"
+     data-wm-stock-move-grid-move-url-value="<%= move_url %>">
+
+  <%= render Ui::SearchFormComponent.new(
+    url: collection_path,
+    fields: search_fields,
+    cols: 3,
+    enable_collapse: true
+  ) %>
+
+  <%= render Ui::GridHeaderComponent.new(
+    icon: "package-search",
+    title: "재고목록",
+    grid_id: "wm-stock-moves",
+    buttons: [
+      { label: "재고이동", class: "btn btn-sm btn-primary", action: "click->wm-stock-move-grid#moveSelectedRows" }
+    ]
+  ) %>
+
+  <%= render Ui::AgGridComponent.new(
+    columns: columns,
+    url: grid_url,
+    height: "calc(100vh - 370px)",
+    pagination: false,
+    row_selection: "multiple",
+    grid_id: "wm-stock-moves",
+    data: { wm_stock_move_grid_target: "grid" }
+  ) %>
+</div>

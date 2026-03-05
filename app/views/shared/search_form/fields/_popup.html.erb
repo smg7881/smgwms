@@ -1,6 +1,9 @@
-<%# app/views/shared/search_form/fields/_popup.html.erb %>
+﻿<%# app/views/shared/search_form/fields/_popup.html.erb %>
 <% field_id = "q_#{field[:field]}" %>
 <%
+  popup_type = field[:popup_type].to_s
+  popup_url = popup_type.present? ? search_popup_path(popup_type) : ""
+  popup_context_fields = Array(field[:popup_params]).join(",")
   display_width = field[:display_width].presence
   code_width = field[:code_width].presence || "120px"
   button_width = field[:button_width].presence || "40px"
@@ -17,6 +20,8 @@
      data-search-form-target="fieldGroup"
      data-controller="search-popup"
      data-search-popup-type-value="<%= field[:popup_type] %>"
+     data-search-popup-url-value="<%= popup_url %>"
+     data-search-popup-context-fields-value="<%= popup_context_fields %>"
      data-search-popup-title-value="<%= resolve_label(field) %> 조회">
   <label class="text-sm font-medium text-text-secondary" for="<%= field_id %>"><%= resolve_label(field) %></label>
   <div class="flex flex-nowrap items-center gap-1 w-full min-w-0">

@@ -1,11 +1,18 @@
 require "test_helper"
 
+class DummyResourceModel
+  include ActiveModel::Model
+
+  attr_accessor :title, :date, :test_field, :company_cd, :warehouse_cd
+end
+
 class Ui::ResourceFormComponentTest < ViewComponent::TestCase
   test "renders with required attributes" do
     render_inline(Ui::ResourceFormComponent.new(
-      model: Post.new,
+      model: DummyResourceModel.new,
+      url: "/",
       fields: [
-        { field: "title", type: "input", label: "제목" }
+        { field: "title", type: "input", label: "Title" }
       ]
     ))
 
@@ -16,7 +23,8 @@ class Ui::ResourceFormComponentTest < ViewComponent::TestCase
 
   test "sanitizes disallowed field keys" do
     component = Ui::ResourceFormComponent.new(
-      model: Post.new,
+      model: DummyResourceModel.new,
+      url: "/",
       fields: [
         { field: "title", type: "input", malicious_key: "value" }
       ]
@@ -28,7 +36,8 @@ class Ui::ResourceFormComponentTest < ViewComponent::TestCase
 
   test "normalizes field type from hyphen to underscore" do
     render_inline(Ui::ResourceFormComponent.new(
-      model: Post.new,
+      model: DummyResourceModel.new,
+      url: "/",
       fields: [
         { field: "date", type: "date-picker" }
       ]
@@ -40,7 +49,8 @@ class Ui::ResourceFormComponentTest < ViewComponent::TestCase
   test "raises on unsupported field type" do
     assert_raises(ArgumentError) do
       render_inline(Ui::ResourceFormComponent.new(
-        model: Post.new,
+        model: DummyResourceModel.new,
+        url: "/",
         fields: [
           { field: "title", type: "unsupported_type" }
         ]
@@ -51,7 +61,8 @@ class Ui::ResourceFormComponentTest < ViewComponent::TestCase
   test "raises on invalid field name" do
     assert_raises(ArgumentError) do
       render_inline(Ui::ResourceFormComponent.new(
-        model: Post.new,
+        model: DummyResourceModel.new,
+        url: "/",
         fields: [
           { field: "invalid field!", type: "input" }
         ]
@@ -62,7 +73,8 @@ class Ui::ResourceFormComponentTest < ViewComponent::TestCase
   test "raises on blank field name" do
     assert_raises(ArgumentError) do
       render_inline(Ui::ResourceFormComponent.new(
-        model: Post.new,
+        model: DummyResourceModel.new,
+        url: "/",
         fields: [
           { field: "", type: "input" }
         ]
@@ -72,10 +84,11 @@ class Ui::ResourceFormComponentTest < ViewComponent::TestCase
 
   test "preserves allowed keys" do
     render_inline(Ui::ResourceFormComponent.new(
-      model: Post.new,
+      model: DummyResourceModel.new,
+      url: "/",
       fields: [
-        { field: "title", type: "input", label: "제목", required: true,
-          placeholder: "입력하세요", span: "24", help: "도움말" }
+        { field: "title", type: "input", label: "Title", required: true,
+          placeholder: "Enter title", span: "24", help: "Help text" }
       ]
     ))
 
@@ -87,7 +100,8 @@ class Ui::ResourceFormComponentTest < ViewComponent::TestCase
     types.each do |type|
       assert_nothing_raised do
         Ui::ResourceFormComponent.new(
-          model: Post.new,
+          model: DummyResourceModel.new,
+          url: "/",
           fields: [ { field: "test_field", type: type } ]
         )
       end
@@ -96,7 +110,8 @@ class Ui::ResourceFormComponentTest < ViewComponent::TestCase
 
   test "extracts dependencies" do
     render_inline(Ui::ResourceFormComponent.new(
-      model: Post.new,
+      model: DummyResourceModel.new,
+      url: "/",
       fields: [
         { field: "company_cd", type: "select" },
         { field: "warehouse_cd", type: "select", depends_on: "company_cd", depends_filter: "company_cd" }
@@ -110,21 +125,23 @@ class Ui::ResourceFormComponentTest < ViewComponent::TestCase
   end
 
   test "shows error messages when model has errors" do
-    post = Post.new
-    post.errors.add(:title, "을(를) 입력해주세요")
+    model = DummyResourceModel.new
+    model.errors.add(:title, "Title is required")
 
     render_inline(Ui::ResourceFormComponent.new(
-      model: post,
+      model: model,
+      url: "/",
       fields: [ { field: "title", type: "input" } ]
     ))
 
     assert_selector ".bg-accent-rose\\/10"
-    assert_text "을(를) 입력해주세요"
+    assert_text "Title is required"
   end
 
   test "hides buttons when show_buttons is false" do
     render_inline(Ui::ResourceFormComponent.new(
-      model: Post.new,
+      model: DummyResourceModel.new,
+      url: "/",
       fields: [ { field: "title", type: "input" } ],
       show_buttons: false
     ))
@@ -134,7 +151,8 @@ class Ui::ResourceFormComponentTest < ViewComponent::TestCase
 
   test "merges custom data and controller attributes" do
     render_inline(Ui::ResourceFormComponent.new(
-      model: Post.new,
+      model: DummyResourceModel.new,
+      url: "/",
       fields: [ { field: "title", type: "input" } ],
       data: { controller: "my-ctrl", my_target: "form" }
     ))
@@ -145,7 +163,8 @@ class Ui::ResourceFormComponentTest < ViewComponent::TestCase
 
   test "merges form_data into form element" do
     render_inline(Ui::ResourceFormComponent.new(
-      model: Post.new,
+      model: DummyResourceModel.new,
+      url: "/",
       fields: [ { field: "title", type: "input" } ],
       form_data: { my_target: "form" }
     ))
@@ -155,7 +174,8 @@ class Ui::ResourceFormComponentTest < ViewComponent::TestCase
 
   test "supports custom form method" do
     render_inline(Ui::ResourceFormComponent.new(
-      model: Post.new,
+      model: DummyResourceModel.new,
+      url: "/",
       fields: [ { field: "title", type: "input" } ],
       method: :get
     ))

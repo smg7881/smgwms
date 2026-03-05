@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_05_173704) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_05_233100) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -1554,45 +1554,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_05_173704) do
     t.index ["op_rslt_mngt_no"], name: "index_tb_wm05001_on_op_rslt_mngt_no"
   end
 
-  create_table "tb_wm06001", primary_key: "wrhs_exca_fee_rt_no", id: { type: :string, limit: 20 }, force: :cascade do |t|
-    t.string "auto_yn", limit: 1, default: "N", null: false
-    t.string "corp_cd", limit: 10, null: false
-    t.string "create_by", limit: 50
-    t.datetime "create_time"
-    t.string "ctrt_cprtco_cd", limit: 20
-    t.string "pur_dept_cd", limit: 20
-    t.string "pur_item_cd", limit: 20
-    t.string "pur_item_type", limit: 20
-    t.string "pur_unit_cd", limit: 20
-    t.string "pur_unit_clas_cd", limit: 20
-    t.string "rmk", limit: 500
-    t.string "sell_buy_attr_cd", limit: 20
-    t.string "sell_buy_sctn_cd", limit: 10, default: "20", null: false
-    t.string "update_by", limit: 50
-    t.datetime "update_time"
-    t.string "use_yn", limit: 1, default: "Y", null: false
-    t.string "work_pl_cd", limit: 20, null: false
-  end
-
-  create_table "tb_wm06002", force: :cascade do |t|
-    t.decimal "aply_end_qty", precision: 18, scale: 5
-    t.string "aply_end_ymd", limit: 8, null: false
-    t.decimal "aply_strt_qty", precision: 18, scale: 5
-    t.string "aply_strt_ymd", limit: 8, null: false
-    t.decimal "aply_uprice", precision: 18, scale: 5, default: "0.0", null: false
-    t.string "create_by", limit: 50
-    t.datetime "create_time"
-    t.string "cur_cd", limit: 10, default: "KRW", null: false
-    t.string "dcsn_yn", limit: 1, default: "N", null: false
-    t.integer "lineno", default: 1, null: false
-    t.string "rmk", limit: 500
-    t.decimal "std_work_qty", precision: 18, scale: 5, default: "0.0", null: false
-    t.string "update_by", limit: 50
-    t.datetime "update_time"
-    t.string "wrhs_exca_fee_rt_no", limit: 20, null: false
-    t.index ["wrhs_exca_fee_rt_no", "lineno"], name: "idx_wm06002_rt_lineno"
-  end
-
   create_table "wm_areas", force: :cascade do |t|
     t.string "area_cd", limit: 50, null: false
     t.string "area_desc", limit: 500
@@ -1683,6 +1644,146 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_05_173704) do
     t.index ["use_yn"], name: "index_wm_locations_on_use_yn"
     t.index ["workpl_cd", "area_cd", "zone_cd", "loc_cd"], name: "idx_on_workpl_cd_area_cd_zone_cd_loc_cd_56a16d1b88", unique: true
     t.index ["workpl_cd", "area_cd", "zone_cd"], name: "index_wm_locations_on_workpl_cd_and_area_cd_and_zone_cd"
+  end
+
+  create_table "wm_pur_fee_rt_mng_dtls", force: :cascade do |t|
+    t.decimal "aply_end_qty", precision: 18, scale: 5
+    t.string "aply_end_ymd", limit: 8, null: false
+    t.decimal "aply_strt_qty", precision: 18, scale: 5
+    t.string "aply_strt_ymd", limit: 8, null: false
+    t.decimal "aply_uprice", precision: 18, scale: 5, default: "0.0", null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "cur_cd", limit: 10, default: "KRW", null: false
+    t.string "dcsn_yn", limit: 1, default: "N", null: false
+    t.integer "lineno", default: 1, null: false
+    t.string "rmk", limit: 500
+    t.decimal "std_work_qty", precision: 18, scale: 5, default: "0.0", null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "wrhs_exca_fee_rt_no", limit: 20, null: false
+    t.index ["wrhs_exca_fee_rt_no", "lineno"], name: "idx_wm_pur_fee_rt_mng_dtls_rt_lineno"
+  end
+
+  create_table "wm_pur_fee_rt_mngs", primary_key: "wrhs_exca_fee_rt_no", id: { type: :string, limit: 20 }, force: :cascade do |t|
+    t.string "auto_yn", limit: 1, default: "N", null: false
+    t.string "corp_cd", limit: 10, null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "ctrt_cprtco_cd", limit: 20
+    t.string "pur_dept_cd", limit: 20
+    t.string "pur_item_cd", limit: 20
+    t.string "pur_item_type", limit: 20
+    t.string "pur_unit_cd", limit: 20
+    t.string "pur_unit_clas_cd", limit: 20
+    t.string "rmk", limit: 500
+    t.string "sell_buy_attr_cd", limit: 20
+    t.string "sell_buy_sctn_cd", limit: 10, default: "20", null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn", limit: 1, default: "Y", null: false
+    t.string "work_pl_cd", limit: 20, null: false
+  end
+
+  create_table "wm_rate_retroact_histories", force: :cascade do |t|
+    t.decimal "amt_diff", precision: 18, scale: 5, default: "0.0", null: false
+    t.decimal "base_amt", precision: 18, scale: 5, default: "0.0", null: false
+    t.decimal "base_uprice", precision: 18, scale: 5, default: "0.0", null: false
+    t.string "bzac_cd", limit: 20
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "cur_cd", limit: 10, default: "KRW", null: false
+    t.string "exce_rslt_no", limit: 30, null: false
+    t.string "op_rslt_mngt_no", limit: 20
+    t.integer "op_rslt_mngt_no_seq"
+    t.string "prcs_sctn_cd", limit: 1, default: "C", null: false
+    t.integer "ref_fee_rt_lineno"
+    t.string "ref_fee_rt_no", limit: 20
+    t.decimal "rslt_qty", precision: 18, scale: 5, default: "0.0", null: false
+    t.string "rslt_std_ymd", limit: 8, null: false
+    t.decimal "rtac_amt", precision: 18, scale: 5, default: "0.0", null: false
+    t.string "rtac_proc_stat_cd", limit: 20, default: "RTAC", null: false
+    t.decimal "rtac_uprice", precision: 18, scale: 5, default: "0.0", null: false
+    t.string "sell_buy_attr_cd", limit: 20
+    t.string "sell_buy_sctn_cd", limit: 10
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.decimal "uprice_diff", precision: 18, scale: 5, default: "0.0", null: false
+    t.string "work_pl_cd", limit: 20
+    t.index ["exce_rslt_no"], name: "idx_wm_rate_retroact_histories_exce", unique: true
+    t.index ["rslt_std_ymd", "work_pl_cd"], name: "idx_wm_rate_retroact_histories_date_workpl"
+  end
+
+  create_table "wm_sell_fee_rt_mng_dtls", force: :cascade do |t|
+    t.decimal "aply_end_qty", precision: 18, scale: 5
+    t.string "aply_end_ymd", limit: 8, null: false
+    t.decimal "aply_strt_qty", precision: 18, scale: 5
+    t.string "aply_strt_ymd", limit: 8, null: false
+    t.decimal "aply_uprice", precision: 18, scale: 5, default: "0.0", null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "cur_cd", limit: 10, default: "KRW", null: false
+    t.string "dcsn_yn", limit: 1, default: "N", null: false
+    t.integer "lineno", default: 1, null: false
+    t.string "rmk", limit: 500
+    t.decimal "std_work_qty", precision: 18, scale: 5, default: "0.0", null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "wrhs_exca_fee_rt_no", limit: 20, null: false
+    t.index ["wrhs_exca_fee_rt_no", "lineno"], name: "idx_wm_sell_fee_rt_mng_dtls_rt_lineno", unique: true
+  end
+
+  create_table "wm_sell_fee_rt_mngs", primary_key: "wrhs_exca_fee_rt_no", id: { type: :string, limit: 20 }, force: :cascade do |t|
+    t.string "auto_yn", limit: 1, default: "N", null: false
+    t.string "corp_cd", limit: 10, null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "ctrt_cprtco_cd", limit: 20
+    t.string "rmk", limit: 500
+    t.string "sell_buy_attr_cd", limit: 20
+    t.string "sell_buy_sctn_cd", limit: 10, default: "10", null: false
+    t.string "sell_dept_cd", limit: 20
+    t.string "sell_item_cd", limit: 20
+    t.string "sell_item_type", limit: 20
+    t.string "sell_unit_cd", limit: 20
+    t.string "sell_unit_clas_cd", limit: 20
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "use_yn", limit: 1, default: "Y", null: false
+    t.string "work_pl_cd", limit: 20, null: false
+  end
+
+  create_table "wm_stock_moves", force: :cascade do |t|
+    t.string "basis_unit_cd", limit: 10
+    t.string "basis_unit_cls", limit: 10
+    t.string "corp_cd", limit: 10, null: false
+    t.string "create_by", limit: 50
+    t.datetime "create_time"
+    t.string "cust_cd", limit: 20, null: false
+    t.string "from_loc_cd", limit: 20, null: false
+    t.string "item_cd", limit: 30, null: false
+    t.string "move_hms", limit: 6, null: false
+    t.decimal "move_qty", precision: 18, scale: 3, default: "0.0", null: false
+    t.string "move_type", limit: 2, default: "MV", null: false
+    t.string "move_ymd", limit: 8, null: false
+    t.string "stock_attr_col01", limit: 100
+    t.string "stock_attr_col02", limit: 100
+    t.string "stock_attr_col03", limit: 100
+    t.string "stock_attr_col04", limit: 100
+    t.string "stock_attr_col05", limit: 100
+    t.string "stock_attr_col06", limit: 100
+    t.string "stock_attr_col07", limit: 100
+    t.string "stock_attr_col08", limit: 100
+    t.string "stock_attr_col09", limit: 100
+    t.string "stock_attr_col10", limit: 100
+    t.string "stock_attr_no", limit: 10, null: false
+    t.string "to_loc_cd", limit: 20, null: false
+    t.string "update_by", limit: 50
+    t.datetime "update_time"
+    t.string "workpl_cd", limit: 20, null: false
+    t.index ["corp_cd", "workpl_cd", "stock_attr_no"], name: "idx_wm_stock_moves_stock_attr"
+    t.index ["from_loc_cd", "to_loc_cd"], name: "idx_wm_stock_moves_from_to_loc"
+    t.index ["workpl_cd", "move_ymd"], name: "idx_wm_stock_moves_workpl_ymd"
   end
 
   create_table "wm_workplaces", force: :cascade do |t|

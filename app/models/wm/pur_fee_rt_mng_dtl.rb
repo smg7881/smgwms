@@ -1,6 +1,5 @@
 class Wm::PurFeeRtMngDtl < ApplicationRecord
-  self.table_name = "tb_wm06002"
-  # standard Auto-increment id PK used (tb_wm06002 is recreated with id column)
+  self.table_name = "wm_pur_fee_rt_mng_dtls"
 
   belongs_to :pur_fee_rt_mng, class_name: "Wm::PurFeeRtMng", foreign_key: "wrhs_exca_fee_rt_no"
 
@@ -18,7 +17,9 @@ class Wm::PurFeeRtMngDtl < ApplicationRecord
 
   private
     def validate_date_range
-      return if aply_strt_ymd.blank? || aply_end_ymd.blank?
+      if aply_strt_ymd.blank? || aply_end_ymd.blank?
+        return
+      end
 
       if aply_strt_ymd > aply_end_ymd
         errors.add(:aply_end_ymd, "cannot be earlier than start date")
@@ -27,8 +28,14 @@ class Wm::PurFeeRtMngDtl < ApplicationRecord
 
     def normalize_fields
       self.dcsn_yn = dcsn_yn.to_s.strip.upcase.presence || "N"
+      self.aply_strt_ymd = normalize_ymd(aply_strt_ymd)
+      self.aply_end_ymd = normalize_ymd(aply_end_ymd)
       self.aply_uprice = aply_uprice.presence || 0
       self.std_work_qty = std_work_qty.presence || 0
+    end
+
+    def normalize_ymd(value)
+      value.to_s.gsub(/[^0-9]/, "").first(8)
     end
 
     def assign_update_audit_fields

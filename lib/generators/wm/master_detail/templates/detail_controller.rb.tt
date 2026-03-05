@@ -1,0 +1,113 @@
+class <%= namespace_module %>::<%= detail_controller_file_name.camelize %>Controller < <%= namespace_module %>::BaseController
+  def index
+    master = find_master
+    if master.nil?
+      render json: []
+    else
+      render json: detail_scope(master).map { |record| record_json(record) }
+    end
+  end
+
+  def batch_save
+    operations = batch_save_params
+    master = find_master!
+    result = { inserted: 0, updated: 0, deleted: 0 }
+    errors = []
+
+    ActiveRecord::Base.transaction do
+      process_inserts(master, operations[:rowsToInsert], result, errors)
+      process_updates(master, operations[:rowsToUpdate], result, errors)
+      process_deletes(master, operations[:rowsToDelete], result, errors)
+
+      if errors.any?
+        raise ActiveRecord::Rollback
+      end
+    end
+
+    if errors.any?
+      render json: { success: false, errors: errors.uniq }, status: :unprocessable_entity
+    else
+      render json: { success: true, message: "저장되었습니다.", data: result }
+    end
+  end
+
+  private
+    def menu_code_for_permission
+      "<%= options[:menu_code] %>"
+    end
+
+    def find_master
+      master_key = params[:<%= detail_param_name %>].to_s.strip
+      if master_key.present?
+        master_model_class.find_by(<%= master_key %>: master_key)
+      else
+        nil
+      end
+    end
+
+    def find_master!
+      master = find_master
+      if master.nil?
+        raise ActiveRecord::RecordNotFound, "master not found: #{params[:<%= detail_param_name %>]}"
+      else
+        master
+      end
+    end
+
+    def detail_scope(master)
+      if master.respond_to?(:details)
+        relation = master.details
+        if relation.respond_to?(:ordered)
+          relation.ordered
+        else
+          relation
+        end
+      else
+        detail_model_class.none
+      end
+    end
+
+    def batch_save_params
+      params.permit(
+        rowsToDelete: [],
+        rowsToInsert: [ :<%= detail_key %>, :use_yn ],
+        rowsToUpdate: [ :<%= detail_key %>, :use_yn ]
+      )
+    end
+
+    def process_inserts(_master, rows, result, errors)
+      Array(rows).each do |_row|
+        # TODO: 신규 생성 로직 구현 (FK 강제 주입 포함)
+        errors << "detail process_inserts 구현이 필요합니다."
+      end
+      result[:inserted] += 0
+    end
+
+    def process_updates(_master, rows, result, errors)
+      Array(rows).each do |_row|
+        # TODO: 수정 로직 구현
+        errors << "detail process_updates 구현이 필요합니다."
+      end
+      result[:updated] += 0
+    end
+
+    def process_deletes(_master, rows, result, errors)
+      Array(rows).each do |_row|
+        # TODO: 삭제 로직 구현
+        errors << "detail process_deletes 구현이 필요합니다."
+      end
+      result[:deleted] += 0
+    end
+
+    def master_model_class
+      raise NotImplementedError, "master_model_class를 구현하세요."
+    end
+
+    def detail_model_class
+      raise NotImplementedError, "detail_model_class를 구현하세요."
+    end
+
+    def record_json(_record)
+      raise NotImplementedError, "record_json을 구현하세요."
+    end
+end

@@ -17,6 +17,8 @@ class SearchPopupsController < ApplicationController
         params[:q][:bzac_nm] = keyword
       elsif work_step_popup?
         params[:q][:work_step_nm] = keyword
+      elsif fee_rate_popup?
+        params[:q][:display] = keyword
       else
         params[:q][:display] = keyword
       end
@@ -72,7 +74,13 @@ class SearchPopupsController < ApplicationController
             upper_sellbuy_attr_cd: row[:upper_sellbuy_attr_cd],
             upper_sellbuy_attr_nm: row[:upper_sellbuy_attr_nm],
             tran_yn: row[:tran_yn],
-            strg_yn: row[:strg_yn]
+            strg_yn: row[:strg_yn],
+            wrhs_exca_fee_rt_no: row[:wrhs_exca_fee_rt_no],
+            lineno: row[:lineno],
+            aply_uprice: row[:aply_uprice],
+            aply_strt_ymd: row[:aply_strt_ymd],
+            aply_end_ymd: row[:aply_end_ymd],
+            sell_unit_cd: row[:sell_unit_cd]
           }.compact
         end
       end
@@ -108,7 +116,8 @@ class SearchPopupsController < ApplicationController
         :ctry_cd, :fnc_or_cd, :fnc_or_nm,
         :sellbuy_attr_cd, :sellbuy_attr_nm, :tran_yn, :strg_yn,
         :bzac_cd, :bzac_nm, :head_office_yn, :bzac_sctn_grp_cd, :bzac_sctn_cd, :biz_no,
-        :work_step_cd, :work_step_nm, :work_step_level1_cd, :work_step_level2_cd
+        :work_step_cd, :work_step_nm, :work_step_level1_cd, :work_step_level2_cd,
+        :workpl_cd, :area_cd, :zone_cd
       )
     end
 
@@ -131,6 +140,10 @@ class SearchPopupsController < ApplicationController
 
     def work_step_popup?
       %w[work_step workstep basic_work_step standard_work_step].include?(@type)
+    end
+
+    def fee_rate_popup?
+      %w[fee_rate storage_fee_rate rate_retroact].include?(@type)
     end
 
     def normalized_use_yn(value)
@@ -214,6 +227,21 @@ class SearchPopupsController < ApplicationController
       value.to_s.strip.upcase
     end
 
+    def popup_workpl_cd
+      value = popup_form_params[:workpl_cd].presence || params[:workpl_cd].presence
+      value.to_s.strip.upcase.presence
+    end
+
+    def popup_area_cd
+      value = popup_form_params[:area_cd].presence || params[:area_cd].presence
+      value.to_s.strip.upcase.presence
+    end
+
+    def popup_zone_cd
+      value = popup_form_params[:zone_cd].presence || params[:zone_cd].presence
+      value.to_s.strip.upcase.presence
+    end
+
     # 팝업 종류(type)에 따라 DB에서 조회할 데이터(목록)를 가져오는 분기 처리 메서드입니다.
     def lookup_rows(type)
       if type == "corp"
@@ -226,6 +254,8 @@ class SearchPopupsController < ApplicationController
         customer_rows
       elsif work_step_popup?
         work_step_rows
+      elsif fee_rate_popup?
+        fee_rate_rows
       else
         generic_rows(type)
       end
@@ -253,6 +283,12 @@ class SearchPopupsController < ApplicationController
         user_rows
       when "workplace"
         workplace_rows
+      when "area"
+        area_rows
+      when "zone", "putaway_area", "putarea"
+        zone_rows
+      when "location", "loc"
+        location_rows
       else
         []
       end
@@ -552,20 +588,86 @@ class SearchPopupsController < ApplicationController
     end
 
     def workplace_rows
-      return [] unless defined?(StdWorkplace) && StdWorkplace.table_exists?
+      if defined?(StdWorkplace) && StdWorkplace.table_exists?
+        StdWorkplace.where(use_yn_cd: "Y").ordered.filter_map do |row|
+          build_generic_row(code: row.workpl_cd, name: row.workpl_nm)
+        end
+      elsif defined?(WmWorkplace) && WmWorkplace.table_exists?
+        WmWorkplace.where(use_yn: "Y").ordered.filter_map do |row|
+          build_generic_row(code: row.workpl_cd, name: row.workpl_nm)
+        end
+      else
+        []
+      end
+    rescue ActiveRecord::StatementInvalid
+      []
+    end
 
-      StdWorkplace.where(use_yn_cd: "Y").ordered.filter_map do |row|
-        build_generic_row(code: row.workpl_cd, name: row.workpl_nm)
+    def area_rows
+      return [] unless defined?(WmArea) && WmArea.table_exists?
+
+      scope = WmArea.where(use_yn: "Y")
+      if popup_workpl_cd.present?
+        scope = scope.where(workpl_cd: popup_workpl_cd)
+      end
+
+      scope.ordered.filter_map do |row|
+        build_generic_row(code: row.area_cd, name: row.area_nm)
+      end
+    rescue ActiveRecord::StatementInvalid
+      []
+    end
+
+    def zone_rows
+      return [] unless defined?(WmZone) && WmZone.table_exists?
+
+      scope = WmZone.where(use_yn: "Y")
+      if popup_workpl_cd.present?
+        scope = scope.where(workpl_cd: popup_workpl_cd)
+      end
+      if popup_area_cd.present?
+        scope = scope.where(area_cd: popup_area_cd)
+      end
+
+      scope.ordered.filter_map do |row|
+        build_generic_row(code: row.zone_cd, name: row.zone_nm)
+      end
+    rescue ActiveRecord::StatementInvalid
+      []
+    end
+
+    def location_rows
+      return [] unless defined?(WmLocation) && WmLocation.table_exists?
+
+      scope = WmLocation.where(use_yn: "Y")
+      if popup_workpl_cd.present?
+        scope = scope.where(workpl_cd: popup_workpl_cd)
+      end
+      if popup_area_cd.present?
+        scope = scope.where(area_cd: popup_area_cd)
+      end
+      if popup_zone_cd.present?
+        scope = scope.where(zone_cd: popup_zone_cd)
+      end
+
+      scope.ordered.filter_map do |row|
+        build_generic_row(code: row.loc_cd, name: row.loc_nm)
       end
     rescue ActiveRecord::StatementInvalid
       []
     end
 
     def good_rows
-      return [] unless defined?(StdGood) && StdGood.table_exists?
-
-      StdGood.where(use_yn_cd: "Y").ordered.filter_map do |row|
-        build_generic_row(code: row.goods_cd, name: row.goods_nm)
+      if defined?(StdGood) && StdGood.table_exists?
+        StdGood.where(use_yn_cd: "Y").ordered.filter_map do |row|
+          build_generic_row(code: row.goods_cd, name: row.goods_nm)
+        end
+      elsif defined?(Wm::StockAttrLocQty) && Wm::StockAttrLocQty.table_exists?
+        Wm::StockAttrLocQty.select(:item_cd).distinct.order(:item_cd).filter_map do |row|
+          build_generic_row(code: row.item_cd, name: row.item_cd)
+        end
+      else
+        []
       end
     rescue ActiveRecord::StatementInvalid
       []
@@ -682,6 +784,94 @@ class SearchPopupsController < ApplicationController
           use_yn: row.use_yn_cd.to_s.upcase
         }.compact
       end
+    rescue ActiveRecord::StatementInvalid
+      []
+    end
+
+    def fee_rate_rows
+      return [] unless defined?(Wm::SellFeeRtMng) && Wm::SellFeeRtMng.table_exists?
+      return [] unless defined?(Wm::SellFeeRtMngDtl) && Wm::SellFeeRtMngDtl.table_exists?
+
+      detail_table = Wm::SellFeeRtMngDtl.table_name
+      scope = Wm::SellFeeRtMng.joins(:details).where(use_yn: "Y")
+
+      work_pl_cd = params[:work_pl_cd].to_s.strip.upcase
+      if work_pl_cd.present?
+        scope = scope.where(work_pl_cd: work_pl_cd)
+      end
+
+      sell_buy_sctn_cd = params[:sell_buy_sctn_cd].to_s.strip.upcase
+      if sell_buy_sctn_cd.present?
+        scope = scope.where(sell_buy_sctn_cd: sell_buy_sctn_cd)
+      end
+
+      bzac_cd = params[:bzac_cd].to_s.strip.upcase
+      if bzac_cd.present?
+        scope = scope.where(ctrt_cprtco_cd: bzac_cd)
+      end
+
+      sell_buy_attr_cd = params[:sell_buy_attr_cd].to_s.strip.upcase
+      if sell_buy_attr_cd.present?
+        scope = scope.where(sell_buy_attr_cd: sell_buy_attr_cd)
+      end
+
+      aply_ymd = params[:aply_ymd].to_s.gsub(/[^0-9]/, "").first(8)
+      if aply_ymd.present?
+        scope = scope.where("#{detail_table}.aply_strt_ymd <= ? AND #{detail_table}.aply_end_ymd >= ?", aply_ymd, aply_ymd)
+      end
+
+      keyword = lookup_keyword
+      if keyword.present?
+        normalized_keyword = "%#{keyword.to_s.strip.upcase}%"
+        scope = scope.where(
+          "UPPER(wm_sell_fee_rt_mngs.wrhs_exca_fee_rt_no) LIKE ? OR UPPER(wm_sell_fee_rt_mngs.sell_buy_attr_cd) LIKE ? OR UPPER(#{detail_table}.cur_cd) LIKE ?",
+          normalized_keyword,
+          normalized_keyword,
+          normalized_keyword
+        )
+      end
+
+      attr_name_map = if defined?(StdSellbuyAttribute) && StdSellbuyAttribute.table_exists?
+        StdSellbuyAttribute.where(use_yn_cd: "Y").pluck(:sellbuy_attr_cd, :sellbuy_attr_nm).to_h
+      else
+        {}
+      end
+
+      scope
+        .select(
+          "wm_sell_fee_rt_mngs.wrhs_exca_fee_rt_no",
+          "wm_sell_fee_rt_mngs.sell_buy_attr_cd",
+          "wm_sell_fee_rt_mngs.sell_unit_cd",
+          "#{detail_table}.lineno",
+          "#{detail_table}.aply_uprice",
+          "#{detail_table}.cur_cd",
+          "#{detail_table}.aply_strt_ymd",
+          "#{detail_table}.aply_end_ymd"
+        )
+        .order("wm_sell_fee_rt_mngs.wrhs_exca_fee_rt_no DESC", "#{detail_table}.lineno ASC")
+        .limit(200)
+        .map do |row|
+          fee_no = row.wrhs_exca_fee_rt_no.to_s.upcase
+          attr_cd = row.sell_buy_attr_cd.to_s.upcase
+          attr_nm = attr_name_map[attr_cd].to_s.strip.presence || attr_cd
+          unit_cd = row.sell_unit_cd.to_s.upcase
+          uprice = row.aply_uprice.to_f
+
+          {
+            code: fee_no,
+            name: "#{attr_nm} #{uprice}",
+            display: "#{fee_no} / #{attr_nm} / #{uprice}",
+            wrhs_exca_fee_rt_no: fee_no,
+            lineno: row.lineno,
+            sellbuy_attr_cd: attr_cd,
+            sellbuy_attr_nm: attr_nm,
+            sell_unit_cd: unit_cd,
+            aply_uprice: uprice,
+            cur_cd: row.cur_cd.to_s.upcase,
+            aply_strt_ymd: row.aply_strt_ymd,
+            aply_end_ymd: row.aply_end_ymd
+          }.compact
+        end
     rescue ActiveRecord::StatementInvalid
       []
     end

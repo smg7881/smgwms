@@ -17,11 +17,11 @@ class AuthenticationTest < ActionDispatch::IntegrationTest
   end
 
   test "login then access original page" do
-    get posts_path
+    get root_path
     assert_redirected_to new_session_path
 
     post session_path, params: { email_address: "user@example.com", password: "password" }
-    assert_redirected_to posts_path
+    assert_redirected_to root_path
     follow_redirect!
     assert_response :success
   end

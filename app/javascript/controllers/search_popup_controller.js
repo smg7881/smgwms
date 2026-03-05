@@ -7,7 +7,8 @@ export default class extends Controller {
   static values = {
     type: String,
     url: String,
-    title: String
+    title: String,
+    contextFields: String
   }
 
   async open(event) {
@@ -28,7 +29,7 @@ export default class extends Controller {
       this.element.dispatchEvent(new CustomEvent("search-popup:opening", { bubbles: true }))
       selection = await openLookupPopup({
         type: this.typeValue,
-        url: this.urlValue,
+        url: this.buildRequestUrl().toString(),
         keyword: this.seedKeyword,
         title: this.titleValue
       })
@@ -51,12 +52,7 @@ export default class extends Controller {
     const popupType = String(this.typeValue || "").trim()
     if (!popupType) return
 
-    const baseUrl = String(this.urlValue || "").trim() || `/search_popups/${encodeURIComponent(popupType)}`
-    const url = new URL(baseUrl, window.location.origin)
-    const keyword = this.seedKeyword
-    if (keyword) {
-      url.searchParams.set("q", keyword)
-    }
+    const url = this.buildRequestUrl({ includeKeyword: true })
 
     window.open(url.toString(), "lookup_popup_window", "width=980,height=700,left=60,top=40,resizable=yes,scrollbars=yes")
   }
@@ -66,10 +62,7 @@ export default class extends Controller {
     const keyword = this.seedKeyword
     if (!popupType || !keyword) return null
 
-    const baseUrl = String(this.urlValue || "").trim() || `/search_popups/${encodeURIComponent(popupType)}`
-    const url = new URL(baseUrl, window.location.origin)
-    url.searchParams.set("q", keyword)
-    url.searchParams.set("format", "json")
+    const url = this.buildRequestUrl({ includeKeyword: true, includeJsonFormat: true })
 
     try {
       const response = await fetch(url.toString(), { headers: { Accept: "application/json" } })
@@ -92,6 +85,56 @@ export default class extends Controller {
     } catch {
       return null
     }
+  }
+
+  buildRequestUrl({ includeKeyword = false, includeJsonFormat = false } = {}) {
+    const popupType = String(this.typeValue || "").trim()
+    const baseUrl = String(this.urlValue || "").trim() || `/search_popups/${encodeURIComponent(popupType)}`
+    const url = new URL(baseUrl, window.location.origin)
+
+    if (includeKeyword) {
+      const keyword = this.seedKeyword
+      if (keyword) {
+        url.searchParams.set("q", keyword)
+      } else {
+        url.searchParams.delete("q")
+      }
+    }
+
+    if (includeJsonFormat) {
+      url.searchParams.set("format", "json")
+    }
+
+    this.contextFieldNames.forEach((fieldName) => {
+      const value = this.readContextValue(fieldName)
+      if (value) {
+        url.searchParams.set(fieldName, value)
+      } else {
+        url.searchParams.delete(fieldName)
+      }
+    })
+
+    return url
+  }
+
+  get contextFieldNames() {
+    const rawValue = String(this.contextFieldsValue || "").trim()
+    if (!rawValue) return []
+
+    return rawValue
+      .split(",")
+      .map((fieldName) => fieldName.trim())
+      .filter((fieldName) => fieldName.length > 0)
+  }
+
+  readContextValue(fieldName) {
+    const formElement = this.element.closest("form")
+    if (!formElement) return ""
+
+    const element = formElement.querySelector(`[name="q[${fieldName}]"]`)
+    if (!element) return ""
+
+    return String(element.value || "").trim().toUpperCase()
   }
 
   onDisplayInput() {

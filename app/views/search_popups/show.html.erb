@@ -465,7 +465,7 @@
      data-action="ag-grid:ready->search-popup-grid#registerGrid search-popup-grid:select->search-popup-grid#selectFromRenderer">
 
   <%= render Ui::SearchFormComponent.new(
-    url: search_popup_path(@type, frame: @frame),
+    url: search_popup_path(@type, frame: @frame, workpl_cd: params[:workpl_cd], area_cd: params[:area_cd], zone_cd: params[:zone_cd]),
     fields: popup_fields,
     cols: 3,
     turbo_frame: @frame,

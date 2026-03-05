@@ -1,0 +1,203 @@
+import BaseGridController from "controllers/base_grid_controller"
+import { showAlert } from "components/ui/alert"
+import {
+  fetchJson,
+  setManagerRowData,
+  hasPendingChanges,
+  blockIfPendingChanges,
+  buildTemplateUrl,
+  refreshSelectionLabel
+} from "controllers/grid/grid_utils"
+
+const YES_NO_VALUES = ["Y", "N"]
+
+export default class extends BaseGridController {
+  static targets = [...BaseGridController.targets, "masterGrid", "detailGrid", "selectedMasterLabel"]
+
+  static values = {
+    ...BaseGridController.values,
+    masterBatchUrl: String,
+    detailBatchUrlTemplate: String,
+    detailListUrlTemplate: String,
+    selectedMaster: String
+  }
+
+  connect() {
+    super.connect()
+    this.refreshSelectedMasterLabel()
+  }
+
+  gridRoles() {
+    return {
+      master: {
+        target: "masterGrid",
+        manager: this.masterManagerConfig(),
+        masterKeyField: "<%= master_key %>"
+      },
+      detail: {
+        target: "detailGrid",
+        manager: this.detailManagerConfig(),
+        parentGrid: "master",
+        onMasterRowChange: (rowData) => {
+          this.selectedMasterValue = rowData?.<%= master_key %> || ""
+          this.refreshSelectedMasterLabel()
+          this.clearDetailRows()
+        },
+        detailLoader: async (rowData) => {
+          const masterKey = rowData?.<%= master_key %>
+          const hasLoadableKey = Boolean(masterKey) && !rowData?.__is_deleted && !rowData?.__is_new
+          if (!hasLoadableKey) return []
+
+          try {
+            const url = buildTemplateUrl(this.detailListUrlTemplateValue, ":id", masterKey)
+            const rows = await fetchJson(url)
+            return Array.isArray(rows) ? rows : []
+          } catch {
+            showAlert("상세 목록 조회에 실패했습니다.")
+            return []
+          }
+        }
+      }
+    }
+  }
+
+  masterManagerConfig() {
+    return {
+      pkFields: ["<%= master_key %>"],
+      fields: {
+        <%= master_key %>: "trimUpper",
+        use_yn: "trimUpperDefault:Y"
+      },
+      defaultRow: {
+        <%= master_key %>: "",
+        use_yn: "Y"
+      },
+      blankCheckFields: ["<%= master_key %>"],
+      comparableFields: ["use_yn"],
+      validationRules: {
+        requiredFields: ["<%= master_key %>", "use_yn"],
+        fieldRules: {
+          use_yn: [{ type: "enum", values: YES_NO_VALUES }]
+        }
+      },
+      firstEditCol: "<%= master_key %>"
+    }
+  }
+
+  detailManagerConfig() {
+    return {
+      pkFields: ["<%= detail_key %>"],
+      fields: {
+        <%= detail_key %>: "trimUpper",
+        use_yn: "trimUpperDefault:Y"
+      },
+      defaultRow: {
+        <%= detail_key %>: "",
+        use_yn: "Y"
+      },
+      blankCheckFields: ["<%= detail_key %>"],
+      comparableFields: ["use_yn"],
+      validationRules: {
+        requiredFields: ["<%= detail_key %>", "use_yn"],
+        fieldRules: {
+          use_yn: [{ type: "enum", values: YES_NO_VALUES }]
+        }
+      },
+      firstEditCol: "<%= detail_key %>"
+    }
+  }
+
+  get masterManager() {
+    return this.gridManager("master")
+  }
+
+  get detailManager() {
+    return this.gridManager("detail")
+  }
+
+  beforeSearchReset() {
+    this.selectedMasterValue = ""
+    this.refreshSelectedMasterLabel()
+  }
+
+  addMasterRow() {
+    this.addRow({ manager: this.masterManager })
+  }
+
+  deleteMasterRows() {
+    this.deleteRows({ manager: this.masterManager })
+  }
+
+  async saveMasterRows() {
+    await this.saveRowsWith({
+      manager: this.masterManager,
+      batchUrl: this.masterBatchUrlValue,
+      saveMessage: "마스터 데이터가 저장되었습니다.",
+      onSuccess: () => this.refreshGrid("master")
+    })
+  }
+
+  addDetailRow() {
+    if (!this.selectedMasterValue) {
+      showAlert("마스터를 먼저 선택해주세요.")
+      return
+    }
+    if (this.blockDetailActionIfMasterChanged()) {
+      return
+    }
+
+    this.addRow({
+      manager: this.detailManager
+    })
+  }
+
+  deleteDetailRows() {
+    if (this.blockDetailActionIfMasterChanged()) {
+      return
+    }
+    this.deleteRows({ manager: this.detailManager })
+  }
+
+  async saveDetailRows() {
+    if (!this.selectedMasterValue) {
+      showAlert("마스터를 먼저 선택해주세요.")
+      return
+    }
+    if (this.blockDetailActionIfMasterChanged()) {
+      return
+    }
+
+    const batchUrl = buildTemplateUrl(this.detailBatchUrlTemplateValue, ":id", this.selectedMasterValue)
+    await this.saveRowsWith({
+      manager: this.detailManager,
+      batchUrl,
+      saveMessage: "상세 데이터가 저장되었습니다.",
+      onSuccess: () => this.refreshGrid("master")
+    })
+  }
+
+  clearDetailRows() {
+    setManagerRowData(this.detailManager, [])
+  }
+
+  refreshSelectedMasterLabel() {
+    if (!this.hasSelectedMasterLabelTarget) {
+      return
+    }
+
+    refreshSelectionLabel(
+      this.selectedMasterLabelTarget,
+      this.selectedMasterValue,
+      "마스터",
+      "마스터를 먼저 선택해주세요."
+    )
+  }
+
+  hasMasterPendingChanges() {
+    return hasPendingChanges(this.masterManager)
+  }
+
+  blockDetailActionIfMasterChanged() {
+    return blockIfPendingChanges(this.masterManager, "마스터")
+  }
+}

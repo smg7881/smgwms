@@ -1,0 +1,22 @@
+screens:
+  - key: system_code
+    data_controller: code-grid
+    page_component_path: app/components/system/code/page_component.rb
+    page_view_path: app/components/system/code/page_component.html.erb
+    js_controller_path: app/javascript/controllers/system/code_grid_controller.js
+    master_controller_path: app/controllers/system/code_controller.rb
+    detail_controller_path: app/controllers/system/code_details_controller.rb
+    route_master_controller: system/code
+    route_detail_controller: system/code_details
+    route_detail_parent_param: code_id
+
+  - key: std_work_routing_steps
+    data_controller: std-work-routing-step-grid
+    page_component_path: app/components/std/work_routing_step/page_component.rb
+    page_view_path: app/components/std/work_routing_step/page_component.html.erb
+    js_controller_path: app/javascript/controllers/std/work_routing_step_grid_controller.js
+    master_controller_path: app/controllers/std/work_routing_steps_controller.rb
+    detail_controller_path: app/controllers/std/work_routing_step_details_controller.rb
+    route_master_controller: std/work_routing_steps
+    route_detail_controller: std/work_routing_step_details
+    route_detail_parent_param: work_routing_step_id

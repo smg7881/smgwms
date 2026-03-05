@@ -1,0 +1,86 @@
+class <%= namespace_module %>::<%= resource_name.camelize %>Controller < <%= namespace_module %>::BaseController
+  def index
+    @selected_master = params[:selected_master].presence
+
+    respond_to do |format|
+      format.html
+      format.json { render json: records_scope.map { |record| record_json(record) } }
+    end
+  end
+
+  def batch_save
+    operations = batch_save_params
+    result = { inserted: 0, updated: 0, deleted: 0 }
+    errors = []
+
+    ActiveRecord::Base.transaction do
+      process_inserts(operations[:rowsToInsert], result, errors)
+      process_updates(operations[:rowsToUpdate], result, errors)
+      process_deletes(operations[:rowsToDelete], result, errors)
+
+      if errors.any?
+        raise ActiveRecord::Rollback
+      end
+    end
+
+    if errors.any?
+      render json: { success: false, errors: errors.uniq }, status: :unprocessable_entity
+    else
+      render json: { success: true, message: "저장되었습니다.", data: result }
+    end
+  end
+
+  private
+    def menu_code_for_permission
+      "<%= options[:menu_code] %>"
+    end
+
+    def records_scope
+      scope = master_model_class
+      if scope.respond_to?(:ordered)
+        scope.ordered
+      else
+        scope.all
+      end
+    end
+
+    def batch_save_params
+      params.permit(
+        rowsToDelete: [],
+        rowsToInsert: [ :<%= master_key %>, :use_yn ],
+        rowsToUpdate: [ :<%= master_key %>, :use_yn ]
+      )
+    end
+
+    def process_inserts(rows, result, errors)
+      Array(rows).each do |_row|
+        # TODO: 신규 생성 로직 구현
+        errors << "process_inserts 구현이 필요합니다."
+      end
+      result[:inserted] += 0
+    end
+
+    def process_updates(rows, result, errors)
+      Array(rows).each do |_row|
+        # TODO: 수정 로직 구현
+        errors << "process_updates 구현이 필요합니다."
+      end
+      result[:updated] += 0
+    end
+
+    def process_deletes(rows, result, errors)
+      Array(rows).each do |_row|
+        # TODO: 삭제 로직 구현
+        errors << "process_deletes 구현이 필요합니다."
+      end
+      result[:deleted] += 0
+    end
+
+    def master_model_class
+      raise NotImplementedError, "master_model_class를 구현하세요."
+    end
+
+    def record_json(_record)
+      raise NotImplementedError, "record_json을 구현하세요."
+    end
+end

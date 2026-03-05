@@ -1,10 +1,10 @@
-class Ui::SearchFormComponent < ApplicationComponent
+﻿class Ui::SearchFormComponent < ApplicationComponent
   ALLOWED_FIELD_KEYS = %i[
     field type label label_key placeholder placeholder_key
     span options required clearable disabled
     pattern minlength maxlength inputmode autocomplete
     date_type date_format min max
-    popup_type code_field
+    popup_type code_field popup_params
     display_width code_width button_width
     include_blank help
   ].freeze
@@ -61,15 +61,20 @@ class Ui::SearchFormComponent < ApplicationComponent
 
         if sanitized[:type] == "popup"
           if sanitized[:code_field].blank?
-            raise ArgumentError, "popup 필드에는 code_field가 필요합니다 (field: #{field[:field]})"
+            raise ArgumentError, "popup ?꾨뱶?먮뒗 code_field媛 ?꾩슂?⑸땲??(field: #{field[:field]})"
           end
           validate_field_name!(sanitized[:code_field])
+          popup_params = Array(sanitized[:popup_params]).map(&:to_s)
+          popup_params.each do |popup_param|
+            validate_field_name!(popup_param)
+          end
+          sanitized[:popup_params] = popup_params
         end
 
         rejected = field.keys - ALLOWED_FIELD_KEYS
         if rejected.any?
           Rails.logger.warn(
-            "[SearchFormComponent] 허용되지 않은 필드 키 제거: #{rejected.join(', ')} " \
+            "[SearchFormComponent] ?덉슜?섏? ?딆? ?꾨뱶 ???쒓굅: #{rejected.join(', ')} " \
             "(field: #{field[:field]})"
           )
         end
@@ -80,14 +85,14 @@ class Ui::SearchFormComponent < ApplicationComponent
 
     def validate_field_name!(name)
       unless name.present? && name.to_s.match?(VALID_FIELD_NAME)
-        raise ArgumentError, "유효하지 않은 필드 이름: #{name.inspect}"
+        raise ArgumentError, "?좏슚?섏? ?딆? ?꾨뱶 ?대쫫: #{name.inspect}"
       end
     end
 
     def normalize_field_type(type)
       normalized = type.to_s.tr("-", "_")
       unless FIELD_TYPES.include?(normalized)
-        raise ArgumentError, "지원하지 않는 필드 타입: #{type.inspect}"
+        raise ArgumentError, "吏?먰븯吏 ?딅뒗 ?꾨뱶 ??? #{type.inspect}"
       end
       normalized
     end

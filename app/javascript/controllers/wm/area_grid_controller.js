@@ -81,7 +81,7 @@ export default class extends BaseGridController {
     return resolveNameFromMap(this.workplaceNameMap, workplCd)
   }
 
-  // 보조 헬퍼: HTML DOM 트리를 직접 뒤져서 <input name="q[workpl_cd]"> 등의 값을 빼냄
+  // 보조 헬퍼: 조회조건 값은 BaseGridController#getSearchFormValue를 통해 읽음
   selectedWorkplaceCodeFromSearch() {
     return this.getSearchFormValue("workpl_cd")
   }

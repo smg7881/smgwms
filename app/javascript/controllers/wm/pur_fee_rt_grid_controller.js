@@ -1,306 +1,518 @@
 import BaseGridController from "controllers/base_grid_controller"
-import { isApiAlive, setManagerRowData, focusFirstRow, buildTemplateUrl } from "controllers/grid/grid_utils"
 import { showAlert } from "components/ui/alert"
+import {
+  fetchJson,
+  setManagerRowData,
+  buildTemplateUrl,
+  refreshSelectionLabel,
+  hasChanges,
+  postJson
+} from "controllers/grid/grid_utils"
+
+const YES_NO_VALUES = ["Y", "N"]
 
 export default class extends BaseGridController {
-    static targets = [...BaseGridController.targets, "masterGrid", "detailGrid", "selectedMasterLabel"]
+  static targets = [...BaseGridController.targets, "masterGrid", "detailGrid", "selectedMasterLabel"]
 
-    static values = {
-        ...BaseGridController.values,
-        masterBatchUrl: String,
-        detailBatchUrlTemplate: String,
-        detailListUrlTemplate: String,
-        selectedMaster: String
+  static values = {
+    ...BaseGridController.values,
+    masterBatchUrl: String,
+    detailListUrlTemplate: String,
+    selectedMaster: String
+  }
+
+  connect() {
+    super.connect()
+    this.currentMasterRef = this.selectedMasterValue || ""
+    this.selectedMasterTempId = ""
+    this.detailLoadToken = 0
+  }
+
+  gridRoles() {
+    return {
+      master: {
+        target: "masterGrid",
+        manager: this.masterManagerConfig(),
+        isMaster: true
+      },
+      detail: {
+        target: "detailGrid",
+        manager: this.detailManagerConfig(),
+        parentGrid: "master",
+        onMasterRowChange: (rowData) => this.handleMasterRowChange(rowData)
+      }
     }
+  }
 
-    gridRoles() {
-        return {
-            master: {
-                target: "masterGrid",
-                manager: "configureManager",
-                masterKeyField: "wrhs_exca_fee_rt_no"
-            },
-            detail: {
-                target: "detailGrid",
-                manager: "configureDetailManager",
-                parentGrid: "master",
-                onMasterRowChange: (rowData) => this.selectMaster(rowData?.wrhs_exca_fee_rt_no)
+  onAllGridsReady() {
+    this.refreshSelectedMasterLabel()
+  }
+
+  masterManagerConfig() {
+    return {
+      pkFields: ["wrhs_exca_fee_rt_no"],
+      fields: {
+        client_temp_id: "trim",
+        work_pl_cd: "trimUpper",
+        ctrt_cprtco_cd: "trimUpper",
+        sell_buy_attr_cd: "trimUpper",
+        pur_dept_cd: "trimUpper",
+        pur_item_type: "trimUpper",
+        pur_item_cd: "trimUpper",
+        pur_unit_clas_cd: "trimUpper",
+        pur_unit_cd: "trimUpper",
+        use_yn: "trimUpperDefault:Y",
+        auto_yn: "trimUpperDefault:N",
+        rmk: "trim"
+      },
+      defaultRow: {
+        wrhs_exca_fee_rt_no: "",
+        client_temp_id: "",
+        work_pl_cd: "",
+        ctrt_cprtco_cd: "",
+        sell_buy_attr_cd: "",
+        pur_dept_cd: "",
+        pur_item_type: "",
+        pur_item_cd: "",
+        pur_unit_clas_cd: "",
+        pur_unit_cd: "",
+        use_yn: "Y",
+        auto_yn: "N",
+        rmk: ""
+      },
+      blankCheckFields: ["work_pl_cd", "ctrt_cprtco_cd", "sell_buy_attr_cd"],
+      comparableFields: [
+        "work_pl_cd",
+        "ctrt_cprtco_cd",
+        "sell_buy_attr_cd",
+        "pur_dept_cd",
+        "pur_item_type",
+        "pur_item_cd",
+        "pur_unit_clas_cd",
+        "pur_unit_cd",
+        "use_yn",
+        "auto_yn",
+        "rmk"
+      ],
+      validationRules: {
+        requiredFields: [
+          "work_pl_cd",
+          "ctrt_cprtco_cd",
+          "sell_buy_attr_cd",
+          "pur_dept_cd",
+          "pur_item_type",
+          "pur_item_cd",
+          "pur_unit_clas_cd",
+          "pur_unit_cd",
+          "use_yn",
+          "auto_yn"
+        ],
+        fieldRules: {
+          use_yn: [{ type: "enum", values: YES_NO_VALUES }],
+          auto_yn: [{ type: "enum", values: YES_NO_VALUES }]
+        }
+      },
+      firstEditCol: "pur_dept_cd",
+      pkLabels: { wrhs_exca_fee_rt_no: "창고정산요율번호" }
+    }
+  }
+
+  detailManagerConfig() {
+    return {
+      pkFields: ["lineno"],
+      fields: {
+        dcsn_yn: "trimUpperDefault:N",
+        aply_strt_ymd: "trim",
+        aply_end_ymd: "trim",
+        aply_uprice: "number",
+        cur_cd: "trimUpper",
+        std_work_qty: "number",
+        aply_strt_qty: "number",
+        aply_end_qty: "number",
+        rmk: "trim"
+      },
+      defaultRow: {
+        lineno: null,
+        dcsn_yn: "N",
+        aply_strt_ymd: this.todayYmd(),
+        aply_end_ymd: this.todayYmd(),
+        aply_uprice: 0,
+        cur_cd: "KRW",
+        std_work_qty: 0,
+        aply_strt_qty: 0,
+        aply_end_qty: 0,
+        rmk: ""
+      },
+      blankCheckFields: ["aply_strt_ymd", "aply_end_ymd", "cur_cd"],
+      comparableFields: [
+        "dcsn_yn",
+        "aply_strt_ymd",
+        "aply_end_ymd",
+        "aply_uprice",
+        "cur_cd",
+        "std_work_qty",
+        "aply_strt_qty",
+        "aply_end_qty",
+        "rmk"
+      ],
+      validationRules: {
+        requiredFields: ["dcsn_yn", "aply_strt_ymd", "aply_end_ymd", "aply_uprice", "cur_cd"],
+        fieldRules: {
+          dcsn_yn: [{ type: "enum", values: YES_NO_VALUES }]
+        },
+        rowRules: [
+          ({ row }) => {
+            const start = this.normalizeDateText(row.aply_strt_ymd)
+            const end = this.normalizeDateText(row.aply_end_ymd)
+            if (start && end && start > end) {
+              return { field: "aply_end_ymd", message: "적용종료일자는 적용시작일자보다 빠를 수 없습니다." }
             }
+            return null
+          }
+        ]
+      },
+      firstEditCol: "dcsn_yn",
+      pkLabels: { lineno: "라인번호" }
+    }
+  }
+
+  get masterManager() {
+    return this.gridManager("master")
+  }
+
+  get detailManager() {
+    return this.gridManager("detail")
+  }
+
+  beforeSearchReset() {
+    this.clearMasterSelection()
+  }
+
+  selectFirstMasterRow() {
+    const api = this.masterManager?.api
+    if (!api) {
+      return null
+    }
+
+    if (api.getDisplayedRowCount() === 0) {
+      this.clearMasterSelection()
+      return null
+    }
+
+    const preferredRef = this.currentMasterRef || this.selectedMasterValue
+    let selectedNode = null
+
+    if (preferredRef) {
+      api.forEachNode((node) => {
+        if (!selectedNode && this.masterRef(node?.data) === preferredRef) {
+          selectedNode = node
         }
+      })
     }
 
-    connect() {
-        super.connect()
-        this.detailGridController = null
-        this.detailManager = null
+    if (!selectedNode) {
+      selectedNode = api.getDisplayedRowAtIndex(0)
     }
 
-    onAllGridsReady() {
-        this.manager = this.gridManager("master")
-        this.gridController = this.gridCtrl("master")
-        this.detailManager = this.gridManager("detail")
-        this.detailGridController = this.gridCtrl("detail")
-        this.updateSelectedMasterLabel()
+    if (selectedNode?.data) {
+      selectedNode.setSelected(true, true)
+      return selectedNode.data
     }
 
-    disconnect() {
-        if (this.detailManager) {
-            this.detailManager.detach()
-            this.detailManager = null
+    this.clearMasterSelection()
+    return null
+  }
+
+  async handleMasterRowChange(rowData) {
+    if (this.shouldBlockMasterChange(rowData)) {
+      this.restorePreviousMasterSelection()
+      return
+    }
+
+    this.applyMasterSelection(rowData)
+    await this.loadDetailRows(rowData)
+  }
+
+  shouldBlockMasterChange(rowData) {
+    const nextRef = this.masterRef(rowData)
+    if (!this.currentMasterRef) {
+      return false
+    }
+    if (nextRef === this.currentMasterRef) {
+      return false
+    }
+    if (!this.detailHasPendingChanges()) {
+      return false
+    }
+
+    showAlert("저장되지 않은 상세 변경사항이 있습니다. 먼저 저장하세요.")
+    return true
+  }
+
+  restorePreviousMasterSelection() {
+    const api = this.masterManager?.api
+    if (!api || !this.currentMasterRef) {
+      return
+    }
+
+    api.forEachNode((node) => {
+      const isTarget = this.masterRef(node?.data) === this.currentMasterRef
+      if (isTarget) {
+        node.setSelected(true, true)
+      }
+    })
+  }
+
+  applyMasterSelection(rowData) {
+    if (!rowData) {
+      this.clearMasterSelection()
+      return
+    }
+
+    this.currentMasterRef = this.masterRef(rowData)
+    this.selectedMasterValue = rowData.wrhs_exca_fee_rt_no?.toString().trim() || ""
+    this.selectedMasterTempId = rowData.client_temp_id?.toString().trim() || rowData.__temp_id?.toString().trim() || ""
+    this.refreshSelectedMasterLabel()
+  }
+
+  clearMasterSelection() {
+    this.currentMasterRef = ""
+    this.selectedMasterValue = ""
+    this.selectedMasterTempId = ""
+    this.refreshSelectedMasterLabel()
+    this.clearDetailRows()
+  }
+
+  refreshSelectedMasterLabel() {
+    if (!this.hasSelectedMasterLabelTarget) {
+      return
+    }
+
+    refreshSelectionLabel(this.selectedMasterLabelTarget, this.selectedMasterValue, "정산요율", "요율을 먼저 선택하세요.")
+  }
+
+  async loadDetailRows(rowData) {
+    const manager = this.detailManager
+    if (!manager) {
+      return
+    }
+
+    const masterKey = rowData?.wrhs_exca_fee_rt_no?.toString().trim()
+    const isLoadable = Boolean(masterKey) && !rowData?.__is_new && !rowData?.__is_deleted
+    if (!isLoadable) {
+      this.clearDetailRows()
+      return
+    }
+
+    const token = ++this.detailLoadToken
+    try {
+      const url = buildTemplateUrl(this.detailListUrlTemplateValue, { pur_fee_rt_mng_id: masterKey })
+      const rows = await fetchJson(url)
+      if (token !== this.detailLoadToken) {
+        return
+      }
+
+      setManagerRowData(manager, Array.isArray(rows) ? rows : [])
+    } catch {
+      if (token !== this.detailLoadToken) {
+        return
+      }
+
+      this.clearDetailRows()
+      showAlert("요율상세 조회에 실패했습니다.")
+    }
+  }
+
+  clearDetailRows() {
+    if (this.detailManager) {
+      setManagerRowData(this.detailManager, [])
+    }
+  }
+
+  addMasterRow() {
+    const tempId = this.newTempId()
+    const rowOverrides = {
+      client_temp_id: tempId,
+      work_pl_cd: this.getSearchFormValue("work_pl_cd"),
+      ctrt_cprtco_cd: this.getSearchFormValue("ctrt_cprtco_cd"),
+      sell_buy_attr_cd: this.getSearchFormValue("sell_buy_attr_cd")
+    }
+
+    this.addRow({
+      manager: this.masterManager,
+      overrides: rowOverrides,
+      onAdded: (rowData, { addedNode }) => {
+        if (addedNode) {
+          addedNode.setSelected(true, true)
         }
-        this.detailGridController = null
-        super.disconnect()
+        this.applyMasterSelection(rowData)
+        this.clearDetailRows()
+      }
+    })
+  }
+
+  deleteMasterRows() {
+    this.deleteRows({ manager: this.masterManager, deleteLabel: "매입요율" })
+  }
+
+  addDetailRow() {
+    if (!this.currentMasterRef) {
+      showAlert("매입요율을 먼저 선택하세요.")
+      return
     }
 
-    // 마스터 그리드 설정
-    configureManager() {
-        return {
-            pkFields: ["wrhs_exca_fee_rt_no"],
-            fields: {
-                work_pl_cd: "trimUpper",
-                ctrt_cprtco_cd: "trimUpper",
-                sell_buy_attr_cd: "trimUpper",
-                pur_dept_cd: "trimUpper",
-                pur_item_type: "trim",
-                pur_item_cd: "trimUpper",
-                pur_unit_clas_cd: "trim",
-                pur_unit_cd: "trimUpper",
-                use_yn: "trimUpperDefault:Y",
-                auto_yn: "trimUpperDefault:N",
-                rmk: "trim"
-            },
-            defaultRow: {
-                wrhs_exca_fee_rt_no: "",
-                work_pl_cd: "",
-                ctrt_cprtco_cd: "",
-                sell_buy_attr_cd: "",
-                pur_dept_cd: "",
-                pur_item_type: "",
-                pur_item_cd: "",
-                pur_unit_clas_cd: "",
-                pur_unit_cd: "",
-                use_yn: "Y",
-                auto_yn: "N",
-                rmk: ""
-            },
-            blankCheckFields: ["work_pl_cd", "ctrt_cprtco_cd", "sell_buy_attr_cd", "pur_dept_cd", "pur_item_type", "pur_item_cd", "pur_unit_clas_cd", "pur_unit_cd"],
-            comparableFields: ["pur_item_type", "pur_item_cd", "pur_unit_clas_cd", "pur_unit_cd", "use_yn", "auto_yn", "rmk"],
-            firstEditCol: "pur_item_type",
-            pkLabels: { wrhs_exca_fee_rt_no: "창고정산요율번호" },
-            onRowDataUpdated: () => {
-                this.detailManager?.resetTracking?.()
-                this.selectFirstMasterRow()
-            }
-        }
+    this.addRow({
+      manager: this.detailManager
+    })
+  }
+
+  deleteDetailRows() {
+    this.deleteRows({ manager: this.detailManager, deleteLabel: "매입요율상세" })
+  }
+
+  async saveAllRows() {
+    if (!this.masterManager || !this.detailManager) {
+      return
     }
 
-    // 디테일 그리드 설정
-    configureDetailManager() {
-        return {
-            pkFields: ["lineno"],
-            fields: {
-                dcsn_yn: "trimUpperDefault:N",
-                aply_strt_ymd: "trim",
-                aply_end_ymd: "trim",
-                aply_uprice: "number",
-                cur_cd: "trim",
-                std_work_qty: "number",
-                aply_strt_qty: "number",
-                aply_end_qty: "number",
-                rmk: "trim"
-            },
-            defaultRow: {
-                lineno: null,
-                dcsn_yn: "N",
-                aply_strt_ymd: new Date().toISOString().split('T')[0],
-                aply_end_ymd: "9999-12-31",
-                aply_uprice: 0,
-                cur_cd: "KRW",
-                std_work_qty: 0,
-                aply_strt_qty: 0,
-                aply_end_qty: 0,
-                rmk: ""
-            },
-            blankCheckFields: ["aply_strt_ymd", "aply_end_ymd", "cur_cd", "aply_uprice", "std_work_qty"],
-            comparableFields: ["dcsn_yn", "aply_strt_ymd", "aply_end_ymd", "aply_uprice", "cur_cd", "std_work_qty", "aply_strt_qty", "aply_end_qty", "rmk"],
-            firstEditCol: "dcsn_yn",
-            pkLabels: { lineno: "라인번호" },
-            registration: {
-                targetName: "detailGrid",
-                controllerKey: "detailGridController",
-                managerKey: "detailManager"
-            }
-        }
+    this.masterManager.stopEditing?.()
+    this.detailManager.stopEditing?.()
+
+    if (!this.validateManager(this.masterManager, "마스터")) {
+      return
+    }
+    if (!this.validateManager(this.detailManager, "상세")) {
+      return
     }
 
-    selectFirstMasterRow() {
-        if (!this.manager?.api) return
-
-        if (this.manager.api.getDisplayedRowCount() === 0) {
-            this.clearMasterSelection()
-            return
-        }
-
-        let nodeToSelect = null
-        if (this.selectedMasterValue) {
-            this.manager.api.forEachNode(node => {
-                if (node.data.wrhs_exca_fee_rt_no === this.selectedMasterValue) {
-                    nodeToSelect = node
-                }
-            })
-        }
-
-        if (!nodeToSelect) {
-            nodeToSelect = this.manager.api.getDisplayedRowAtIndex(0)
-        }
-
-        if (nodeToSelect) {
-            nodeToSelect.setSelected(true)
-            this.selectMaster(nodeToSelect.data.wrhs_exca_fee_rt_no)
-        } else {
-            this.clearMasterSelection()
-        }
+    const masterOps = this.masterManager.buildOperations()
+    const detailOps = this.detailManager.buildOperations()
+    if (!hasChanges(masterOps) && !hasChanges(detailOps)) {
+      showAlert("변경된 데이터가 없습니다.")
+      return
     }
 
-    selectMaster(wrhs_exca_fee_rt_no) {
-        if (!wrhs_exca_fee_rt_no) {
-            this.clearMasterSelection()
-            return
-        }
-
-        this.selectedMasterValue = wrhs_exca_fee_rt_no
-        this.updateSelectedMasterLabel()
-        this.loadDetailData(wrhs_exca_fee_rt_no)
-
-        this.manager?.api?.forEachNode(node => {
-            node.setSelected(node.data.wrhs_exca_fee_rt_no === wrhs_exca_fee_rt_no)
-        })
+    const payload = this.buildBatchPayload(masterOps, detailOps)
+    const result = await postJson(this.masterBatchUrlValue, payload)
+    if (!result) {
+      return
     }
 
-    clearMasterSelection() {
-        this.selectedMasterValue = ""
-        this.updateSelectedMasterLabel()
-        if (this.detailManager?.api) {
-            setManagerRowData(this.detailManager, [])
-        }
+    const selectedMasterKey = result?.data?.selected_master_key?.toString().trim()
+    if (selectedMasterKey) {
+      this.selectedMasterValue = selectedMasterKey
+      this.selectedMasterTempId = ""
+      this.currentMasterRef = selectedMasterKey
     }
 
-    beforeSearchReset() {
-        this.clearMasterSelection()
+    showAlert(result.message || "저장이 완료되었습니다.")
+    this.refreshGrid("master")
+  }
+
+  validateManager(manager, managerLabel) {
+    const validation = manager.validateRows?.() || { valid: true, errors: [] }
+    if (validation.valid) {
+      return true
     }
 
-    updateSelectedMasterLabel() {
-        if (this.hasSelectedMasterLabelTarget) {
-            this.selectedMasterLabelTarget.textContent = this.selectedMasterValue
-                ? `선택 정산요율: ${this.selectedMasterValue}`
-                : "요율을 먼저 선택하세요."
-        }
+    const errors = Array.isArray(validation.errors) ? validation.errors : []
+    const firstError = validation.firstError || errors[0] || null
+    const summary = manager.formatValidationSummary
+      ? manager.formatValidationSummary(errors, { maxItems: 3 })
+      : `${managerLabel} 입력값을 확인하세요.`
+
+    if (firstError) {
+      manager.focusValidationError?.(firstError)
+    }
+    showAlert("Validation", summary, "warning")
+    return false
+  }
+
+  buildBatchPayload(masterOps, detailOps) {
+    const selectedMaster = this.selectedMasterRowData()
+    const selectedMasterKey = selectedMaster?.wrhs_exca_fee_rt_no?.toString().trim() || this.selectedMasterValue
+    const selectedMasterTempId = selectedMaster?.client_temp_id?.toString().trim() ||
+      selectedMaster?.__temp_id?.toString().trim() ||
+      this.selectedMasterTempId
+
+    return {
+      rowsToInsert: masterOps.rowsToInsert,
+      rowsToUpdate: masterOps.rowsToUpdate,
+      rowsToDelete: masterOps.rowsToDelete,
+      detailOperations: {
+        rowsToInsert: detailOps.rowsToInsert,
+        rowsToUpdate: detailOps.rowsToUpdate,
+        rowsToDelete: detailOps.rowsToDelete,
+        master_key: selectedMasterKey,
+        master_client_temp_id: selectedMasterTempId
+      }
+    }
+  }
+
+  selectedMasterRowData() {
+    const selectedRows = this.selectedRows("master")
+    if (Array.isArray(selectedRows) && selectedRows.length > 0) {
+      return selectedRows[0]
     }
 
-    async loadDetailData(wrhsExcaFeeRtNo) {
-        if (!this.detailGridController || !isApiAlive(this.detailGridController.api)) return
-
-        if (!wrhsExcaFeeRtNo || wrhsExcaFeeRtNo.trim() === "") {
-            setManagerRowData(this.detailManager, [])
-            return
-        }
-
-        const url = buildTemplateUrl(this.detailListUrlTemplateValue, { pur_fee_rt_mng_id: wrhsExcaFeeRtNo })
-        await this.detailGridController.loadData(url)
-        this.detailManager?.resetTracking()
+    const api = this.masterManager?.api
+    if (!api || !this.currentMasterRef) {
+      return null
     }
 
-    // --- Master CRUD Actions ---
+    let matched = null
+    api.forEachNode((node) => {
+      if (!matched && this.masterRef(node?.data) === this.currentMasterRef) {
+        matched = node.data
+      }
+    })
+    return matched
+  }
 
-    addMasterRow(event) {
-        event?.preventDefault()
-        if (!this.manager) return
+  detailHasPendingChanges() {
+    const manager = this.detailManager
+    if (!manager) {
+      return false
+    }
+    return hasChanges(manager.buildOperations())
+  }
 
-        const searchForm = document.querySelector('[data-controller="search-form"]')
-        const workPlCd = searchForm?.querySelector('[name="q[work_pl_cd]"]')?.value || ""
-        const ctrtCprtcoCd = searchForm?.querySelector('[name="q[ctrt_cprtco_cd]"]')?.value || ""
-        const sellBuyAttrCd = searchForm?.querySelector('[name="q[sell_buy_attr_cd]"]')?.value || ""
-
-        const newRow = {
-            ...this.manager.defaultRow,
-            work_pl_cd: workPlCd,
-            ctrt_cprtco_cd: ctrtCprtcoCd,
-            sell_buy_attr_cd: sellBuyAttrCd,
-            _id: `NEW_${Date.now()}`
-        }
-
-        this.manager.api.applyTransaction({ add: [newRow], addIndex: 0 })
-        focusFirstRow(this.manager.api, "work_pl_cd")
-
-        // 신규 행 선택
-        this.selectMaster(newRow.wrhs_exca_fee_rt_no)
+  masterRef(rowData) {
+    if (!rowData) {
+      return ""
     }
 
-    deleteMasterRows(event) {
-        event?.preventDefault()
-        if (!this.manager) return
-        this.manager.deleteSelectedRows("매입요율")
+    const persistedKey = rowData.wrhs_exca_fee_rt_no?.toString().trim()
+    if (persistedKey) {
+      return persistedKey
     }
 
-    async saveMasterRows(event) {
-        event?.preventDefault()
-        await this.saveRowsWith({
-            manager: this.manager,
-            batchUrl: this.batchUrlValue,
-            saveMessage: this.saveMessage,
-            onSuccess: () => this.afterSaveSuccess()
-        })
+    const clientTempId = rowData.client_temp_id?.toString().trim()
+    if (clientTempId) {
+      return clientTempId
     }
 
-    get batchUrlValue() {
-        return this.masterBatchUrlValue
+    const internalTempId = rowData.__temp_id?.toString().trim()
+    if (internalTempId) {
+      return internalTempId
     }
 
-    get saveMessage() {
-        return "매입요율이 성공적으로 저장되었습니다."
-    }
+    return ""
+  }
 
-    async afterSaveSuccess() {
-        this.dispatch("search", { target: document.querySelector('[data-controller="search-form"]') })
-    }
+  normalizeDateText(value) {
+    return (value || "").toString().replace(/[^0-9]/g, "")
+  }
 
-    // --- Detail CRUD Actions ---
+  todayYmd() {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, "0")
+    const day = String(now.getDate()).padStart(2, "0")
+    return `${year}${month}${day}`
+  }
 
-    addDetailRow(event) {
-        event?.preventDefault()
-        if (!this.detailManager?.api) return
-        if (!this.selectedMasterValue) {
-            showAlert("Warning", "매입요율을 먼저 선택해주세요.", "warning")
-            return
-        }
-
-        const newRow = { ...this.detailManager.defaultRow, _id: `NEW_${Date.now()}` }
-        this.detailManager.api.applyTransaction({ add: [newRow], addIndex: 0 })
-        focusFirstRow(this.detailManager.api, this.detailManager.firstEditCol)
-    }
-
-    deleteDetailRows(event) {
-        event?.preventDefault()
-        if (!this.detailManager) return
-        this.deleteRows({
-            manager: this.detailManager,
-            deleteLabel: "매입요율 상세정보"
-        })
-    }
-    async saveDetailRows(event) {
-        event?.preventDefault()
-        if (!this.detailManager) return
-        if (!this.selectedMasterValue) {
-            showAlert("Warning", "매입요율을 먼저 선택해주세요.", "warning")
-            return
-        }
-
-        const batchUrl = buildTemplateUrl(this.detailBatchUrlTemplateValue, { pur_fee_rt_mng_id: this.selectedMasterValue })
-        await this.saveRowsWith({
-            manager: this.detailManager,
-            batchUrl,
-            saveMessage: "매입요율 상세가 성공적으로 저장되었습니다.",
-            onSuccess: () => this.loadDetailData(this.selectedMasterValue)
-        })
-    }
+  newTempId() {
+    return `TMP_${Date.now()}_${Math.random().toString(36).slice(2, 8).toUpperCase()}`
+  }
 }

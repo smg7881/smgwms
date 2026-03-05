@@ -211,7 +211,7 @@ export default class extends BaseGridController {
     // --- STAGED 로케이션 로드 ---
 
     async #loadStagedLocations() {
-        const workplCd = document.querySelector('[name="q[workpl_cd]"]')?.value || ""
+        const workplCd = this.getSearchFormValue("workpl_cd")
         if (!workplCd) return
 
         try {

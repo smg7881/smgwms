@@ -81,7 +81,10 @@ const CONTROLLERS = [
   ["om-internal-order", "controllers/om/internal_order_controller"],
   ["om-order-manual-completion", "controllers/om/order_manual_completion_controller"],
   ["wm-cust-rule-grid", "controllers/wm/cust_rule_grid_controller"],
+  ["wm-stock-move-grid", "controllers/wm/stock_move_grid_controller"],
   ["wm-pur-fee-rt-grid", "controllers/wm/pur_fee_rt_grid_controller"],
+  ["wm-sell-fee-rt-grid", "controllers/wm/sell_fee_rt_grid_controller"],
+  ["wm-rate-retroact-grid", "controllers/wm/rate_retroact_grid_controller"],
   ["wm-gr-prar-grid", "controllers/wm/gr_prar_grid_controller"],
   ["flatpickr", "controllers/flatpickr_controller"],
   ["tom-select", "controllers/tom_select_controller"]

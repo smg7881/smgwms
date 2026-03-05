@@ -1,0 +1,11 @@
+# 실제 GitHub 사용자/팀으로 교체해서 사용하세요.
+# 예: @your-org/wms-architecture
+
+doc/wm/master_detail_standard.md @REPLACE_WITH_GITHUB_USER
+config/master_detail_screen_contracts.yml @REPLACE_WITH_GITHUB_USER
+test/contracts/master_detail_pattern_contract_test.rb @REPLACE_WITH_GITHUB_USER
+
+app/components/**/page_component.rb @REPLACE_WITH_GITHUB_USER
+app/components/**/page_component.html.erb @REPLACE_WITH_GITHUB_USER
+app/javascript/controllers/**/*_grid_controller.js @REPLACE_WITH_GITHUB_USER
+app/controllers/**/*_details_controller.rb @REPLACE_WITH_GITHUB_USER

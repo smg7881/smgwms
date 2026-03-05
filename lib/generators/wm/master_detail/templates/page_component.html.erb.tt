@@ -1,0 +1,77 @@
+<div data-controller="<%= data_controller_name %>"
+     data-action="ag-grid:ready-><%= data_controller_name %>#registerGrid"
+     data-<%= data_controller_name %>-master-batch-url-value="<%= master_batch_save_url %>"
+     data-<%= data_controller_name %>-detail-batch-url-template-value="<%= detail_batch_save_url_template %>"
+     data-<%= data_controller_name %>-detail-list-url-template-value="/<%= namespace_name %>/<%= resource_name %>/:id/details.json"
+     data-<%= data_controller_name %>-selected-master-value="<%= selected_master.to_s %>">
+  <%= render Ui::SearchFormComponent.new(
+    url: create_url,
+    fields: search_fields,
+    cols: 3,
+    enable_collapse: true
+  ) %>
+
+  <div class="grid grid-cols-2 gap-3 max-[1200px]:grid-cols-1">
+    <section class="min-w-0">
+      <%= render Ui::GridHeaderComponent.new(
+        icon: "list",
+        title: "마스터 목록",
+        grid_id: "<%= file_name.dasherize %>-master",
+        buttons: [
+          { label: "행추가", class: "btn btn-sm btn-primary", action: "click-><%= data_controller_name %>#addMasterRow" },
+          { label: "행삭제", class: "btn btn-sm btn-danger", action: "click-><%= data_controller_name %>#deleteMasterRows" },
+          { label: "저장", class: "btn btn-sm btn-success", action: "click-><%= data_controller_name %>#saveMasterRows" }
+        ]
+      ) %>
+
+      <%= render Ui::AgGridComponent.new(
+        columns: master_columns,
+        url: grid_url,
+        height: "calc(100vh - 420px)",
+        pagination: false,
+        row_selection: "multiple",
+        grid_id: "<%= file_name.dasherize %>-master",
+        data: { <%= target_prefix %>_target: "masterGrid" }
+      ) %>
+    </section>
+
+    <section class="min-w-0">
+      <%= render Ui::GridHeaderComponent.new(
+        icon: "list-tree",
+        title: "상세 목록",
+        grid_id: "<%= file_name.dasherize %>-detail",
+        buttons: [
+          { label: "행추가", class: "btn btn-sm btn-primary", action: "click-><%= data_controller_name %>#addDetailRow" },
+          { label: "행삭제", class: "btn btn-sm btn-danger", action: "click-><%= data_controller_name %>#deleteDetailRows" },
+          { label: "저장", class: "btn btn-sm btn-success", action: "click-><%= data_controller_name %>#saveDetailRows" }
+        ]
+      ) do |header| %>
+        <% header.with_subtitle do %>
+          <p class="text-text-secondary text-xs" data-<%= data_controller_name %>-target="selectedMasterLabel"><%= selected_master_label %></p>
+        <% end %>
+      <% end %>
+
+      <% if detail_grid_url.present? %>
+        <%= render Ui::AgGridComponent.new(
+          columns: detail_columns,
+          url: detail_grid_url,
+          height: "calc(100vh - 420px)",
+          pagination: false,
+          row_selection: "multiple",
+          grid_id: "<%= file_name.dasherize %>-detail",
+          data: { <%= target_prefix %>_target: "detailGrid" }
+        ) %>
+      <% else %>
+        <%= render Ui::AgGridComponent.new(
+          columns: detail_columns,
+          row_data: [],
+          height: "calc(100vh - 420px)",
+          pagination: false,
+          row_selection: "multiple",
+          grid_id: "<%= file_name.dasherize %>-detail",
+          data: { <%= target_prefix %>_target: "detailGrid" }
+        ) %>
+      <% end %>
+    </section>
+  </div>
+</div>

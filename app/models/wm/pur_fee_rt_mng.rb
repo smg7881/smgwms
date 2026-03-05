@@ -1,5 +1,5 @@
 class Wm::PurFeeRtMng < ApplicationRecord
-  self.table_name = "tb_wm06001"
+  self.table_name = "wm_pur_fee_rt_mngs"
   self.primary_key = "wrhs_exca_fee_rt_no"
 
   has_many :details, class_name: "Wm::PurFeeRtMngDtl", foreign_key: "wrhs_exca_fee_rt_no", dependent: :destroy
@@ -20,7 +20,7 @@ class Wm::PurFeeRtMng < ApplicationRecord
     def normalize_fields
       self.corp_cd = corp_cd.to_s.strip.presence
       self.work_pl_cd = work_pl_cd.to_s.strip.presence
-      self.sell_buy_sctn_cd = "20" # 항상 매입으로 고정
+      self.sell_buy_sctn_cd = "20"
       self.use_yn = use_yn.to_s.strip.upcase.presence || "Y"
       self.auto_yn = auto_yn.to_s.strip.upcase.presence || "N"
     end

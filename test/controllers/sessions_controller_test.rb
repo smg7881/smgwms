@@ -33,11 +33,11 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "POST /session redirects to original URL after login" do
-    get posts_path
+    get root_path
     assert_redirected_to new_session_path
 
     post session_path, params: { email_address: "user@example.com", password: "password" }
-    assert_redirected_to posts_path
+    assert_redirected_to root_path
   end
 
   test "DELETE /session destroys session and redirects to login" do

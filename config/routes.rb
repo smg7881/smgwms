@@ -94,11 +94,25 @@ Rails.application.routes.draw do
       get :zones, on: :collection
       post :batch_save, on: :collection
     end
+    resources :stock_moves, only: [ :index ] do
+      post :move, on: :collection
+    end
     resources :pur_fee_rt_mngs, only: [ :index ] do
       post :batch_save, on: :collection
       resources :details, controller: :pur_fee_rt_mng_dtls, only: [ :index ], param: :lineno do
         post :batch_save, on: :collection
       end
+    end
+    resources :sell_fee_rt_mngs, only: [ :index ] do
+      post :batch_save, on: :collection
+      resources :details, controller: :sell_fee_rt_mng_dtls, only: [ :index ], param: :lineno
+    end
+    resources :rate_retroacts, only: [ :index ] do
+      collection do
+        post :apply_retro_rates
+        post :process_retroacts
+      end
+      resources :details, controller: :rate_retroact_details, only: [ :index ], param: :lineno
     end
 
     resources :gr_prars, only: [ :index ] do

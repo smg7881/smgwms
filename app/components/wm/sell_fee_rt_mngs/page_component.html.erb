@@ -1,0 +1,79 @@
+﻿<div data-controller="wm-sell-fee-rt-grid"
+     data-action="ag-grid:ready->wm-sell-fee-rt-grid#registerGrid"
+     data-wm-sell-fee-rt-grid-master-batch-url-value="<%= master_batch_save_url %>"
+     data-wm-sell-fee-rt-grid-detail-list-url-template-value="/wm/sell_fee_rt_mngs/:sell_fee_rt_mng_id/details.json"
+     data-wm-sell-fee-rt-grid-selected-master-value="<%= selected_fee_rt_no.to_s %>">
+  <%= render Ui::SearchFormComponent.new(
+    url: create_url,
+    fields: search_fields,
+    cols: 3,
+    enable_collapse: true
+  ) %>
+
+  <div class="grid grid-rows-[1fr_1fr] gap-3 h-[calc(100vh-230px)]">
+    <section class="min-h-0 flex flex-col">
+      <%= render Ui::GridHeaderComponent.new(
+        icon: "file-text",
+        title: "매출요율 목록",
+        grid_id: "sell-fee-rt-master",
+        buttons: [
+          { label: "행추가", class: "btn btn-sm btn-primary", action: "click->wm-sell-fee-rt-grid#addMasterRow" },
+          { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->wm-sell-fee-rt-grid#deleteMasterRows" },
+          { label: "저장", class: "btn btn-sm btn-success", action: "click->wm-sell-fee-rt-grid#saveAllRows" }
+        ]
+      ) %>
+
+      <div class="flex-1 min-h-0">
+        <%= render Ui::AgGridComponent.new(
+          columns: master_columns,
+          url: grid_url,
+          height: "100%",
+          pagination: false,
+          row_selection: "multiple",
+          grid_id: "sell-fee-rt-master",
+          data: { wm_sell_fee_rt_grid_target: "masterGrid" }
+        ) %>
+      </div>
+    </section>
+
+    <section class="min-h-0 flex flex-col">
+      <%= render Ui::GridHeaderComponent.new(
+        icon: "list-tree",
+        title: "매출요율 상세 목록",
+        grid_id: "sell-fee-rt-detail",
+        buttons: [
+          { label: "행추가", class: "btn btn-sm btn-primary", action: "click->wm-sell-fee-rt-grid#addDetailRow" },
+          { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->wm-sell-fee-rt-grid#deleteDetailRows" }
+        ]
+      ) do |header| %>
+        <% header.with_subtitle do %>
+          <p class="text-text-secondary text-xs" data-wm-sell-fee-rt-grid-target="selectedMasterLabel"><%= selected_master_label %></p>
+        <% end %>
+      <% end %>
+
+      <div class="flex-1 min-h-0">
+        <% if detail_grid_url.present? %>
+          <%= render Ui::AgGridComponent.new(
+            columns: detail_columns,
+            url: detail_grid_url,
+            height: "100%",
+            pagination: false,
+            row_selection: "multiple",
+            grid_id: "sell-fee-rt-detail",
+            data: { wm_sell_fee_rt_grid_target: "detailGrid" }
+          ) %>
+        <% else %>
+          <%= render Ui::AgGridComponent.new(
+            columns: detail_columns,
+            row_data: [],
+            height: "100%",
+            pagination: false,
+            row_selection: "multiple",
+            grid_id: "sell-fee-rt-detail",
+            data: { wm_sell_fee_rt_grid_target: "detailGrid" }
+          ) %>
+        <% end %>
+      </div>
+    </section>
+  </div>
+</div>

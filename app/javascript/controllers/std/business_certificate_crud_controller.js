@@ -147,10 +147,7 @@ class BusinessCertificateCrudController extends BaseGridController {
   }
 
   selectedClientNameFromSearch() {
-    const nameInput = this.element.querySelector("input[name='q[bzac_nm]']")
-    if (!nameInput) return ""
-
-    return String(nameInput.value || "").trim()
+    return this.getSearchFormValue("bzac_nm", { toUpperCase: false })
   }
 
   handlePopupSelected = (event) => {

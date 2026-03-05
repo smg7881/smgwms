@@ -103,10 +103,7 @@ export default class extends BaseGridController {
   }
 
   selectedCorpCodeFromSearch() {
-    const input = this.element.querySelector("input[name='q[corp_cd]']")
-    if (!input) return ""
-
-    return String(input.value || "").trim().toUpperCase()
+    return this.getSearchFormValue("corp_cd")
   }
 
   setRadioValue(fieldName, value) {
