@@ -14,6 +14,28 @@
     render json: result_rows
   end
 
+  def batch_save
+    operations = batch_save_params
+    result = { inserted: 0, updated: 0, deleted: 0 }
+    errors = []
+
+    ActiveRecord::Base.transaction do
+      process_detail_upserts(operations[:rowsToInsert], result, errors, default_process_code: "C")
+      process_detail_upserts(operations[:rowsToUpdate], result, errors, default_process_code: "U")
+      process_detail_deletes(operations[:rowsToDelete], result, errors)
+
+      if errors.any?
+        raise ActiveRecord::Rollback
+      end
+    end
+
+    if errors.any?
+      render json: { success: false, errors: errors.uniq }, status: :unprocessable_entity
+    else
+      render json: { success: true, message: "실적 데이터가 저장되었습니다.", data: result }
+    end
+  end
+
   private
     def menu_code_for_permission
       "WM_RATE_RETROACT_MNG"
@@ -30,12 +52,28 @@
       )
     end
 
+    def batch_save_params
+      params.permit(
+        :ref_fee_rt_no,
+        :ref_fee_rt_lineno,
+        rowsToDelete: [],
+        rowsToInsert: [
+          :exce_rslt_no, :rslt_std_ymd, :op_rslt_mngt_no, :lineno, :rslt_qty,
+          :aply_uprice, :rslt_amt, :cur_cd, :rtac_uprice, :rtac_amt, :uprice_diff, :amt_diff
+        ],
+        rowsToUpdate: [
+          :exce_rslt_no, :rslt_std_ymd, :op_rslt_mngt_no, :lineno, :rslt_qty,
+          :aply_uprice, :rslt_amt, :cur_cd, :rtac_uprice, :rtac_amt, :uprice_diff, :amt_diff
+        ]
+      )
+    end
+
     def set_rate_master
       master_key = params[:rate_retroact_id].to_s.strip.upcase
       @rate_master = Wm::SellFeeRtMng.find_by(wrhs_exca_fee_rt_no: master_key)
 
       if @rate_master.nil?
-        render json: { success: false, errors: ["요율마스터를 찾을 수 없습니다."] }, status: :not_found
+        render json: { success: false, errors: [ "요율마스터를 찾을 수 없습니다." ] }, status: :not_found
       end
     end
 
@@ -160,6 +198,99 @@
         prcs_sctn_cd: history&.prcs_sctn_cd,
         rtac_proc_stat_cd: history&.rtac_proc_stat_cd
       }
+    end
+
+    def process_detail_upserts(rows, result, errors, default_process_code:)
+      Array(rows).each do |attrs|
+        exce_rslt_no = attrs[:exce_rslt_no].to_s.strip
+        if exce_rslt_no.blank?
+          next
+        end
+
+        history = Wm::RateRetroactHistory.find_or_initialize_by(exce_rslt_no: exce_rslt_no)
+        process_code = history.new_record? ? default_process_code : "U"
+        history.assign_attributes(history_attrs(attrs, process_code: process_code))
+
+        if history.save
+          if history.previous_changes.key?("id")
+            result[:inserted] += 1
+          else
+            result[:updated] += 1
+          end
+        else
+          errors.concat(history.errors.full_messages)
+        end
+      end
+    end
+
+    def process_detail_deletes(rows, result, errors)
+      Array(rows).each do |raw|
+        exce_rslt_no = extract_delete_key(raw)
+        if exce_rslt_no.blank?
+          next
+        end
+
+        history = Wm::RateRetroactHistory.find_by(exce_rslt_no: exce_rslt_no)
+        if history.nil?
+          next
+        end
+
+        if history.destroy
+          result[:deleted] += 1
+        else
+          errors.concat(history.errors.full_messages.presence || [ "소급이력을 삭제하지 못했습니다: #{exce_rslt_no}" ])
+        end
+      end
+    end
+
+    def extract_delete_key(raw)
+      if raw.is_a?(Hash) || raw.is_a?(ActionController::Parameters)
+        raw[:exce_rslt_no].to_s.strip.presence || raw["exce_rslt_no"].to_s.strip
+      else
+        raw.to_s.strip
+      end
+    end
+
+    def history_attrs(attrs, process_code:)
+      {
+        op_rslt_mngt_no: attrs[:op_rslt_mngt_no].to_s.strip,
+        op_rslt_mngt_no_seq: attrs[:lineno].to_i,
+        rslt_std_ymd: normalize_ymd(attrs[:rslt_std_ymd]),
+        work_pl_cd: @rate_master.work_pl_cd,
+        sell_buy_sctn_cd: @rate_master.sell_buy_sctn_cd,
+        bzac_cd: @rate_master.ctrt_cprtco_cd,
+        sell_buy_attr_cd: @rate_master.sell_buy_attr_cd,
+        rslt_qty: to_decimal(attrs[:rslt_qty]),
+        base_uprice: to_decimal(attrs[:aply_uprice]),
+        base_amt: to_decimal(attrs[:rslt_amt]),
+        rtac_uprice: to_decimal(attrs[:rtac_uprice]),
+        rtac_amt: to_decimal(attrs[:rtac_amt]),
+        uprice_diff: to_decimal(attrs[:uprice_diff]),
+        amt_diff: to_decimal(attrs[:amt_diff]),
+        cur_cd: attrs[:cur_cd].to_s.strip.upcase,
+        ref_fee_rt_no: resolved_ref_fee_rt_no,
+        ref_fee_rt_lineno: resolved_ref_fee_rt_lineno,
+        prcs_sctn_cd: process_code,
+        rtac_proc_stat_cd: "RTAC"
+      }
+    end
+
+    def resolved_ref_fee_rt_no
+      requested = params[:ref_fee_rt_no].to_s.strip.upcase
+      if requested.present?
+        requested
+      else
+        @rate_master.wrhs_exca_fee_rt_no
+      end
+    end
+
+    def resolved_ref_fee_rt_lineno
+      requested = params[:ref_fee_rt_lineno].to_s.strip
+      if requested.present?
+        requested.to_i
+      else
+        nil
+      end
     end
 
     def normalize_ymd(value)

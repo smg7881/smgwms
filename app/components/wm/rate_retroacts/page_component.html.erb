@@ -1,5 +1,7 @@
 ﻿<div data-controller="wm-rate-retroact-grid"
      data-action="ag-grid:ready->wm-rate-retroact-grid#registerGrid"
+     data-wm-rate-retroact-grid-master-batch-url-value="<%= master_batch_save_url %>"
+     data-wm-rate-retroact-grid-detail-batch-url-template-value="<%= detail_batch_save_url_template %>"
      data-wm-rate-retroact-grid-detail-list-url-template-value="/wm/rate_retroacts/:rate_retroact_id/details.json"
      data-wm-rate-retroact-grid-apply-retro-rates-url-value="<%= apply_retro_rates_url %>"
      data-wm-rate-retroact-grid-process-retroacts-url-value="<%= process_retroacts_url %>"

@@ -1,6 +1,8 @@
 <%# app/components/wm/gr_prars/page_component.html.erb %>
 <div data-controller="wm-gr-prar-grid"
      data-action="ag-grid:ready->wm-gr-prar-grid#registerGrid"
+     data-wm-gr-prar-grid-master-batch-url-value="<%= master_batch_save_url %>"
+     data-wm-gr-prar-grid-detail-batch-url-template-value="<%= detail_batch_save_url_template %>"
      data-wm-gr-prar-grid-detail-list-url-template-value="<%= detail_list_url_template %>"
      data-wm-gr-prar-grid-exec-result-url-template-value="<%= exec_result_list_url_template %>"
      data-wm-gr-prar-grid-save-url-template-value="<%= save_url_template %>"

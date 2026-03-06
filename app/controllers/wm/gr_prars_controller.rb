@@ -1,6 +1,13 @@
 class Wm::GrPrarsController < Wm::BaseController
   # GET /wm/gr_prars       HTML/JSON 목록
   def index
+    if params[:gr_prar_id].present?
+      gr_prar = Wm::GrPrar.find_by!(gr_prar_no: params[:gr_prar_id])
+      dtls = gr_prar.details.order(:lineno)
+      render json: dtls.map { |d| detail_json(d) }
+      return
+    end
+
     respond_to do |format|
       format.html
       format.json { render json: records_scope.map { |r| header_json(r) } }
@@ -39,11 +46,26 @@ class Wm::GrPrarsController < Wm::BaseController
   end
 
   # POST /wm/gr_prars/:id/save  입고내역저장 (복잡한 트랜잭션)
+  # POST /wm/gr_prars/batch_save
+  # POST /wm/gr_prars/:gr_prar_id/details/batch_save
+  def batch_save
+    if params[:gr_prar_id].present?
+      batch_save_detail_rows
+    else
+      batch_save_master_rows
+    end
+  rescue ActiveRecord::RecordNotFound => e
+    render json: { success: false, errors: [ e.message ] }, status: :not_found
+  rescue => e
+    render json: { success: false, errors: [ e.message ] }, status: :unprocessable_entity
+  end
+
   def save_gr
     gr_prar = Wm::GrPrar.find_by!(gr_prar_no: params[:id])
     detail_rows = params[:rows] || []
     errors = []
     actor = current_actor
+    result = { inserted: 0, updated: 0, deleted: 0 }
 
     ActiveRecord::Base.transaction do
       detail_rows.each do |row|
@@ -143,7 +165,7 @@ class Wm::GrPrarsController < Wm::BaseController
         # 4) 입고예정상세 수정
         new_rslt_qty = dtl.gr_rslt_qty.to_f + gr_qty
         new_stat     = new_rslt_qty > 0 ? Wm::GrPrar::GR_STAT_PROCESSED : Wm::GrPrar::GR_STAT_PENDING
-        dtl.update!(
+        updated_count = Wm::GrPrarDtl.where(gr_prar_no: gr_prar.gr_prar_no, lineno: lineno).update_all(
           gr_loc_cd:    loc_cd,
           gr_qty:       gr_qty,
           gr_rslt_qty:  new_rslt_qty,
@@ -151,8 +173,15 @@ class Wm::GrPrarsController < Wm::BaseController
           gr_hms:       now.strftime("%H%M%S"),
           gr_stat_cd:   new_stat,
           rmk:          row[:rmk].to_s.strip.presence || dtl.rmk,
+          update_by:    actor,
+          update_time:  Time.current,
           **attr_data.transform_keys(&:to_sym)
         )
+        if updated_count == 1
+          result[:updated] += 1
+        else
+          errors << "입고예정 상세를 저장할 수 없습니다: #{lineno}"
+        end
       end
 
       raise ActiveRecord::Rollback if errors.any?
@@ -168,12 +197,13 @@ class Wm::GrPrarsController < Wm::BaseController
         gr_stat_cd:  new_stat,
         rmk:         header_rmk || gr_prar.rmk
       )
+      result[:updated] += 1
     end
 
     if errors.any?
       render json: { success: false, errors: errors.uniq }, status: :unprocessable_entity
     else
-      render json: { success: true, message: "입고내역이 저장되었습니다." }
+      render json: { success: true, message: "입고내역이 저장되었습니다.", data: result }
     end
   rescue ActiveRecord::RecordNotFound => e
     render json: { success: false, errors: [ e.message ] }, status: :not_found
@@ -323,6 +353,10 @@ class Wm::GrPrarsController < Wm::BaseController
   end
 
   private
+    def menu_code_for_permission
+      "WM_GR_PRAR"
+    end
+
     def search_params
       params.fetch(:q, {}).permit(
         :workpl_cd, :cust_cd, :gr_type_cd, :gr_stat_cd,
@@ -455,6 +489,145 @@ class Wm::GrPrarsController < Wm::BaseController
         stock_attr_col09:      r.stock_attr_col09,
         stock_attr_col10:      r.stock_attr_col10
       }
+    end
+
+    def batch_save_master_rows
+      operations = master_batch_save_params
+      result = { inserted: 0, updated: 0, deleted: 0 }
+      errors = []
+
+      ActiveRecord::Base.transaction do
+        process_master_row_inserts(operations[:rowsToInsert], errors)
+        process_master_row_updates(operations[:rowsToUpdate], result, errors)
+        process_master_row_deletes(operations[:rowsToDelete], errors)
+
+        raise ActiveRecord::Rollback if errors.any?
+      end
+
+      if errors.any?
+        render json: { success: false, errors: errors.uniq }, status: :unprocessable_entity
+      else
+        render json: { success: true, message: "입고예정이 저장되었습니다.", data: result }
+      end
+    end
+
+    def batch_save_detail_rows
+      gr_prar = Wm::GrPrar.find_by!(gr_prar_no: params[:gr_prar_id])
+      operations = detail_batch_save_params
+      result = { inserted: 0, updated: 0, deleted: 0 }
+      errors = []
+
+      ActiveRecord::Base.transaction do
+        process_detail_row_inserts(operations[:rowsToInsert], errors)
+        process_detail_row_updates(gr_prar, operations[:rowsToUpdate], result, errors)
+        process_detail_row_deletes(operations[:rowsToDelete], errors)
+
+        raise ActiveRecord::Rollback if errors.any?
+      end
+
+      if errors.any?
+        render json: { success: false, errors: errors.uniq }, status: :unprocessable_entity
+      else
+        render json: { success: true, message: "입고예정 상세가 저장되었습니다.", data: result }
+      end
+    end
+
+    def process_master_row_inserts(rows, errors)
+      if Array(rows).any?
+        errors << "입고예정 신규 등록은 지원하지 않습니다."
+      end
+    end
+
+    def process_master_row_updates(rows, result, errors)
+      Array(rows).each do |attrs|
+        gr_prar_no = attrs[:gr_prar_no].to_s.strip
+        if gr_prar_no.blank?
+          next
+        end
+
+        gr_prar = Wm::GrPrar.find_by(gr_prar_no: gr_prar_no)
+        if gr_prar.nil?
+          errors << "입고예정을 찾을 수 없습니다: #{gr_prar_no}"
+          next
+        end
+
+        if gr_prar.update(master_row_update_attrs(attrs))
+          result[:updated] += 1
+        else
+          errors.concat(gr_prar.errors.full_messages)
+        end
+      end
+    end
+
+    def process_master_row_deletes(rows, errors)
+      if Array(rows).any?
+        errors << "입고예정 삭제는 지원하지 않습니다."
+      end
+    end
+
+    def process_detail_row_inserts(rows, errors)
+      if Array(rows).any?
+        errors << "입고예정 상세 신규 등록은 지원하지 않습니다."
+      end
+    end
+
+    def process_detail_row_updates(gr_prar, rows, result, errors)
+      Array(rows).each do |attrs|
+        lineno = attrs[:lineno].to_i
+        if lineno <= 0
+          next
+        end
+
+        detail = gr_prar.details.find_by(lineno: lineno)
+        if detail.nil?
+          errors << "입고예정 상세를 찾을 수 없습니다: #{lineno}"
+          next
+        end
+
+        updated_count = gr_prar.details.where(lineno: lineno).update_all(
+          detail_row_update_attrs(attrs).to_h.merge(
+            update_by: current_actor,
+            update_time: Time.current
+          )
+        )
+        if updated_count == 1
+          result[:updated] += 1
+        else
+          errors << "입고예정 상세를 저장할 수 없습니다: #{lineno}"
+        end
+      end
+    end
+
+    def process_detail_row_deletes(rows, errors)
+      if Array(rows).any?
+        errors << "입고예정 상세 삭제는 지원하지 않습니다."
+      end
+    end
+
+    def master_batch_save_params
+      params.permit(
+        rowsToDelete: [],
+        rowsToInsert: [ :gr_prar_no, :car_no, :driver_telno, :rmk ],
+        rowsToUpdate: [ :gr_prar_no, :car_no, :driver_telno, :rmk ]
+      )
+    end
+
+    def detail_batch_save_params
+      attr_columns = Wm::GrPrarDtl::STOCK_ATTR_COLS.map(&:to_sym)
+      params.permit(
+        rowsToDelete: [],
+        rowsToInsert: [ :lineno, :gr_loc_cd, :gr_qty, :rmk, *attr_columns ],
+        rowsToUpdate: [ :lineno, :gr_loc_cd, :gr_qty, :rmk, *attr_columns ]
+      )
+    end
+
+    def master_row_update_attrs(attrs)
+      attrs.permit(:car_no, :driver_telno, :rmk)
+    end
+
+    def detail_row_update_attrs(attrs)
+      attr_columns = Wm::GrPrarDtl::STOCK_ATTR_COLS.map(&:to_sym)
+      attrs.permit(:gr_loc_cd, :gr_qty, :rmk, *attr_columns)
     end
 
     def current_actor

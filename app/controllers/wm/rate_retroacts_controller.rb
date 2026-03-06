@@ -10,6 +10,31 @@
     end
   end
 
+  def batch_save
+    operations = batch_save_params
+    result = { inserted: 0, updated: 0, deleted: 0 }
+    errors = []
+
+    ActiveRecord::Base.transaction do
+      if Array(operations[:rowsToInsert]).any?
+        errors << "요율소급관리에서는 마스터 신규 등록을 지원하지 않습니다."
+      end
+
+      process_master_updates(operations[:rowsToUpdate], result, errors)
+      process_master_deletes(operations[:rowsToDelete], result, errors)
+
+      if errors.any?
+        raise ActiveRecord::Rollback
+      end
+    end
+
+    if errors.any?
+      render json: { success: false, errors: errors.uniq }, status: :unprocessable_entity
+    else
+      render json: { success: true, message: "요율 데이터가 저장되었습니다.", data: result }
+    end
+  end
+
   def apply_retro_rates
     operations = apply_params
     retro_uprice = to_decimal(operations[:retro_uprice])
@@ -260,6 +285,10 @@
       value.to_s.gsub(/[^0-9]/, "").first(8)
     end
 
+    def normalize_code(value)
+      value.to_s.strip.upcase
+    end
+
     def to_decimal(value)
       BigDecimal(value.to_s)
     rescue ArgumentError
@@ -346,3 +375,44 @@
       end
     end
 end
+    def batch_save_params
+      params.permit(
+        rowsToDelete: [],
+        rowsToInsert: [ :wrhs_exca_fee_rt_no, :rtac_feert ],
+        rowsToUpdate: [ :wrhs_exca_fee_rt_no, :rtac_feert ]
+      )
+    end
+
+    def process_master_updates(rows, result, errors)
+      Array(rows).each do |attrs|
+        rate_no = normalize_code(attrs[:wrhs_exca_fee_rt_no])
+        if rate_no.blank?
+          next
+        end
+
+        record = Wm::SellFeeRtMng.find_by(wrhs_exca_fee_rt_no: rate_no)
+        if record.nil?
+          errors << "요율번호를 찾을 수 없습니다: #{rate_no}"
+        else
+          result[:updated] += 1
+        end
+      end
+    end
+
+    def process_master_deletes(rows, result, errors)
+      Array(rows).each do |value|
+        rate_no = normalize_code(value)
+        if rate_no.blank?
+          next
+        end
+
+        record = Wm::SellFeeRtMng.find_by(wrhs_exca_fee_rt_no: rate_no)
+        if record.nil?
+          next
+        end
+
+        errors << "요율소급관리에서는 마스터 삭제를 지원하지 않습니다: #{rate_no}"
+      end
+
+      result[:deleted] += 0
+    end

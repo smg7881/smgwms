@@ -9,6 +9,23 @@ class Wm::GrPrars::PageComponent < Wm::BasePageComponent
 
     def collection_path(**) = helpers.wm_gr_prars_path(**)
     def member_path(id, **) = helpers.wm_gr_prar_path(id, **)
+    def detail_collection_path(id, **) = helpers.wm_gr_prar_details_path(id, **)
+
+    def detail_grid_url
+      if selected_gr_prar_no.present?
+        detail_collection_path(selected_gr_prar_no, format: :json)
+      else
+        nil
+      end
+    end
+
+    def master_batch_save_url
+      helpers.batch_save_wm_gr_prars_path
+    end
+
+    def detail_batch_save_url_template
+      "/wm/gr_prars/:gr_prar_id/details/batch_save"
+    end
 
     def detail_list_url_template
       "/wm/gr_prars/:gr_prar_id/details.json"

@@ -27,6 +27,14 @@
       helpers.process_retroacts_wm_rate_retroacts_path
     end
 
+    def master_batch_save_url
+      helpers.batch_save_wm_rate_retroacts_path
+    end
+
+    def detail_batch_save_url_template
+      "/wm/rate_retroacts/:id/details/batch_save"
+    end
+
     def selected_master_label
       if selected_fee_rt_no.present?
         "선택 요율: #{selected_fee_rt_no}"

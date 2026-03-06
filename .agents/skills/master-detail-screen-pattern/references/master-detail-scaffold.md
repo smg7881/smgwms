@@ -1,15 +1,20 @@
 # Master-Detail Scaffold
 
-아래 스캐폴드를 복사해 새 화면에 맞게 이름/필드만 교체한다.
+아래 템플릿을 복사한 뒤 화면별 이름과 필드로 치환해서 사용합니다.
+
+## Standard Terms
+- Contract Registry: `config/master_detail_screen_contracts.yml`
+- Contract Test: `test/contracts/master_detail_pattern_contract_test.rb`
+- PR Gate: `.github/PULL_REQUEST_TEMPLATE.md` + `.github/CODEOWNERS`
 
 ## 1. Routes
 
 ```ruby
-namespace :system do
-  resources :<master_resource>, only: [ :index, :create, :update, :destroy ], param: :id do
+namespace :<ns> do
+  resources :<master_resource>, only: [ :index ] do
     post :batch_save, on: :collection
 
-    resources :details, controller: :<detail_controller>, only: [ :index, :create, :update, :destroy ], param: :detail_code do
+    resources :details, controller: :<detail_controller>, only: [ :index ], param: :<detail_param> do
       post :batch_save, on: :collection
     end
   end
@@ -20,21 +25,23 @@ end
 
 ```ruby
 class <Ns>::<Module>::PageComponent <<Ns>::BasePageComponent
-  def initialize(query_params:, selected_key:)
+  def initialize(query_params:, selected_master:)
     super(query_params: query_params)
-    @selected_key = selected_key.presence
+    @selected_master = selected_master.presence
   end
 
   private
-    attr_reader :selected_key
+    attr_reader :selected_master
 
     def collection_path(**) = helpers.<ns>_<master_resource>_path(**)
     def member_path(id, **) = helpers.<ns>_<master_singular>_path(id, **)
     def detail_collection_path(id, **) = helpers.<ns>_<master_singular>_details_path(id, **)
 
     def detail_grid_url
-      if selected_key.present?
-        detail_collection_path(selected_key, format: :json)
+      if selected_master.present?
+        detail_collection_path(selected_master, format: :json)
+      else
+        nil
       end
     end
 
@@ -44,32 +51,6 @@ class <Ns>::<Module>::PageComponent <<Ns>::BasePageComponent
 
     def detail_batch_save_url_template
       "/<ns>/<master_resource>/:id/details/batch_save"
-    end
-
-    def selected_label
-      selected_key.present? ? "선택 값: #{selected_key}" : "마스터를 먼저 선택하세요."
-    end
-
-    def search_fields
-      [
-        { field: "<master_code>", type: "input", label: "코드", placeholder: "코드 검색.." },
-        { field: "<master_name>", type: "input", label: "명칭", placeholder: "명칭 검색.." },
-        {
-          field: "use_yn",
-          type: "select",
-          label: "사용여부",
-          options: common_code_options("CMM_USE_YN", include_all: true),
-          include_blank: false
-        }
-      ]
-    end
-
-    def master_columns
-      [ { field: "<master_code>", headerName: "코드", editable: true } ]
-    end
-
-    def detail_columns
-      [ { field: "<detail_code>", headerName: "상세코드", editable: true } ]
     end
 end
 ```
@@ -82,11 +63,22 @@ end
      data-<name>-grid-master-batch-url-value="<%= master_batch_save_url %>"
      data-<name>-grid-detail-batch-url-template-value="<%= detail_batch_save_url_template %>"
      data-<name>-grid-detail-list-url-template-value="/<ns>/<master_resource>/:id/details.json"
-     data-<name>-grid-selected-key-value="<%= selected_key.to_s %>">
+     data-<name>-grid-selected-master-value="<%= selected_master.to_s %>">
   <%= render Ui::SearchFormComponent.new(url: create_url, fields: search_fields, cols: 3, enable_collapse: true) %>
 
-  <%= render Ui::AgGridComponent.new(columns: master_columns, url: grid_url, grid_id: "<name>-master", data: { <name>_grid_target: "masterGrid" }) %>
-  <%= render Ui::AgGridComponent.new(columns: detail_columns, row_data: [], grid_id: "<name>-detail", data: { <name>_grid_target: "detailGrid" }) %>
+  <%= render Ui::AgGridComponent.new(
+    columns: master_columns,
+    url: grid_url,
+    grid_id: "<name>-master",
+    data: { <name>_grid_target: "masterGrid" }
+  ) %>
+
+  <%= render Ui::AgGridComponent.new(
+    columns: detail_columns,
+    row_data: [],
+    grid_id: "<name>-detail",
+    data: { <name>_grid_target: "detailGrid" }
+  ) %>
 </div>
 ```
 
@@ -107,19 +99,14 @@ import {
 const YES_NO_VALUES = ["Y", "N"]
 
 export default class extends BaseGridController {
-  static targets = [...BaseGridController.targets, "masterGrid", "detailGrid", "selectedLabel"]
+  static targets = [...BaseGridController.targets, "masterGrid", "detailGrid", "selectedMasterLabel"]
 
   static values = {
     ...BaseGridController.values,
     masterBatchUrl: String,
     detailBatchUrlTemplate: String,
     detailListUrlTemplate: String,
-    selectedKey: String
-  }
-
-  connect() {
-    super.connect()
-    this.refreshSelectedLabel()
+    selectedMaster: String
   }
 
   gridRoles() {
@@ -127,24 +114,19 @@ export default class extends BaseGridController {
       master: {
         target: "masterGrid",
         manager: this.masterManagerConfig(),
-        masterKeyField: "<master_code>"
+        masterKeyField: "<master_key>"
       },
       detail: {
         target: "detailGrid",
         manager: this.detailManagerConfig(),
         parentGrid: "master",
-        onMasterRowChange: (rowData) => {
-          this.selectedKeyValue = rowData?.<master_code> || ""
-          this.refreshSelectedLabel()
-          this.clearDetailRows()
-        },
         detailLoader: async (rowData) => {
-          const id = rowData?.<master_code>
-          const hasLoadableId = Boolean(id) && !rowData?.__is_deleted && !rowData?.__is_new
-          if (!hasLoadableId) return []
+          const masterKey = rowData?.<master_key>
+          const hasLoadableKey = Boolean(masterKey) && !rowData?.__is_deleted && !rowData?.__is_new
+          if (!hasLoadableKey) return []
 
           try {
-            const url = buildTemplateUrl(this.detailListUrlTemplateValue, ":id", id)
+            const url = buildTemplateUrl(this.detailListUrlTemplateValue, ":id", masterKey)
             const rows = await fetchJson(url)
             return Array.isArray(rows) ? rows : []
           } catch {
@@ -156,98 +138,46 @@ export default class extends BaseGridController {
     }
   }
 
-  masterManagerConfig() {
-    return {
-      pkFields: ["<master_code>"],
-      fields: { <master_code>: "trimUpper", <master_name>: "trim", use_yn: "trimUpperDefault:Y" },
-      defaultRow: { <master_code>: "", <master_name>: "", use_yn: "Y" },
-      blankCheckFields: ["<master_code>", "<master_name>"],
-      comparableFields: ["<master_name>", "use_yn"],
-      validationRules: {
-        requiredFields: ["<master_code>", "<master_name>", "use_yn"],
-        fieldRules: { use_yn: [{ type: "enum", values: YES_NO_VALUES }] }
-      },
-      firstEditCol: "<master_code>"
-    }
-  }
-
-  detailManagerConfig() {
-    return {
-      pkFields: ["<detail_code>"],
-      fields: { <detail_code>: "trimUpper", <detail_name>: "trim", use_yn: "trimUpperDefault:Y" },
-      defaultRow: { <detail_code>: "", <detail_name>: "", use_yn: "Y" },
-      blankCheckFields: ["<detail_code>", "<detail_name>"],
-      comparableFields: ["<detail_name>", "use_yn"],
-      validationRules: {
-        requiredFields: ["<detail_code>", "<detail_name>", "use_yn"],
-        fieldRules: { use_yn: [{ type: "enum", values: YES_NO_VALUES }] }
-      },
-      firstEditCol: "<detail_code>"
-    }
-  }
-
-  get masterManager() { return this.gridManager("master") }
-  get detailManager() { return this.gridManager("detail") }
-
-  addMasterRow() { this.addRow({ manager: this.masterManager }) }
-  deleteMasterRows() { this.deleteRows({ manager: this.masterManager }) }
-  saveMasterRows() {
-    return this.saveRowsWith({
-      manager: this.masterManager,
+  async saveMasterRows() {
+    await this.saveRowsWith({
+      manager: this.gridManager("master"),
       batchUrl: this.masterBatchUrlValue,
       saveMessage: "마스터 데이터가 저장되었습니다.",
       onSuccess: () => this.refreshGrid("master")
     })
   }
 
-  addDetailRow() {
-    if (!this.selectedKeyValue) return showAlert("마스터를 먼저 선택해주세요.")
+  async saveDetailRows() {
     if (this.blockDetailActionIfMasterChanged()) return
-    this.addRow({ manager: this.detailManager, overrides: { <master_fk>: this.selectedKeyValue } })
-  }
+    if (!this.selectedMasterValue) {
+      showAlert("마스터를 먼저 선택해주세요.")
+      return
+    }
 
-  deleteDetailRows() {
-    if (this.blockDetailActionIfMasterChanged()) return
-    this.deleteRows({ manager: this.detailManager })
-  }
-
-  saveDetailRows() {
-    if (!this.selectedKeyValue) return showAlert("마스터를 먼저 선택해주세요.")
-    if (this.blockDetailActionIfMasterChanged()) return
-    const batchUrl = buildTemplateUrl(this.detailBatchUrlTemplateValue, ":id", this.selectedKeyValue)
-    return this.saveRowsWith({
-      manager: this.detailManager,
+    const batchUrl = buildTemplateUrl(this.detailBatchUrlTemplateValue, ":id", this.selectedMasterValue)
+    await this.saveRowsWith({
+      manager: this.gridManager("detail"),
       batchUrl,
       saveMessage: "상세 데이터가 저장되었습니다.",
       onSuccess: () => this.refreshGrid("master")
     })
   }
 
-  beforeSearchReset() {
-    this.selectedKeyValue = ""
-    this.refreshSelectedLabel()
-  }
-
-  clearDetailRows() { setManagerRowData(this.detailManager, []) }
-  hasMasterPendingChanges() { return hasPendingChanges(this.masterManager) }
-  blockDetailActionIfMasterChanged() { return blockIfPendingChanges(this.masterManager, "마스터") }
-
-  refreshSelectedLabel() {
-    if (!this.hasSelectedLabelTarget) return
-    refreshSelectionLabel(this.selectedLabelTarget, this.selectedKeyValue, "마스터", "마스터를 먼저 선택해주세요.")
+  blockDetailActionIfMasterChanged() {
+    return blockIfPendingChanges(this.gridManager("master"), "마스터")
   }
 }
 ```
 
-## 5. Master Controller 핵심 구조
+## 5. Master Controller Skeleton
 
 ```ruby
 def index
-  @selected_key = params[:selected_key].presence
+  @selected_master = params[:selected_master].presence
 
   respond_to do |format|
     format.html
-    format.json { render json: master_scope.map { |row| master_json(row) } }
+    format.json { render json: records_scope.map { |row| record_json(row) } }
   end
 end
 
@@ -264,18 +194,18 @@ def batch_save
   end
 
   if errors.any?
-    render_failure(errors: errors.uniq)
+    render json: { success: false, errors: errors.uniq }, status: :unprocessable_entity
   else
-    render_success(message: "저장이 완료되었습니다.", payload: { data: result })
+    render json: { success: true, data: result }
   end
 end
 ```
 
-## 6. Detail Controller 핵심 구조
+## 6. Detail Controller Skeleton
 
 ```ruby
 def index
-  master = master_row
+  master = find_master
   if master.nil?
     render json: []
   else
@@ -285,7 +215,7 @@ end
 
 def batch_save
   operations = batch_save_params
-  master = master_row!
+  master = find_master!
   result = { inserted: 0, updated: 0, deleted: 0 }
   errors = []
 
@@ -297,9 +227,20 @@ def batch_save
   end
 
   if errors.any?
-    render_failure(errors: errors.uniq)
+    render json: { success: false, errors: errors.uniq }, status: :unprocessable_entity
   else
-    render_success(message: "상세 저장이 완료되었습니다.", payload: { data: result })
+    render json: { success: true, data: result }
   end
 end
 ```
+
+## Mandatory Gate (Required)
+1. Contract Registry 등록
+- 신규 화면을 `config/master_detail_screen_contracts.yml`에 추가
+2. Contract Test 통과
+- `ruby bin/rails test test/contracts/master_detail_pattern_contract_test.rb`
+- 또는 `ruby bin/rails wm:contracts:master_detail`
+3. PR Gate 통과
+- `.github/PULL_REQUEST_TEMPLATE.md`의 Master-Detail 체크
+- `.github/CODEOWNERS` 승인 조건 확인
+4. 하나라도 실패하면 merge 금지

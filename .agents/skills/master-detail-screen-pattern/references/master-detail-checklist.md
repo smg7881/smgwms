@@ -1,49 +1,69 @@
 # Master-Detail Checklist
 
-## 사전 결정
-- [ ] 화면이 1:N 구조인지 확인한다.
-- [ ] master PK, detail PK, detail FK를 확정한다.
-- [ ] detail URL 템플릿 치환 키(`:id`/`:code`)를 확정한다.
+## Standard Terms
+- [ ] Contract Registry: `config/master_detail_screen_contracts.yml`
+- [ ] Contract Test: `test/contracts/master_detail_pattern_contract_test.rb`
+- [ ] PR Gate: `.github/PULL_REQUEST_TEMPLATE.md` + `.github/CODEOWNERS`
 
-## 라우트
-- [ ] master 리소스에 `batch_save`를 추가한다.
-- [ ] nested detail 리소스와 detail `batch_save`를 추가한다.
-- [ ] `param:` 값과 controller `find_*` 로직이 일치하는지 확인한다.
+## Pre-Design
+- [ ] 화면이 1:N master-detail 구조인지 확인했다.
+- [ ] master PK, detail PK, detail FK를 확정했다.
+- [ ] detail URL 토큰(`:id` 또는 `:code`)을 확정했고 전 구간에서 동일하게 사용한다.
+
+## Routes
+- [ ] master resource에 `post :batch_save, on: :collection`을 추가했다.
+- [ ] nested detail resource에 `post :batch_save, on: :collection`을 추가했다.
+- [ ] 라우트 파라미터와 controller finder 키가 일치한다.
 
 ## PageComponent
-- [ ] `collection_path`, `member_path`, `detail_collection_path`를 구현한다.
-- [ ] `detail_grid_url`을 `selected_*` 존재 조건으로 구현한다.
-- [ ] `master_batch_save_url`, `detail_batch_save_url_template`를 구현한다.
-- [ ] `search_fields`, `master_columns`, `detail_columns`를 분리한다.
-- [ ] master/detail 모두 상태 컬럼(`__row_status`)을 둔다.
+- [ ] `collection_path`, `member_path`, `detail_collection_path`를 구현했다.
+- [ ] `detail_grid_url`을 구현했다.
+- [ ] `master_batch_save_url`을 구현했다.
+- [ ] `detail_batch_save_url_template`를 구현했다.
+- [ ] `search_fields`, `master_columns`, `detail_columns`를 분리했다.
+- [ ] master/detail 모두 `__row_status` 컬럼을 포함했다.
 
 ## ERB
-- [ ] 최상위 `data-controller`와 `ag-grid:ready` 바인딩을 설정한다.
-- [ ] `masterBatchUrl`, `detailBatchUrlTemplate`, `detailListUrlTemplate`, `selected` value를 주입한다.
-- [ ] master grid target=`masterGrid`, detail grid target=`detailGrid`를 맞춘다.
-- [ ] selected 라벨 target을 렌더링한다.
+- [ ] `data-controller="<name>-grid"`를 설정했다.
+- [ ] `ag-grid:ready->...#registerGrid`를 연결했다.
+- [ ] 아래 value를 모두 주입했다.
+- [ ] `master-batch-url-value`
+- [ ] `detail-batch-url-template-value`
+- [ ] `detail-list-url-template-value`
+- [ ] target을 `masterGrid`, `detailGrid`로 사용한다.
 
 ## Stimulus
-- [ ] `BaseGridController`를 상속한다.
-- [ ] `gridRoles()`에 `master`/`detail` 역할을 선언한다.
-- [ ] detail role에 `parentGrid`, `onMasterRowChange`, `detailLoader`를 구현한다.
-- [ ] `masterManagerConfig()`와 `detailManagerConfig()`를 분리한다.
-- [ ] 디테일 액션 전에 `blockIfPendingChanges(masterManager, "...")`를 호출한다.
-- [ ] detail 저장 URL 치환에 `buildTemplateUrl()`을 사용한다.
-- [ ] `beforeSearchReset()`에서 `selected` 상태/라벨/디테일 초기화를 수행한다.
+- [ ] `BaseGridController`를 상속했다.
+- [ ] `gridRoles()`에 `master`, `detail`, `parentGrid: "master"`를 정의했다.
+- [ ] `detailLoader`를 구현했다.
+- [ ] `masterManagerConfig()`, `detailManagerConfig()`를 구현했다.
+- [ ] `saveMasterRows()`, `saveDetailRows()`를 구현했다.
+- [ ] detail 액션 전에 `blockIfPendingChanges(masterManager, "...")`를 호출한다.
+- [ ] detail batch URL 생성에 `buildTemplateUrl()`를 사용한다.
+- [ ] `beforeSearchReset()`에서 selected/label/detail 상태를 초기화한다.
 
 ## Controller
-- [ ] master `index`는 HTML/JSON 응답을 모두 제공한다.
-- [ ] master `batch_save`는 트랜잭션 + insert/update/delete 분리 메서드를 사용한다.
-- [ ] detail `index`는 master 기준 scope로만 조회한다.
-- [ ] detail `batch_save`는 master 강제 조회(`master!`) 후 처리한다.
-- [ ] detail insert에서 FK를 서버에서 강제 주입한다.
-- [ ] 오류는 `errors.uniq`로 정리해 반환한다.
+- [ ] master `index`가 HTML/JSON 응답을 모두 지원한다.
+- [ ] master `batch_save`가 트랜잭션 insert/update/delete를 처리한다.
+- [ ] detail `index`가 master scope 내부 조회만 수행한다.
+- [ ] detail `batch_save`가 master scope 내부 저장만 수행한다.
+- [ ] detail insert 시 FK를 서버에서 강제 주입한다.
+- [ ] 에러 응답을 `errors.uniq`로 정리한다.
 
-## 검증
-- [ ] master 신규/수정/삭제 저장을 확인한다.
-- [ ] master 선택 변경 시 detail 자동 재조회(또는 초기화)를 확인한다.
-- [ ] master 미저장 상태에서 detail 작업 차단을 확인한다.
-- [ ] detail 신규/수정/삭제 저장을 확인한다.
-- [ ] 검색 후 선택/라벨 상태가 깨지지 않는지 확인한다.
-- [ ] `bin/rubocop`와 관련 테스트를 실행한다.
+## Mandatory Gate (Required)
+- [ ] Contract Registry(`config/master_detail_screen_contracts.yml`)에 신규 화면을 등록했다.
+- [ ] Contract Test를 통과했다.
+- [ ] `ruby bin/rails test test/contracts/master_detail_pattern_contract_test.rb`
+- [ ] 또는 `ruby bin/rails wm:contracts:master_detail`
+- [ ] PR Gate를 통과했다.
+- [ ] `.github/PULL_REQUEST_TEMPLATE.md`의 Master-Detail 항목을 점검했다.
+- [ ] `.github/CODEOWNERS` 승인 조건을 확인했다.
+- [ ] 하나라도 실패하면 merge하지 않는다.
+
+## Validation
+- [ ] master 저장이 정상 동작한다.
+- [ ] master 선택 변경 시 detail 자동 조회/초기화가 정상 동작한다.
+- [ ] master 미저장 변경 시 detail 조작 차단이 정상 동작한다.
+- [ ] detail 저장이 정상 동작한다.
+- [ ] 검색 후 selected/label/detail 상태 일관성이 유지된다.
+- [ ] `ruby bin/rubocop`을 통과했다.

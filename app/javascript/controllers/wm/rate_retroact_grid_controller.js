@@ -6,7 +6,9 @@ import {
   buildTemplateUrl,
   refreshSelectionLabel,
   collectRows,
-  postJson
+  postJson,
+  hasPendingChanges,
+  blockIfPendingChanges
 } from "controllers/grid/grid_utils"
 
 export default class extends BaseGridController {
@@ -14,6 +16,8 @@ export default class extends BaseGridController {
 
   static values = {
     ...BaseGridController.values,
+    masterBatchUrl: String,
+    detailBatchUrlTemplate: String,
     detailListUrlTemplate: String,
     applyRetroRatesUrl: String,
     processRetroactsUrl: String,
@@ -31,11 +35,13 @@ export default class extends BaseGridController {
     return {
       master: {
         target: "masterGrid",
+        manager: this.masterManagerConfig(),
         isMaster: true,
-        masterKeyField: "id"
+        masterKeyField: "wrhs_exca_fee_rt_no"
       },
       detail: {
         target: "detailGrid",
+        manager: this.detailManagerConfig(),
         parentGrid: "master",
         onMasterRowChange: (rowData) => {
           this.currentMasterRow = rowData || null
@@ -48,6 +54,68 @@ export default class extends BaseGridController {
     }
   }
 
+  masterManagerConfig() {
+    return {
+      pkFields: ["wrhs_exca_fee_rt_no"],
+      fields: {
+        wrhs_exca_fee_rt_no: "trimUpper",
+        rtac_feert: "number"
+      },
+      defaultRow: {
+        wrhs_exca_fee_rt_no: "",
+        rtac_feert: 0
+      },
+      blankCheckFields: ["wrhs_exca_fee_rt_no"],
+      comparableFields: ["rtac_feert"],
+      firstEditCol: "rtac_feert"
+    }
+  }
+
+  detailManagerConfig() {
+    return {
+      pkFields: ["exce_rslt_no"],
+      fields: {
+        exce_rslt_no: "trimUpper",
+        rslt_std_ymd: "trim",
+        op_rslt_mngt_no: "trimUpper",
+        lineno: "number",
+        rslt_qty: "number",
+        aply_uprice: "number",
+        rslt_amt: "number",
+        cur_cd: "trimUpper",
+        rtac_uprice: "number",
+        rtac_amt: "number",
+        uprice_diff: "number",
+        amt_diff: "number"
+      },
+      defaultRow: {
+        exce_rslt_no: "",
+        rslt_std_ymd: "",
+        op_rslt_mngt_no: "",
+        lineno: 0,
+        rslt_qty: 0,
+        aply_uprice: 0,
+        rslt_amt: 0,
+        cur_cd: "KRW",
+        rtac_uprice: 0,
+        rtac_amt: 0,
+        uprice_diff: 0,
+        amt_diff: 0
+      },
+      blankCheckFields: ["exce_rslt_no"],
+      comparableFields: ["cur_cd", "rtac_uprice", "rtac_amt", "uprice_diff", "amt_diff", "rslt_amt"],
+      firstEditCol: "rtac_uprice"
+    }
+  }
+
+  get masterManager() {
+    return this.gridManager("master")
+  }
+
+  get detailManager() {
+    return this.gridManager("detail")
+  }
+
   onAllGridsReady() {
     this.refreshSelectedLabels()
   }
@@ -57,6 +125,56 @@ export default class extends BaseGridController {
     this.selectedMasterValue = ""
     this.resetRetroRate()
     this.refreshSelectedLabels()
+  }
+
+  async saveMasterRows() {
+    if (!this.masterBatchUrlValue) {
+      showAlert("저장 URL이 설정되지 않았습니다.")
+      return
+    }
+
+    await this.saveRowsWith({
+      manager: this.masterManager,
+      batchUrl: this.masterBatchUrlValue,
+      saveMessage: "요율 데이터가 저장되었습니다.",
+      onSuccess: () => this.refreshGrid("master")
+    })
+  }
+
+  async saveDetailRows() {
+    if (!this.currentMasterRow || !this.selectedMasterValue) {
+      showAlert("요율목록에서 기준 요율을 먼저 선택하세요.")
+      return
+    }
+    if (this.blockDetailActionIfMasterChanged()) {
+      return
+    }
+
+    const manager = this.detailManager
+    if (!manager) {
+      return
+    }
+
+    manager.stopEditing?.()
+    const operations = manager.buildOperations ? manager.buildOperations() : null
+    if (!operations || (!operations.rowsToInsert?.length && !operations.rowsToUpdate?.length && !operations.rowsToDelete?.length)) {
+      showAlert("변경된 데이터가 없습니다.")
+      return
+    }
+
+    const batchUrl = buildTemplateUrl(this.detailBatchUrlTemplateValue, ":id", this.selectedMasterValue)
+    const result = await postJson(batchUrl, {
+      ...operations,
+      ref_fee_rt_no: this.selectedRetroRate?.ref_fee_rt_no || this.currentMasterRow.wrhs_exca_fee_rt_no,
+      ref_fee_rt_lineno: this.selectedRetroRate?.ref_fee_rt_lineno || this.currentMasterRow.rate_lineno
+    })
+
+    if (!result) {
+      return
+    }
+
+    showAlert(result.message || "실적 데이터가 저장되었습니다.")
+    await this.reloadDetailRows()
   }
 
   async openRetroRatePopup() {
@@ -215,6 +333,14 @@ export default class extends BaseGridController {
 
     showAlert(result.message || "요율소급처리가 완료되었습니다.")
     await this.reloadDetailRows()
+  }
+
+  hasMasterPendingChanges() {
+    return hasPendingChanges(this.masterManager)
+  }
+
+  blockDetailActionIfMasterChanged() {
+    return blockIfPendingChanges(this.masterManager, "마스터 요율")
   }
 
   async loadDetailRows(rowData) {

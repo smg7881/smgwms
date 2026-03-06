@@ -109,6 +109,32 @@ export function hasPendingChanges(manager) {
   return hasChanges(manager.buildOperations())
 }
 
+export function requireSelection(
+  value,
+  {
+    entityLabel = "Target",
+    title = "Warning",
+    type = "warning",
+    message = null
+  } = {}
+) {
+  const present = value != null && String(value).trim() !== ""
+  if (present) return true
+
+  const fallback = `${entityLabel}을(를) 먼저 선택해주세요.`
+  showAlert(title, message || fallback, type)
+  return false
+}
+
+export function isLoadableMasterRow(rowData, keyField) {
+  if (!rowData || !keyField) return false
+
+  const keyValue = rowData[keyField]
+  if (keyValue == null || String(keyValue).trim() === "") return false
+  if (rowData.__is_deleted || rowData.__is_new) return false
+  return true
+}
+
 export function blockIfPendingChanges(manager, entityLabel = "마스터") {
   if (!hasPendingChanges(manager)) return false
   showAlert(`${entityLabel}에 저장되지 않은 변경이 있습니다.`)
@@ -152,8 +178,6 @@ export function setSelectOptions(selectEl, options, selectedValue = "", blankLab
 
   const tomSelect = selectEl.tomselect
   if (tomSelect) {
-    // native select DOM만 교체하면 Tom Select 내부 캐시가 갱신되지 않으므로
-    // Tom Select API로 직접 옵션을 교체한다
     tomSelect.clearOptions()
 
     if (blankLabel !== null) {

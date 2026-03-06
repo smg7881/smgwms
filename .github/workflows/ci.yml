@@ -68,6 +68,9 @@ jobs:
       - name: Lint Stimulus action wiring
         run: ruby bin/lint-stimulus-actions
 
+      - name: Check master-detail skill docs sync
+        run: ruby bin/check-master-detail-skill-sync
+
   test:
     runs-on: ubuntu-latest
 

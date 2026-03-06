@@ -18,6 +18,57 @@ class Wm::RateRetroactsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "batch_save master update works for existing rate" do
+    master = Wm::SellFeeRtMng.create!(
+      wrhs_exca_fee_rt_no: "S20260305000900111",
+      corp_cd: "DEFAULT",
+      work_pl_cd: "WP01",
+      sell_buy_sctn_cd: "10",
+      ctrt_cprtco_cd: "CUST01",
+      sell_buy_attr_cd: "ATTR01",
+      sell_dept_cd: "S01",
+      sell_item_type: "A",
+      sell_item_cd: "ITEM01",
+      sell_unit_clas_cd: "10",
+      sell_unit_cd: "EA",
+      use_yn: "Y",
+      auto_yn: "N"
+    )
+
+    post batch_save_wm_rate_retroacts_url, params: {
+      rowsToInsert: [],
+      rowsToUpdate: [
+        {
+          wrhs_exca_fee_rt_no: master.wrhs_exca_fee_rt_no,
+          rtac_feert: 1500
+        }
+      ],
+      rowsToDelete: []
+    }, as: :json
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    assert_equal true, body["success"]
+    assert_equal 1, body.dig("data", "updated")
+  end
+
+  test "batch_save master insert is rejected" do
+    post batch_save_wm_rate_retroacts_url, params: {
+      rowsToInsert: [
+        {
+          wrhs_exca_fee_rt_no: "NEW001",
+          rtac_feert: 1000
+        }
+      ],
+      rowsToUpdate: [],
+      rowsToDelete: []
+    }, as: :json
+
+    assert_response :unprocessable_entity
+    body = JSON.parse(response.body)
+    assert_equal false, body["success"]
+  end
+
   test "apply_retro_rates returns calculated values" do
     post apply_retro_rates_wm_rate_retroacts_url, params: {
       retro_uprice: 1500,

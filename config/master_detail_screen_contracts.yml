@@ -20,3 +20,25 @@ screens:
     route_master_controller: std/work_routing_steps
     route_detail_controller: std/work_routing_step_details
     route_detail_parent_param: work_routing_step_id
+
+  - key: wm_rate_retroacts
+    data_controller: wm-rate-retroact-grid
+    page_component_path: app/components/wm/rate_retroacts/page_component.rb
+    page_view_path: app/components/wm/rate_retroacts/page_component.html.erb
+    js_controller_path: app/javascript/controllers/wm/rate_retroact_grid_controller.js
+    master_controller_path: app/controllers/wm/rate_retroacts_controller.rb
+    detail_controller_path: app/controllers/wm/rate_retroact_details_controller.rb
+    route_master_controller: wm/rate_retroacts
+    route_detail_controller: wm/rate_retroact_details
+    route_detail_parent_param: rate_retroact_id
+
+  - key: wm_gr_prars
+    data_controller: wm-gr-prar-grid
+    page_component_path: app/components/wm/gr_prars/page_component.rb
+    page_view_path: app/components/wm/gr_prars/page_component.html.erb
+    js_controller_path: app/javascript/controllers/wm/gr_prar_grid_controller.js
+    master_controller_path: app/controllers/wm/gr_prars_controller.rb
+    detail_controller_path: app/controllers/wm/gr_prars_controller.rb
+    route_master_controller: wm/gr_prars
+    route_detail_controller: wm/gr_prars
+    route_detail_parent_param: gr_prar_id

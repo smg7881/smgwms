@@ -109,19 +109,25 @@ Rails.application.routes.draw do
     end
     resources :rate_retroacts, only: [ :index ] do
       collection do
+        post :batch_save
         post :apply_retro_rates
         post :process_retroacts
       end
-      resources :details, controller: :rate_retroact_details, only: [ :index ], param: :lineno
+      resources :details, controller: :rate_retroact_details, only: [ :index ], param: :lineno do
+        post :batch_save, on: :collection
+      end
     end
 
     resources :gr_prars, only: [ :index ] do
       collection do
         get :staged_locations
+        post :batch_save
+      end
+      resources :details, controller: :gr_prars, only: [ :index ] do
+        post :batch_save, on: :collection
       end
       member do
-        get  :details
-        get  :exec_results
+        get :exec_results
         post :save_gr
         post :confirm
         post :cancel

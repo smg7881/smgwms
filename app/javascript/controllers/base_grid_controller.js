@@ -29,7 +29,11 @@ import {
   setManagerRowData,
   focusFirstRow,
   postJson,
-  hasChanges
+  hasChanges,
+  blockIfPendingChanges,
+  buildTemplateUrl,
+  requireSelection,
+  isLoadableMasterRow as isLoadableMasterRowUtil
 } from "controllers/grid/grid_utils"
 import { requestJson } from "controllers/grid/core/http_client"
 import {
@@ -171,6 +175,31 @@ export default class BaseGridController extends Controller {
 
   selectFirstMasterRow(masterRole = "master") {
     return this.selectFirstRow(masterRole, { ensureVisible: true, select: false })
+  }
+
+  buildDetailBatchUrl(template, masterValue, placeholder = ":id") {
+    const value = masterValue == null ? "" : String(masterValue).trim()
+    if (!template || value === "") return null
+    return buildTemplateUrl(template, placeholder, value)
+  }
+
+  requireMasterSelection(selectedValue, { entityLabel = "Master", message = null } = {}) {
+    return requireSelection(selectedValue, {
+      entityLabel,
+      message
+    })
+  }
+
+  isMasterRowLoadable(rowData, keyField) {
+    return isLoadableMasterRowUtil(rowData, keyField)
+  }
+
+  blockIfMasterPendingChanges(manager = this.gridManager("master"), entityLabel = "Master") {
+    return blockIfPendingChanges(manager, entityLabel)
+  }
+
+  blockDetailActionIfMasterChanged(manager = this.gridManager("master"), entityLabel = "Master") {
+    return this.blockIfMasterPendingChanges(manager, entityLabel)
   }
 
   async postAction(url, body, { confirmMessage, onSuccess, onFail } = {}) {
