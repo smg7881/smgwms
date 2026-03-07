@@ -1,5 +1,5 @@
-﻿import BaseGridController from "controllers/base_grid_controller"
-import { showAlert, confirmAction } from "components/ui/alert"
+import BaseGridController from "controllers/base_grid_controller"
+import { showAlert } from "components/ui/alert"
 import { fetchJson, getCsrfToken } from "controllers/grid/grid_utils"
 
 // 사전오더접수오류 화면 (마스터-디테일 + 재처리/업로드 액션)
@@ -21,22 +21,20 @@ export default class extends BaseGridController {
 
   gridRoles() {
     return {
-      master: { target: "masterGrid" },
-      detail: { target: "detailGrid" }
+      master: {
+        target: "masterGrid",
+        masterKeyField: "id"
+      },
+      detail: {
+        target: "detailGrid",
+        parentGrid: "master",
+        detailLoader: (rowData) => this.fetchDetailRows(rowData)
+      }
     }
   }
 
-  async handleSelectionChanged(event) {
-    if (event.target !== this.masterGridTarget) return
-
-    const selected = event.detail?.api?.getSelectedRows?.() || []
-    if (selected.length === 0) {
-      this.setRows("detail", [])
-      return
-    }
-
-    await this.#loadDetailRows(selected[0].id)
-  }
+  // 기존 ag-grid:selectionChanged 바인딩 호환용
+  handleSelectionChanged() { }
 
   async reprocess() {
     const selected = this.selectedRows("master")
@@ -112,20 +110,16 @@ export default class extends BaseGridController {
     }
   }
 
-  // ─── Private ───
-
-  async #loadDetailRows(errorId) {
-    if (!errorId) {
-      this.setRows("detail", [])
-      return
-    }
+  async fetchDetailRows(rowData) {
+    const errorId = rowData?.id
+    if (!errorId) return []
 
     try {
       const rows = await fetchJson(`${this.itemsUrlValue}?error_id=${encodeURIComponent(errorId)}`)
-      this.setRows("detail", rows)
+      return Array.isArray(rows) ? rows : []
     } catch {
       showAlert("오류 상세를 불러오지 못했습니다.")
-      this.setRows("detail", [])
+      return []
     }
   }
 }

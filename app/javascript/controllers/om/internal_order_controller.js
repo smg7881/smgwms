@@ -61,16 +61,10 @@ export default class extends BaseGridController {
 
     this.currentMasterRow = null
     this.activeTab = "location"
-    this._registerGridRetryTimer = null
 
     bindDetailFieldEvents(this, null, (event) => {
       syncDetailFieldUtil(event, this)
     })
-
-    this.registerExistingGrids()
-    this._registerGridRetryTimer = setTimeout(() => {
-      this.registerExistingGrids()
-    }, 150)
 
     this.activateTab("location")
     this.clearDetailForm()
@@ -79,11 +73,6 @@ export default class extends BaseGridController {
   }
 
   disconnect() {
-    if (this._registerGridRetryTimer) {
-      clearTimeout(this._registerGridRetryTimer)
-      this._registerGridRetryTimer = null
-    }
-
     unbindDetailFieldEvents(this)
     this.currentMasterRow = null
 
@@ -719,20 +708,6 @@ export default class extends BaseGridController {
       return `${compact.slice(0, 12)}00`
     }
     return compact
-  }
-
-  registerExistingGrids() {
-    const gridElements = this.element.querySelectorAll("[data-controller='ag-grid']")
-    gridElements.forEach((gridElement) => {
-      const gridController = this.application.getControllerForElementAndIdentifier(gridElement, "ag-grid")
-      const api = gridController?.api || gridController?.gridApi || gridController?.gridOptions?.api
-      if (!api) return
-
-      this.registerGrid({
-        target: gridElement,
-        detail: { api, controller: gridController }
-      })
-    })
   }
 }
 

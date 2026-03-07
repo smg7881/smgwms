@@ -3,8 +3,6 @@ import { showAlert, confirmAction } from "components/ui/alert"
 import { postJson } from "controllers/grid/grid_utils"
 
 export default class extends BaseGridController {
-  static targets = [...BaseGridController.targets]
-
   static values = {
     ...BaseGridController.values,
     moveUrl: String
@@ -59,15 +57,15 @@ export default class extends BaseGridController {
       const movePossQty = this.#numberValue(row.move_poss_qty)
 
       if (!toLocCd) {
-        errors.push(`${rowNo}행: TO 로케이션을 입력해주세요.`)
+        errors.push(`${rowNo}행 TO 로케이션을 입력해주세요.`)
       } else if (toLocCd === fromLocCd) {
-        errors.push(`${rowNo}행: TO 로케이션은 FROM 로케이션과 달라야 합니다.`)
+        errors.push(`${rowNo}행 TO 로케이션은 FROM 로케이션과 달라야 합니다.`)
       }
 
       if (moveQty <= 0) {
-        errors.push(`${rowNo}행: 이동수량은 0보다 커야 합니다.`)
+        errors.push(`${rowNo}행 이동수량은 0보다 커야 합니다.`)
       } else if (moveQty > movePossQty) {
-        errors.push(`${rowNo}행: 이동수량이 이동가능물량을 초과했습니다.`)
+        errors.push(`${rowNo}행 이동수량이 이동가능수량을 초과했습니다.`)
       }
 
       payloadRows.push({

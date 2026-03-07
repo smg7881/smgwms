@@ -1,6 +1,4 @@
 import BaseGridController from "controllers/base_grid_controller"
-import { showAlert } from "components/ui/alert"
-import { fetchJson, isApiAlive, setManagerRowData, hasPendingChanges, buildTemplateUrl, refreshSelectionLabel, focusFirstRow } from "controllers/grid/grid_utils"
 
 export default class extends BaseGridController {
   static targets = [...BaseGridController.targets, "masterGrid", "countryGrid", "selectedCorpLabel"]
@@ -10,6 +8,51 @@ export default class extends BaseGridController {
     masterBatchUrl: String,
     countryBatchUrlTemplate: String,
     countryListUrlTemplate: String
+  }
+
+  connect() {
+    super.connect()
+    this.refreshSelectedLabel()
+  }
+
+  masterConfig() {
+    return {
+      role: "master",
+      batchUrl: "masterBatchUrlValue",
+      saveMessage: "법인 정보가 저장되었습니다.",
+      pendingEntityLabel: "법인 정보",
+      key: {
+        field: "corp_cd",
+        stateProperty: "selectedCorpCode",
+        labelTarget: "selectedCorpLabel",
+        entityLabel: "법인",
+        emptyMessage: "법인을 먼저 선택하세요"
+      },
+      onRowChange: {
+        trackCurrentRow: false,
+        syncForm: false
+      },
+      onSaveSuccess: () => this.refreshGrid("master"),
+      onAdded: (rowData) => this.onMasterRowChanged(rowData)
+    }
+  }
+
+  detailGrids() {
+    return [
+      {
+        role: "country",
+        masterKeyField: "corp_cd",
+        placeholder: ":id",
+        listUrlTemplate: "countryListUrlTemplateValue",
+        batchUrlTemplate: "countryBatchUrlTemplateValue",
+        entityLabel: "법인",
+        selectionMessage: "법인을 먼저 선택하세요.",
+        saveMessage: "법인 국가 정보가 저장되었습니다.",
+        fetchErrorMessage: "법인 국가 정보를 불러오지 못했습니다.",
+        overrides: { ctry_cd: "KR", use_yn_cd: "Y", rpt_yn_cd: "N" },
+        onSaveSuccess: () => this.reloadCountryRows(this.selectedCorpCode)
+      }
+    ]
   }
 
   gridRoles() {
@@ -23,29 +66,10 @@ export default class extends BaseGridController {
         target: "countryGrid",
         manager: "configureCountryManager",
         parentGrid: "master",
-        onMasterRowChange: (rowData) => this.handleMasterRowChange(rowData)
+        onMasterRowChange: (rowData) => this.onMasterRowChanged(rowData),
+        detailLoader: (rowData) => this.loadDetailRows("country", rowData)
       }
     }
-  }
-
-  connect() {
-    super.connect()
-    this.countryManager = null
-    this.selectedCorpCode = ""
-  }
-
-  onAllGridsReady() {
-    this.manager = this.gridManager("master")
-    this.gridController = this.gridCtrl("master")
-    this.countryManager = this.gridManager("country")
-    this.refreshSelectedCorpLabel()
-  }
-
-  disconnect() {
-    this.countryManager?.detach()
-    this.countryManager = null
-    this.selectedCorpCode = ""
-    super.disconnect()
   }
 
   configureManager() {
@@ -94,98 +118,6 @@ export default class extends BaseGridController {
   }
 
   configureCountryManager() {
-    return this.countryConfig
-  }
-
-  isDetailReady() {
-    return isApiAlive(this.countryManager?.api)
-  }
-
-  addMasterRow() {
-    this.addRow({
-      manager: this.manager,
-      onAdded: (rowData) => {
-        this.handleMasterRowChange(rowData)
-      }
-    })
-  }
-
-  deleteMasterRows() {
-    this.deleteRows()
-  }
-
-  async saveMasterRows() {
-    await this.saveRowsWith({
-      manager: this.manager,
-      batchUrl: this.batchUrlValue,
-      saveMessage: this.saveMessage,
-      onSuccess: () => this.afterSaveSuccess()
-    })
-  }
-
-  get batchUrlValue() {
-    return this.masterBatchUrlValue
-  }
-
-  get saveMessage() {
-    return "법인 정보가 저장되었습니다."
-  }
-
-  async afterSaveSuccess() {
-    if (!isApiAlive(this.manager?.api) || !this.gridController?.urlValue) return
-    try {
-      const rows = await fetchJson(this.gridController.urlValue)
-      setManagerRowData(this.manager, rows)
-      this.selectFirstMasterRow()
-    } catch {
-      // 마스터 재조회 실패 시 무시
-    }
-  }
-
-  addCountryRow() {
-    if (!this.countryManager) return
-    if (!this.selectedCorpCode) {
-      showAlert("법인을 먼저 선택하세요.")
-      return
-    }
-    if (hasPendingChanges(this.manager)) {
-      showAlert("법인 정보를 먼저 저장하세요.")
-      return
-    }
-
-    this.addRow({
-      manager: this.countryManager,
-      overrides: { ctry_cd: "KR", use_yn_cd: "Y", rpt_yn_cd: "N" }
-    })
-  }
-
-  deleteCountryRows() {
-    if (!this.countryManager) return
-    if (!this.selectedCorpCode) return
-    this.deleteRows({ manager: this.countryManager })
-  }
-
-  async saveCountryRows() {
-    if (!this.countryManager) return
-    if (!this.selectedCorpCode) {
-      showAlert("법인을 먼저 선택하세요.")
-      return
-    }
-    if (hasPendingChanges(this.manager)) {
-      showAlert("법인 정보를 먼저 저장하세요.")
-      return
-    }
-
-    const batchUrl = buildTemplateUrl(this.countryBatchUrlTemplateValue, ":id", this.selectedCorpCode)
-    await this.saveRowsWith({
-      manager: this.countryManager,
-      batchUrl,
-      saveMessage: "법인 국가 정보가 저장되었습니다.",
-      onSuccess: () => this.loadCountryRows(this.selectedCorpCode)
-    })
-  }
-
-  get countryConfig() {
     return {
       pkFields: ["seq"],
       fields: {
@@ -219,29 +151,9 @@ export default class extends BaseGridController {
       ],
       firstEditCol: "ctry_cd",
       pkLabels: { seq: "순번" },
-      registration: {
-        targetName: "countryGrid",
-        managerKey: "countryManager"
-      },
       onCellValueChanged: (event) => this.handleCountryCellChanged(event)
     }
   }
-
-  async handleMasterRowChange(rowData) {
-    if (!this.isDetailReady()) return
-
-    this.selectedCorpCode = rowData?.corp_cd || ""
-    this.refreshSelectedCorpLabel()
-    this.clearCountryRows()
-
-    const code = rowData?.corp_cd
-    const hasLoadableCode = Boolean(code) && !rowData?.__is_deleted && !rowData?.__is_new
-    if (!hasLoadableCode) return
-
-    await this.loadCountryRows(code)
-  }
-
-
 
   handleCountryCellChanged(event) {
     const field = event?.colDef?.field
@@ -286,40 +198,5 @@ export default class extends BaseGridController {
       AMERICA_NEW_YORK: { stdTime: "UTC-05:00", summerTime: "Y" }
     }
     return map[normalized] || { stdTime: "", summerTime: "" }
-  }
-
-  async loadCountryRows(corpCode) {
-    if (!isApiAlive(this.countryManager?.api)) return
-    if (!corpCode) {
-      this.clearCountryRows()
-      return
-    }
-
-    try {
-      const url = buildTemplateUrl(this.countryListUrlTemplateValue, ":id", corpCode)
-      const rows = await fetchJson(url)
-      setManagerRowData(this.countryManager, rows)
-    } catch {
-      showAlert("법인 국가 정보를 불러오지 못했습니다.")
-    }
-  }
-
-  clearCountryRows() {
-    setManagerRowData(this.countryManager, [])
-  }
-
-  // 조회 직전 상세 그리드를 비웁니다.
-  clearAllDetails() {
-    this.clearCountryRows()
-  }
-
-  beforeSearchReset() {
-    this.selectedCorpCode = ""
-    this.refreshSelectedCorpLabel()
-  }
-
-  refreshSelectedCorpLabel() {
-    if (!this.hasSelectedCorpLabelTarget) return
-    refreshSelectionLabel(this.selectedCorpLabelTarget, this.selectedCorpCode, "법인", "법인을 먼저 선택하세요")
   }
 }

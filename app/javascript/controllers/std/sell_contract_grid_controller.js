@@ -1,8 +1,7 @@
-﻿import BaseGridController from "controllers/base_grid_controller"
-import { showAlert } from "components/ui/alert"
-import { isApiAlive, fetchJson, setManagerRowData, hasPendingChanges, blockIfPendingChanges, buildTemplateUrl, refreshSelectionLabel, focusFirstRow } from "controllers/grid/grid_utils"
+import BaseGridController from "controllers/base_grid_controller"
 import { switchTab, activateTab } from "controllers/ui_utils"
 import * as GridFormUtils from "controllers/grid/grid_form_utils"
+
 const CODE_FIELDS = [
   "corp_cd",
   "bzac_cd",
@@ -52,6 +51,79 @@ export default class extends BaseGridController {
     historyListUrlTemplate: String,
     selectedContract: String
   }
+
+  connect() {
+    super.connect()
+
+    this.activeTab = "basic"
+
+    this.bindDetailFieldEvents()
+    this.activateTab("basic")
+    this.clearDetailForm()
+    this.refreshSelectedLabel()
+  }
+
+  disconnect() {
+    this.unbindDetailFieldEvents()
+    super.disconnect()
+  }
+
+  masterConfig() {
+    return {
+      role: "master",
+      batchUrl: "masterBatchUrlValue",
+      saveMessage: "매출계약 데이터가 저장되었습니다.",
+      pendingEntityLabel: "매출계약 마스터",
+      key: {
+        field: "sell_ctrt_no",
+        stateProperty: "selectedContractValue",
+        labelTarget: "selectedContractLabel",
+        entityLabel: "매출계약",
+        emptyMessage: "매출계약을 먼저 선택하세요."
+      },
+      onRowChange: {
+        trackCurrentRow: true,
+        syncForm: true
+      },
+      beforeSearch: {
+        clearForm: true
+      },
+      onSaveSuccess: () => this.refreshGrid("master"),
+      onAdded: (rowData) => {
+        this.activateTab("basic")
+        this.onMasterRowChanged(rowData)
+      }
+    }
+  }
+
+  detailGrids() {
+    return [
+      {
+        role: "settlement",
+        masterKeyField: "sell_ctrt_no",
+        placeholder: ":id",
+        listUrlTemplate: "settlementListUrlTemplateValue",
+        batchUrlTemplate: "settlementBatchUrlTemplateValue",
+        entityLabel: "매출계약",
+        selectionMessage: "매출계약을 먼저 선택해주세요.",
+        saveMessage: "매출계약 정산정보가 저장되었습니다.",
+        fetchErrorMessage: "정산정보 목록 조회에 실패했습니다.",
+        onSaveSuccess: () => Promise.all([
+          this.reloadSettlementRows(this.selectedContractValue),
+          this.reloadHistoryRowsByContract(this.selectedContractValue)
+        ])
+      },
+      {
+        role: "history",
+        masterKeyField: "sell_ctrt_no",
+        placeholder: ":id",
+        listUrlTemplate: "historyListUrlTemplateValue",
+        entityLabel: "매출계약",
+        fetchErrorMessage: "변경이력 조회에 실패했습니다."
+      }
+    ]
+  }
+
   gridRoles() {
     return {
       master: {
@@ -63,47 +135,15 @@ export default class extends BaseGridController {
         target: "settlementGrid",
         manager: "configureSettlementManager",
         parentGrid: "master",
-        onMasterRowChange: (rowData) => this.handleMasterRowChange(rowData)
+        onMasterRowChange: (rowData) => this.onMasterRowChanged(rowData),
+        detailLoader: (rowData) => this.loadDetailRows("settlement", rowData)
       },
       history: {
         target: "historyGrid",
-        parentGrid: "master"
+        parentGrid: "master",
+        detailLoader: (rowData) => this.loadDetailRows("history", rowData)
       }
     }
-  }
-
-  connect() {
-    super.connect()
-    this.settlementGridController = null
-    this.settlementManager = null
-    this.historyGridController = null
-    this.currentMasterRow = null
-    this.activeTab = "basic"
-
-    this.bindDetailFieldEvents()
-    this.activateTab("basic")
-    this.clearDetailForm()
-  }
-  onAllGridsReady() {
-    this.manager = this.gridManager("master")
-    this.gridController = this.gridCtrl("master")
-    this.settlementManager = this.gridManager("settlement")
-    this.settlementGridController = this.gridCtrl("settlement")
-    this.historyGridController = this.gridCtrl("history")
-    this.refreshSelectedContractLabel()
-  }
-  disconnect() {
-    this.unbindDetailFieldEvents()
-
-    if (this.settlementManager) {
-      this.settlementManager.detach()
-      this.settlementManager = null
-    }
-
-    this.settlementGridController = null
-    this.historyGridController = null
-    this.currentMasterRow = null
-    super.disconnect()
   }
 
   configureManager() {
@@ -256,202 +296,35 @@ export default class extends BaseGridController {
         "exca_ofcr_cd", "exca_ofcr_nm", "use_yn_cd", "remk"
       ],
       firstEditCol: "fnc_or_cd",
-      pkLabels: { seq_no: "순번" },
-      registration: {
-        targetName: "settlementGrid",
-        controllerKey: "settlementGridController",
-        managerKey: "settlementManager"
-      }
+      pkLabels: { seq_no: "순번" }
     }
   }
 
-  isDetailReady() {
-    return isApiAlive(this.settlementManager?.api) && isApiAlive(this.historyGridController?.api)
+  get manager() {
+    return this.gridManager("master")
   }
 
-  async handleMasterRowChange(rowData) {
-    if (!this.isDetailReady()) return
+  set manager(_value) {}
 
-    this.currentMasterRow = rowData || null
-    if (!rowData) {
-      this.clearDetailForm()
-    } else {
-      this.fillDetailForm(rowData)
-    }
-
-    this.selectedContractValue = rowData?.sell_ctrt_no || ""
-    this.refreshSelectedContractLabel()
-    this.clearSettlementRows()
-    this.clearHistoryRows()
-
-    const code = rowData?.sell_ctrt_no
-    const hasLoadableCode = Boolean(code) && !rowData?.__is_deleted && !rowData?.__is_new
-    if (!hasLoadableCode) return
-
-    await Promise.all([this.loadSettlementRows(code), this.loadHistoryRows(code)])
-  }
-
-  addMasterRow() {
-    this.addRow({
-      manager: this.manager,
-      config: { startCol: "sell_ctrt_nm" },
-      onAdded: (rowData) => {
-        this.activateTab("basic")
-        this.handleMasterRowChange(rowData)
-      }
-    })
-  }
-
-  deleteMasterRows() {
-    this.deleteRows()
-  }
-
-  async saveMasterRows() {
-    await this.saveRowsWith({
-      manager: this.manager,
-      batchUrl: this.batchUrlValue,
-      saveMessage: this.saveMessage,
-      onSuccess: () => this.afterSaveSuccess()
-    })
-  }
-
-  get batchUrlValue() {
-    return this.masterBatchUrlValue
-  }
-
-  get saveMessage() {
-    return "매출계약 데이터가 저장되었습니다."
-  }
-
-  async afterSaveSuccess() {
-    if (!isApiAlive(this.manager?.api) || !this.gridController?.urlValue) return
-    try {
-      const rows = await fetchJson(this.gridController.urlValue)
-      setManagerRowData(this.manager, rows)
-      this.selectFirstMasterRow()
-    } catch {
-      // 마스터 재조회 실패 시 무시
-    }
-  }
-
-  addSettlementRow() {
-    if (!this.settlementManager) return
-    if (this.blockDetailActionIfMasterChanged()) return
-
-    if (!this.selectedContractValue) {
-      showAlert("매출계약을 먼저 선택해주세요.")
-      return
-    }
-
-    this.addRow({ manager: this.settlementManager })
-  }
-
-  deleteSettlementRows() {
-    if (!this.settlementManager) return
-    if (this.blockDetailActionIfMasterChanged()) return
-
-    this.deleteRows({ manager: this.settlementManager })
-  }
-
-  async saveSettlementRows() {
-    if (!this.settlementManager) return
-    if (this.blockDetailActionIfMasterChanged()) return
-
-    if (!this.selectedContractValue) {
-      showAlert("매출계약을 먼저 선택해주세요.")
-      return
-    }
-
-    const batchUrl = buildTemplateUrl(this.settlementBatchUrlTemplateValue, ":id", this.selectedContractValue)
-    await this.saveRowsWith({
-      manager: this.settlementManager,
-      batchUrl,
-      saveMessage: "매출계약 정산정보가 저장되었습니다.",
-      onSuccess: () => Promise.all([
-        this.loadSettlementRows(this.selectedContractValue),
-        this.loadHistoryRows(this.selectedContractValue)
-      ])
-    })
-  }
-
-  async loadSettlementRows(contractNo) {
-    if (!isApiAlive(this.settlementManager?.api)) return
-
-    if (!contractNo) {
-      this.clearSettlementRows()
-      return
-    }
-
-    try {
-      const url = buildTemplateUrl(this.settlementListUrlTemplateValue, ":id", contractNo)
-      const rows = await fetchJson(url)
-      setManagerRowData(this.settlementManager, rows)
-    } catch {
-      showAlert("정산정보 목록 조회에 실패했습니다.")
-    }
-  }
-
-  async loadHistoryRows(contractNo) {
-    if (!isApiAlive(this.historyGridController?.api)) return
-
-    if (!contractNo) {
-      this.clearHistoryRows()
-      return
-    }
-
-    try {
-      const url = buildTemplateUrl(this.historyListUrlTemplateValue, ":id", contractNo)
-      const rows = await fetchJson(url)
-      this.historyGridController.api.setGridOption("rowData", rows)
-    } catch {
-      showAlert("변경이력 조회에 실패했습니다.")
-    }
+  async reloadHistoryRowsByContract(contractNo) {
+    if (!contractNo) return
+    const rows = await this.loadDetailRows("history", { sell_ctrt_no: contractNo })
+    this.setRows("history", rows)
   }
 
   async reloadHistoryRows() {
-    if (!this.selectedContractValue) {
-      showAlert("매출계약을 먼저 선택해주세요.")
+    if (!this.requireMasterSelection(this.selectedContractValue, {
+      entityLabel: "매출계약",
+      message: "매출계약을 먼저 선택해주세요."
+    })) {
       return
     }
-    await this.loadHistoryRows(this.selectedContractValue)
-  }
 
-  clearSettlementRows() {
-    setManagerRowData(this.settlementManager, [])
-  }
-
-  clearHistoryRows() {
-    if (!isApiAlive(this.historyGridController?.api)) return
-    this.historyGridController.api.setGridOption("rowData", [])
-  }
-
-  // 조회 직전 상세 그리드를 비웁니다.
-  clearAllDetails() {
-    this.clearSettlementRows()
-    this.clearHistoryRows()
-  }
-  beforeSearchReset() {
-    this.selectedContractValue = ""
-    this.currentMasterRow = null
-    this.refreshSelectedContractLabel()
-    this.clearDetailForm()
+    await this.reloadHistoryRowsByContract(this.selectedContractValue)
   }
 
   preventDetailSubmit(event) {
     event.preventDefault()
-  }
-
-  refreshSelectedContractLabel() {
-    if (!this.hasSelectedContractLabelTarget) return
-    refreshSelectionLabel(this.selectedContractLabelTarget, this.selectedContractValue, "매출계약", "매출계약을 먼저 선택하세요.")
-  }
-
-  hasMasterPendingChanges() {
-    return hasPendingChanges(this.manager)
-  }
-
-  blockDetailActionIfMasterChanged() {
-    return blockIfPendingChanges(this.manager, "매출계약 마스터")
   }
 
   switchTab(event) {
@@ -559,11 +432,10 @@ export default class extends BaseGridController {
       row[field] = (row[field] || "").toString().trim().toUpperCase()
     }
 
-    this.manager.api.refreshCells({
+    this.masterManager?.api?.refreshCells({
       rowNodes: [event.node],
       columns: [field],
       force: true
     })
   }
 }
-

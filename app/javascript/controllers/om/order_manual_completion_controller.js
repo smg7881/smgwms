@@ -1,6 +1,6 @@
-﻿import BaseGridController from "controllers/base_grid_controller"
-import { showAlert, confirmAction } from "components/ui/alert"
-import { fetchJson } from "controllers/grid/grid_utils"
+import BaseGridController from "controllers/base_grid_controller"
+import { showAlert } from "components/ui/alert"
+import { buildTemplateUrl, fetchJson } from "controllers/grid/grid_utils"
 
 // 오더수동완료 화면 (마스터-디테일 + 수동완료 배치 액션)
 export default class extends BaseGridController {
@@ -19,24 +19,20 @@ export default class extends BaseGridController {
 
   gridRoles() {
     return {
-      master: { target: "masterGrid" },
-      detail: { target: "detailGrid" }
+      master: {
+        target: "masterGrid",
+        masterKeyField: "ord_no"
+      },
+      detail: {
+        target: "detailGrid",
+        parentGrid: "master",
+        detailLoader: (rowData) => this.fetchDetailRows(rowData)
+      }
     }
   }
 
-  onMasterRowClicked(event) {
-    if (!this.hasMasterGridTarget || event.target !== this.masterGridTarget) return
-
-    const row = event.detail?.data || event.detail?.node?.data || null
-    const ordNo = row?.ord_no || ""
-
-    if (ordNo === "") {
-      this.setRows("detail", [])
-      return
-    }
-
-    this.#loadDetailRows(ordNo)
-  }
+  // 기존 ag-grid:rowClicked 바인딩 호환용
+  onMasterRowClicked() { }
 
   async completeSelectedOrders() {
     const selected = this.selectedRows("master")
@@ -84,17 +80,17 @@ export default class extends BaseGridController {
     )
   }
 
-  // ─── Private ───
+  async fetchDetailRows(rowData) {
+    const ordNo = rowData?.ord_no
+    if (!ordNo) return []
 
-  async #loadDetailRows(ordNo) {
-    const url = this.detailsUrlTemplateValue.replace("__ORD_NO__", encodeURIComponent(ordNo))
-
+    const url = buildTemplateUrl(this.detailsUrlTemplateValue, "__ORD_NO__", ordNo)
     try {
       const rows = await fetchJson(url)
-      this.setRows("detail", Array.isArray(rows) ? rows : [])
+      return Array.isArray(rows) ? rows : []
     } catch {
-      this.setRows("detail", [])
       showAlert("상세 데이터를 불러오지 못했습니다.")
+      return []
     }
   }
 }

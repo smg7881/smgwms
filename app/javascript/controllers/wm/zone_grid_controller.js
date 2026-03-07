@@ -1,6 +1,6 @@
-﻿import BaseGridController from "controllers/base_grid_controller"
+import BaseGridController from "controllers/base_grid_controller"
 import { showAlert } from "components/ui/alert"
-import { fetchJson, setManagerRowData, refreshSelectionLabel } from "controllers/grid/grid_utils"
+import { fetchJson, refreshSelectionLabel } from "controllers/grid/grid_utils"
 
 const YES_NO_VALUES = ["Y", "N"]
 
@@ -17,7 +17,51 @@ export default class extends BaseGridController {
 
   connect() {
     super.connect()
-    this.refreshSelectedAreaLabel()
+    this.refreshSelectedLabel()
+  }
+
+  masterConfig() {
+    return {
+      role: "area",
+      pendingEntityLabel: "구역",
+      key: {
+        field: "area_cd",
+        stateProperty: "selectedAreaCdValue",
+        labelTarget: "selectedAreaLabel",
+        entityLabel: "구역",
+        emptyMessage: "구역을 먼저 선택해주세요."
+      },
+      onRowChange: {
+        trackCurrentRow: false,
+        syncForm: false,
+        afterChange: (rowData) => {
+          this.selectedWorkplCdValue = rowData?.workpl_cd || ""
+          this.selectedAreaNmValue = rowData?.area_nm || ""
+          this.refreshSelectedLabel()
+        }
+      },
+      beforeSearch: {
+        clearValidation: false,
+        clearForm: false
+      }
+    }
+  }
+
+  detailGrids() {
+    return [{
+      role: "zone",
+      methodBaseName: "zone",
+      masterKeyField: "area_cd",
+      batchUrlTemplate: "batchUrlValue",
+      entityLabel: "구역",
+      selectionMessage: "좌측 목록에서 구역을 먼저 선택해주세요.",
+      saveMessage: "보관 Zone 데이터가 저장되었습니다.",
+      overrides: ({ selectedValue }) => ({
+        workpl_cd: this.selectedWorkplCdValue,
+        area_cd: selectedValue
+      }),
+      onSaveSuccess: () => this.refreshGrid("area")
+    }]
   }
 
   gridRoles() {
@@ -30,13 +74,7 @@ export default class extends BaseGridController {
         target: "zoneGrid",
         manager: this.zoneManagerConfig(),
         parentGrid: "area",
-        onMasterRowChange: (rowData) => {
-          this.selectedWorkplCdValue = rowData?.workpl_cd || ""
-          this.selectedAreaCdValue = rowData?.area_cd || ""
-          this.selectedAreaNmValue = rowData?.area_nm || ""
-          this.refreshSelectedAreaLabel()
-          this.clearZoneRows()
-        },
+        onMasterRowChange: (rowData) => this.onMasterRowChanged(rowData),
         detailLoader: async (rowData) => {
           const workplCd = rowData?.workpl_cd
           const areaCd = rowData?.area_cd
@@ -103,60 +141,16 @@ export default class extends BaseGridController {
     }
   }
 
-  get zoneManager() {
-    return this.gridManager("zone")
-  }
-
   beforeSearchReset() {
     this.selectedWorkplCdValue = ""
     this.selectedAreaCdValue = ""
     this.selectedAreaNmValue = ""
+    this.refreshSelectedLabel()
+    this.clearZoneRows?.()
+  }
+
+  refreshSelectedLabel() {
     this.refreshSelectedAreaLabel()
-  }
-
-  addZoneRow() {
-    if (!this.zoneManager) return
-    if (!this.hasSelectedArea()) {
-      showAlert("좌측 목록에서 구역을 먼저 선택해주세요.")
-      return
-    }
-
-    this.addRow({
-      manager: this.zoneManager,
-      overrides: {
-        workpl_cd: this.selectedWorkplCdValue,
-        area_cd: this.selectedAreaCdValue
-      }
-    })
-  }
-
-  deleteZoneRows() {
-    if (!this.zoneManager) return
-    if (!this.hasSelectedArea()) {
-      showAlert("좌측 목록에서 구역을 먼저 선택해주세요.")
-      return
-    }
-
-    this.deleteRows({ manager: this.zoneManager })
-  }
-
-  async saveZoneRows() {
-    if (!this.zoneManager) return
-    if (!this.hasSelectedArea()) {
-      showAlert("좌측 목록에서 구역을 먼저 선택해주세요.")
-      return
-    }
-
-    await this.saveRowsWith({
-      manager: this.zoneManager,
-      batchUrl: this.batchUrlValue,
-      saveMessage: "보관 Zone 데이터가 저장되었습니다.",
-      onSuccess: () => this.refreshGrid("area")
-    })
-  }
-
-  clearZoneRows() {
-    setManagerRowData(this.zoneManager, [])
   }
 
   refreshSelectedAreaLabel() {
@@ -167,10 +161,6 @@ export default class extends BaseGridController {
     const value = hasAreaCode ? `${this.selectedAreaCdValue} / ${areaName}` : ""
 
     refreshSelectionLabel(this.selectedAreaLabelTarget, value, "구역", "구역을 먼저 선택해주세요")
-  }
-
-  hasSelectedArea() {
-    return Boolean(this.selectedWorkplCdValue && this.selectedAreaCdValue)
   }
 
   zoneKeywordFromSearch() {

@@ -1,10 +1,6 @@
 import BaseGridController from "controllers/base_grid_controller"
 import { showAlert } from "components/ui/alert"
 import {
-  fetchJson,
-  setManagerRowData,
-  buildTemplateUrl,
-  refreshSelectionLabel,
   hasChanges,
   postJson
 } from "controllers/grid/grid_utils"
@@ -25,7 +21,42 @@ export default class extends BaseGridController {
     super.connect()
     this.currentMasterRef = this.selectedMasterValue || ""
     this.selectedMasterTempId = ""
-    this.detailLoadToken = 0
+    this.refreshSelectedLabel()
+  }
+
+  masterConfig() {
+    return {
+      role: "master",
+      pendingEntityLabel: "매입요율",
+      key: {
+        field: "wrhs_exca_fee_rt_no",
+        stateProperty: "selectedMasterValue",
+        labelTarget: "selectedMasterLabel",
+        entityLabel: "정산요율",
+        emptyMessage: "요율을 먼저 선택하세요."
+      },
+      onRowChange: {
+        trackCurrentRow: false,
+        syncForm: false
+      },
+      beforeSearch: {
+        clearValidation: false,
+        clearForm: false
+      }
+    }
+  }
+
+  detailGrids() {
+    return [{
+      role: "detail",
+      methodBaseName: "detail",
+      masterKeyField: "wrhs_exca_fee_rt_no",
+      placeholder: ":pur_fee_rt_mng_id",
+      listUrlTemplate: "detailListUrlTemplateValue",
+      entityLabel: "매입요율",
+      selectionMessage: "매입요율을 먼저 선택하세요.",
+      fetchErrorMessage: "요율상세 조회에 실패했습니다."
+    }]
   }
 
   gridRoles() {
@@ -39,13 +70,14 @@ export default class extends BaseGridController {
         target: "detailGrid",
         manager: this.detailManagerConfig(),
         parentGrid: "master",
-        onMasterRowChange: (rowData) => this.handleMasterRowChange(rowData)
+        onMasterRowChange: (rowData) => this.handleMasterRowChange(rowData),
+        detailLoader: (rowData) => this.loadDetailRows("detail", rowData)
       }
     }
   }
 
   onAllGridsReady() {
-    this.refreshSelectedMasterLabel()
+    this.refreshSelectedLabel()
   }
 
   masterManagerConfig() {
@@ -230,7 +262,6 @@ export default class extends BaseGridController {
     }
 
     this.applyMasterSelection(rowData)
-    await this.loadDetailRows(rowData)
   }
 
   shouldBlockMasterChange(rowData) {
@@ -256,8 +287,7 @@ export default class extends BaseGridController {
     }
 
     api.forEachNode((node) => {
-      const isTarget = this.masterRef(node?.data) === this.currentMasterRef
-      if (isTarget) {
+      if (this.masterRef(node?.data) === this.currentMasterRef) {
         node.setSelected(true, true)
       }
     })
@@ -272,61 +302,15 @@ export default class extends BaseGridController {
     this.currentMasterRef = this.masterRef(rowData)
     this.selectedMasterValue = rowData.wrhs_exca_fee_rt_no?.toString().trim() || ""
     this.selectedMasterTempId = rowData.client_temp_id?.toString().trim() || rowData.__temp_id?.toString().trim() || ""
-    this.refreshSelectedMasterLabel()
+    this.refreshSelectedLabel()
   }
 
   clearMasterSelection() {
     this.currentMasterRef = ""
     this.selectedMasterValue = ""
     this.selectedMasterTempId = ""
-    this.refreshSelectedMasterLabel()
-    this.clearDetailRows()
-  }
-
-  refreshSelectedMasterLabel() {
-    if (!this.hasSelectedMasterLabelTarget) {
-      return
-    }
-
-    refreshSelectionLabel(this.selectedMasterLabelTarget, this.selectedMasterValue, "정산요율", "요율을 먼저 선택하세요.")
-  }
-
-  async loadDetailRows(rowData) {
-    const manager = this.detailManager
-    if (!manager) {
-      return
-    }
-
-    const masterKey = rowData?.wrhs_exca_fee_rt_no?.toString().trim()
-    const isLoadable = Boolean(masterKey) && !rowData?.__is_new && !rowData?.__is_deleted
-    if (!isLoadable) {
-      this.clearDetailRows()
-      return
-    }
-
-    const token = ++this.detailLoadToken
-    try {
-      const url = buildTemplateUrl(this.detailListUrlTemplateValue, { pur_fee_rt_mng_id: masterKey })
-      const rows = await fetchJson(url)
-      if (token !== this.detailLoadToken) {
-        return
-      }
-
-      setManagerRowData(manager, Array.isArray(rows) ? rows : [])
-    } catch {
-      if (token !== this.detailLoadToken) {
-        return
-      }
-
-      this.clearDetailRows()
-      showAlert("요율상세 조회에 실패했습니다.")
-    }
-  }
-
-  clearDetailRows() {
-    if (this.detailManager) {
-      setManagerRowData(this.detailManager, [])
-    }
+    this.refreshSelectedLabel()
+    this.clearDetailRows?.()
   }
 
   addMasterRow() {
@@ -346,28 +330,13 @@ export default class extends BaseGridController {
           addedNode.setSelected(true, true)
         }
         this.applyMasterSelection(rowData)
-        this.clearDetailRows()
+        this.clearDetailRows?.()
       }
     })
   }
 
   deleteMasterRows() {
     this.deleteRows({ manager: this.masterManager, deleteLabel: "매입요율" })
-  }
-
-  addDetailRow() {
-    if (!this.currentMasterRef) {
-      showAlert("매입요율을 먼저 선택하세요.")
-      return
-    }
-
-    this.addRow({
-      manager: this.detailManager
-    })
-  }
-
-  deleteDetailRows() {
-    this.deleteRows({ manager: this.detailManager, deleteLabel: "매입요율상세" })
   }
 
   async saveAllRows() {

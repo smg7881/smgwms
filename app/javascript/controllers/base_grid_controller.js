@@ -27,27 +27,30 @@ import {
   isApiAlive,
   setGridRowData,
   setManagerRowData,
+  fetchJson,
   focusFirstRow,
   postJson,
   hasChanges,
   blockIfPendingChanges,
   buildTemplateUrl,
   requireSelection,
-  isLoadableMasterRow as isLoadableMasterRowUtil
+  isLoadableMasterRow as isLoadableMasterRowUtil,
+  refreshSelectionLabel
 } from "controllers/grid/grid_utils"
-import { requestJson } from "controllers/grid/core/http_client"
+import { requestJson as requestJsonCore } from "controllers/grid/core/http_client"
 import {
   getSearchFormValue as getSearchFormValueFromBridge,
   getSearchFieldElement as getSearchFieldElementFromBridge
 } from "controllers/grid/core/search_form_bridge"
-import { ModalMixin } from "controllers/concerns/modal_mixin"
-import { ExcelDownloadable } from "controllers/concerns/excel_downloadable"
+import { syncAllPopupDisplaysFromCodes } from "controllers/grid/grid_popup_utils"
+import { PopupManager } from "controllers/popup/popup_manager"
 
 export default class BaseGridController extends Controller {
-  static targets = ["grid"]
+  static targets = ["grid", "validationBox", "validationSummary", "validationList"]
 
   static values = {
-    batchUrl: String
+    batchUrl: String,
+    importHistoryUrl: String
   }
 
   connect() {
@@ -67,6 +70,7 @@ export default class BaseGridController extends Controller {
     this.#domBindings = new Map()
     this.#roleApiBindings = new Map()
     this.#allRolesReadyFired = false
+    this.#initMasterDetail()
 
     if (this.#expectedRoles) {
       this.#initializeRoleRelations()
@@ -102,6 +106,10 @@ export default class BaseGridController extends Controller {
       this.manager = null
     }
     this.gridController = null
+
+    this.currentMasterRow = null
+    this._masterCfg = null
+    this._detailCfgs = []
   }
 
   registerGrid(event) {
@@ -117,6 +125,8 @@ export default class BaseGridController extends Controller {
   gridRoles() { return null }
 
   configureManager() { return null }
+  masterConfig() { return null }
+  detailGrids() { return [] }
 
   splitManagerConfig(rawConfig) {
     if (!rawConfig || typeof rawConfig !== "object") {
@@ -206,7 +216,7 @@ export default class BaseGridController extends Controller {
     if (confirmMessage && !confirmAction(confirmMessage)) return false
 
     try {
-      const { response, result } = await requestJson(url, { method: "POST", body })
+      const { response, result } = await requestJsonCore(url, { method: "POST", body })
 
       if (response.ok && result.success) {
         if (onSuccess) {
@@ -351,6 +361,594 @@ export default class BaseGridController extends Controller {
 
   get saveMessage() {
     return "저장이 완료되었습니다."
+  }
+
+  showValidationErrors({ errors = [], firstError = null, summary = "", manager = null } = {}) {
+    if (!this.hasValidationBoxTarget || !this.hasValidationListTarget) return false
+
+    this.beforeShowValidationErrors?.({ errors, firstError, summary, manager })
+
+    const list = Array.isArray(errors) ? errors : []
+    const maxItems = 10
+    const visible = list.slice(0, maxItems)
+
+    if (this.hasValidationSummaryTarget) {
+      this.validationSummaryTarget.textContent = summary || "입력값을 확인해주세요."
+    }
+
+    this.validationListTarget.innerHTML = ""
+    visible.forEach((error) => {
+      const item = document.createElement("li")
+      item.textContent = this.#formatValidationLine(error)
+      this.validationListTarget.appendChild(item)
+    })
+
+    if (list.length > maxItems) {
+      const more = document.createElement("li")
+      more.textContent = `외 ${list.length - maxItems}건`
+      this.validationListTarget.appendChild(more)
+    }
+
+    this.validationBoxTarget.hidden = false
+    this.validationBoxTarget.scrollIntoView({ behavior: "smooth", block: "nearest" })
+    return true
+  }
+
+  clearValidationErrors() {
+    if (!this.hasValidationBoxTarget) return
+    this.validationBoxTarget.hidden = true
+    if (this.hasValidationSummaryTarget) this.validationSummaryTarget.textContent = ""
+    if (this.hasValidationListTarget) this.validationListTarget.innerHTML = ""
+  }
+
+  connectBase({ events = [] } = {}) {
+    this.dragState = null
+    this._eventSubscriptions = events.map(({ name, handler }) => {
+      this.element.addEventListener(name, handler)
+      return { name, handler }
+    })
+
+    this._boundDelegatedClick = this.handleDelegatedClick.bind(this)
+    this._boundDragMove = this.handleDragMove.bind(this)
+    this._boundEndDrag = this.endDrag.bind(this)
+
+    this.element.addEventListener("click", this._boundDelegatedClick)
+    window.addEventListener("mousemove", this._boundDragMove)
+    window.addEventListener("mouseup", this._boundEndDrag)
+  }
+
+  disconnectBase() {
+    ;(this._eventSubscriptions || []).forEach(({ name, handler }) => {
+      this.element.removeEventListener(name, handler)
+    })
+    this._eventSubscriptions = []
+
+    if (this._boundDelegatedClick) {
+      this.element.removeEventListener("click", this._boundDelegatedClick)
+    }
+    if (this._boundDragMove) {
+      window.removeEventListener("mousemove", this._boundDragMove)
+    }
+    if (this._boundEndDrag) {
+      window.removeEventListener("mouseup", this._boundEndDrag)
+    }
+  }
+
+  get cancelRoleSelector() {
+    return `[data-${this.identifier}-role='cancel']`
+  }
+
+  openModal() {
+    this._popupInstance = PopupManager.open({ dialogEl: this.overlayTarget })
+  }
+
+  closeModal() {
+    this._popupInstance?.close()
+    this._popupInstance = null
+    this.endDrag()
+  }
+
+  onBackdropClick(_event) {}
+
+  stopPropagation(event) {
+    event.stopPropagation()
+  }
+
+  handleDelegatedClick(event) {
+    const cancelButton = event.target.closest(this.cancelRoleSelector)
+    if (cancelButton) {
+      event.preventDefault()
+      this.closeModal()
+    }
+  }
+
+  startDrag(event) {
+    if (event.button !== 0) return
+    if (!this.hasModalTarget || !this.hasOverlayTarget) return
+    if (event.target.closest("button")) return
+
+    const modalRect = this.modalTarget.getBoundingClientRect()
+    this.modalTarget.style.position = "absolute"
+    this.modalTarget.style.left = `${modalRect.left}px`
+    this.modalTarget.style.top = `${modalRect.top}px`
+    this.modalTarget.style.margin = "0"
+
+    this.dragState = {
+      offsetX: event.clientX - modalRect.left,
+      offsetY: event.clientY - modalRect.top
+    }
+
+    document.body.style.userSelect = "none"
+    this.modalTarget.style.cursor = "grabbing"
+    event.preventDefault()
+  }
+
+  handleDragMove(event) {
+    if (!this.dragState || !this.hasModalTarget) return
+
+    const maxLeft = Math.max(0, window.innerWidth - this.modalTarget.offsetWidth)
+    const maxTop = Math.max(0, window.innerHeight - this.modalTarget.offsetHeight)
+    const nextLeft = event.clientX - this.dragState.offsetX
+    const nextTop = event.clientY - this.dragState.offsetY
+    const clampedLeft = Math.min(Math.max(0, nextLeft), maxLeft)
+    const clampedTop = Math.min(Math.max(0, nextTop), maxTop)
+
+    this.modalTarget.style.left = `${clampedLeft}px`
+    this.modalTarget.style.top = `${clampedTop}px`
+  }
+
+  endDrag() {
+    this.dragState = null
+    document.body.style.userSelect = ""
+    if (this.hasModalTarget) {
+      this.modalTarget.style.cursor = ""
+    }
+  }
+
+  buildJsonPayload() {
+    const formData = new FormData(this.formTarget)
+    const payload = {}
+
+    for (const [rawKey, value] of formData.entries()) {
+      const match = rawKey.match(/^[^\[]+\[([^\]]+)\]$/)
+      const key = match ? match[1] : rawKey
+      payload[key] = value
+    }
+
+    Object.keys(payload).forEach((key) => {
+      if (payload[key] === "") payload[key] = null
+    })
+
+    return payload
+  }
+
+  async handleDelete(event) {
+    const { id } = event.detail
+    const displayName = event.detail[this.constructor.deleteConfirmKey] || id
+
+    if (!await confirmAction(`"${displayName}" ${this.constructor.entityLabel}를 삭제하시겠습니까?`)) return
+
+    try {
+      const { response, result } = await this.requestJson(this.deleteUrlValue.replace(":id", id), {
+        method: "DELETE"
+      })
+
+      if (!response.ok || !result.success) {
+        showAlert("삭제 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
+        return
+      }
+
+      showAlert(result.message || "삭제되었습니다")
+      this._refreshModalGrid()
+    } catch {
+      showAlert("삭제 실패: 네트워크 오류")
+    }
+  }
+
+  async save() {
+    const payload = this.buildJsonPayload()
+    if (this.hasFieldIdTarget && this.fieldIdTarget.value) payload.id = this.fieldIdTarget.value
+
+    const isCreate = this.mode === "create"
+    const id = payload.id
+    delete payload.id
+
+    const url = isCreate ? this.createUrlValue : this.updateUrlValue.replace(":id", id)
+    const method = isCreate ? "POST" : "PATCH"
+
+    try {
+      const { response, result } = await this.requestJson(url, {
+        method,
+        body: { [this.constructor.resourceName]: payload }
+      })
+
+      if (!response.ok || !result.success) {
+        showAlert("저장 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
+        return
+      }
+
+      showAlert(result.message || "저장되었습니다")
+      this.closeModal()
+      this._refreshModalGrid()
+    } catch {
+      showAlert("저장 실패: 네트워크 오류")
+    }
+  }
+
+  submit(event) {
+    event.preventDefault()
+    this.save()
+  }
+
+  async requestJson(url, { method, body, isMultipart = false }) {
+    return requestJsonCore(url, { method, body, isMultipart })
+  }
+
+  setFieldValue(fieldName, value) {
+    if (!this.hasFormTarget) return
+
+    const resourceName = this.constructor.resourceName
+    const input = this.findFieldInput(resourceName, fieldName)
+    if (!input) return
+
+    const normalizedValue = value == null ? "" : value
+
+    if (input.type === "checkbox") {
+      const truthy = normalizedValue === true || normalizedValue === "Y" || normalizedValue === "1" || normalizedValue === 1
+      input.checked = truthy
+      return
+    }
+
+    if (input.tomselect) {
+      if (input.multiple) {
+        const values = Array.isArray(normalizedValue) ? normalizedValue.map((v) => String(v)) : []
+        input.tomselect.setValue(values, true)
+      } else {
+        input.tomselect.setValue(String(normalizedValue), true)
+      }
+      return
+    }
+
+    input.value = normalizedValue
+  }
+
+  setFieldValues(values = {}) {
+    Object.entries(values).forEach(([fieldName, value]) => {
+      this.setFieldValue(fieldName, value)
+    })
+  }
+
+  findFieldInput(resourceName, fieldName) {
+    let input = null
+
+    if (resourceName) {
+      input = this.formTarget.querySelector(`[name='${resourceName}[${fieldName}]']`)
+    }
+
+    if (!input) {
+      input = this.formTarget.querySelector(`[name$='[${fieldName}]']`)
+    }
+
+    return input
+  }
+
+  syncPopupDisplaysFromCodes() {
+    syncAllPopupDisplaysFromCodes(this.element)
+  }
+
+  formatDateTime(value) {
+    if (!value) return ""
+
+    const date = value instanceof Date ? value : new Date(value)
+    if (Number.isNaN(date.getTime())) {
+      return String(value)
+    }
+
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, "0")
+    const day = String(date.getDate()).padStart(2, "0")
+    const hour = String(date.getHours()).padStart(2, "0")
+    const minute = String(date.getMinutes()).padStart(2, "0")
+    const second = String(date.getSeconds()).padStart(2, "0")
+    return `${year}-${month}-${day} ${hour}:${minute}:${second}`
+  }
+
+  _refreshModalGrid() {
+    const agGridEl = this.element.querySelector("[data-controller='ag-grid']")
+    if (agGridEl) {
+      this.application.getControllerForElementAndIdentifier(agGridEl, "ag-grid")?.refresh()
+    }
+  }
+
+  openImportHistory() {
+    if (this.hasImportHistoryUrlValue) {
+      window.location.href = this.importHistoryUrlValue
+    }
+  }
+
+  openExcelImport() {
+    const fileInput = this.element.querySelector("[data-excel-import-input]")
+    if (fileInput) {
+      fileInput.click()
+    }
+  }
+
+  submitExcelImport(event) {
+    const input = event.target
+    if (input.files.length === 0) return
+
+    const form = input.closest("form")
+    form?.requestSubmit()
+    input.value = ""
+  }
+
+  onMasterRowChanged(rowData) {
+    const cfg = this._masterCfg
+    if (!cfg) return
+
+    if (cfg.onRowChange?.trackCurrentRow !== false) {
+      this.currentMasterRow = rowData || null
+    }
+
+    const keyField = cfg.key?.field
+    const stateProp = cfg.key?.stateProperty
+    if (keyField && stateProp) {
+      this[stateProp] = rowData?.[keyField] || ""
+    }
+
+    this.refreshSelectedLabel()
+
+    if (cfg.onRowChange?.syncForm) {
+      if (rowData) {
+        this.fillDetailForm?.(rowData)
+      } else {
+        this.clearDetailForm?.()
+      }
+    }
+
+    if (typeof cfg.onRowChange?.afterChange === "function") {
+      cfg.onRowChange.afterChange.call(this, rowData)
+    }
+  }
+
+  refreshSelectedLabel() {
+    const cfg = this._masterCfg?.key
+    if (!cfg?.stateProperty || !cfg?.labelTarget) return
+
+    const targetGetter = `${cfg.labelTarget}Target`
+    const hasGetter = `has${cfg.labelTarget.charAt(0).toUpperCase() + cfg.labelTarget.slice(1)}Target`
+    if (!this[hasGetter]) return
+
+    refreshSelectionLabel(this[targetGetter], this[cfg.stateProperty], cfg.entityLabel, cfg.emptyMessage)
+  }
+
+  async loadDetailRows(role, rowData) {
+    const cfg = this._detailCfgs?.find((item) => item.role === role)
+    if (!cfg) return []
+
+    const keyField = cfg.masterKeyField
+    const keyValue = rowData?.[keyField]
+    if (!keyValue || rowData?.__is_deleted || rowData?.__is_new) return []
+
+    try {
+      const template = this[cfg.listUrlTemplate]
+      if (!template) return []
+      const url = buildTemplateUrl(template, cfg.placeholder || ":id", keyValue)
+      const rows = await fetchJson(url)
+      return Array.isArray(rows) ? rows : []
+    } catch {
+      showAlert(cfg.fetchErrorMessage || "데이터 조회에 실패했습니다.")
+      return []
+    }
+  }
+
+  #formatValidationLine(error) {
+    const scopeLabel = error?.scope === "insert" ? "추가" : "수정"
+    const rowLabel = Number.isInteger(error?.rowIndex) ? `${error.rowIndex + 1}행` : "행"
+    const message = (error?.message || "입력값을 확인해주세요.").toString()
+    return `[${scopeLabel} ${rowLabel}] ${message}`
+  }
+
+  #initMasterDetail() {
+    this._masterCfg = this.masterConfig?.() || null
+    this._detailCfgs = this.detailGrids?.() || []
+
+    if (!this._masterCfg && this._detailCfgs.length === 0) return
+
+    this.#generateMasterMethods()
+    this.#generateDetailMethods()
+  }
+
+  #generateMasterMethods() {
+    const cfg = this._masterCfg
+    if (!cfg) return
+
+    const proto = Object.getPrototypeOf(this)
+    const role = cfg.role || "master"
+    const pendingEntityLabel = cfg.pendingEntityLabel || cfg.key?.entityLabel || "마스터"
+
+    if (!Object.getOwnPropertyDescriptor(proto, "masterManager")) {
+      Object.defineProperty(proto, "masterManager", {
+        get() { return this.gridManager(role) },
+        configurable: true
+      })
+    }
+
+    if (!this.#hasCustomMethod("blockDetailActionIfMasterChanged")) {
+      this.blockDetailActionIfMasterChanged = () =>
+        blockIfPendingChanges(this.gridManager(role), pendingEntityLabel)
+    }
+
+    if (!this.#hasCustomMethod("beforeSearchReset")) {
+      this.beforeSearchReset = () => {
+        const keyProp = cfg.key?.stateProperty
+        if (keyProp) this[keyProp] = ""
+        this.currentMasterRow = null
+        this.refreshSelectedLabel()
+        if (cfg.beforeSearch?.clearValidation) this.clearValidationErrors?.()
+        if (cfg.beforeSearch?.clearForm || cfg.onRowChange?.syncForm) this.clearDetailForm?.()
+      }
+    }
+
+    if (!this.#hasCustomMethod("addMasterRow")) {
+      this.addMasterRow = (opts = {}) => {
+        const manager = this.gridManager(role)
+        if (!manager) return
+        const onAdded = opts.onAdded || cfg.onAdded || null
+        this.addRow({ manager, ...opts, onAdded })
+      }
+    }
+
+    if (!this.#hasCustomMethod("deleteMasterRows")) {
+      this.deleteMasterRows = () => {
+        const manager = this.gridManager(role)
+        if (!manager) return
+        this.deleteRows({ manager })
+      }
+    }
+
+    if (!this.#hasCustomMethod("saveMasterRows")) {
+      this.saveMasterRows = async () => {
+        const manager = this.gridManager(role)
+        if (!manager) return
+        await this.saveRowsWith({
+          manager,
+          batchUrl: this[cfg.batchUrl],
+          saveMessage: cfg.saveMessage,
+          onSuccess: cfg.onSaveSuccess || (() => this.refreshGrid(role))
+        })
+      }
+    }
+  }
+
+  #generateDetailMethods() {
+    const details = this._detailCfgs || []
+    const proto = Object.getPrototypeOf(this)
+
+    details.forEach((cfg) => {
+      const role = cfg.role
+      if (!role) return
+
+      const methodBase = this.#resolveRoleMethodBase(role, cfg)
+      if (!methodBase) return
+      const methodSuffix = methodBase.charAt(0).toUpperCase() + methodBase.slice(1)
+      const managerAlias = cfg.managerAlias || `${methodBase}Manager`
+
+      if (!Object.getOwnPropertyDescriptor(proto, managerAlias)) {
+        Object.defineProperty(proto, managerAlias, {
+          get() { return this.gridManager(role) },
+          configurable: true
+        })
+      }
+
+      const addName = `add${methodSuffix}Row`
+      if (!this.#hasCustomMethod(addName)) {
+        this[addName] = () => {
+          const manager = this.gridManager(role)
+          if (!manager) return
+          if (this.blockDetailActionIfMasterChanged?.()) return
+
+          const stateProp = this._masterCfg?.key?.stateProperty
+          const selectedValue = stateProp ? this[stateProp] : ""
+          if (stateProp && (selectedValue == null || String(selectedValue).trim() === "")) {
+            const entityLabel = cfg.entityLabel || this._masterCfg?.key?.entityLabel || "Master"
+            const message = cfg.selectionMessage || `${entityLabel}을(를) 먼저 선택해주세요.`
+            showAlert(message)
+            return
+          }
+
+          let overrides = {}
+          if (typeof cfg.overrides === "function") {
+            overrides = cfg.overrides.call(this, { selectedValue, role }) || {}
+          } else if (cfg.overrides && typeof cfg.overrides === "object") {
+            overrides = { ...cfg.overrides }
+          }
+
+          this.addRow({ manager, overrides, onAdded: cfg.onAdded || null })
+        }
+      }
+
+      const deleteName = `delete${methodSuffix}Rows`
+      if (!this.#hasCustomMethod(deleteName)) {
+        this[deleteName] = () => {
+          const manager = this.gridManager(role)
+          if (!manager) return
+          if (this.blockDetailActionIfMasterChanged?.()) return
+          this.deleteRows({ manager })
+        }
+      }
+
+      const saveName = `save${methodSuffix}Rows`
+      if (!this.#hasCustomMethod(saveName)) {
+        this[saveName] = async () => {
+          const manager = this.gridManager(role)
+          if (!manager) return
+          if (this.blockDetailActionIfMasterChanged?.()) return
+
+          const stateProp = this._masterCfg?.key?.stateProperty
+          const selectedValue = stateProp ? this[stateProp] : ""
+          if (stateProp && (selectedValue == null || String(selectedValue).trim() === "")) {
+            const entityLabel = cfg.entityLabel || this._masterCfg?.key?.entityLabel || "Master"
+            const message = cfg.selectionMessage || `${entityLabel}을(를) 먼저 선택해주세요.`
+            showAlert(message)
+            return
+          }
+
+          const template = this[cfg.batchUrlTemplate]
+          if (!template) {
+            showAlert("저장 URL이 설정되지 않았습니다.")
+            return
+          }
+          const batchUrl = buildTemplateUrl(template, cfg.placeholder || ":id", selectedValue)
+          await this.saveRowsWith({
+            manager,
+            batchUrl,
+            saveMessage: cfg.saveMessage,
+            onSuccess: cfg.onSaveSuccess || (() => this[`reload${methodSuffix}Rows`](selectedValue))
+          })
+        }
+      }
+
+      const fetchName = `fetch${methodSuffix}Rows`
+      if (!this.#hasCustomMethod(fetchName)) {
+        this[fetchName] = (rowData) => this.loadDetailRows(role, rowData)
+      }
+
+      const reloadName = `reload${methodSuffix}Rows`
+      if (!this.#hasCustomMethod(reloadName)) {
+        this[reloadName] = async (key) => {
+          const stateProp = this._masterCfg?.key?.stateProperty
+          const actualKey = key ?? (stateProp ? this[stateProp] : null)
+          if (!actualKey) return
+
+          const fakeRowData = { [cfg.masterKeyField]: actualKey }
+          const rows = await this.loadDetailRows(role, fakeRowData)
+          setManagerRowData(this.gridManager(role), rows)
+        }
+      }
+
+      const clearName = `clear${methodSuffix}Rows`
+      if (!this.#hasCustomMethod(clearName)) {
+        this[clearName] = () => {
+          setManagerRowData(this.gridManager(role), [])
+        }
+      }
+    })
+  }
+
+  #hasCustomMethod(methodName) {
+    const proto = Object.getPrototypeOf(this)
+    const hasOwnProtoMethod = Object.prototype.hasOwnProperty.call(proto, methodName) &&
+      typeof proto[methodName] === "function"
+    const hasOwnInstanceMethod = Object.prototype.hasOwnProperty.call(this, methodName) &&
+      typeof this[methodName] === "function"
+    return hasOwnProtoMethod || hasOwnInstanceMethod
+  }
+
+  #resolveRoleMethodBase(role, cfg = {}) {
+    if (cfg.methodBaseName) return cfg.methodBaseName
+    if (role.endsWith("s")) return role.slice(0, -1)
+    return role
   }
 
   #gridRegistry
@@ -648,6 +1246,3 @@ export default class BaseGridController extends Controller {
     return getSearchFieldElementFromBridge(fieldName)
   }
 }
-
-Object.assign(BaseGridController.prototype, ModalMixin)
-Object.assign(BaseGridController.prototype, ExcelDownloadable)

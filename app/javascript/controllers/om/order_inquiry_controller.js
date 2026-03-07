@@ -1,7 +1,7 @@
 import BaseGridController from "controllers/base_grid_controller"
 import { fetchJson } from "controllers/grid/grid_utils"
 
-// 오더조회 화면 (마스터-디테일 읽기 전용)
+// 오더조회 화면 (마스터-디테일 자동 연동)
 export default class extends BaseGridController {
   static targets = [
     ...BaseGridController.targets,
@@ -12,45 +12,52 @@ export default class extends BaseGridController {
 
   gridRoles() {
     return {
-      master: { target: "masterGridContainer" },
-      detail: { target: "detailGridContainer" }
+      master: {
+        target: "masterGridContainer",
+        masterKeyField: "id"
+      },
+      detail: {
+        target: "detailGridContainer",
+        parentGrid: "master",
+        onMasterRowChange: (rowData) => this.updateDetailHeader(rowData),
+        detailLoader: (rowData) => this.fetchDetailRows(rowData)
+      }
     }
   }
 
-  // 검색 폼 성공 시 마스터 그리드 바인딩
   loadMasterData(event) {
     if (!event.detail) return
-
     this.setRows("master", event.detail || [])
-    this.resetDetail()
   }
 
-  // 마스터 행 클릭 시 상세 아이템 조회
-  async onMasterRowClicked(event) {
-    if (!event.detail) return
+  // 기존 callback:onRowClicked 바인딩 호환용
+  onMasterRowClicked() { }
 
-    const row = event.detail.data
-    if (!row || !row.id) return
+  beforeSearchReset() {
+    this.updateDetailHeader(null)
+  }
+
+  async fetchDetailRows(rowData) {
+    const rowId = rowData?.id
+    if (!rowId) return []
 
     try {
-      const body = await fetchJson(`/om/order_inquiries/${row.id}`)
-      this.setRows("detail", body || [])
-
-      if (this.hasDetailHeaderLabelTarget) {
-        this.detailHeaderLabelTarget.textContent = `[${row.ord_no}] 상세 항목 리스트`
-        this.detailHeaderLabelTarget.classList.remove("text-gray-500")
-        this.detailHeaderLabelTarget.classList.add("text-blue-600")
-      }
-    } catch (e) {
-      console.error("아이템 상세 조회 오류", e)
+      const body = await fetchJson(`/om/order_inquiries/${rowId}`)
+      return Array.isArray(body) ? body : []
+    } catch (error) {
+      console.error("아이템 상세 조회 오류", error)
+      return []
     }
   }
 
-  // ─── Private ───
+  updateDetailHeader(rowData) {
+    if (!this.hasDetailHeaderLabelTarget) return
 
-  resetDetail() {
-    this.setRows("detail", [])
-    if (this.hasDetailHeaderLabelTarget) {
+    if (rowData?.ord_no) {
+      this.detailHeaderLabelTarget.textContent = `[${rowData.ord_no}] 상세 항목 리스트`
+      this.detailHeaderLabelTarget.classList.remove("text-gray-500")
+      this.detailHeaderLabelTarget.classList.add("text-blue-600")
+    } else {
       this.detailHeaderLabelTarget.textContent = "오더를 선택해주세요."
       this.detailHeaderLabelTarget.classList.remove("text-blue-600")
       this.detailHeaderLabelTarget.classList.add("text-gray-500")

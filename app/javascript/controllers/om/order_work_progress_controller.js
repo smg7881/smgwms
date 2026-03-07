@@ -1,18 +1,16 @@
-﻿import BaseGridController from "controllers/base_grid_controller"
-import { showAlert, confirmAction } from "components/ui/alert"
+import BaseGridController from "controllers/base_grid_controller"
+import { showAlert } from "components/ui/alert"
 import { switchTab, activateTab } from "controllers/ui_utils"
+
 // 작업진행현황 화면 (폼 + 2개 그리드)
 export default class extends BaseGridController {
   static targets = [
     ...BaseGridController.targets,
-    // Form Inputs
     "custOrdNo", "ordNo", "custOrdTypeNm", "ordReqCustNm",
     "ctrtNo", "ctrtCustNm", "bilgCustNm", "ordTypeNm",
     "custOrdOfcr", "custTel", "custExprYn", "clsExprYn",
     "retrngdYn", "ordStatNm", "ordCmptNm",
-    // Grid Containers
     "itemGridContainer", "progressGridContainer",
-    // Tabs
     "tabButton", "tabPanel"
   ]
 
@@ -23,7 +21,6 @@ export default class extends BaseGridController {
     }
   }
 
-  // 검색폼의 JSON 응답을 받아와 바인딩
   loadData(event) {
     if (!event.detail) return
 
@@ -46,38 +43,23 @@ export default class extends BaseGridController {
 
   switchTab(event) {
     switchTab(event, this)
-
-    const tabId = this.activeTab
-    // 숨겨져 있던 그리드가 표시될 때 크기 재조정 필요
-    setTimeout(() => {
-      if (tabId === "items" && this.grids.items) {
-        this.resizeGridIfNecessary(this.grids.items)
-      } else if (tabId === "progress" && this.grids.progresses) {
-        this.resizeGridIfNecessary(this.grids.progresses)
-      }
-    }, 10)
+    this.resizeGridForTab(this.activeTab)
   }
 
   activateTab(tabId) {
     activateTab(tabId, this)
+    this.resizeGridForTab(tabId)
+  }
 
-    // 숨겨져 있던 그리드가 표시될 때 크기 재조정 필요
+  resizeGridForTab(tabId) {
     setTimeout(() => {
-      if (tabId === "items" && this.grids.items) {
-        this.resizeGridIfNecessary(this.grids.items)
-      } else if (tabId === "progress" && this.grids.progresses) {
-        this.resizeGridIfNecessary(this.grids.progresses)
+      if (tabId === "items") {
+        this.gridApi("items")?.sizeColumnsToFit?.()
+      } else if (tabId === "progress") {
+        this.gridApi("progresses")?.sizeColumnsToFit?.()
       }
     }, 10)
   }
-
-  resizeGridIfNecessary(grid) {
-    if (grid && grid.api) {
-      grid.api.sizeColumnsToFit()
-    }
-  }
-
-  // ─── Private ───
 
   bindMaster(master) {
     this.custOrdNoTarget.value = master.cust_ord_no || ""

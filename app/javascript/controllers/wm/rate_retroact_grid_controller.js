@@ -1,4 +1,4 @@
-﻿import BaseGridController from "controllers/base_grid_controller"
+import BaseGridController from "controllers/base_grid_controller"
 import { showAlert } from "components/ui/alert"
 import { openLookupPopup } from "controllers/lookup_popup_modal"
 import {
@@ -28,7 +28,45 @@ export default class extends BaseGridController {
     super.connect()
     this.currentMasterRow = null
     this.selectedRetroRate = null
-    this.detailLoadToken = 0
+    this.refreshSelectedLabels()
+  }
+
+  masterConfig() {
+    return {
+      role: "master",
+      batchUrl: "masterBatchUrlValue",
+      saveMessage: "요율 데이터가 저장되었습니다.",
+      pendingEntityLabel: "마스터 요율",
+      key: {
+        field: "wrhs_exca_fee_rt_no",
+        stateProperty: "selectedMasterValue",
+        labelTarget: "selectedMasterLabel",
+        entityLabel: "요율",
+        emptyMessage: "요율을 먼저 선택하세요."
+      },
+      onRowChange: {
+        trackCurrentRow: true,
+        syncForm: false,
+        afterChange: () => {
+          this.resetRetroRate()
+          this.refreshSelectedLabels()
+        }
+      },
+      beforeSearch: {
+        clearValidation: false,
+        clearForm: false
+      }
+    }
+  }
+
+  detailGrids() {
+    return [{
+      role: "detail",
+      methodBaseName: "detail",
+      masterKeyField: "wrhs_exca_fee_rt_no",
+      entityLabel: "요율",
+      selectionMessage: "요율목록에서 기준 요율을 먼저 선택하세요."
+    }]
   }
 
   gridRoles() {
@@ -43,13 +81,8 @@ export default class extends BaseGridController {
         target: "detailGrid",
         manager: this.detailManagerConfig(),
         parentGrid: "master",
-        onMasterRowChange: (rowData) => {
-          this.currentMasterRow = rowData || null
-          this.selectedMasterValue = rowData?.wrhs_exca_fee_rt_no?.toString().trim() || ""
-          this.resetRetroRate()
-          this.refreshSelectedLabels()
-        },
-        detailLoader: async (rowData) => this.loadDetailRows(rowData)
+        onMasterRowChange: (rowData) => this.onMasterRowChanged(rowData),
+        detailLoader: (rowData) => this.fetchDetailRows(rowData)
       }
     }
   }
@@ -125,6 +158,7 @@ export default class extends BaseGridController {
     this.selectedMasterValue = ""
     this.resetRetroRate()
     this.refreshSelectedLabels()
+    this.clearDetailRows?.()
   }
 
   async saveMasterRows() {
@@ -343,12 +377,11 @@ export default class extends BaseGridController {
     return blockIfPendingChanges(this.masterManager, "마스터 요율")
   }
 
-  async loadDetailRows(rowData) {
+  async fetchDetailRows(rowData) {
     if (!rowData || !rowData.wrhs_exca_fee_rt_no) {
       return []
     }
 
-    const token = ++this.detailLoadToken
     const url = buildTemplateUrl(this.detailListUrlTemplateValue, { rate_retroact_id: rowData.wrhs_exca_fee_rt_no })
     const query = this.buildDetailQuery(rowData)
     const queryString = query.toString()
@@ -356,14 +389,8 @@ export default class extends BaseGridController {
 
     try {
       const rows = await fetchJson(requestUrl)
-      if (token !== this.detailLoadToken) {
-        return []
-      }
       return Array.isArray(rows) ? rows : []
     } catch {
-      if (token !== this.detailLoadToken) {
-        return []
-      }
       showAlert("실적목록 조회에 실패했습니다.")
       return []
     }
@@ -374,7 +401,7 @@ export default class extends BaseGridController {
       return
     }
 
-    const rows = await this.loadDetailRows(this.currentMasterRow)
+    const rows = await this.fetchDetailRows(this.currentMasterRow)
     this.setRows("detail", rows)
   }
 

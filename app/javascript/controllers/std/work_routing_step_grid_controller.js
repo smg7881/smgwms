@@ -1,13 +1,4 @@
 import BaseGridController from "controllers/base_grid_controller"
-import { showAlert } from "components/ui/alert"
-import {
-  fetchJson,
-  setManagerRowData,
-  hasPendingChanges,
-  blockIfPendingChanges,
-  buildTemplateUrl,
-  refreshSelectionLabel
-} from "controllers/grid/grid_utils"
 
 const YES_NO_VALUES = ["Y", "N"]
 
@@ -27,39 +18,62 @@ export default class extends BaseGridController {
 
   connect() {
     super.connect()
-    this.refreshSelectedWorkRoutingLabel()
+    this.refreshSelectedLabel()
+  }
+
+  masterConfig() {
+    return {
+      role: "master",
+      batchUrl: "masterBatchUrlValue",
+      saveMessage: "기준작업경로 정보가 저장되었습니다.",
+      pendingEntityLabel: "마스터 작업경로",
+      key: {
+        field: "wrk_rt_cd",
+        stateProperty: "selectedWorkRoutingValue",
+        labelTarget: "selectedWorkRoutingLabel",
+        entityLabel: "작업경로",
+        emptyMessage: "작업경로를 먼저 선택해주세요."
+      },
+      onRowChange: {
+        trackCurrentRow: false,
+        syncForm: false
+      },
+      onSaveSuccess: () => this.refreshGrid("master"),
+      onAdded: (rowData) => this.onMasterRowChanged(rowData)
+    }
+  }
+
+  detailGrids() {
+    return [
+      {
+        role: "detail",
+        masterKeyField: "wrk_rt_cd",
+        placeholder: ":id",
+        listUrlTemplate: "detailListUrlTemplateValue",
+        batchUrlTemplate: "detailBatchUrlTemplateValue",
+        entityLabel: "작업경로",
+        selectionMessage: "작업경로를 먼저 선택해주세요.",
+        saveMessage: "작업경로별 작업단계 정보가 저장되었습니다.",
+        fetchErrorMessage: "작업경로별 작업단계 목록 조회에 실패했습니다.",
+        overrides: ({ selectedValue }) => ({ wrk_rt_cd: selectedValue }),
+        onSaveSuccess: () => this.refreshGrid("master")
+      }
+    ]
   }
 
   gridRoles() {
     return {
       master: {
         target: "masterGrid",
-        manager: this.masterManagerConfig(),
+        manager: "masterManagerConfig",
         masterKeyField: "wrk_rt_cd"
       },
       detail: {
         target: "detailGrid",
-        manager: this.detailManagerConfig(),
+        manager: "detailManagerConfig",
         parentGrid: "master",
-        onMasterRowChange: (rowData) => {
-          this.selectedWorkRoutingValue = rowData?.wrk_rt_cd || ""
-          this.refreshSelectedWorkRoutingLabel()
-          this.clearDetailRows()
-        },
-        detailLoader: async (rowData) => {
-          const workRoutingCode = rowData?.wrk_rt_cd
-          const hasLoadableCode = Boolean(workRoutingCode) && !rowData?.__is_deleted && !rowData?.__is_new
-          if (!hasLoadableCode) return []
-
-          try {
-            const url = buildTemplateUrl(this.detailListUrlTemplateValue, ":id", workRoutingCode)
-            const rows = await fetchJson(url)
-            return Array.isArray(rows) ? rows : []
-          } catch {
-            showAlert("작업경로별 작업단계 목록 조회에 실패했습니다.")
-            return []
-          }
-        }
+        onMasterRowChange: (rowData) => this.onMasterRowChanged(rowData),
+        detailLoader: (rowData) => this.loadDetailRows("detail", rowData)
       }
     }
   }
@@ -171,101 +185,6 @@ export default class extends BaseGridController {
     }
   }
 
-  get masterManager() {
-    return this.gridManager("master")
-  }
-
-  get detailManager() {
-    return this.gridManager("detail")
-  }
-
-  beforeSearchReset() {
-    this.selectedWorkRoutingValue = ""
-    this.refreshSelectedWorkRoutingLabel()
-  }
-
-  addMasterRow() {
-    this.addRow({
-      manager: this.masterManager,
-      onAdded: (rowData) => {
-        this.selectedWorkRoutingValue = rowData?.wrk_rt_cd || ""
-        this.refreshSelectedWorkRoutingLabel()
-        this.clearDetailRows()
-      }
-    })
-  }
-
-  deleteMasterRows() {
-    this.deleteRows({ manager: this.masterManager })
-  }
-
-  async saveMasterRows() {
-    await this.saveRowsWith({
-      manager: this.masterManager,
-      batchUrl: this.masterBatchUrlValue,
-      saveMessage: "기준작업경로 정보가 저장되었습니다.",
-      onSuccess: () => this.refreshGrid("master")
-    })
-  }
-
-  addDetailRow() {
-    if (!this.detailManager) return
-    if (this.blockDetailActionIfMasterChanged()) return
-
-    if (!this.selectedWorkRoutingValue) {
-      showAlert("작업경로를 먼저 선택해주세요.")
-      return
-    }
-
-    this.addRow({
-      manager: this.detailManager,
-      overrides: { wrk_rt_cd: this.selectedWorkRoutingValue }
-    })
-  }
-
-  deleteDetailRows() {
-    if (!this.detailManager) return
-    if (this.blockDetailActionIfMasterChanged()) return
-
-    this.deleteRows({ manager: this.detailManager })
-  }
-
-  async saveDetailRows() {
-    if (!this.detailManager) return
-    if (this.blockDetailActionIfMasterChanged()) return
-
-    if (!this.selectedWorkRoutingValue) {
-      showAlert("작업경로를 먼저 선택해주세요.")
-      return
-    }
-
-    const batchUrl = buildTemplateUrl(this.detailBatchUrlTemplateValue, ":id", this.selectedWorkRoutingValue)
-    await this.saveRowsWith({
-      manager: this.detailManager,
-      batchUrl,
-      saveMessage: "작업경로별 작업단계 정보가 저장되었습니다.",
-      onSuccess: () => this.refreshGrid("master")
-    })
-  }
-
-  clearDetailRows() {
-    setManagerRowData(this.detailManager, [])
-  }
-
-  refreshSelectedWorkRoutingLabel() {
-    if (!this.hasSelectedWorkRoutingLabelTarget) return
-
-    refreshSelectionLabel(this.selectedWorkRoutingLabelTarget, this.selectedWorkRoutingValue, "작업경로", "작업경로를 먼저 선택해주세요.")
-  }
-
-  hasMasterPendingChanges() {
-    return hasPendingChanges(this.masterManager)
-  }
-
-  blockDetailActionIfMasterChanged() {
-    return blockIfPendingChanges(this.masterManager, "마스터 작업경로")
-  }
-
   handleLookupSelected(event) {
     const rowNode = event?.detail?.rowNode
     const colDef = event?.detail?.colDef
@@ -295,13 +214,11 @@ export default class extends BaseGridController {
     rowNode.setDataValue("work_step_level1_cd", selectedLevel1Code)
     rowNode.setDataValue("work_step_level2_cd", selectedLevel2Code)
 
-    if (this.detailManager?.api) {
-      this.detailManager.api.refreshCells({
-        rowNodes: [rowNode],
-        columns: ["work_step_cd", "work_step_level1_cd", "work_step_level2_cd"],
-        force: true
-      })
-    }
+    this.detailManager?.api?.refreshCells({
+      rowNodes: [rowNode],
+      columns: ["work_step_cd", "work_step_level1_cd", "work_step_level2_cd"],
+      force: true
+    })
   }
 
   handleMasterCellValueChanged(event) {

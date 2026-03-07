@@ -1,21 +1,18 @@
 /**
  * user_crud_controller.js
  *
- * [공통] BaseGridController (ModalMixin 합성) 상속체로서 "사용자(User) 관리"를 담당.
- * 주요 확장 사양:
- * - 프로필 사진(Photo)의 파일 선택기(Input) 트리거링, FileReader를 이용한 Base64 디코딩 및 미리보기.
- * - 프로필 사진 삭제 액션 및 휴지통 상태 관리.
- * - FormData를 사용해 Multipart로 사진과 함께 사용자 정보를 쏘는 액션 커스텀 오버라이딩.
+ * BaseGridController를 상속받아 사용자 CRUD 모달을 제어합니다.
+ * - 프로필 사진 선택/미리보기/삭제 처리
+ * - multipart 저장(save) 오버라이드
  */
 import BaseGridController from "controllers/base_grid_controller"
-import { showAlert, confirmAction } from "components/ui/alert"
+import { showAlert } from "components/ui/alert"
 
 export default class extends BaseGridController {
   static resourceName = "user"
-  static deleteConfirmKey = "userNm"  // 삭제 시 물어볼 사람 이름
+  static deleteConfirmKey = "userNm"
   static entityLabel = "사용자"
 
-  // 등록되지 않은 유저 전용으로 보여줄 기본 SVG 프로필 아이콘(실루엣) 하드코딩 토큰
   static PLACEHOLDER_PHOTO = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Crect width='80' height='80' rx='8' fill='%23d0d7de'/%3E%3Cpath d='M30 50h20l-4-5-3 4-3-2-6 8zm-5-20v24a2 2 0 002 2h26a2 2 0 002-2V30a2 2 0 00-2-2h-5l-2-3H34l-2 3h-5a2 2 0 00-2 2zm15 4a6 6 0 110 12 6 6 0 010-12z' fill='%23fff'/%3E%3C/svg%3E"
 
   static targets = [
@@ -25,7 +22,6 @@ export default class extends BaseGridController {
     "fieldDeptCd", "fieldDeptNm", "fieldRoleCd", "fieldPositionCd", "fieldJobTitleCd",
     "fieldWorkStatus", "fieldHireDate", "fieldResignDate",
     "fieldPhone", "fieldAddress", "fieldDetailAddress",
-    // 포토 전용 타겟
     "photoInput", "photoPreview", "photoRemoveBtn"
   ]
 
@@ -40,7 +36,6 @@ export default class extends BaseGridController {
 
   connect() {
     super.connect()
-    // handleDelete는 ModalMixin에서 일반 메서드로 정의되어 있으므로 this 바인딩이 필요합니다.
     this.handleDelete = this.handleDelete.bind(this)
     this.connectBase({
       events: [
@@ -55,61 +50,54 @@ export default class extends BaseGridController {
     super.disconnect()
   }
 
-  // 상단 공통 [추가/작성] 버튼을 통한 신규 오픈
   openCreate() {
     this.resetForm()
     this.modalTitleTarget.textContent = "사용자 추가"
-    this.fieldUserIdCodeTarget.readOnly = false // 사원번호/ID 신규 할당 허가
-    this.fieldWorkStatusTarget.value = "ACTIVE" // 디폴트 재직 상태
+    this.fieldUserIdCodeTarget.readOnly = false
+    this.setFieldValues({ work_status: "ACTIVE" })
     this.mode = "create"
     this.openModal()
   }
 
-  // UI 알리아스
   openAdd() {
     this.openCreate()
   }
 
-  // [수정] 펜 아이콘을 통한 모달 오픈
   handleEdit = (event) => {
-    // 그리드 row 객체 Payload 전체
     const data = event.detail.userData
     this.resetForm()
     this.modalTitleTarget.textContent = "사용자 수정"
 
-    this.fieldIdTarget.value = data.id
-    this.fieldUserIdCodeTarget.value = data.user_id_code || ""
-    this.fieldUserIdCodeTarget.readOnly = true // 사원번호 고유값은 수정 불가
-    this.fieldUserNmTarget.value = data.user_nm || ""
-    this.fieldEmailAddressTarget.value = data.email_address || ""
+    this.fieldIdTarget.value = data.id ?? ""
+    this.setFieldValues({
+      user_id_code: data.user_id_code || "",
+      user_nm: data.user_nm || "",
+      email_address: data.email_address || "",
+      dept_cd: data.dept_cd || "",
+      dept_nm: data.dept_nm || "",
+      role_cd: data.role_cd || "",
+      position_cd: data.position_cd || "",
+      job_title_cd: data.job_title_cd || "",
+      work_status: data.work_status || "ACTIVE",
+      hire_date: data.hire_date || "",
+      resign_date: data.resign_date || "",
+      phone: data.phone || "",
+      address: data.address || "",
+      detail_address: data.detail_address || ""
+    })
 
-    // 조직도, 권한 등 맵핑
-    this.fieldDeptCdTarget.value = data.dept_cd || ""
-    this.fieldDeptNmTarget.value = data.dept_nm || ""
-    this.fieldRoleCdTarget.value = data.role_cd || ""
-    this.fieldPositionCdTarget.value = data.position_cd || ""
-    this.fieldJobTitleCdTarget.value = data.job_title_cd || ""
-    this.fieldWorkStatusTarget.value = data.work_status || "ACTIVE"
-    this.fieldHireDateTarget.value = data.hire_date || ""
-    this.fieldResignDateTarget.value = data.resign_date || ""
-    this.fieldPhoneTarget.value = data.phone || ""
-    this.fieldAddressTarget.value = data.address || ""
-    this.fieldDetailAddressTarget.value = data.detail_address || ""
-
-    // 이미지를 ActiveStorage 등으로 부터 서빙받은 URL이 있다면 표출 수행
+    this.fieldUserIdCodeTarget.readOnly = true
     if (data.photo_url) {
-      this.photoPreviewTarget.src = data.photo_url // <img src> 속성 변경
-      this.photoRemoveBtnTarget.hidden = false     // X 삭제버튼 노출
+      this.photoPreviewTarget.src = data.photo_url
+      this.photoRemoveBtnTarget.hidden = false
     }
 
     this.mode = "update"
     this.openModal()
   }
 
-  // 사진을 포함(Multipart Form Data)하여 서버 저장을 치는 재정의된 Save 메서드
   async save() {
     const formData = new FormData(this.formTarget)
-    // 썸네일 input file 타겟에서 뽑아낸 바이너리를 폼에 수작업 Add.
     const photoFile = this.photoInputTarget.files[0]
     if (photoFile) formData.append("user[photo]", photoFile)
 
@@ -122,7 +110,7 @@ export default class extends BaseGridController {
       const { response, result } = await this.requestJson(url, {
         method,
         body: formData,
-        isMultipart: true // Application-JSON Stringify가 되지 않도록 방어하는 인터페이스 속성
+        isMultipart: true
       })
 
       if (!response.ok || !result.success) {
@@ -138,38 +126,32 @@ export default class extends BaseGridController {
     }
   }
 
-  // 프로필 프사 쪽 네모 컨테이너를 누르면 브라우저 파일 탐색기 인풋이 클릭되도록 포워딩함
   triggerPhotoSelect() {
     this.photoInputTarget.click()
   }
 
-  // 파일 탐색기에서 사진이 선택되었을때 Change 이벤트를 감지하여 동작
   previewPhoto() {
     const file = this.photoInputTarget.files[0]
     if (!file) return
 
-    // 브라우저 캐시 레벨에서 바이너리를 Base64로 떠서 바로 미리보기를 띄워줌
     const reader = new FileReader()
     reader.onload = (event) => {
-      this.photoPreviewTarget.src = event.target.result // Base64 DATA URI
-      this.photoRemoveBtnTarget.hidden = false          // 삭제 버튼 On
+      this.photoPreviewTarget.src = event.target.result
+      this.photoRemoveBtnTarget.hidden = false
     }
-    // 인코딩 시작
     reader.readAsDataURL(file)
   }
 
-  // 휴지통 / 사진 지우기 버튼 액션
   removePhoto() {
-    this.photoInputTarget.value = "" // 첨부 해제
-    this.photoPreviewTarget.src = this.constructor.PLACEHOLDER_PHOTO // 텅 비어보이는 SVG 실루엣으로 교체
-    this.photoRemoveBtnTarget.hidden = true // 삭제 버튼 없앰
+    this.photoInputTarget.value = ""
+    this.photoPreviewTarget.src = this.constructor.PLACEHOLDER_PHOTO
+    this.photoRemoveBtnTarget.hidden = true
   }
 
-  // 모달 닫힐 때 혹은 신규 진입 때의 화면 클린작업
   resetForm() {
     this.formTarget.reset()
     this.fieldIdTarget.value = ""
-    this.fieldWorkStatusTarget.value = "ACTIVE"
+    this.setFieldValues({ work_status: "ACTIVE" })
     this.removePhoto()
   }
 }

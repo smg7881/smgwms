@@ -1,12 +1,5 @@
 ﻿import BaseGridController from "controllers/base_grid_controller"
-import { showAlert } from "components/ui/alert"
 import {
-  fetchJson,
-  setManagerRowData,
-  hasPendingChanges,
-  blockIfPendingChanges,
-  buildTemplateUrl,
-  refreshSelectionLabel,
   setSelectOptions as setSelectOptionsUtil
 } from "controllers/grid/grid_utils"
 import {
@@ -90,9 +83,6 @@ export default class extends BaseGridController {
     "detailField",
     "detailGroupField",
     "detailSectionField",
-    "validationBox",
-    "validationSummary",
-    "validationList",
     "tabButton",
     "tabPanel"
   ]
@@ -131,7 +121,7 @@ export default class extends BaseGridController {
     this.activateTab("basic")
     this.clearDetailForm()
     this.clearValidationErrors()
-    this.refreshSelectedClientLabel()
+    this.refreshSelectedLabel()
   }
 
   // 이벤트 해제 및 상태 정리
@@ -149,25 +139,80 @@ export default class extends BaseGridController {
   }
 
   // 다중 그리드 역할 정의 (master -> contacts/workplaces)
+  masterConfig() {
+    return {
+      role: "master",
+      batchUrl: "masterBatchUrlValue",
+      saveMessage: "거래처 데이터가 저장되었습니다.",
+      pendingEntityLabel: "마스터 거래처",
+      key: {
+        field: "bzac_cd",
+        stateProperty: "selectedClientValue",
+        labelTarget: "selectedClientLabel",
+        entityLabel: "거래처",
+        emptyMessage: "거래처를 먼저 선택하세요."
+      },
+      onRowChange: {
+        trackCurrentRow: true,
+        syncForm: true
+      },
+      beforeSearch: {
+        clearValidation: true,
+        clearForm: true
+      },
+      onAdded: (rowData) => {
+        this.activateTab("basic")
+        this.onMasterRowChanged(rowData)
+      }
+    }
+  }
+
+  detailGrids() {
+    return [
+      {
+        role: "contacts",
+        masterKeyField: "bzac_cd",
+        placeholder: ":id",
+        listUrlTemplate: "contactListUrlTemplateValue",
+        batchUrlTemplate: "contactBatchUrlTemplateValue",
+        entityLabel: "거래처",
+        saveMessage: "거래처 담당자 데이터가 저장되었습니다.",
+        fetchErrorMessage: "담당자 목록 조회에 실패했습니다.",
+        onSaveSuccess: () => this.reloadContactRows(this.selectedClientValue)
+      },
+      {
+        role: "workplaces",
+        masterKeyField: "bzac_cd",
+        placeholder: ":id",
+        listUrlTemplate: "workplaceListUrlTemplateValue",
+        batchUrlTemplate: "workplaceBatchUrlTemplateValue",
+        entityLabel: "거래처",
+        saveMessage: "거래처 작업장 데이터가 저장되었습니다.",
+        fetchErrorMessage: "작업장 목록 조회에 실패했습니다.",
+        onSaveSuccess: () => this.reloadWorkplaceRows(this.selectedClientValue)
+      }
+    ]
+  }
+
   gridRoles() {
     return {
       master: {
         target: "masterGrid",
-        manager: this.masterManagerConfig(),
+        manager: "masterManagerConfig",
         masterKeyField: "bzac_cd"
       },
       contacts: {
         target: "contactsGrid",
-        manager: this.contactManagerConfig(),
+        manager: "contactManagerConfig",
         parentGrid: "master",
-        onMasterRowChange: (rowData) => this.handleMasterRowChange(rowData),
-        detailLoader: async (rowData) => this.fetchContactRows(rowData)
+        onMasterRowChange: (rowData) => this.onMasterRowChanged(rowData),
+        detailLoader: (rowData) => this.loadDetailRows("contacts", rowData)
       },
       workplaces: {
         target: "workplacesGrid",
-        manager: this.workplaceManagerConfig(),
+        manager: "workplaceManagerConfig",
         parentGrid: "master",
-        detailLoader: async (rowData) => this.fetchWorkplaceRows(rowData)
+        detailLoader: (rowData) => this.loadDetailRows("workplaces", rowData)
       }
     }
   }
@@ -423,11 +468,6 @@ export default class extends BaseGridController {
     }
   }
 
-  // 역할별 매니저 접근 getter
-  get masterManager() {
-    return this.gridManager("master")
-  }
-
   // grid_form_utils 유틸이 controller.manager 경로를 기대하므로 브릿지 제공
   // base_grid_controller가 this.manager = null 을 쓰므로 setter도 함께 정의(흡수)
   get manager() {
@@ -438,264 +478,33 @@ export default class extends BaseGridController {
     // base_grid_controller의 단일그리드 경로 할당 흡수 — 멀티그리드 전용이므로 무시
   }
 
-  get contactManager() {
-    return this.gridManager("contacts")
-  }
-
-  get workplaceManager() {
-    return this.gridManager("workplaces")
-  }
-
-  // 검색 전 상태 초기화
-  beforeSearchReset() {
-    this.selectedClientValue = ""
-    this.currentMasterRow = null
-    this.refreshSelectedClientLabel()
-    this.clearValidationErrors()
-    this.clearDetailForm()
-  }
-
-  // 마스터 행 변경 시 상세 폼/선택 라벨/디테일 데이터 초기화
-  handleMasterRowChange(rowData) {
-    this.currentMasterRow = rowData || null
-
-    if (!rowData) {
-      this.clearDetailForm()
-    } else {
-      this.fillDetailForm(rowData)
-    }
-
-    this.selectedClientValue = rowData?.bzac_cd || ""
-    this.refreshSelectedClientLabel()
-
-    this.clearContactRows()
-    this.clearWorkplaceRows()
-  }
-
-  // ----- 마스터 CRUD -----
-  addMasterRow() {
-    this.addRow({
-      manager: this.masterManager,
-      config: { startCol: "bzac_nm" },
-      onAdded: (rowData) => {
-        this.activateTab("basic")
-        this.handleMasterRowChange(rowData)
-      }
-    })
-  }
-
-  deleteMasterRows() {
-    this.deleteRows({ manager: this.masterManager })
-  }
-
-  async saveMasterRows() {
-    await this.saveRowsWith({
-      manager: this.masterManager,
-      batchUrl: this.masterBatchUrlValue,
-      saveMessage: "거래처 데이터가 저장되었습니다.",
-      onSuccess: () => this.refreshGrid("master")
-    })
-  }
-
-  // ----- 담당자 CRUD -----
-  addContactRow() {
-    if (!this.contactManager) return
-    if (this.blockDetailActionIfMasterChanged()) return
-
-    if (!this.selectedClientValue) {
-      showAlert("거래처를 먼저 선택해주세요.")
-      return
-    }
-
-    this.addRow({ manager: this.contactManager })
-  }
-
-  deleteContactRows() {
-    if (!this.contactManager) return
-    if (this.blockDetailActionIfMasterChanged()) return
-
-    this.deleteRows({ manager: this.contactManager })
-  }
-
-  async saveContactRows() {
-    if (!this.contactManager) return
-    if (this.blockDetailActionIfMasterChanged()) return
-
-    if (!this.selectedClientValue) {
-      showAlert("거래처를 먼저 선택해주세요.")
-      return
-    }
-
-    const batchUrl = buildTemplateUrl(this.contactBatchUrlTemplateValue, ":id", this.selectedClientValue)
-    await this.saveRowsWith({
-      manager: this.contactManager,
-      batchUrl,
-      saveMessage: "거래처 담당자 데이터가 저장되었습니다.",
-      onSuccess: () => this.reloadContactRows(this.selectedClientValue)
-    })
-  }
-
-  // ----- 작업장 CRUD -----
-  addWorkplaceRow() {
-    if (!this.workplaceManager) return
-    if (this.blockDetailActionIfMasterChanged()) return
-
-    if (!this.selectedClientValue) {
-      showAlert("거래처를 먼저 선택해주세요.")
-      return
-    }
-
-    this.addRow({ manager: this.workplaceManager })
-  }
-
-  deleteWorkplaceRows() {
-    if (!this.workplaceManager) return
-    if (this.blockDetailActionIfMasterChanged()) return
-
-    this.deleteRows({ manager: this.workplaceManager })
-  }
-
-  async saveWorkplaceRows() {
-    if (!this.workplaceManager) return
-    if (this.blockDetailActionIfMasterChanged()) return
-
-    if (!this.selectedClientValue) {
-      showAlert("거래처를 먼저 선택해주세요.")
-      return
-    }
-
-    const batchUrl = buildTemplateUrl(this.workplaceBatchUrlTemplateValue, ":id", this.selectedClientValue)
-    await this.saveRowsWith({
-      manager: this.workplaceManager,
-      batchUrl,
-      saveMessage: "거래처 작업장 데이터가 저장되었습니다.",
-      onSuccess: () => this.reloadWorkplaceRows(this.selectedClientValue)
-    })
-  }
-
-  // ----- 디테일 조회/재조회 -----
-  async fetchContactRows(rowData) {
-    const clientCode = rowData?.bzac_cd
-    const canLoad = Boolean(clientCode) && !rowData?.__is_deleted && !rowData?.__is_new
-    if (!canLoad) return []
-
-    return this.fetchContactRowsByClient(clientCode)
-  }
-
-  async fetchContactRowsByClient(clientCode) {
-    if (!clientCode) return []
-
-    try {
-      const url = buildTemplateUrl(this.contactListUrlTemplateValue, ":id", clientCode)
-      const rows = await fetchJson(url)
-      return Array.isArray(rows) ? rows : []
-    } catch {
-      showAlert("담당자 목록 조회에 실패했습니다.")
-      return []
-    }
-  }
-
-  async fetchWorkplaceRows(rowData) {
-    const clientCode = rowData?.bzac_cd
-    const canLoad = Boolean(clientCode) && !rowData?.__is_deleted && !rowData?.__is_new
-    if (!canLoad) return []
-
-    return this.fetchWorkplaceRowsByClient(clientCode)
-  }
-
-  async fetchWorkplaceRowsByClient(clientCode) {
-    if (!clientCode) return []
-
-    try {
-      const url = buildTemplateUrl(this.workplaceListUrlTemplateValue, ":id", clientCode)
-      const rows = await fetchJson(url)
-      return Array.isArray(rows) ? rows : []
-    } catch {
-      showAlert("작업장 목록 조회에 실패했습니다.")
-      return []
-    }
-  }
-
-  async reloadContactRows(clientCode) {
-    const rows = await this.fetchContactRowsByClient(clientCode)
-    setManagerRowData(this.contactManager, rows)
-  }
-
-  async reloadWorkplaceRows(clientCode) {
-    const rows = await this.fetchWorkplaceRowsByClient(clientCode)
-    setManagerRowData(this.workplaceManager, rows)
-  }
-
-  // 디테일 그리드 비우기
-  clearContactRows() {
-    setManagerRowData(this.contactManager, [])
-  }
-
-  clearWorkplaceRows() {
-    setManagerRowData(this.workplaceManager, [])
-  }
-
   // 상세 폼 submit 기본 동작 차단 (그리드 저장 흐름 사용)
   preventDetailSubmit(event) {
     event.preventDefault()
   }
 
-  // 선택 거래처 라벨 갱신
-  refreshSelectedClientLabel() {
-    if (!this.hasSelectedClientLabelTarget) return
+  beforeShowValidationErrors({ manager, firstError }) {
+    if (!manager) return
 
-    refreshSelectionLabel(this.selectedClientLabelTarget, this.selectedClientValue, "거래처", "거래처를 먼저 선택하세요.")
-  }
-
-  showValidationErrors({ errors = [], firstError = null, summary = "", manager = null } = {}) {
-    if (!this.hasValidationBoxTarget || !this.hasValidationListTarget) return false
-
-    this.#activateTabForValidation(manager, firstError)
-
-    const list = Array.isArray(errors) ? errors : []
-    const maxItems = 10
-    const visible = list.slice(0, maxItems)
-
-    if (this.hasValidationSummaryTarget) {
-      this.validationSummaryTarget.textContent = summary || "입력값을 확인해주세요."
+    if (manager === this.contactManager) {
+      this.activateTab("contacts")
+      return
     }
 
-    this.validationListTarget.innerHTML = ""
-    visible.forEach((error) => {
-      const item = document.createElement("li")
-      item.textContent = this.#formatValidationLine(error)
-      this.validationListTarget.appendChild(item)
-    })
-
-    if (list.length > maxItems) {
-      const more = document.createElement("li")
-      more.textContent = `외 ${list.length - maxItems}건`
-      this.validationListTarget.appendChild(more)
+    if (manager === this.workplaceManager) {
+      this.activateTab("workplaces")
+      return
     }
 
-    this.validationBoxTarget.hidden = false
-    this.validationBoxTarget.scrollIntoView({ behavior: "smooth", block: "nearest" })
-    return true
-  }
+    if (manager !== this.masterManager) return
 
-  clearValidationErrors() {
-    if (!this.hasValidationBoxTarget) return
-    this.validationBoxTarget.hidden = true
-    if (this.hasValidationSummaryTarget) {
-      this.validationSummaryTarget.textContent = ""
+    const field = (firstError?.field || "").toString().trim()
+    if (ADDITIONAL_TAB_FIELDS.has(field)) {
+      this.activateTab("additional")
+      return
     }
-    if (this.hasValidationListTarget) {
-      this.validationListTarget.innerHTML = ""
-    }
-  }
 
-  // 마스터 변경 미저장 상태 체크
-  hasMasterPendingChanges() {
-    return hasPendingChanges(this.masterManager)
-  }
-
-  blockDetailActionIfMasterChanged() {
-    return blockIfPendingChanges(this.masterManager, "마스터 거래처")
+    this.activateTab("basic")
   }
 
   // 탭 전환
@@ -904,34 +713,4 @@ export default class extends BaseGridController {
     }
   }
 
-  #activateTabForValidation(manager, firstError) {
-    if (!manager) return
-
-    if (manager === this.contactManager) {
-      this.activateTab("contacts")
-      return
-    }
-
-    if (manager === this.workplaceManager) {
-      this.activateTab("workplaces")
-      return
-    }
-
-    if (manager !== this.masterManager) return
-
-    const field = (firstError?.field || "").toString().trim()
-    if (ADDITIONAL_TAB_FIELDS.has(field)) {
-      this.activateTab("additional")
-      return
-    }
-
-    this.activateTab("basic")
-  }
-
-  #formatValidationLine(error) {
-    const scopeLabel = error?.scope === "insert" ? "추가" : "수정"
-    const rowLabel = Number.isInteger(error?.rowIndex) ? `${error.rowIndex + 1}행` : "행"
-    const message = (error?.message || "입력값을 확인해주세요.").toString()
-    return `[${scopeLabel} ${rowLabel}] ${message}`
-  }
 }

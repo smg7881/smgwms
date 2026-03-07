@@ -3,9 +3,7 @@ import {
   isApiAlive,
   fetchJson,
   collectRows,
-  setManagerRowData,
   buildTemplateUrl,
-  refreshSelectionLabel,
   postJson
 } from "controllers/grid/grid_utils"
 import { showAlert, confirmAction } from "components/ui/alert"
@@ -57,6 +55,54 @@ export default class extends BaseGridController {
     this.activateTab("detail")
   }
 
+  masterConfig() {
+    return {
+      role: "master",
+      pendingEntityLabel: "입고예정",
+      key: {
+        field: "gr_prar_no",
+        stateProperty: "selectedMasterValue",
+        labelTarget: "selectedMasterLabel",
+        entityLabel: "입고예정",
+        emptyMessage: "입고예정을 먼저 선택해주세요."
+      },
+      onRowChange: {
+        trackCurrentRow: false,
+        syncForm: false
+      },
+      beforeSearch: {
+        clearValidation: false,
+        clearForm: false
+      }
+    }
+  }
+
+  detailGrids() {
+    return [
+      {
+        role: "detail",
+        methodBaseName: "detail",
+        masterKeyField: "gr_prar_no",
+        placeholder: ":gr_prar_id",
+        listUrlTemplate: "detailListUrlTemplateValue",
+        batchUrlTemplate: "detailBatchUrlTemplateValue",
+        entityLabel: "입고예정",
+        selectionMessage: "입고예정을 먼저 선택해주세요.",
+        fetchErrorMessage: "입고예정상세 조회에 실패했습니다."
+      },
+      {
+        role: "exec",
+        methodBaseName: "exec",
+        masterKeyField: "gr_prar_no",
+        placeholder: ":gr_prar_id",
+        listUrlTemplate: "execResultUrlTemplateValue",
+        entityLabel: "입고예정",
+        selectionMessage: "입고예정을 먼저 선택해주세요.",
+        fetchErrorMessage: "입고처리이력 조회에 실패했습니다."
+      }
+    ]
+  }
+
   gridRoles() {
     return {
       master: {
@@ -70,12 +116,16 @@ export default class extends BaseGridController {
         manager: this.detailManagerConfig(),
         parentGrid: "master",
         onMasterRowChange: (rowData) => this.handleMasterRowChange(rowData),
-        detailLoader: async (rowData) => this.loadDetailRows(rowData)
+        detailLoader: async (rowData) => {
+          const rows = await this.loadDetailRows("detail", rowData)
+          this.#updateLocationColumn()
+          return rows
+        }
       },
       exec: {
         target: "execRsltGrid",
         parentGrid: "master",
-        detailLoader: async (rowData) => this.loadExecResultRows(rowData)
+        detailLoader: (rowData) => this.loadDetailRows("exec", rowData)
       }
     }
   }
@@ -83,7 +133,7 @@ export default class extends BaseGridController {
   onAllGridsReady() {
     this.manager = this.masterManager
     this.gridController = this.gridCtrl("master")
-    this.refreshSelectedMasterLabel()
+    this.refreshSelectedLabel()
     this.#updateLocationColumn()
   }
 
@@ -179,7 +229,7 @@ export default class extends BaseGridController {
     const nextMaster = rowData.gr_prar_no?.toString() || ""
     if (nextMaster === this.selectedMasterValue) {
       this.selectedMasterData = rowData
-      this.refreshSelectedMasterLabel()
+      this.refreshSelectedLabel()
       return
     }
 
@@ -190,7 +240,7 @@ export default class extends BaseGridController {
 
     this.selectedMasterValue = nextMaster
     this.selectedMasterData = rowData
-    this.refreshSelectedMasterLabel()
+    this.refreshSelectedLabel()
     this.#updateLocationColumn()
   }
 
@@ -201,71 +251,22 @@ export default class extends BaseGridController {
     }
 
     api.forEachNode((node) => {
-      const isTarget = node.data?.gr_prar_no === this.selectedMasterValue
-      if (isTarget) {
+      if (node.data?.gr_prar_no === this.selectedMasterValue) {
         node.setSelected(true, true)
       }
     })
   }
 
-  refreshSelectedMasterLabel() {
-    if (!this.hasSelectedMasterLabelTarget) {
-      return
-    }
-
-    refreshSelectionLabel(
-      this.selectedMasterLabelTarget,
-      this.selectedMasterValue,
-      "입고예정",
-      "입고예정을 먼저 선택하세요."
-    )
-  }
-
   clearMasterSelection() {
     this.selectedMasterValue = ""
     this.selectedMasterData = null
-    this.refreshSelectedMasterLabel()
+    this.refreshSelectedLabel()
     this.clearAllDetails()
   }
 
-  async loadDetailRows(rowData) {
-    if (!this.isMasterRowLoadable(rowData, "gr_prar_no")) {
-      return []
-    }
-    const grPrarNo = rowData?.gr_prar_no
-
-    try {
-      const url = buildTemplateUrl(this.detailListUrlTemplateValue, { gr_prar_id: grPrarNo })
-      const rows = await fetchJson(url)
-      this.#updateLocationColumn()
-      return Array.isArray(rows) ? rows : []
-    } catch {
-      showAlert("입고예정상세 조회에 실패했습니다.")
-      return []
-    }
-  }
-
-  async loadExecResultRows(rowData) {
-    if (!this.isMasterRowLoadable(rowData, "gr_prar_no")) {
-      return []
-    }
-    const grPrarNo = rowData?.gr_prar_no
-
-    try {
-      const url = buildTemplateUrl(this.execResultUrlTemplateValue, { gr_prar_id: grPrarNo })
-      const rows = await fetchJson(url)
-      return Array.isArray(rows) ? rows : []
-    } catch {
-      showAlert("입고처리이력 조회에 실패했습니다.")
-      return []
-    }
-  }
-
   clearAllDetails() {
-    if (this.detailManager) {
-      setManagerRowData(this.detailManager, [])
-    }
-    this.setRows("exec", [])
+    this.clearDetailRows?.()
+    this.clearExecRows?.()
   }
 
   switchTab(event) {
