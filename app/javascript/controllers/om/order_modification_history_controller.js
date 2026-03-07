@@ -1,5 +1,5 @@
 import BaseGridController from "controllers/base_grid_controller"
-import { fetchJson } from "controllers/grid/grid_utils"
+import { fetchJson } from "controllers/grid/core/http_client"
 import { switchTab, activateTab } from "controllers/ui_utils"
 
 // 오더수정이력 화면 (마스터-디테일 + 탭)

@@ -8,15 +8,16 @@
  */
 import { Controller } from "@hotwired/stimulus"
 import { createGrid } from "ag-grid-community"
+import { showAlert } from "components/ui/alert"
 import {
   AG_GRID_LOCALE_KO,
   FORMATTER_REGISTRY,
   darkTheme,
   registerAgGridCommunityModules
-} from "controllers/ag_grid/grid_defaults"
-import { buildColumnDefs as buildAgGridColumnDefs } from "controllers/ag_grid/column_builder"
-import { loadClientGridData, loadServerGridPage } from "controllers/ag_grid/data_loader"
-import { RENDERER_REGISTRY } from "controllers/ag_grid/renderers"
+} from "controllers/grid/ag_grid/grid_defaults"
+import { buildColumnDefs as buildAgGridColumnDefs } from "controllers/grid/ag_grid/column_builder"
+import { loadClientGridData, loadServerGridPage } from "controllers/grid/ag_grid/data_loader"
+import { RENDERER_REGISTRY } from "controllers/grid/ag_grid/renderers"
 import { openLookupPopup } from "controllers/lookup_popup_modal"
 import { isApiAlive } from "controllers/grid/core/api_guard"
 
@@ -243,7 +244,7 @@ export default class extends Controller {
 
     const state = this.gridApi.getColumnState()
     localStorage.setItem(this.#storageKey(id), JSON.stringify(state))
-    this.#showToast("컬럼 상태가 저장되었습니다")
+    showAlert("컬럼 상태가 저장되었습니다", null, "success")
   }
 
   // 레이아웃이 꼬였거나 기본값 화면으로 되돌리고 싶을 때 저장된 기록을 삭제하고 원복합니다.
@@ -253,7 +254,7 @@ export default class extends Controller {
 
     localStorage.removeItem(this.#storageKey(id))
     this.gridApi.resetColumnState()
-    this.#showToast("컬럼 상태가 초기화되었습니다")
+    showAlert("컬럼 상태가 초기화되었습니다", null, "info")
   }
 
   // DOM을 말끔히 치우고 인스턴스(API)를 강제 제거(destroy)하여 메모리를 확보합니다.
@@ -361,7 +362,7 @@ export default class extends Controller {
       this.gridApi.onFilterChanged()
     }
 
-    this.#showToast("필터가 초기화되었습니다")
+    showAlert("필터가 초기화되었습니다", null, "info")
   }
 
   // 서버사이드 페이징 옵션(serverPagination=true) 일 때만 반응하며,
@@ -449,7 +450,7 @@ export default class extends Controller {
       keyboardEvent.preventDefault()
       keyboardEvent.stopPropagation()
       this.pasteCurrentCellValue(event).catch(() => {
-        this.#showToast("붙여넣기에 실패했습니다")
+        showAlert("붙여넣기에 실패했습니다", null, "warning")
       })
       return
     }
@@ -622,11 +623,11 @@ export default class extends Controller {
     const colDef = cellEvent?.column?.getColDef?.()
     const field = colDef?.field
     if (!rowNode?.data || !field) {
-      this.#showToast("복사할 수 없는 셀입니다")
+      showAlert("복사할 수 없는 셀입니다", null, "warning")
       return
     }
     if (field === "actions" || String(field).startsWith("__")) {
-      this.#showToast("복사할 수 없는 셀입니다")
+      showAlert("복사할 수 없는 셀입니다", null, "warning")
       return
     }
 
@@ -636,10 +637,10 @@ export default class extends Controller {
 
     this.writeTextToClipboard(text).then((ok) => {
       if (!ok) {
-        this.#showToast("시스템 클립보드 복사에 실패했습니다")
+        showAlert("시스템 클립보드 복사에 실패했습니다", null, "warning")
       }
     }).catch(() => {
-      this.#showToast("시스템 클립보드 복사에 실패했습니다")
+      showAlert("시스템 클립보드 복사에 실패했습니다", null, "warning")
     })
   }
 
@@ -648,17 +649,17 @@ export default class extends Controller {
     const colDef = cellEvent?.column?.getColDef?.()
     const field = colDef?.field
     if (!rowNode?.data || !field) {
-      this.#showToast("붙여넣을 수 없는 셀입니다")
+      showAlert("붙여넣을 수 없는 셀입니다", null, "warning")
       return
     }
     if (!this.canPasteToCell(cellEvent, rowNode, colDef)) {
-      this.#showToast("붙여넣을 수 없는 셀입니다")
+      showAlert("붙여넣을 수 없는 셀입니다", null, "warning")
       return
     }
 
     const text = await this.readTextFromClipboard()
     if (text == null) {
-      this.#showToast("클립보드 텍스트를 읽을 수 없습니다")
+      showAlert("클립보드 텍스트를 읽을 수 없습니다", null, "warning")
       return
     }
     if (String(rowNode.data[field] ?? "") === String(text)) return
@@ -828,27 +829,5 @@ export default class extends Controller {
     return `ag-grid-state:${gridId}`
   }
 
-  // UI 상단이 아닌 우측 하단에 조용히 띄워주는 "A가 완료되었습니다" 형식 컴포넌트 유틸리티
-  #showToast(message) {
-    const toast = document.createElement("div")
-    toast.textContent = message
-    toast.style.cssText = [
-      "position:fixed", "bottom:24px", "right:24px", "z-index:9999",
-      "padding:10px 20px", "border-radius:8px",
-      "background:#1c2333", "color:#e6edf3", "border:1px solid #30363d",
-      "font-size:13px", "box-shadow:0 4px 12px rgba(0,0,0,0.4)",
-      "opacity:0", "transition:opacity 0.3s ease"
-    ].join(";")
-
-    document.body.appendChild(toast)
-
-    // UI 스레드가 돔 변경을 인지한 직후 fade-in 애니메이션 수행
-    requestAnimationFrame(() => { toast.style.opacity = "1" })
-
-    // 2초 뒤 서서히 지우기 시도, 트랜지션 완료 직후 이벤트로 돔 완전 파괴 연동
-    setTimeout(() => {
-      toast.style.opacity = "0"
-      toast.addEventListener("transitionend", () => toast.remove())
-    }, 2000)
-  }
 }
+

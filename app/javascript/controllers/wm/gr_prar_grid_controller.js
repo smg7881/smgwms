@@ -1,11 +1,8 @@
 import BaseGridController from "controllers/base_grid_controller"
-import {
-  isApiAlive,
-  fetchJson,
-  collectRows,
-  buildTemplateUrl,
-  postJson
-} from "controllers/grid/grid_utils"
+import { buildTemplateUrl, postJson } from "controllers/grid/grid_utils"
+import { isApiAlive } from "controllers/grid/core/api_guard"
+import { fetchJson } from "controllers/grid/core/http_client"
+import { collectRows } from "controllers/grid/grid_api_utils"
 import { showAlert, confirmAction } from "components/ui/alert"
 import { switchTab, activateTab } from "controllers/ui_utils"
 

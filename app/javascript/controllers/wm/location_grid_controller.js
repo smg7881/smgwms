@@ -1,6 +1,6 @@
 import BaseGridController from "controllers/base_grid_controller"
 import { showAlert } from "components/ui/alert"
-import { setSelectOptions as setSelectOptionsUtil, clearSelectOptions } from "controllers/grid/grid_utils"
+import { setSelectOptions as setSelectOptionsUtil, clearSelectOptions } from "controllers/grid/grid_select_utils"
 import { bindDependentSelects, unbindDependentSelects, loadSelectOptions } from "controllers/grid/grid_dependent_select_utils"
 
 export default class extends BaseGridController {

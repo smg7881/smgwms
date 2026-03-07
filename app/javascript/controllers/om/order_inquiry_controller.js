@@ -1,5 +1,5 @@
 import BaseGridController from "controllers/base_grid_controller"
-import { fetchJson } from "controllers/grid/grid_utils"
+import { fetchJson } from "controllers/grid/core/http_client"
 
 // 오더조회 화면 (마스터-디테일 자동 연동)
 export default class extends BaseGridController {

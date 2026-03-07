@@ -1,6 +1,7 @@
 import BaseGridController from "controllers/base_grid_controller"
 import { showAlert } from "components/ui/alert"
-import { fetchJson, refreshSelectionLabel } from "controllers/grid/grid_utils"
+import { refreshSelectionLabel } from "controllers/grid/grid_utils"
+import { fetchJson } from "controllers/grid/core/http_client"
 
 const YES_NO_VALUES = ["Y", "N"]
 

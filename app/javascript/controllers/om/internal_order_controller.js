@@ -1,13 +1,9 @@
 import BaseGridController from "controllers/base_grid_controller"
 import { showAlert } from "components/ui/alert"
-import {
-  collectRows,
-  fetchJson,
-  hasChanges,
-  postJson,
-  refreshSelectionLabel,
-  setManagerRowData
-} from "controllers/grid/grid_utils"
+import { postJson, refreshSelectionLabel } from "controllers/grid/grid_utils"
+import { fetchJson } from "controllers/grid/core/http_client"
+import { hasChanges } from "controllers/grid/grid_state_utils"
+import { collectRows, setManagerRowData } from "controllers/grid/grid_api_utils"
 import { switchTab, activateTab } from "controllers/ui_utils"
 import {
   bindDetailFieldEvents,

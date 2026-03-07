@@ -5,7 +5,8 @@
  */
 import BaseGridController from "controllers/base_grid_controller"
 import { showAlert } from "components/ui/alert"
-import { postJson, fetchJson } from "controllers/grid/grid_utils"
+import { postJson } from "controllers/grid/grid_utils"
+import { fetchJson } from "controllers/grid/core/http_client"
 
 export default class extends BaseGridController {
   static targets = [

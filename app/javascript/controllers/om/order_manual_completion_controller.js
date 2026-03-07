@@ -1,6 +1,7 @@
 import BaseGridController from "controllers/base_grid_controller"
 import { showAlert } from "components/ui/alert"
-import { buildTemplateUrl, fetchJson } from "controllers/grid/grid_utils"
+import { buildTemplateUrl } from "controllers/grid/grid_utils"
+import { fetchJson } from "controllers/grid/core/http_client"
 
 // 오더수동완료 화면 (마스터-디테일 + 수동완료 배치 액션)
 export default class extends BaseGridController {

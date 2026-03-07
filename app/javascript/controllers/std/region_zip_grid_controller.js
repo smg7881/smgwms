@@ -1,6 +1,9 @@
 import { Controller } from "@hotwired/stimulus"
 import { showAlert, confirmAction } from "components/ui/alert"
-import { isApiAlive, postJson, fetchJson, setGridRowData, buildCompositeKey } from "controllers/grid/grid_utils"
+import { postJson, buildCompositeKey } from "controllers/grid/grid_utils"
+import { isApiAlive } from "controllers/grid/core/api_guard"
+import { fetchJson } from "controllers/grid/core/http_client"
+import { setGridRowData } from "controllers/grid/grid_api_utils"
 
 export default class extends Controller {
   static targets = [

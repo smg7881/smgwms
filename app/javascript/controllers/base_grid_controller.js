@@ -23,21 +23,16 @@
 import { Controller } from "@hotwired/stimulus"
 import { showAlert, confirmAction } from "components/ui/alert"
 import GridCrudManager from "controllers/grid/grid_crud_manager"
+import { isApiAlive } from "controllers/grid/core/api_guard"
+import { fetchJson, requestJson as requestJsonCore } from "controllers/grid/core/http_client"
+import { setGridRowData, setManagerRowData, focusFirstRow } from "controllers/grid/grid_api_utils"
 import {
-  isApiAlive,
-  setGridRowData,
-  setManagerRowData,
-  fetchJson,
-  focusFirstRow,
-  postJson,
   hasChanges,
   blockIfPendingChanges,
-  buildTemplateUrl,
   requireSelection,
-  isLoadableMasterRow as isLoadableMasterRowUtil,
-  refreshSelectionLabel
-} from "controllers/grid/grid_utils"
-import { requestJson as requestJsonCore } from "controllers/grid/core/http_client"
+  isLoadableMasterRow as isLoadableMasterRowUtil
+} from "controllers/grid/grid_state_utils"
+import { postJson, buildTemplateUrl, refreshSelectionLabel, formatValidationError } from "controllers/grid/grid_utils"
 import {
   getSearchFormValue as getSearchFormValueFromBridge,
   getSearchFieldElement as getSearchFieldElementFromBridge
@@ -379,7 +374,7 @@ export default class BaseGridController extends Controller {
     this.validationListTarget.innerHTML = ""
     visible.forEach((error) => {
       const item = document.createElement("li")
-      item.textContent = this.#formatValidationLine(error)
+      item.textContent = formatValidationError(error)
       this.validationListTarget.appendChild(item)
     })
 
@@ -740,13 +735,6 @@ export default class BaseGridController extends Controller {
       showAlert(cfg.fetchErrorMessage || "데이터 조회에 실패했습니다.")
       return []
     }
-  }
-
-  #formatValidationLine(error) {
-    const scopeLabel = error?.scope === "insert" ? "추가" : "수정"
-    const rowLabel = Number.isInteger(error?.rowIndex) ? `${error.rowIndex + 1}행` : "행"
-    const message = (error?.message || "입력값을 확인해주세요.").toString()
-    return `[${scopeLabel} ${rowLabel}] ${message}`
   }
 
   #initMasterDetail() {

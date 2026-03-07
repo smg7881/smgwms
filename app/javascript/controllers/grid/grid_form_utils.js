@@ -5,7 +5,7 @@
  * 마스터 그리드 간의 데이터 동기화, UI 제어 등을 처리하는 공통 유틸리티 함수 모음
  */
 
-import { isApiAlive } from "controllers/grid/grid_utils"
+import { isApiAlive } from "controllers/grid/core/api_guard"
 import { getResourceFormValueFromElement, setResourceFormValueFromElement } from "controllers/grid/core/resource_form_bridge"
 
 /**

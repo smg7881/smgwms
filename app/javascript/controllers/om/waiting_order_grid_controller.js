@@ -1,12 +1,9 @@
 import BaseGridController from "controllers/base_grid_controller"
 import { showAlert, confirmAction } from "components/ui/alert"
-import {
-  buildTemplateUrl,
-  fetchJson,
-  setManagerRowData,
-  refreshSelectionLabel,
-  isApiAlive
-} from "controllers/grid/grid_utils"
+import { buildTemplateUrl, refreshSelectionLabel } from "controllers/grid/grid_utils"
+import { isApiAlive } from "controllers/grid/core/api_guard"
+import { fetchJson } from "controllers/grid/core/http_client"
+import { setManagerRowData } from "controllers/grid/grid_api_utils"
 
 const NUMBER_FIELDS = [
   "ord_qty",

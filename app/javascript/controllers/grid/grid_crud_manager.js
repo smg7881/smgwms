@@ -17,7 +17,9 @@
  *   onRowDataUpdated:   () => {}                           // 그리드 전체 행 데이터 갱신 시 주입할 콜백
  * }
  */
-import { isApiAlive, uuid, collectRows, refreshStatusCells, hideNoRowsOverlay } from "controllers/grid/grid_utils"
+import { isApiAlive } from "controllers/grid/core/api_guard"
+import { collectRows, refreshStatusCells, hideNoRowsOverlay } from "controllers/grid/grid_api_utils"
+import { uuid, formatValidationError } from "controllers/grid/grid_utils"
 import { showAlert } from "components/ui/alert"
 
 // 입력값을 백엔드 DB 저장 규격에 맞게 변환하는 정규화(Normalizer) 함수 모음
@@ -295,7 +297,7 @@ export default class GridCrudManager {
       return "입력값을 확인해주세요."
     }
 
-    const head = list.slice(0, Math.max(1, maxItems)).map((error) => this.#formatSingleValidationError(error))
+    const head = list.slice(0, Math.max(1, maxItems)).map((error) => formatValidationError(error))
     const remain = list.length - head.length
     if (remain > 0) {
       head.push(`외 ${remain}건`)
@@ -610,14 +612,6 @@ export default class GridCrudManager {
       return this.#config.firstEditCol
     }
     return colIds[0] || null
-  }
-
-  #formatSingleValidationError(error) {
-    const scopeLabel = error?.scope === "insert" ? "추가" : "수정"
-    const rowLabel = Number.isInteger(error?.rowIndex) ? `${error.rowIndex + 1}행` : "행"
-    const fieldLabel = error?.fieldLabel || error?.field || "입력값"
-    const message = error?.message || `${fieldLabel} 입력값을 확인하세요.`
-    return `[${scopeLabel} ${rowLabel}] ${message}`
   }
 
   // 백엔드 통신용. 등록된 config.fields 속성들만 row객체에서 뽑되 normalizer(예: trimUpper)를 거친 클린한 데이터 객체를 반환

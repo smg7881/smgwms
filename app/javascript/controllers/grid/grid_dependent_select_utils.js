@@ -18,7 +18,7 @@
  * }
  */
 
-import { fetchJson } from "controllers/grid/grid_utils"
+import { fetchJson } from "controllers/grid/core/http_client"
 import { showAlert } from "components/ui/alert"
 
 /**

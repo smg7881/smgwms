@@ -6,7 +6,7 @@
 import BaseGridController from "controllers/base_grid_controller"
 import { showAlert } from "components/ui/alert"
 import { AbortableRequestTracker, isAbortError } from "controllers/grid/request_tracker"
-import { fetchJson } from "controllers/grid/grid_utils"
+import { fetchJson } from "controllers/grid/core/http_client"
 
 export default class extends BaseGridController {
   static targets = [...BaseGridController.targets, "userGrid", "roleGrid", "menuGrid"]

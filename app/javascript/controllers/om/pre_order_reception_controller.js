@@ -1,6 +1,6 @@
 import BaseGridController from "controllers/base_grid_controller"
 import { showAlert } from "components/ui/alert"
-import { fetchJson } from "controllers/grid/grid_utils"
+import { fetchJson } from "controllers/grid/core/http_client"
 
 // 사전오더접수 화면 (마스터-디테일 + 오더생성 배치 액션)
 export default class extends BaseGridController {

@@ -1,5 +1,6 @@
 import BaseGridController from "controllers/base_grid_controller"
-import { fetchJson, isApiAlive } from "controllers/grid/grid_utils"
+import { isApiAlive } from "controllers/grid/core/api_guard"
+import { fetchJson } from "controllers/grid/core/http_client"
 
 export default class extends BaseGridController {
   connect() {

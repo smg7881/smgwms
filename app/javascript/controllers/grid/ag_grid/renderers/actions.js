@@ -1,4 +1,4 @@
-import { emit, createActionButton } from "controllers/ag_grid/renderers/common"
+import { emit, createActionButton } from "controllers/grid/ag_grid/renderers/common"
 
 /**
  * 공통 액션 셀 렌더러

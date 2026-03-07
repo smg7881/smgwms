@@ -1,5 +1,5 @@
 import BaseGridController from "controllers/base_grid_controller"
-import { getCsrfToken } from "controllers/grid/grid_utils"
+import { getCsrfToken } from "controllers/grid/core/http_client"
 import { showAlert, confirmAction } from "components/ui/alert"
 
 export default class extends BaseGridController {

@@ -1,5 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
-import { fetchJson } from "controllers/grid/grid_utils"
+import { fetchJson } from "controllers/grid/core/http_client"
 
 export default class extends Controller {
     static targets = ["popup", "groupSelect", "menuList"]

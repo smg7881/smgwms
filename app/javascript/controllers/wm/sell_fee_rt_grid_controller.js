@@ -1,9 +1,7 @@
 import BaseGridController from "controllers/base_grid_controller"
 import { showAlert } from "components/ui/alert"
-import {
-  hasChanges,
-  postJson
-} from "controllers/grid/grid_utils"
+import { postJson } from "controllers/grid/grid_utils"
+import { hasChanges } from "controllers/grid/grid_state_utils"
 
 const YES_NO_VALUES = ["Y", "N"]
 

@@ -1,7 +1,5 @@
 ﻿import BaseGridController from "controllers/base_grid_controller"
-import {
-  setSelectOptions as setSelectOptionsUtil
-} from "controllers/grid/grid_utils"
+import { setSelectOptions as setSelectOptionsUtil } from "controllers/grid/grid_select_utils"
 import {
   bindDependentSelects,
   unbindDependentSelects,
