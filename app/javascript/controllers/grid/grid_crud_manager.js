@@ -53,6 +53,10 @@ export default class GridCrudManager {
   #handleCellValueChanged = null
   #handleRowDataUpdated = null
 
+  /**
+   * 컴포넌트(주로 GridController)로부터 설정 객체를 받아 내부 상태를 초기화합니다.
+   * @param {Object} config GridCrudManager 설정 스키마 객체
+   */
   constructor(config) {
     this.#config = config
     this.#isCompositePk = config.pkFields.length > 1
@@ -67,19 +71,30 @@ export default class GridCrudManager {
     this.#handleRowDataUpdated = () => this.#onRowDataUpdated()
   }
 
-  // 외부에서 AG Grid Api를 직접 접근하기 위한 게이트웨이 게터
+  /**
+   * 매니저에 부착된 실제 AG-Grid API 객체를 반환합니다.
+   * 컨트롤러 등 외부에서 API에 직접 접근해야 할 때 사용됩니다.
+   * @returns {Object|null} AG-Grid API 인스턴스
+   */
   get api() {
     return this.#api
   }
 
-  // AG Grid 생성 직후 API 객체를 전달받아 이벤트 감지기를 부착
+  /**
+   * 생성된 AG-Grid 인스턴스(API)를 매니저에 연결(Binding)하고,
+   * 셀 값 변경 및 행 데이터 갱신 이벤트를 추적하기 시작합니다.
+   * @param {Object} api 연결할 AG-Grid API 인스턴스
+   */
   attach(api) {
     this.#api = api
     api.addEventListener("cellValueChanged", this.#handleCellValueChanged)
     api.addEventListener("rowDataUpdated", this.#handleRowDataUpdated)
   }
 
-  // AG Grid 파괴 시 함께 호출되어 이벤트 누수를 막는 연결 해제 메서드
+  /**
+   * AG-Grid 컴포넌트 파기 시 메모리 누수 방지를 위해 부착했던 이벤트 리스너를 모두 제거하고,
+   * 추적 중이던 원본 데이터 스냅샷 등 내부 리소스를 비웁니다.
+   */
   detach() {
     if (isApiAlive(this.#api)) {
       this.#api.removeEventListener("cellValueChanged", this.#handleCellValueChanged)
@@ -90,11 +105,17 @@ export default class GridCrudManager {
     this.#deletedKeys = []
   }
 
-  // 그리드에 빈 새 행을 추가 (주로 + 혹은 '추가' 버튼 트리거)
+  /**
+   * 그리드 최상단(0번 인덱스)에 완전히 비어있거나 특정 기본값(overrides)이 세팅된 새 행을 추가합니다.
+   * 신규 플래그(`__is_new`), 식별용 임시 ID(`__temp_id`)를 부여하고 포커스를 이동합니다.
+   * @param {Object} overrides 덮어씌울 초기 데이터 객체
+   * @param {Object} [options]
+   * @param {string} [options.startCol] 행 추가 직후 포커싱 대상이 될 기준 컬럼명
+   * @returns {Object|undefined} AG-Grid Transaction 적용 결과 객체
+   */
   addRow(overrides = {}, { startCol } = {}) {
     if (!isApiAlive(this.#api)) return
 
-    // 새 행에 초기값, 가상 신규 플래그(__is_new) 및 임시 ID 할당
     const newRow = {
       ...this.#config.defaultRow,
       ...overrides,
@@ -102,63 +123,61 @@ export default class GridCrudManager {
       __temp_id: uuid()
     }
 
-    // 그리드의 0번(최상단) 인덱스에 데이터 밀어넣기 처리 (AG Transaction API 사용)
     const txResult = this.#api.applyTransaction({ add: [newRow], addIndex: 0 })
-    hideNoRowsOverlay(this.#api) // 오버레이 지우기
+    hideNoRowsOverlay(this.#api)
 
-    // 행이 최상단에 추가되면서 밀린 기존 행들의 인덱스(순번) 재계산 반영
     this.#api.refreshCells({ columns: ["__row_no"], force: true })
-
-    // 방금 생긴 0번 행의 첫 컬럼에 에디터 포커싱 (사용자 편의성)
     this.#api.startEditingCell({ rowIndex: 0, colKey: startCol || this.#config.firstEditCol })
+
     return txResult
   }
 
-  // 체크박스로 선택된 그리드 행들을 '삭제 대기' 상태로 전환 (물리적 삭제는 Save 호춯 시 수행됨)
+  /**
+   * 화면상에서 체크된(선택된) 데이터 행들을 찾아 '삭제됨'(`__is_deleted`) 상태로 무효화 처리합니다.
+   * 아직 저장된 적이 없는 신규 행일 경우 서버 전송 없이 화면 DOM에서만 즉시 날려버립니다.
+   * @param {Object} [options]
+   * @param {Function} [options.beforeDelete] 삭제 직전에 호출되어 진행 여부를 가르는 훅 함수
+   * @returns {boolean} 삭제 처리 진행(성공) 여부
+   */
   deleteRows({ beforeDelete } = {}) {
     if (!isApiAlive(this.#api)) return false
 
-    // 선택된 노드 가져오기
     const selectedNodes = this.#api.getSelectedNodes()
     if (!selectedNodes.length) {
       showAlert("삭제할 행을 선택하세요.")
       return false
     }
 
-    // 삭제 전 사용자 정의된 사전 검증 함수(외래키 제약 등)가 있다면 실행
     if (beforeDelete) {
-      const blocked = beforeDelete(selectedNodes) // true를 반환하면 삭제 행위 전면 취소
+      const blocked = beforeDelete(selectedNodes)
       if (blocked) return false
     }
 
-    const rowsToRemove = []   // 화면에서 아예 날려버릴 신규 작성 행
-    const nodesToRefresh = [] // 빨간선(-) 긋고 화면엔 살려둘 기존 데이터 행
+    const rowsToRemove = []
+    const nodesToRefresh = []
 
     selectedNodes.forEach((node) => {
       const row = node.data
       if (!row) return
 
-      // 방금 추가했던 신규 데이터는 그냥 화면에서 날려버려도 무관
       if (row.__is_new) {
         rowsToRemove.push(row)
         return
       }
 
-      // 기존 DB에 존재하던 데이터는 "삭제 예정" 목록(#deletedKeys)에 등록하고 취소선 처리용 플래그 부착
       const key = this.#extractDeleteKey(row)
       if (key) this.#deletedKeys.push(key)
+
       row.__is_deleted = true
-      delete row.__is_updated // 수정 상태 표시 지우기
+      delete row.__is_updated
       nodesToRefresh.push(node)
     })
 
-    // 신규 추가건은 즉시 DOM/State 제거
     if (rowsToRemove.length > 0) {
       this.#api.applyTransaction({ remove: rowsToRemove })
-      // DOM 리스트가 변결될 때 기존 표시중인 순번 갱신
       this.#api.refreshCells({ columns: ["__row_no"], force: true })
     }
-    // 삭제 대기건은 상태 아이콘 표출 컬럼 갱신
+
     if (nodesToRefresh.length > 0) {
       refreshStatusCells(this.#api, nodesToRefresh)
     }
@@ -166,28 +185,28 @@ export default class GridCrudManager {
     return true
   }
 
-  // 현재 그리드의 데이터 중 C(추가), U(수정), D(삭제) 요건만 걸러서 백엔드가 요구하는 페이로드 형식으로 제조
+  /**
+   * 현재 메모리에 누적된 모든 변경점(신규, 수정, 삭제)들을 수집하여, 백엔드 API가 요구하는 배열 페이로드로 조립합니다.
+   * 무의미한 빈 칸 행들은 필터링하며, 수정점들은 정의된 Normalizer 함수를 거치게 됩니다.
+   * @returns {Object} `{ rowsToInsert: [...], rowsToUpdate: [...], rowsToDelete: [...] }` 형태의 연산 객체
+   */
   buildOperations() {
     const rows = collectRows(this.#api)
 
-    // INSERT 대상: 새 행(__is_new) + 삭제 아님 + 지정된 검사 필드가 비어있지 않은 유의미한 건들
     const rowsToInsert = rows
       .filter((row) => row.__is_new && !row.__is_deleted && !this.#isBlankRow(row))
       .map((row) => this.#pickFields(row))
 
-    // UPDATE 대상: 기존 행 + 삭제 아님 + comparableFields 값 대조 시 변경점이 있는 건들
     const rowsToUpdate = rows
       .filter((row) => !row.__is_new && !row.__is_deleted && this.#rowChanged(row))
       .map((row) => this.#pickFields(row))
 
-    // DELETE 대상 정리 로직 (복합키 vs 단일키 분기)
     if (this.#isCompositePk) {
-      const deleteKeyMap = new Map() // 중복 제거용
-      // 사용자가 선택해 지워둔 행
+      const deleteKeyMap = new Map()
       this.#deletedKeys.forEach((key) => {
         deleteKeyMap.set(this.#serializeKey(key), key)
       })
-      // 포착안됐으나 행에 __is_deleted 박혀있는 것 안전 확보
+
       rows
         .filter((row) => row.__is_deleted)
         .map((row) => this.#extractDeleteKey(row))
@@ -199,33 +218,33 @@ export default class GridCrudManager {
       return { rowsToInsert, rowsToUpdate, rowsToDelete: Array.from(deleteKeyMap.values()) }
     }
 
-    // 단일 PK 페이로드 모음 추출
     const pkField = this.#config.pkFields[0]
     const rowsToDelete = [
       ...this.#deletedKeys,
       ...rows.filter((row) => row.__is_deleted && row[pkField]).map((row) => row[pkField])
     ]
 
-    // 중복 제거 후 반환 (단일키일 경우 Array<String>)
     return { rowsToInsert, rowsToUpdate, rowsToDelete: [...new Set(rowsToDelete)] }
   }
 
-  // 저장(Save) 완료 혹은 데이터 새로고침 발생 시 변경 추적 모니터링 내부 상태를 백지로 되돌림
+  /**
+   * 저장소 동기화(Save 완료) 혹은 데이터 전면 Re-Fetch가 이루어졌을 때 호출합니다.
+   * 수정 여부 플래그들을 비우고 모든 현존 데이터를 다시 새로운 '기준점 원본'으로 캐시 맵에 저장해 둡니다.
+   */
   resetTracking() {
     this.#deletedKeys = []
     this.#originalMap = new Map()
 
     collectRows(this.#api).forEach((row) => {
-      // 이제 막 서버에서 읽은 상태라면 가상 플래그 제거
       if (row.__is_new) {
         delete row.__is_updated
         delete row.__is_deleted
         return
       }
 
-      // 화면상의 모든 행을 순회하며 '수정 전 원본 스냅샷'을 Map 객체에 보관 (이후 rowChanged 검사 용도)
       const key = this.#rowKey(row)
       if (key) this.#originalMap.set(key, { ...row })
+
       delete row.__is_new
       delete row.__is_updated
       delete row.__is_deleted
@@ -233,13 +252,21 @@ export default class GridCrudManager {
     })
   }
 
-  // 셀 기반 인라인 에디터가 열려 있다면 강제로 닫음 (저장 직전 등에 사용)
+  /**
+   * 사용자가 인라인 텍스트 셀을 '타이핑 중'인 상태에서 무언가 다른 조작(저장 등)을 명령했을 때,
+   * 편집 모드를 즉시 빠져나와 임시 타이핑 값을 그리드 데이터 객체 안에 확정시킵니다.
+   */
   stopEditing() {
     if (isApiAlive(this.#api)) {
       this.#api.stopEditing()
     }
   }
 
+  /**
+   * 그리드 내 존재하는 신규/수정 변경 분들에 한정하여 설정된 유효성 규칙(Validation Rules)을 통과하는지 검증합니다.
+   * 복합 필드 규정이나 복잡한 row-level 체크 등이 처리됩니다.
+   * @returns {Object} `{ valid: boolean, errors: Array, firstError: Object|null }` 형태의 결과 객체
+   */
   validateRows() {
     if (!isApiAlive(this.#api)) {
       return { valid: true, errors: [], firstError: null }
@@ -270,6 +297,12 @@ export default class GridCrudManager {
     }
   }
 
+  /**
+   * 검증(Validation) 실패 시, 실패 원인이 된 첫 번째 셀의 실제 화면 DOM 위치를 탐색해
+   * 스크롤을 이동하고 붉게 반짝이도록(Flash) 포커스 처리를 가미해주는 편의 헬퍼 메서드.
+   * @param {Object} error validateRows 로부터 반환된 단일 에러 객체 (firstError)
+   * @returns {boolean} 에러 셀 특정 및 포커스 성공 여부
+   */
   focusValidationError(error) {
     if (!isApiAlive(this.#api) || !error) return false
 
@@ -291,6 +324,13 @@ export default class GridCrudManager {
     return true
   }
 
+  /**
+   * (N개의 항목은 생략) 등 여러 건 발생한 밸리데이션 에러 문구들을 한 줄로 축약(Summary)하여
+   * Alert 창이나 인라인 에러 바에 표출하기 좋게 예쁘게 다듬어 반환합니다.
+   * @param {Array<Object>} errors 발생한 모든 에러 목록
+   * @param {Object} [options] 최대 노출 아이템 수 등 옵션
+   * @returns {string} 조합된 최종 에러 메시지 텍스트
+   */
   formatValidationSummary(errors, { maxItems = 3 } = {}) {
     const list = Array.isArray(errors) ? errors : []
     if (list.length === 0) {
@@ -312,16 +352,21 @@ export default class GridCrudManager {
    * ==========================================
    */
 
-  // 그리드에서 엔터/클릭벗어남 등으로 셀의 데이터 변경이 감지되었을 때 수행
+  /**
+   * 그리드에서 엔터/더블클릭/포커스-아웃 등으로 셀의 데이터 변경이 최종 확정(Commit)감지되었을 때 수행됩니다.
+   * @param {Object} event AG-Grid cellValueChanged 이벤트 객체
+   */
   #onCellValueChanged(event) {
     if (this.#preventInvalidPrimaryKeyEdit(event)) return
     if (this.#config.onCellValueChanged) {
-      this.#config.onCellValueChanged(event) // config에서 할당한 별도 행위(연쇄 연산 등)가 있다면 유발
+      this.#config.onCellValueChanged(event)
     }
-    this.#markRowUpdated(event) // 변경 아이콘 달아주기
+    this.#markRowUpdated(event)
   }
 
-  // 외부(주로 setGridOptions)에서 전체 rowData 어레이가 통째로 교체되었을 때 추적망 리셋
+  /**
+   * 외부(주로 setGridAction) 호출 등으로 인해 전체 rowData 배열이 통째로 새로 주입/교체되었을 때 추적망 구조를 초기화합니다.
+   */
   #onRowDataUpdated() {
     this.resetTracking()
     if (this.#config.onRowDataUpdated) {
@@ -329,16 +374,20 @@ export default class GridCrudManager {
     }
   }
 
-  // 기존행(이미 DB에 있는 행)의 PK 컬럼을 편집 시도하는 것을 차단하고 롤백시킴
+  /**
+   * 이미 DB에 존재하는(신규 추가가 아닌) 행의 Primary Key 컬럼 값을 사용자가 편집 시도하는 것을 원천 차단하고
+   * 기존 값으로 즉시 강제 복구(Rollback)시킵니다.
+   * @param {Object} event AG-Grid 이벤트 객체
+   * @returns {boolean} PK 훼손 시도로 판별되어 롤백되었는지 여부
+   */
   #preventInvalidPrimaryKeyEdit(event) {
     const field = event?.colDef?.field
-    if (!this.#config.pkFields.includes(field)) return false // PK 아니면 상관없음
+    if (!this.#config.pkFields.includes(field)) return false
     if (!event?.node?.data) return false
 
     const row = event.node.data
-    if (row.__is_new) return false // 새로 작성 중인 행은 PK 수정 가능
+    if (row.__is_new) return false
 
-    // 이전 값(oldValue)으로 즉시 강제 복구
     row[field] = event.oldValue || ""
     this.#api.refreshCells({
       rowNodes: [event.node],
@@ -351,10 +400,14 @@ export default class GridCrudManager {
     return true
   }
 
-  // 수정 발생 시, 값에 차이가 생겼다면 __is_updated 플래그 달고 상태셀 리플래시
+  /**
+   * 셀 수정 발생 시 값의 변경(Diff)이 실제로 감지되었다면 해당 데이터 객체에 
+   * `__is_updated` 플래그를 달아주고 좌측 상태 아이콘 셀을 리프레시합니다.
+   * @param {Object} event AG-Grid 이벤트 객체
+   */
   #markRowUpdated(event) {
     if (!event?.node?.data) return
-    if (event.colDef?.field === "__row_status") return // 상태 셀이 무한 트리거되는것 방지
+    if (event.colDef?.field === "__row_status") return
     if (event.newValue === event.oldValue) return
 
     const row = event.node.data
@@ -603,6 +656,9 @@ export default class GridCrudManager {
     return foundNode
   }
 
+  /**
+   * 그리드 내 존재하는 컴포넌트 헤더, 필터 포커스 이동을 위한 DOM(colId) 이름 추출
+   */
   #resolveFocusColumn(field) {
     const displayedCols = this.#api.getAllDisplayedColumns?.() || []
     const colIds = displayedCols.map((col) => col.getColId())
@@ -614,7 +670,10 @@ export default class GridCrudManager {
     return colIds[0] || null
   }
 
-  // 백엔드 통신용. 등록된 config.fields 속성들만 row객체에서 뽑되 normalizer(예: trimUpper)를 거친 클린한 데이터 객체를 반환
+  /**
+   * 백엔드 API와의 통신을 위해 `config.fields`에 명시된 속성들만 row 객체에서 추출합니다.
+   * 이때 Normalizer(예: 정수로 파싱, 영문 대문자 변환 등)를 거친 'Clean Data' 맵을 반환합니다.
+   */
   #pickFields(row) {
     const result = {}
     Object.entries(this.#config.fields).forEach(([field, _spec]) => {
@@ -624,7 +683,10 @@ export default class GridCrudManager {
     return result
   }
 
-  // 대상 로우에서 삭제 키(단일 / 복합 객체형)를 골라냄
+  /**
+   * 삭제 예정 행(row)에서 고유 식별(PK) 값들을 파악합니다.
+   * 단일 식별자인지 복합 키인지에 알맞게 추출하여 문자열 혹은 오브젝트를 반환합니다.
+   */
   #extractDeleteKey(row) {
     if (this.#isCompositePk) {
       const key = {}
@@ -640,21 +702,29 @@ export default class GridCrudManager {
     return (row[pkField] || "").toString().trim() || null
   }
 
-  // 복합키 Map 키용 문자열(A::B 형태) 직렬화
+  /**
+   * 중복 제거 로직(Delete Set 등) 구동 시, 복합키의 다차원 검출을 위해 객체를 식별 문자열 형태로 포맷팅합니다.
+   * 형태: `A_PK::B_PK`
+   */
   #serializeKey(key) {
     if (typeof key === "string") return key
     return this.#config.pkFields.map((f) => key[f]).join("::")
   }
 
-  // row객체에서 PK 값을 결합한 고유 식별자 문자열 획득
+  /**
+   * 주어진 row 객체에서 Primary Key 필드만 추출하여, 원본-현재값 대조 등의 식별에 사용할 복합 문자열을 만듭니다.
+   */
   #rowKey(row) {
     const parts = this.#config.pkFields.map((f) => (row[f] || "").toString().trim().toUpperCase())
     if (parts.some((p) => !p)) return null
     return parts.join("::")
   }
 
-  // 현재 그리드의 입력값과 맨 처음 fetch 당시 담아둔 #originalMap을 대조하여
-  // 수정해야 할 대상인지 판별 (수정했다가 다시 원상복구한 노드 잡기 방지)
+  /**
+   * 현재 그리드의 입력값(row)과 가장 처음 fetch 하였을 당시 스냅샷 맵(#originalMap)을 비교 대조합니다.
+   * `config.comparableFields` 목록을 바탕으로 하여 "의미 있는 데이터의 변경" 인지 판독합니다.
+   * 수정 점이 존재하면 true, 동일히 롤백되었거나 값이 같다면 false를 반환합니다.
+   */
   #rowChanged(row) {
     const key = this.#rowKey(row)
     const original = key ? this.#originalMap.get(key) : null
@@ -671,7 +741,10 @@ export default class GridCrudManager {
     })
   }
 
-  // 빈 내용으로 AddRow 후 작성하지 않고 내버려둔 일종의 쓰레기 더미 행인지 판별
+  /**
+   * `blankCheckFields` 로 지정한 행 내부 모든 컬럼이 공란(비워진) 상태인지 판별합니다.
+   * 새 행(AddRow) 처리 후 작성하지 않고 쓰레기로 남겨둔 더미 건을 걸러낼 때 쓰입니다.
+   */
   #isBlankRow(row) {
     return this.#config.blankCheckFields.every((field) => (row[field] || "").toString().trim() === "")
   }

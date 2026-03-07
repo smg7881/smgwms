@@ -22,7 +22,8 @@ import { fetchJson } from "controllers/grid/core/http_client"
 import { showAlert } from "components/ui/alert"
 
 /**
- * 의존 SELECT 이벤트 바인딩 및 초기 hydration 실행
+ * 검색 폼 내 지정된 다단계 콤보박스(의존 SELECT) 요소들을 찾아 `change` 이벤트를 리스닝합니다.
+ * 컴포넌트 마운트 초기 단계에서 로딩(Hydate) 콜백이 있다면 즉시 수행합니다.
  *
  * @param {Object} controller - BaseGridController 인스턴스
  * @param {Object} config - 의존 SELECT 설정
@@ -55,7 +56,8 @@ export async function bindDependentSelects(controller, config) {
 }
 
 /**
- * 의존 SELECT 이벤트 리스너 해제
+ * 컨트롤러 파기 시점에 호출합니다.
+ * `bindDependentSelects`에서 묶어두었던 다단계 콤보박스(SELECT)의 이벤트 리스너들을 모두 해제하여 메모리 누수를 방지합니다.
  *
  * @param {Object} controller - BaseGridController 인스턴스
  */
@@ -74,7 +76,8 @@ export function unbindDependentSelects(controller) {
 }
 
 /**
- * URL fetch + alert 에러 처리 헬퍼
+ * 비동기 통신 코어 함수(`fetchJson`)를 래핑하여, 하위 SELECT 옵션 데이터를 동적으로 불러옵니다.
+ * 통신 실패 시 사용자에게 알림창(alert)을 띄우고 null을 반환합니다.
  *
  * @param {Object} controller - BaseGridController 인스턴스 (일관성을 위해 포함)
  * @param {string} baseUrl - 요청 URL
@@ -94,9 +97,10 @@ export async function loadSelectOptions(controller, baseUrl, params, errorMessag
 }
 
 /**
- * sectionMap(그룹코드 → 옵션배열) 기반 옵션 계산 순수 함수
+ * 백엔드 통신 없이, 이미 프론트에 로드된 sectionMap 데이터 캐시를 활용해 하위 SELECT 옵션을 계산해내는 순수 함수입니다.
+ * 그룹 코드가 지정되지 않았다면 맵 전체의 옵션들을 중복 없이 합쳐서 반환합니다.
  *
- * @param {Object} map   - { "INTERNAL": [{label, value}, ...], ... } 형태
+ * @param {Object} map { "공통코드": [{label, value}, ...], ... } 형태의 맵 객체
  * @param {string} groupCode - 선택된 그룹 코드 (없으면 전체 dedupe 반환)
  * @returns {Array} { label, value } 옵션 배열
  */

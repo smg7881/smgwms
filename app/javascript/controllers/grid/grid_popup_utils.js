@@ -11,12 +11,11 @@
  */
 
 /**
- * detailField 엘리먼트가 search-popup의 code 타겟인지 확인하고
- * 팝업 루트(data-controller~="search-popup") 엘리먼트를 반환.
- * popup 타입 필드가 아니면 null 반환.
+ * 특정 입력 필드(DOM Element)가 `search-popup` 컨트롤러의 통제를 받는 
+ * 코드(code) 입력창인지 판별하고, 소속된 팝업의 최상단(Root) 래퍼 엘리먼트를 찾아 반환합니다.
  *
- * @param {Element|null} fieldEl - 검사할 입력 엘리먼트
- * @returns {Element|null}
+ * @param {Element|null} fieldEl - 검사할 대상 폼 입력 요소
+ * @returns {Element|null} 매칭되는 `[data-controller~="search-popup"]` 엘리먼트 (없으면 null)
  */
 export function popupRootForField(fieldEl) {
   if (!fieldEl) return null
@@ -26,12 +25,12 @@ export function popupRootForField(fieldEl) {
 }
 
 /**
- * 팝업 루트의 codeDisplay 및 display 입력값을 세팅.
- * display가 null이면 display 입력창은 변경하지 않음.
+ * 팝업 컨트롤러 래퍼 내부의 화면 표시용 입력창(codeDisplay, display)들의 값을 프로그래밍 방식으로 주입합니다.
+ * 사용자가 직접 팝업을 열지 않고 코드로 데이터를 세팅할 때 시각적 동기화를 위해 사용합니다.
  *
- * @param {Element} popupRoot - search-popup 루트 엘리먼트
- * @param {string} code       - 세팅할 코드값
- * @param {string|null} display - 세팅할 표시명 (null이면 변경 안 함)
+ * @param {Element} popupRoot - search-popup 루트 래퍼 엘리먼트
+ * @param {string} code       - 세팅할 실제 코드명 (DB 저장용)
+ * @param {string|null} [display=null] - 세팅할 사람용 표시명 (null이면 덮어쓰지 않고 유지)
  */
 export function setPopupValues(popupRoot, code, display = null) {
   if (!popupRoot) return
@@ -52,11 +51,11 @@ export function setPopupValues(popupRoot, code, display = null) {
 }
 
 /**
- * 팝업 루트 내 인터랙티브 요소(display 입력창, 열기 버튼)의 비활성화 상태를 토글.
- * codeDisplay 입력창은 항상 비활성화 유지(시각적 미러 용도).
+ * 팝업 컴포넌트 전체의 활성화/비활성화(Read-Only) 상태를 일괄 제어합니다.
+ * 단순히 입력창 뿐만 아니라 팝업을 여는 검색(돋보기) 버튼의 disabled 속성까지 함께 조작합니다.
  *
- * @param {Element} popupRoot - search-popup 루트 엘리먼트
- * @param {boolean} disabled  - true면 비활성화, false면 활성화
+ * @param {Element} popupRoot - search-popup 루트 래퍼 엘리먼트
+ * @param {boolean} disabled  - true 이면 잠금(사용 불가), false 이면 해제(사용 가능)
  */
 export function setPopupDisabled(popupRoot, disabled) {
   if (!popupRoot) return
@@ -78,11 +77,11 @@ export function setPopupDisabled(popupRoot, disabled) {
 }
 
 /**
- * rootEl 내 모든 search-popup 팝업에 대해 code 입력값을 codeDisplay에 동기화하고,
- * display가 비어있으면 code 값으로 채움.
- * 폼 초기화/데이터 세팅 직후 팝업 표시 상태를 일괄 복원할 때 사용.
+ * 특정 컨테이너(루트 요소) 하위에 존재하는 모든 search-popup 컴포넌트들을 일괄 탐색하여,
+ * 안보이는 원본 코드(code) 값과 화면 표출용 텍스트창(display, codeDisplay) 간의 시각적 동기화를 강제 집행합니다.
+ * (모달이 새로 열리거나 리스트에서 행을 선택해 폼 데이터가 변경된 직후 호출됨)
  *
- * @param {Element} rootEl - 탐색 기준 루트 엘리먼트 (보통 this.element)
+ * @param {Element} rootEl - DOM을 탐색할 기준이 되는 상위 요소 (보통 form target 이나 document.body)
  */
 export function syncAllPopupDisplaysFromCodes(rootEl) {
   if (!rootEl) return
