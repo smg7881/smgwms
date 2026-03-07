@@ -4,7 +4,7 @@
   <div class="app-modal-shell bg-bg-primary border border-border rounded-lg max-w-[calc(100vw-32px)] max-h-[90vh] flex flex-col overflow-hidden shadow-2xl"
        style="<%= modal_style %>"
        data-<%= controller %>-target="modal">
-    <div class="app-modal-header flex justify-between items-center px-5 py-4 border-b border-border sticky top-0 z-[2] bg-bg-primary cursor-move" data-action="mousedown-><%= controller %>#startDrag">
+    <div class="app-modal-header flex justify-between items-center px-5 py-4 border-b border-border sticky top-0 z-[2] bg-bg-primary cursor-move">
       <h3 class="app-modal-title m-0 text-base" data-<%= controller %>-target="modalTitle"><%= title %></h3>
       <button type="button" class="app-modal-close bg-transparent border-none text-xl cursor-pointer text-text-secondary"
               data-action="click-><%= controller %>#closeModal">&times;</button>

@@ -39,6 +39,7 @@ import {
 } from "controllers/grid/core/search_form_bridge"
 import { syncAllPopupDisplaysFromCodes } from "controllers/grid/grid_popup_utils"
 import { PopupManager } from "controllers/popup/popup_manager"
+import { attachDrag } from "controllers/popup/popup_drag_mixin"
 
 export default class BaseGridController extends Controller {
   static targets = ["grid", "validationBox", "validationSummary", "validationList"]
@@ -208,7 +209,7 @@ export default class BaseGridController extends Controller {
   }
 
   async postAction(url, body, { confirmMessage, onSuccess, onFail } = {}) {
-    if (confirmMessage && !confirmAction(confirmMessage)) return false
+    if (confirmMessage && !await confirmAction(confirmMessage)) return false
 
     try {
       const { response, result } = await requestJsonCore(url, { method: "POST", body })
@@ -397,19 +398,13 @@ export default class BaseGridController extends Controller {
   }
 
   connectBase({ events = [] } = {}) {
-    this.dragState = null
     this._eventSubscriptions = events.map(({ name, handler }) => {
       this.element.addEventListener(name, handler)
       return { name, handler }
     })
 
     this._boundDelegatedClick = this.handleDelegatedClick.bind(this)
-    this._boundDragMove = this.handleDragMove.bind(this)
-    this._boundEndDrag = this.endDrag.bind(this)
-
     this.element.addEventListener("click", this._boundDelegatedClick)
-    window.addEventListener("mousemove", this._boundDragMove)
-    window.addEventListener("mouseup", this._boundEndDrag)
   }
 
   disconnectBase() {
@@ -421,12 +416,6 @@ export default class BaseGridController extends Controller {
     if (this._boundDelegatedClick) {
       this.element.removeEventListener("click", this._boundDelegatedClick)
     }
-    if (this._boundDragMove) {
-      window.removeEventListener("mousemove", this._boundDragMove)
-    }
-    if (this._boundEndDrag) {
-      window.removeEventListener("mouseup", this._boundEndDrag)
-    }
   }
 
   get cancelRoleSelector() {
@@ -435,12 +424,17 @@ export default class BaseGridController extends Controller {
 
   openModal() {
     this._popupInstance = PopupManager.open({ dialogEl: this.overlayTarget })
+    if (this.hasModalTarget) {
+      const header = this.modalTarget.querySelector(".app-modal-header")
+      if (header) this._dragInstance = attachDrag(this.modalTarget, header)
+    }
   }
 
   closeModal() {
+    this._dragInstance?.destroy()
+    this._dragInstance = null
     this._popupInstance?.close()
     this._popupInstance = null
-    this.endDrag()
   }
 
   onBackdropClick(_event) {}
@@ -454,49 +448,6 @@ export default class BaseGridController extends Controller {
     if (cancelButton) {
       event.preventDefault()
       this.closeModal()
-    }
-  }
-
-  startDrag(event) {
-    if (event.button !== 0) return
-    if (!this.hasModalTarget || !this.hasOverlayTarget) return
-    if (event.target.closest("button")) return
-
-    const modalRect = this.modalTarget.getBoundingClientRect()
-    this.modalTarget.style.position = "absolute"
-    this.modalTarget.style.left = `${modalRect.left}px`
-    this.modalTarget.style.top = `${modalRect.top}px`
-    this.modalTarget.style.margin = "0"
-
-    this.dragState = {
-      offsetX: event.clientX - modalRect.left,
-      offsetY: event.clientY - modalRect.top
-    }
-
-    document.body.style.userSelect = "none"
-    this.modalTarget.style.cursor = "grabbing"
-    event.preventDefault()
-  }
-
-  handleDragMove(event) {
-    if (!this.dragState || !this.hasModalTarget) return
-
-    const maxLeft = Math.max(0, window.innerWidth - this.modalTarget.offsetWidth)
-    const maxTop = Math.max(0, window.innerHeight - this.modalTarget.offsetHeight)
-    const nextLeft = event.clientX - this.dragState.offsetX
-    const nextTop = event.clientY - this.dragState.offsetY
-    const clampedLeft = Math.min(Math.max(0, nextLeft), maxLeft)
-    const clampedTop = Math.min(Math.max(0, nextTop), maxTop)
-
-    this.modalTarget.style.left = `${clampedLeft}px`
-    this.modalTarget.style.top = `${clampedTop}px`
-  }
-
-  endDrag() {
-    this.dragState = null
-    document.body.style.userSelect = ""
-    if (this.hasModalTarget) {
-      this.modalTarget.style.cursor = ""
     }
   }
 

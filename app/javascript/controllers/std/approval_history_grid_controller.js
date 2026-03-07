@@ -1,6 +1,7 @@
 ﻿import BaseGridController from "controllers/base_grid_controller"
 import { showAlert, confirmAction } from "components/ui/alert"
 import { getCsrfToken } from "controllers/grid/core/http_client"
+import { attachDrag } from "controllers/popup/popup_drag_mixin"
 
 export default class extends BaseGridController {
   static targets = [
@@ -35,19 +36,13 @@ export default class extends BaseGridController {
 
   connect() {
     super.connect()
-    this.dragState = null
     this.mode = "viewer"
-    this._boundDragMove = this.handleDragMove.bind(this)
-    this._boundEndDrag = this.endDrag.bind(this)
-    window.addEventListener("mousemove", this._boundDragMove)
-    window.addEventListener("mouseup", this._boundEndDrag)
     this._rowDoubleBound = false
   }
 
   disconnect() {
-    window.removeEventListener("mousemove", this._boundDragMove)
-    window.removeEventListener("mouseup", this._boundEndDrag)
-    this.endDrag()
+    this._dragInstance?.destroy()
+    this._dragInstance = null
     this.unbindGridDoubleClick()
     super.disconnect()
   }
@@ -271,11 +266,16 @@ export default class extends BaseGridController {
 
   openModal() {
     this.overlayTarget.hidden = false
+    if (this.hasModalTarget) {
+      const header = this.modalTarget.querySelector(".app-modal-header")
+      if (header) this._dragInstance = attachDrag(this.modalTarget, header)
+    }
   }
 
   closeModal() {
+    this._dragInstance?.destroy()
+    this._dragInstance = null
     this.overlayTarget.hidden = true
-    this.endDrag()
   }
 
   closeModalOnOverlay(event) {
@@ -286,49 +286,6 @@ export default class extends BaseGridController {
 
   stopPropagation(event) {
     event.stopPropagation()
-  }
-
-  startDrag(event) {
-    if (event.button !== 0) return
-    if (!this.hasModalTarget) return
-    if (event.target.closest("button")) return
-
-    const modalRect = this.modalTarget.getBoundingClientRect()
-    this.modalTarget.style.position = "absolute"
-    this.modalTarget.style.left = `${modalRect.left}px`
-    this.modalTarget.style.top = `${modalRect.top}px`
-    this.modalTarget.style.margin = "0"
-
-    this.dragState = {
-      offsetX: event.clientX - modalRect.left,
-      offsetY: event.clientY - modalRect.top
-    }
-
-    document.body.style.userSelect = "none"
-    this.modalTarget.style.cursor = "grabbing"
-    event.preventDefault()
-  }
-
-  handleDragMove(event) {
-    if (!this.dragState || !this.hasModalTarget) return
-
-    const maxLeft = Math.max(0, window.innerWidth - this.modalTarget.offsetWidth)
-    const maxTop = Math.max(0, window.innerHeight - this.modalTarget.offsetHeight)
-    const nextLeft = event.clientX - this.dragState.offsetX
-    const nextTop = event.clientY - this.dragState.offsetY
-    const clampedLeft = Math.min(Math.max(0, nextLeft), maxLeft)
-    const clampedTop = Math.min(Math.max(0, nextTop), maxTop)
-
-    this.modalTarget.style.left = `${clampedLeft}px`
-    this.modalTarget.style.top = `${clampedTop}px`
-  }
-
-  endDrag() {
-    this.dragState = null
-    document.body.style.userSelect = ""
-    if (this.hasModalTarget) {
-      this.modalTarget.style.cursor = ""
-    }
   }
 
   formatDateTime(value) {

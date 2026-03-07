@@ -20,6 +20,17 @@ import { loadClientGridData, loadServerGridPage } from "controllers/grid/ag_grid
 import { RENDERER_REGISTRY } from "controllers/grid/ag_grid/renderers"
 import { openLookupPopup } from "controllers/lookup_popup_modal"
 import { isApiAlive } from "controllers/grid/core/api_guard"
+import {
+  saveColumnState as saveColumnStateUtil,
+  resetColumnState as resetColumnStateUtil,
+  restoreColumnState as restoreColumnStateUtil
+} from "controllers/grid/ag_grid/column_state_utils"
+import {
+  isGridCopyShortcut,
+  isGridPasteShortcut,
+  copyCurrentCellValue,
+  pasteCurrentCellValue
+} from "controllers/grid/ag_grid/clipboard_utils"
 
 // 커뮤니티 전역 모듈 등록 (최초 1회만 동작하도록 내부 방어 로직 있음)
 registerAgGridCommunityModules()
@@ -240,21 +251,17 @@ export default class extends Controller {
   // 클라이언트의 로컬 스토리지에 현재 설정된 컬럼 너비/순서 등의 뷰 상태를 저장합니다.
   saveColumnState(gridId) {
     const id = gridId || this.gridIdValue
-    if (!id || !isApiAlive(this.gridApi)) return
-
-    const state = this.gridApi.getColumnState()
-    localStorage.setItem(this.#storageKey(id), JSON.stringify(state))
-    showAlert("컬럼 상태가 저장되었습니다", null, "success")
+    if (saveColumnStateUtil(this.gridApi, id)) {
+      showAlert("컬럼 상태가 저장되었습니다", null, "success")
+    }
   }
 
   // 레이아웃이 꼬였거나 기본값 화면으로 되돌리고 싶을 때 저장된 기록을 삭제하고 원복합니다.
   resetColumnState(gridId) {
     const id = gridId || this.gridIdValue
-    if (!id || !isApiAlive(this.gridApi)) return
-
-    localStorage.removeItem(this.#storageKey(id))
-    this.gridApi.resetColumnState()
-    showAlert("컬럼 상태가 초기화되었습니다", null, "info")
+    if (resetColumnStateUtil(this.gridApi, id)) {
+      showAlert("컬럼 상태가 초기화되었습니다", null, "info")
+    }
   }
 
   // DOM을 말끔히 치우고 인스턴스(API)를 강제 제거(destroy)하여 메모리를 확보합니다.
@@ -280,6 +287,11 @@ export default class extends Controller {
     return [this.createRowNoColumnDef(), ...builtColumns]
   }
 
+  /**
+   * 행 번호(순번)를 표시하기 위한 공통 컬럼 정의 객체를 생성합니다.
+   * 페이징 옵션(서버사이드/로컬)에 따라 렌더링 시 순번을 동적으로 계산합니다.
+   * @returns {Object} AG-Grid 컬럼 정의 객체(ColDef)
+   */
   createRowNoColumnDef() {
     return {
       field: "__row_no",
@@ -434,22 +446,27 @@ export default class extends Controller {
     }))
   }
 
+  /**
+   * 셀 내에서 발생하는 키보드 누름 이벤트를 가로채어 커스텀 동작을 수행합니다.
+   * 주요 처리: 복사(Ctrl+C), 붙여넣기(Ctrl+V) 단축키 지원, Enter 입력 시 룩업 팝업 호출.
+   * @param {Object} event AG-Grid Keyboard Event
+   */
   handleCellKeyDown(event) {
     const keyboardEvent = event?.event
     if (!keyboardEvent) return
     if (keyboardEvent.defaultPrevented) return
 
-    if (this.isGridCopyShortcut(keyboardEvent)) {
+    if (isGridCopyShortcut(keyboardEvent)) {
       keyboardEvent.preventDefault()
       keyboardEvent.stopPropagation()
-      this.copyCurrentCellValue(event)
+      copyCurrentCellValue(event, this.#localClipboard(), (msg) => showAlert(msg, null, "warning"))
       return
     }
 
-    if (this.isGridPasteShortcut(keyboardEvent)) {
+    if (isGridPasteShortcut(keyboardEvent)) {
       keyboardEvent.preventDefault()
       keyboardEvent.stopPropagation()
-      this.pasteCurrentCellValue(event).catch(() => {
+      pasteCurrentCellValue(event, this.gridApi, this.#localClipboard(), (msg) => showAlert(msg, null, "warning")).catch(() => {
         showAlert("붙여넣기에 실패했습니다", null, "warning")
       })
       return
@@ -475,6 +492,11 @@ export default class extends Controller {
     this.openLookupForCell({ rowNode, colDef, keyword })
   }
 
+  /**
+   * 팝업 띄우기 전용 커스텀 이벤트(ag-grid:lookup-open)가 발생했을 때 호출됩니다.
+   * 이벤트 상세 정보를 분해하여 실제 룩업 팝업 열기 로직으로 넘깁니다.
+   * @param {CustomEvent} event "ag-grid:lookup-open" 이벤트 객체
+   */
   handleLookupOpenEvent(event) {
     event.stopPropagation()
     if (!isApiAlive(this.gridApi)) return
@@ -493,6 +515,14 @@ export default class extends Controller {
     })
   }
 
+  /**
+   * 대상 셀의 컬럼 정의(Context)에 따라 공통 룩업(Search/Lookup) 팝업을 열고,
+   * 사용자가 선택한 결과(반환값)를 다시 해당 셀(명칭/코드 필드)에 안전하게 업데이트합니다.
+   * @param {Object} params 파라미터 객체
+   * @param {RowNode} params.rowNode 대상 행 노드 객체
+   * @param {ColDef} params.colDef 팝업 속성을 지닌 대상 컬럼 정의 객체
+   * @param {string} params.keyword 팝업 검색창에 기본으로 채워질 검색어
+   */
   async openLookupForCell({ rowNode, colDef, keyword }) {
     if (!this.isLookupColumn(colDef)) return
     if (!rowNode?.data) return
@@ -556,6 +586,11 @@ export default class extends Controller {
     return classes.join(" ")
   }
 
+  /**
+   * 특정 컬럼이 룩업(팝업) 기능이 활성화된 컬럼인지 여부를 판별합니다.
+   * @param {ColDef} colDef 확인할 컬럼 정의 객체
+   * @returns {boolean} 룩업 속성 존재 여부
+   */
   isLookupColumn(colDef) {
     return Boolean(colDef?.context?.lookup_popup_type)
   }
@@ -593,169 +628,21 @@ export default class extends Controller {
     return false
   }
 
-  // Single-cell clipboard helpers for Ctrl/Cmd + C,V.
-  isGridCopyShortcut(keyboardEvent) {
-    if (!keyboardEvent) return false
-    if (this.isNativeInputTarget(keyboardEvent.target)) return false
-    if (!(keyboardEvent.ctrlKey || keyboardEvent.metaKey)) return false
-    if (keyboardEvent.altKey) return false
-    return String(keyboardEvent.key || "").toLowerCase() === "c"
-  }
-
-  isGridPasteShortcut(keyboardEvent) {
-    if (!keyboardEvent) return false
-    if (this.isNativeInputTarget(keyboardEvent.target)) return false
-    if (!(keyboardEvent.ctrlKey || keyboardEvent.metaKey)) return false
-    if (keyboardEvent.altKey) return false
-    return String(keyboardEvent.key || "").toLowerCase() === "v"
-  }
-
-  isNativeInputTarget(target) {
-    if (!(target instanceof HTMLElement)) return false
-    const tagName = target.tagName
-    if (tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT") return true
-    if (target.isContentEditable) return true
-    return Boolean(target.closest("[contenteditable='true']"))
-  }
-
-  copyCurrentCellValue(cellEvent) {
-    const rowNode = cellEvent?.node
-    const colDef = cellEvent?.column?.getColDef?.()
-    const field = colDef?.field
-    if (!rowNode?.data || !field) {
-      showAlert("복사할 수 없는 셀입니다", null, "warning")
-      return
-    }
-    if (field === "actions" || String(field).startsWith("__")) {
-      showAlert("복사할 수 없는 셀입니다", null, "warning")
-      return
-    }
-
-    const rawValue = rowNode.data[field]
-    const text = rawValue == null ? "" : String(rawValue)
-    this.#localClipboardText = text
-
-    this.writeTextToClipboard(text).then((ok) => {
-      if (!ok) {
-        showAlert("시스템 클립보드 복사에 실패했습니다", null, "warning")
-      }
-    }).catch(() => {
-      showAlert("시스템 클립보드 복사에 실패했습니다", null, "warning")
-    })
-  }
-
-  async pasteCurrentCellValue(cellEvent) {
-    const rowNode = cellEvent?.node
-    const colDef = cellEvent?.column?.getColDef?.()
-    const field = colDef?.field
-    if (!rowNode?.data || !field) {
-      showAlert("붙여넣을 수 없는 셀입니다", null, "warning")
-      return
-    }
-    if (!this.canPasteToCell(cellEvent, rowNode, colDef)) {
-      showAlert("붙여넣을 수 없는 셀입니다", null, "warning")
-      return
-    }
-
-    const text = await this.readTextFromClipboard()
-    if (text == null) {
-      showAlert("클립보드 텍스트를 읽을 수 없습니다", null, "warning")
-      return
-    }
-    if (String(rowNode.data[field] ?? "") === String(text)) return
-
-    rowNode.setDataValue(field, text)
-    if (isApiAlive(this.gridApi)) {
-      this.gridApi.refreshCells({
-        rowNodes: [rowNode],
-        columns: [field],
-        force: true
-      })
+  // Single-cell clipboard helpers — 실제 구현은 clipboard_utils.js에 위임
+  #localClipboard() {
+    return {
+      get: () => this.#localClipboardText,
+      set: (v) => { this.#localClipboardText = v }
     }
   }
 
-  canPasteToCell(cellEvent, rowNode, colDef) {
-    if (!rowNode?.data || !colDef) return false
-    if (colDef.field === "actions") return false
-    if (String(colDef.field || "").startsWith("__")) return false
-
-    const column = cellEvent?.column
-    if (column?.isCellEditable) {
-      return Boolean(column.isCellEditable(rowNode))
-    }
-
-    if (typeof colDef.editable === "function") {
-      return Boolean(colDef.editable({
-        ...cellEvent,
-        node: rowNode,
-        data: rowNode.data,
-        colDef
-      }))
-    }
-
-    return Boolean(colDef.editable)
-  }
-
-  async writeTextToClipboard(text) {
-    if (!navigator?.clipboard?.writeText) return false
-    try {
-      await navigator.clipboard.writeText(text)
-      return true
-    } catch (_error) {
-      return false
-    }
-  }
-
-  async readTextFromClipboard() {
-    if (navigator?.clipboard?.readText) {
-      try {
-        const clipboardText = await navigator.clipboard.readText()
-        this.#localClipboardText = clipboardText
-        return clipboardText
-      } catch (_error) {
-        // Fallback to in-memory value
-      }
-    }
-
-    if (this.#localClipboardText == null) return null
-    return this.#localClipboardText
-  }
-
-  // (가상/UI전용 컬럼) "__row_status" 상태 아이콘 표기 컬럼이
-  // 무조건 체크박스(존재한다면) 바로 다음 위치, 혹은 없다면 첫번째에 배치될 수 있도록
-  // 초기 로딩 후 컬럼 이동(moveColumns) 명령을 비동기(Microtask & timeout)로 강제하는 함수.
-  ensureStatusColumnOrder() {
-    const reposition = () => {
-      if (!isApiAlive(this.gridApi)) return
-      if (!this.gridApi?.moveColumns || !this.gridApi?.getAllGridColumns) return
-
-      const columns = this.gridApi.getAllGridColumns()
-      const hasStatus = columns.some((column) => column.getColId?.() === "__row_status")
-      if (!hasStatus) return // 상태 컬럼 없음
-
-      // 체크박스 위치 찾기
-      const selectionIndex = columns.findIndex((column) => {
-        const colId = column.getColId?.() || ""
-        return colId === "ag-Grid-SelectionColumn" || colId.includes("SelectionColumn")
-      })
-      if (selectionIndex < 0) return // 체크박스가 없다면 위치를 안바꿀 수 있음
-
-      const statusIndex = columns.findIndex((column) => column.getColId?.() === "__row_status")
-
-      // 이미 체크박스 뒤에 있다면 중단
-      if (statusIndex === selectionIndex + 1) return
-
-      // 순서 강제 이관 
-      this.gridApi.moveColumns(["__row_status"], selectionIndex + 1)
-    }
-
-    // 렌더링 스텝 등과 맞물리는 충돌 방지용 타이머 지연 
-    queueMicrotask(reposition)
-    setTimeout(reposition, 0)
-  }
-
-  // 브라우저 localStorage에서 커스텀 컬럼 정보를 추출하여 파싱하고 
+  // 브라우저 localStorage에서 커스텀 컬럼 정보를 추출하여 파싱하고
   // 실제 Grid Api 객체에 재적용시키는 기능.
+  /**
+   * 시스템 필수 컬럼(상태(__row_status), 순번(__row_no), 선택(SelectionColumn))이
+   * 가장 좌측(앞쪽)에 올바른 순서대로 위치하도록 강제로 재배치(보장)하는 헬퍼 함수입니다.
+   * 비동기 마이크로태스크를 통해 렌더링 후 타이밍에 처리합니다.
+   */
   ensureSystemColumnOrder() {
     const reposition = () => {
       if (!isApiAlive(this.gridApi)) return
@@ -807,26 +694,12 @@ export default class extends Controller {
     setTimeout(reposition, 0)
   }
 
+  /**
+   * 브라우저 localStorage에 보관된 현재 화면(gridId)의 컬럼 상태(크기/순서/숨김)를 복원하고,
+   * 복원 직후 시스템 컬럼 순서를 재정돈(ensureSystemColumnOrder)합니다.
+   */
   #restoreColumnState() {
-    const id = this.gridIdValue
-    if (!id || !isApiAlive(this.gridApi)) return // 고유 ID가 부여된 그리드만 복원 가능
-
-    const saved = localStorage.getItem(this.#storageKey(id))
-    if (!saved) return // 저장된 스냅샷 없음
-
-    try {
-      const state = JSON.parse(saved)
-      this.gridApi.applyColumnState({ state, applyOrder: true }) // 너비, 감춤, 정렬 및 순서(applyOrder) 함께 복원
-      this.ensureSystemColumnOrder()
-    } catch (e) {
-      // JSON 호환 불가 오류 등 손상된 경우 캐시 제거
-      console.warn("[ag-grid] failed to restore column state:", e)
-      localStorage.removeItem(this.#storageKey(id))
-    }
-  }
-
-  #storageKey(gridId) {
-    return `ag-grid-state:${gridId}`
+    restoreColumnStateUtil(this.gridApi, this.gridIdValue, () => this.ensureSystemColumnOrder())
   }
 
 }
