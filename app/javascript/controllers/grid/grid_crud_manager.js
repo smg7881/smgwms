@@ -417,6 +417,12 @@ export default class GridCrudManager {
     refreshStatusCells(this.#api, [event.node])
   }
 
+  /**
+   * 현재 그리드에 존재하는 행들 중에서 유효성 검증(Validation) 대상이 될 행 후보를 추출하여 반환합니다.
+   * 완전히 삭제 처리된 행이거나 아무 값도 입력되지 않은 빈 행(__is_new + isBlankRow)은 제외하며,
+   * 새롭게 추가된 행이거나 원본과 비교하여 변경 사항이 감지된 행만을 검증 대상으로 삼습니다.
+   * @returns {Array<{scope: string, row: Object, rowIndex: number}>} 검증 대상 메타 정보 객체의 배열
+   */
   #collectValidationCandidates() {
     const candidates = []
     this.#api.forEachNode((node) => {
@@ -437,6 +443,14 @@ export default class GridCrudManager {
     return candidates
   }
 
+  /**
+   * 단일/복수 필드의 '필수 입력(requiredFields)' 관련 검증을 수행하고 실패 시 에러 목록(errors 배열)에 누적합니다.
+   * 대상 컬럼이 비어있다면, 에러 객체를 생성하여 저장합니다.
+   * @param {Object} rules 검증 규칙 전체 객체
+   * @param {Object} candidate 평가 중인 행의 범위와 rowIndex 등 메타 정보
+   * @param {Object} normalizedRow 정규화(Normalizer 적용)된 행 데이터
+   * @param {Array<Object>} errors 위반 시 축적할 에러 레퍼런스 배열
+   */
   #applyRequiredFieldRules(rules, candidate, normalizedRow, errors) {
     const requiredFields = Array.isArray(rules.requiredFields) ? rules.requiredFields : []
     requiredFields.forEach((field) => {
@@ -454,6 +468,14 @@ export default class GridCrudManager {
     })
   }
 
+  /**
+   * 개별 컬럼(필드) 단위의 다양한 속성 관련 제약 조건 규칙(fieldRules)들
+   * (정규성 만족 여부, enum 포함 범위 확인, 커스텀 validate 체크 등)을 검증하여 에러 발생 시 누적시킵니다.
+   * @param {Object} rules 검증 규칙 체계
+   * @param {Object} candidate 소속 행 메타 데이터
+   * @param {Object} normalizedRow 정규화된 데이터
+   * @param {Array<Object>} errors 위반 시 축적할 에러 레퍼런스 배열
+   */
   #applyFieldRules(rules, candidate, normalizedRow, errors) {
     const fieldRules = rules.fieldRules || {}
     Object.entries(fieldRules).forEach(([field, ruleList]) => {
@@ -481,6 +503,14 @@ export default class GridCrudManager {
     })
   }
 
+  /**
+   * 행(Row) 자체, 즉 1개 행 전반에 부여된 상위 레벨의 복합 규칙 제약들을 확인합니다.
+   * 주로 여러 필드의 상태나 상관 관계를 동시에 체크할 때(예: 종료일자가 시작일자 이후인가? 등) 사용합니다.
+   * @param {Object} rules 검증 규칙 체계
+   * @param {Object} candidate 소속 행 메타 데이터
+   * @param {Object} normalizedRow 정규화 데이터
+   * @param {Array<Object>} errors 축적할 에러 배열
+   */
   #applyRowRules(rules, candidate, normalizedRow, errors) {
     const rowRules = Array.isArray(rules.rowRules) ? rules.rowRules : []
     rowRules.forEach((rule) => {
@@ -503,6 +533,15 @@ export default class GridCrudManager {
     })
   }
 
+  /**
+   * 실제로 단일 필드에 지정된 1개의 Rule 평가 작업을 수행합니다.
+   * 'required', 'minLength', 'maxLength', 'pattern', 'enum', 'custom' 패턴의
+   * 파라미터 제약 검증을 분류하여 처리합니다.
+   * @param {Object} rule 각 필드의 개별 Rule 객체
+   * @param {any} value 해당 필드의 검증 대상 값
+   * @param {Object} context 대상 필드 및 행 전체 등의 컨텍스트 참조
+   * @returns {Object} `{ valid: boolean, code?: string, message?: string }` 형태의 결과 객체
+   */
   #evaluateFieldRule(rule, value, context) {
     if (!rule || typeof rule !== "object") {
       return { valid: true }
@@ -512,10 +551,12 @@ export default class GridCrudManager {
     const allowBlank = rule.allowBlank !== false
     const text = value == null ? "" : value.toString().trim()
 
+    // 1. 공백 허용이며 비어있는 값이면 검사 통과 (단, 필수조건은 제외)
     if (allowBlank && text === "" && type !== "required") {
       return { valid: true }
     }
 
+    // 2. 필수 입력 단일 체크
     if (type === "required") {
       if (this.#isEmptyValue(value)) {
         return { valid: false, code: "required", message: rule.message }
@@ -523,6 +564,7 @@ export default class GridCrudManager {
       return { valid: true }
     }
 
+    // 3. 최소 글자 길이 체크
     if (type === "minLength") {
       const limit = Number(rule.value ?? rule.min)
       if (!Number.isNaN(limit) && text.length < limit) {
@@ -531,6 +573,7 @@ export default class GridCrudManager {
       return { valid: true }
     }
 
+    // 4. 최대 글자 길이 체크
     if (type === "maxLength") {
       const limit = Number(rule.value ?? rule.max)
       if (!Number.isNaN(limit) && text.length > limit) {
@@ -539,6 +582,7 @@ export default class GridCrudManager {
       return { valid: true }
     }
 
+    // 5. 정규표현식 준수 여부 체크
     if (type === "pattern") {
       const pattern = rule.value instanceof RegExp ? rule.value : null
       if (pattern && !pattern.test(text)) {
@@ -547,6 +591,7 @@ export default class GridCrudManager {
       return { valid: true }
     }
 
+    // 6. 열거형(enum) 포함 여부(사전 정의된 선택값 내인지) 체크
     if (type === "enum") {
       const values = Array.isArray(rule.values) ? rule.values.map((entry) => entry?.toString?.() ?? "") : []
       if (text !== "" && !values.includes(text)) {
@@ -555,6 +600,7 @@ export default class GridCrudManager {
       return { valid: true }
     }
 
+    // 7. 사용자가 직접 주입한 커스텀 로직(validate) 검사 함수 구동
     if (type === "custom" && typeof rule.validate === "function") {
       return this.#normalizeValidationResult(
         rule.validate(value, context),
@@ -565,6 +611,13 @@ export default class GridCrudManager {
     return { valid: true }
   }
 
+  /**
+   * 행 단위의 종합 규칙인 '커스텀 validate' 함수를 실행하고 그 복합 결과를 평가합니다.
+   * 주로 여러 필드의 상태 간 관계 위배 시 사용됩니다.
+   * @param {Object} rule 평기 진행할 규칙 객체
+   * @param {Object} context 해당 로우에 대한 검증 컨텍스트 객체
+   * @returns {Object} 검증 결과
+   */
   #evaluateRowRule(rule, context) {
     if (!rule || typeof rule.validate !== "function") {
       return { valid: true }
@@ -576,6 +629,13 @@ export default class GridCrudManager {
     )
   }
 
+  /**
+   * 커스텀 validate 함수가 유연하게 리턴한 다양한 자료형의 값(boolean, string 포함)을
+   * 매니저 코어가 표준으로 인식할 수 있는 내부 객체 모형(장부) 에러 포맷으로 일괄 변환-정규화(Normalize) 해줍니다.
+   * @param {any} result 평가 함수에서 반환받은 원시 결과 형태
+   * @param {Object} defaults 값 누락 등에 대한 초기 기본(디폴트값) 폴백 세팅
+   * @returns {Object} `{ valid, code, message, field, fieldLabel }` 규격화 완성된 확인 속성 객체
+   */
   #normalizeValidationResult(result, defaults = {}) {
     if (result === true || result == null) {
       return { valid: true }
@@ -598,6 +658,14 @@ export default class GridCrudManager {
     return { valid: true }
   }
 
+  /**
+   * 정규화된 데이터 객체와 원본 입력 데이터 객체를 바탕으로
+   * 현재 시점에서 밸리데이션 검사를 해야 하는 해당 필드의 실제 스냅샷 값을 도출해 옵니다.
+   * @param {Object} row 원본 행
+   * @param {Object} normalizedRow 필터 정규화가 완료된 행
+   * @param {string} field 필드 키 문자열
+   * @returns {any} 값
+   */
   #resolveFieldValue(row, normalizedRow, field) {
     if (Object.prototype.hasOwnProperty.call(normalizedRow, field)) {
       return normalizedRow[field]
@@ -605,18 +673,38 @@ export default class GridCrudManager {
     return row[field]
   }
 
+  /**
+   * 경고, 문구 등 사용자 통지 시 사용하기 위해, 영문이나 DB의 컬럼명 속성명을
+   * 한글이나 UI상의 명찰 이름(label)으로 변환 매칭합니다. fallback 속성으로 원본 키명도 활용합니다.
+   * @param {Object} rules 룰 집합 객체(내부 매핑 데이터 fieldLabels)
+   * @param {string} field 컬럼명 대상 키값
+   * @returns {string} 결정된 라벨 이름
+   */
   #resolveFieldLabel(rules, field) {
     if (!field) return "입력값"
     const labels = rules.fieldLabels || {}
     return labels[field] || field
   }
 
+  /**
+   * 특정 컬럼이나 입력의 값이 비어 있는(null 혹은 공란) 상태인지 여부를 판별하는 유틸리티입니다.
+   * 숫자 타입의 0은 값인 것으로 판별합니다.
+   * @param {any} value 판별 입력 데이터
+   * @returns {boolean} 값이 공란이거나 완전히 비어 있으면 true
+   */
   #isEmptyValue(value) {
     if (value == null) return true
     if (typeof value === "string") return value.trim() === ""
     return false
   }
 
+  /**
+   * 유효성 검사 도중 위반 사항을 감지했을 시,
+   * 추후 알림 바(Alerts) 표출 혹은 행 스크롤/포커싱 점프 대상을 설정하기위한
+   * 식별이 가능하도록 표준 에러 규격 객체(에러 티켓)를 생성 반환합니다.
+   * @param {Object} scope 및 각종 생성용 파라미터 값들 추출용 객체
+   * @returns {Object} 티켓 객체
+   */
   #buildValidationError({ candidate, field, fieldLabel = "", code, message }) {
     return {
       scope: candidate.scope,
@@ -630,6 +718,13 @@ export default class GridCrudManager {
     }
   }
 
+  /**
+   * 발생한 규격 에러 객체(티켓)를 바탕으로,
+   * AG-Grid 내부에서 직접 화면 내 노드로 관리중인 실제 RowNode DOM 타겟을 탐색해 냅니다.
+   * 포커싱 연출, 스크롤 이동 연동을 위해 필연적으로 호출되는 추적 함수입니다.
+   * @param {Object} error 에러 발생 티켓
+   * @returns {Object|null} Node 인스턴스 발견 시 반환
+   */
   #findNodeByValidationError(error) {
     let foundNode = null
     this.#api.forEachNode((node) => {
