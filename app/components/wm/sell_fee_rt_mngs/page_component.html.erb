@@ -1,4 +1,4 @@
-﻿<div data-controller="wm-sell-fee-rt-grid"
+<div data-controller="wm-sell-fee-rt-grid"
      data-action="ag-grid:ready->wm-sell-fee-rt-grid#registerGrid"
      data-wm-sell-fee-rt-grid-master-batch-url-value="<%= master_batch_save_url %>"
      data-wm-sell-fee-rt-grid-detail-list-url-template-value="/wm/sell_fee_rt_mngs/:sell_fee_rt_mng_id/details.json"
@@ -6,7 +6,7 @@
   <%= render Ui::SearchFormComponent.new(
     url: create_url,
     fields: search_fields,
-    cols: 3,
+    cols: 4,
     enable_collapse: true
   ) %>
 

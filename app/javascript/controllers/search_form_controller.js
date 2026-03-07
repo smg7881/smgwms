@@ -112,8 +112,8 @@ export default class extends Controller {
   #applyCollapse() {
     if (!this.hasFieldGroupTarget) return
 
-    const colSpan = Math.floor(24 / this.colsValue)
-    const maxSpan = (this.collapsedRowsValue * 24) - colSpan // 버튼 자리 빼기
+    const reservedSpan = this.#reservedButtonSpan()
+    const maxSpan = (this.collapsedRowsValue * 24) - reservedSpan // 버튼 자리 빼기
     let accumulated = 0
 
     this.fieldGroupTargets.forEach(el => {
@@ -140,13 +140,18 @@ export default class extends Controller {
 
   // 해당 DOM 태그의 현재 화면상 grid-column 계산. Tailwind "col-span-8" 같은 CSS 적용본 추출.
   #spanOf(el) {
+    const classSpan = this.#spanFromClassList(el)
+    if (Number.isFinite(classSpan) && classSpan > 0) {
+      return classSpan
+    }
+
     const style = getComputedStyle(el)
-    const gridColumn = style.gridColumnEnd
+    const gridColumn = `${style.gridColumn || ""} ${style.gridColumnStart || ""} ${style.gridColumnEnd || ""}`
 
     const match = gridColumn.match(/span\s+(\d+)/)
     if (match) return parseInt(match[1], 10) // "span 8" 이면 8 리턴
 
-    return 24 // 매칭 못하면 블록 단위 통짜 차지로 간주
+    return this.#defaultFieldSpan()
   }
 
   // 버튼 그룹을 항상 첫 번째 줄 오른쪽 끝에 배치
@@ -154,18 +159,25 @@ export default class extends Controller {
     if (!this.hasButtonGroupTarget) return
 
     // 버튼은 항상 첫 번째 줄, 오른쪽 끝
-    const colSpan = Math.floor(24 / this.colsValue) // cols=4 → 6, cols=3 → 8
-    const startCol = 24 - colSpan + 1               // cols=4 → 19, cols=3 → 17
-    this.buttonGroupTarget.style.gridRow = "1"
-    this.buttonGroupTarget.style.gridColumn = `${startCol} / -1`
+    const reservedSpan = this.#reservedButtonSpan()
+    if (reservedSpan > 0) {
+      // 버튼은 첫번째 줄의 오른쪽 슬롯 사용
+      const startCol = 24 - reservedSpan + 1 // cols=4 → 19, cols=3 → 17
+      this.buttonGroupTarget.style.gridRow = "1"
+      this.buttonGroupTarget.style.gridColumn = `${startCol} / -1`
+    } else {
+      // 반응형으로 필드 폭이 넓어졌을 때 버튼은 다음 줄 우측 정렬
+      this.buttonGroupTarget.style.gridRow = ""
+      this.buttonGroupTarget.style.gridColumn = "1 / -1"
+    }
   }
 
   // 필드가 한 줄에 모두 들어가는지 판단
   #needsCollapse() {
     if (!this.hasFieldGroupTarget) return false
 
-    const colSpan = Math.floor(24 / this.colsValue)
-    const maxSpan = this.collapsedRowsValue * 24 - colSpan // 버튼 자리 빼기
+    const reservedSpan = this.#reservedButtonSpan()
+    const maxSpan = this.collapsedRowsValue * 24 - reservedSpan // 버튼 자리 빼기
     let totalSpan = 0
 
     this.fieldGroupTargets.forEach(el => {
@@ -307,5 +319,75 @@ export default class extends Controller {
     // 변경된 값을 UI나 그리드 등 외부에서 알 수 있도록 이벤트 트리거 발생
     targetEl.dispatchEvent(new Event("input", { bubbles: true }))
     targetEl.dispatchEvent(new Event("change", { bubbles: true }))
+  }
+
+  #reservedButtonSpan() {
+    const layoutColSpan = Math.floor(24 / this.colsValue)
+    const currentFieldSpan = this.#currentFieldSpan()
+
+    if (!Number.isFinite(layoutColSpan) || layoutColSpan <= 0) return 0
+    if (currentFieldSpan > layoutColSpan) return 0
+
+    return layoutColSpan
+  }
+
+  #currentFieldSpan() {
+    if (!this.hasFieldGroupTarget) return 24
+
+    const firstField = this.fieldGroupTargets[0]
+    if (!firstField) return 24
+
+    return this.#spanOf(firstField)
+  }
+
+  #spanFromClassList(el) {
+    if (!el?.classList) return null
+
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0
+    let selectedSpan = null
+    let selectedMinWidth = -1
+
+    el.classList.forEach(className => {
+      const match = className.match(/^(?:(sm|md|lg|xl|2xl):)?col-span-(\d+)$/)
+      if (!match) return
+
+      const prefix = match[1] || ""
+      const minWidth = this.#breakpointMinWidth(prefix)
+      if (viewportWidth < minWidth) return
+
+      const span = parseInt(match[2], 10)
+      if (!Number.isFinite(span) || span <= 0) return
+
+      if (minWidth >= selectedMinWidth) {
+        selectedMinWidth = minWidth
+        selectedSpan = span
+      }
+    })
+
+    return selectedSpan
+  }
+
+  #breakpointMinWidth(prefix) {
+    switch (prefix) {
+      case "sm":
+        return 640
+      case "md":
+        return 768
+      case "lg":
+        return 1024
+      case "xl":
+        return 1280
+      case "2xl":
+        return 1536
+      default:
+        return 0
+    }
+  }
+
+  #defaultFieldSpan() {
+    const cols = Number(this.colsValue)
+    if (!Number.isFinite(cols) || cols <= 0) return 24
+
+    return Math.max(1, Math.floor(24 / cols))
   }
 }

@@ -1,4 +1,4 @@
-﻿<div data-controller="wm-rate-retroact-grid"
+<div data-controller="wm-rate-retroact-grid"
      data-action="ag-grid:ready->wm-rate-retroact-grid#registerGrid"
      data-wm-rate-retroact-grid-master-batch-url-value="<%= master_batch_save_url %>"
      data-wm-rate-retroact-grid-detail-batch-url-template-value="<%= detail_batch_save_url_template %>"
@@ -9,7 +9,7 @@
   <%= render Ui::SearchFormComponent.new(
     url: create_url,
     fields: search_fields,
-    cols: 3,
+    cols: 4,
     enable_collapse: true
   ) %>
 
