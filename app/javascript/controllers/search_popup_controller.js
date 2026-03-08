@@ -1,5 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import { openLookupPopup } from "controllers/lookup_popup_modal"
+import { getSearchFormValue } from "controllers/grid/core/search_form_bridge"
 
 export default class extends Controller {
   static targets = ["code", "codeDisplay", "display"]
@@ -128,13 +129,10 @@ export default class extends Controller {
   }
 
   readContextValue(fieldName) {
-    const formElement = this.element.closest("form")
-    if (!formElement) return ""
-
-    const element = formElement.querySelector(`[name="q[${fieldName}]"]`)
-    if (!element) return ""
-
-    return String(element.value || "").trim().toUpperCase()
+    return getSearchFormValue(this.application, fieldName, {
+      toUpperCase: true,
+      fieldElement: this.element
+    })
   }
 
   onDisplayInput() {

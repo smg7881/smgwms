@@ -58,7 +58,7 @@ class System::DeptControllerTest < ActionDispatch::IntegrationTest
   test "creates dept" do
     assert_difference("AdmDept.count", 1) do
       post system_dept_index_url, params: {
-        dept: {
+        adm_dept: {
           dept_code: "QA",
           dept_nm: "품질팀",
           parent_dept_code: "HQ",

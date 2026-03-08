@@ -52,7 +52,7 @@ class System::MenusController < System::BaseController
     end
 
     def menu_params
-      params.require(:menu).permit(
+      params.require(:adm_menu).permit(
         :menu_cd, :menu_nm, :parent_cd, :menu_url, :menu_icon,
         :sort_order, :menu_level, :menu_type, :use_yn, :tab_id
       )

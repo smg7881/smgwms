@@ -75,7 +75,7 @@ class System::DeptController < System::BaseController
     end
 
     def dept_params
-      params.require(:dept).permit(
+      params.require(:adm_dept).permit(
         :dept_code, :dept_nm, :dept_type, :parent_dept_code,
         :description, :dept_order, :use_yn
       )

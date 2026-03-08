@@ -20,6 +20,11 @@ import { PopupManager } from "controllers/popup/popup_manager"
 import { attachDrag } from "controllers/popup/popup_drag_mixin"
 import { requestJson as requestJsonCore } from "controllers/grid/core/http_client"
 import { syncAllPopupDisplaysFromCodes } from "controllers/grid/grid_popup_utils"
+import {
+  getResourceFieldElement,
+  getResourceFormValue as getResourceFormValueFromBridge,
+  setResourceFormValue as setResourceFormValueFromBridge
+} from "controllers/grid/core/resource_form_bridge"
 
 export const ModalMixin = {
   /**
@@ -221,31 +226,36 @@ export const ModalMixin = {
    * @param {any} value 채워넣을 값
    */
   setFieldValue(fieldName, value) {
-    if (!this.hasFormTarget) return
+    return this.setResourceFormValue(fieldName, value)
+  },
 
-    const resourceName = this.constructor.resourceName
-    const input = this.findFieldInput(resourceName, fieldName)
-    if (!input) return
+  getFieldValue(fieldName, { toUpperCase = false } = {}) {
+    return this.getResourceFormValue(fieldName, { toUpperCase })
+  },
 
-    const normalizedValue = value == null ? "" : value
+  setResourceFormValue(fieldName, value) {
+    if (!this.hasFormTarget) return false
 
-    if (input.type === "checkbox") {
-      const truthy = normalizedValue === true || normalizedValue === "Y" || normalizedValue === "1" || normalizedValue === 1
-      input.checked = truthy
-      return
-    }
+    const { resourceName, pureFieldName } = this.resolveResourceField(fieldName)
+    if (!pureFieldName) return false
 
-    if (input.tomselect) {
-      if (input.multiple) {
-        const values = Array.isArray(normalizedValue) ? normalizedValue.map((v) => String(v)) : []
-        input.tomselect.setValue(values, true)
-      } else {
-        input.tomselect.setValue(String(normalizedValue), true)
-      }
-      return
-    }
+    return setResourceFormValueFromBridge(this.application, pureFieldName, value == null ? "" : value, {
+      resourceName,
+      fieldElement: this.formTarget
+    })
+  },
 
-    input.value = normalizedValue
+  getResourceFormValue(fieldName, { toUpperCase = false } = {}) {
+    if (!this.hasFormTarget) return null
+
+    const { resourceName, pureFieldName } = this.resolveResourceField(fieldName)
+    if (!pureFieldName) return null
+
+    return getResourceFormValueFromBridge(this.application, pureFieldName, {
+      resourceName,
+      toUpperCase,
+      fieldElement: this.formTarget
+    })
   },
 
   /**
@@ -265,17 +275,26 @@ export const ModalMixin = {
    * @returns {HTMLElement|null} 찾은 DOM 엘리먼트
    */
   findFieldInput(resourceName, fieldName) {
-    let input = null
+    if (!this.hasFormTarget) return null
+    const { resourceName: parsedResourceName, pureFieldName } = this.resolveResourceField(fieldName)
+    return getResourceFieldElement(pureFieldName, {
+      resourceName: resourceName || parsedResourceName,
+      fieldElement: this.formTarget
+    })
+  },
 
-    if (resourceName) {
-      input = this.formTarget.querySelector(`[name='${resourceName}[${fieldName}]']`)
+  resolveResourceField(fieldName) {
+    const normalized = String(fieldName || "").trim()
+    if (!normalized) {
+      return { resourceName: this.constructor.resourceName || null, pureFieldName: "" }
     }
 
-    if (!input) {
-      input = this.formTarget.querySelector(`[name$='[${fieldName}]']`)
+    const match = normalized.match(/^([^\[]+)\[([^\]]+)\]$/)
+    if (match) {
+      return { resourceName: match[1], pureFieldName: match[2] }
     }
 
-    return input
+    return { resourceName: this.constructor.resourceName || null, pureFieldName: normalized }
   },
 
   /**

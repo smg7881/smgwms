@@ -44,8 +44,12 @@ function resolveResourceFormController(application, formEl) {
  * @param {boolean} [options.toUpperCase=false] 가져온 문자열을 대문자로 리턴할지 여부
  * @returns {any} 추출된 해당 필드의 실제 값
  */
-export function getResourceFormValue(application, fieldName, { resourceName = null, toUpperCase = false } = {}) {
-  const formEl = findResourceFormElement()
+export function getResourceFormValue(
+  application,
+  fieldName,
+  { resourceName = null, toUpperCase = false, fieldElement = null } = {}
+) {
+  const formEl = fieldElement ? findResourceFormElementByField(fieldElement) : findResourceFormElement()
   const formCtrl = resolveResourceFormController(application, formEl)
   if (!formCtrl || typeof formCtrl.getResourceFieldValue !== "function") return null
 
@@ -68,13 +72,16 @@ export function getResourceFormValue(application, fieldName, { resourceName = nu
  * @param {Object} [options]
  * @param {string|null} [options.resourceName] 네임스페이스명 (ex: 'user' -> 'user[user_name]')
  */
-export function setResourceFormValue(application, fieldName, value, { resourceName = null } = {}) {
-  const formEl = findResourceFormElement()
+export function setResourceFormValue(application, fieldName, value, { resourceName = null, fieldElement = null } = {}) {
+  if (!fieldName) return false
+
+  const formEl = fieldElement ? findResourceFormElementByField(fieldElement) : findResourceFormElement()
   const formCtrl = resolveResourceFormController(application, formEl)
-  if (!formCtrl || typeof formCtrl.setResourceFieldValue !== "function") return
+  if (!formCtrl || typeof formCtrl.setResourceFieldValue !== "function") return false
 
   const name = resolveFieldName(fieldName, resourceName)
   formCtrl.setResourceFieldValue(name, value)
+  return true
 }
 
 /**
@@ -86,8 +93,8 @@ export function setResourceFormValue(application, fieldName, value, { resourceNa
  * @param {string|null} [options.resourceName] 네임스페이스명
  * @returns {HTMLElement|null} 매칭된 입력 필드 DOM 요소
  */
-export function getResourceFieldElement(fieldName, { resourceName = null } = {}) {
-  const formEl = findResourceFormElement()
+export function getResourceFieldElement(fieldName, { resourceName = null, fieldElement = null } = {}) {
+  const formEl = fieldElement ? findResourceFormElementByField(fieldElement) : findResourceFormElement()
   if (!formEl) return null
 
   const name = resolveFieldName(fieldName, resourceName)
@@ -139,10 +146,5 @@ export function setResourceFormValueFromElement(application, fieldEl, value) {
   const fieldName = fieldEl.getAttribute("name")
   if (!fieldName) return false
 
-  const formEl = findResourceFormElementByField(fieldEl)
-  const formCtrl = resolveResourceFormController(application, formEl)
-  if (!formCtrl || typeof formCtrl.setResourceFieldValue !== "function") return false
-
-  formCtrl.setResourceFieldValue(fieldName, value)
-  return true
+  return setResourceFormValue(application, fieldName, value, { fieldElement: fieldEl })
 }

@@ -84,7 +84,7 @@ class Std::BusinessCertificatesControllerTest < ActionDispatch::IntegrationTest
 
   test "create update and destroy work with modal endpoints" do
     post std_business_certificates_url, params: {
-      business_certificate: {
+      std_business_certificate: {
         bzac_cd: "BZ001100",
         bzac_nm: "신규거래처",
         compreg_slip: "123-45-67890",
@@ -100,7 +100,7 @@ class Std::BusinessCertificatesControllerTest < ActionDispatch::IntegrationTest
     assert_equal "신규거래처", StdBusinessCertificate.find_by!(bzac_cd: "BZ001100").bzac_nm
 
     patch std_business_certificate_url("BZ001100"), params: {
-      business_certificate: {
+      std_business_certificate: {
         bzac_cd: "BZ009999",
         bzac_nm: "수정거래처",
         compreg_slip: "9876543210",

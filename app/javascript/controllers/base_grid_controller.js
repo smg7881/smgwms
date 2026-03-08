@@ -35,6 +35,7 @@ import {
 import { postJson, buildTemplateUrl, refreshSelectionLabel, formatValidationError } from "controllers/grid/grid_utils"
 import {
   getSearchFormValue as getSearchFormValueFromBridge,
+  setSearchFormValue as setSearchFormValueFromBridge,
   getSearchFieldElement as getSearchFieldElementFromBridge
 } from "controllers/grid/core/search_form_bridge"
 import { ModalMixin } from "controllers/concerns/modal_mixin"
@@ -1193,15 +1194,22 @@ export default class BaseGridController extends Controller {
   /**
    * 검색 바(SearchForm) 브릿지를 통해 현재 화면에 공통 적용된 지정 폼 컴포넌트의 특정 필드 값을 추출해 옵니다.
    */
-  getSearchFormValue(fieldName, { toUpperCase = true } = {}) {
-    return getSearchFormValueFromBridge(this.application, fieldName, { toUpperCase })
+  getSearchFormValue(fieldName, { toUpperCase = true, fieldElement = null } = {}) {
+    return getSearchFormValueFromBridge(this.application, fieldName, { toUpperCase, fieldElement })
+  }
+
+  /**
+   * 검색 폼 브릿지를 통해 지정 필드 값 설정
+   */
+  setSearchFormValue(fieldName, value, { fieldElement = null } = {}) {
+    return setSearchFormValueFromBridge(this.application, fieldName, value, { fieldElement })
   }
 
   /**
    * 검색 폼 내부에 속한 특정 필드의 DOM Element를 획득해 리턴합니다.
    */
-  getSearchFieldElement(fieldName) {
-    return getSearchFieldElementFromBridge(fieldName)
+  getSearchFieldElement(fieldName, { fieldElement = null } = {}) {
+    return getSearchFieldElementFromBridge(fieldName, { fieldElement })
   }
 }
 

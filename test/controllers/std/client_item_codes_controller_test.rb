@@ -30,7 +30,7 @@ class Std::ClientItemCodesControllerTest < ActionDispatch::IntegrationTest
 
   test "create update and destroy work with modal endpoints" do
     post std_client_item_codes_url, params: {
-      client_item_code: {
+      std_client_item_code: {
         item_cd: "ITEM100",
         item_nm: "신규아이템",
         bzac_cd: "C001",
@@ -59,7 +59,7 @@ class Std::ClientItemCodesControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Y", row.if_yn_cd
 
     patch std_client_item_code_url(row.id), params: {
-      client_item_code: {
+      std_client_item_code: {
         item_cd: "ITEM100",
         item_nm: "수정아이템",
         bzac_cd: "C001",

@@ -67,7 +67,7 @@ class System::MenusControllerTest < ActionDispatch::IntegrationTest
   test "creates menu" do
     assert_difference("AdmMenu.count", 1) do
       post system_menus_url, params: {
-        menu: {
+        adm_menu: {
           menu_cd: "TEST_MENU",
           menu_nm: "테스트 메뉴",
           parent_cd: "MAIN",

@@ -27,7 +27,7 @@ class Std::SellbuyAttributesControllerTest < ActionDispatch::IntegrationTest
 
   test "create update and destroy work with modal endpoints" do
     post std_sellbuy_attributes_url, params: {
-      sellbuy_attribute: {
+      std_sellbuy_attribute: {
         corp_cd: "C001",
         sellbuy_sctn_cd: "SELL",
         sellbuy_attr_cd: "00000100",
@@ -43,7 +43,7 @@ class Std::SellbuyAttributesControllerTest < ActionDispatch::IntegrationTest
     assert_equal "초기항목", StdSellbuyAttribute.find_by!(sellbuy_attr_cd: "00000100").sellbuy_attr_nm
 
     patch std_sellbuy_attribute_url("00000100"), params: {
-      sellbuy_attribute: {
+      std_sellbuy_attribute: {
         sellbuy_attr_cd: "99999999",
         corp_cd: "C001",
         sellbuy_sctn_cd: "BOTH",

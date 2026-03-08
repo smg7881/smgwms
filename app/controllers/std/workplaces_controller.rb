@@ -188,7 +188,7 @@ class Std::WorkplacesController < Std::BaseController
     end
 
     def workplace_params
-      params.require(:workplace).permit(
+      params.require(:std_workplace).permit(
         :corp_cd, :workpl_cd, :upper_workpl_cd, :dept_cd, :workpl_nm, :workpl_sctn_cd,
         :capa_spec_unit_cd, :max_capa, :adpt_capa, :dimem_spec_unit_cd, :dimem, :wm_yn_cd,
         :bzac_cd, :ctry_cd, :zip_cd, :addr_cd, :dtl_addr_cd, :use_yn_cd, :remk_cd

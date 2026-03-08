@@ -2,7 +2,7 @@ import BaseGridController from "controllers/base_grid_controller"
 import { showAlert } from "components/ui/alert"
 
 export default class extends BaseGridController {
-  static resourceName = "sellbuy_attribute"
+  static resourceName = "std_sellbuy_attribute"
   static deleteConfirmKey = "sellbuyAttrNm"
   static entityLabel = "매출입항목"
 

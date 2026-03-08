@@ -1,7 +1,7 @@
 import BaseGridController from "controllers/base_grid_controller"
 
 export default class extends BaseGridController {
-  static resourceName = "zipcode"
+  static resourceName = "std_zip_code"
   static deleteConfirmKey = "zipCodeLabel"
   static entityLabel = "우편번호"
 

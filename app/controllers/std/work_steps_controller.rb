@@ -83,7 +83,7 @@ class Std::WorkStepsController < Std::BaseController
     end
 
     def work_step_params
-      params.require(:work_step).permit(
+      params.require(:std_work_step).permit(
         :work_step_cd, :work_step_nm, :work_step_level1_cd, :work_step_level2_cd,
         :sort_seq, :conts_cd, :rmk_cd, :use_yn_cd
       )

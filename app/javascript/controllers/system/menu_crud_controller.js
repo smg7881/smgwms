@@ -8,7 +8,7 @@
 import BaseGridController from "controllers/base_grid_controller"
 
 export default class extends BaseGridController {
-  static resourceName = "menu"
+  static resourceName = "adm_menu"
   static deleteConfirmKey = "menuCd"
   static entityLabel = "메뉴"
 

@@ -94,7 +94,7 @@ class Std::ClientItemCodesController < Std::BaseController
     end
 
     def client_item_code_params
-      params.require(:client_item_code).permit(
+      params.require(:std_client_item_code).permit(
         :item_cd, :item_nm, :bzac_cd, :goodsnm_cd,
         :danger_yn_cd, :png_yn_cd, :mstair_lading_yn_cd, :if_yn_cd,
         :wgt_unit_cd, :qty_unit_cd, :tmpt_unit_cd, :vol_unit_cd, :basis_unit_cd, :len_unit_cd,

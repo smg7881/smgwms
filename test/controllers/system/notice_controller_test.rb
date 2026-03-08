@@ -38,7 +38,7 @@ class System::NoticeControllerTest < ActionDispatch::IntegrationTest
   test "creates notice" do
     assert_difference("AdmNotice.count", 1) do
       post system_notice_index_url, params: {
-        notice: {
+        adm_notice: {
           category_code: "SYSTEM",
           title: "신규 공지",
           content: "공지 내용",
@@ -53,7 +53,7 @@ class System::NoticeControllerTest < ActionDispatch::IntegrationTest
 
   test "updates notice" do
     patch system_notice_url(@notice), params: {
-      notice: {
+      adm_notice: {
         title: "수정 공지",
         category_code: "GENERAL",
         content: "수정 내용",
@@ -72,7 +72,7 @@ class System::NoticeControllerTest < ActionDispatch::IntegrationTest
     attachment_id = @notice.attachments.attachments.first.id
 
     patch system_notice_url(@notice), params: {
-      notice: {
+      adm_notice: {
         title: @notice.title,
         category_code: @notice.category_code,
         content: @notice.content,

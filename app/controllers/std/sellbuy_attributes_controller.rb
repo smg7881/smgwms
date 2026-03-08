@@ -108,7 +108,7 @@ class Std::SellbuyAttributesController < Std::BaseController
     end
 
     def sellbuy_attribute_params
-      params.require(:sellbuy_attribute).permit(
+      params.require(:std_sellbuy_attribute).permit(
         :corp_cd, :sellbuy_sctn_cd, :sellbuy_attr_cd, :sellbuy_attr_nm, :rdtn_nm, :sellbuy_attr_eng_nm,
         :upper_sellbuy_attr_cd, :sell_yn_cd, :pur_yn_cd, :tran_yn_cd, :fis_air_yn_cd, :strg_yn_cd,
         :cgwrk_yn_cd, :fis_shpng_yn_cd, :dc_extr_yn_cd, :tax_payfor_yn_cd, :lumpsum_yn_cd,

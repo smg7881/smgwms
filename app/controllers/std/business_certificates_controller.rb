@@ -192,15 +192,7 @@ class Std::BusinessCertificatesController < Std::BaseController
     end
 
     def certificate_params
-      merged_params = {}
-      if params[:std_business_certificate].present?
-        merged_params.merge!(params[:std_business_certificate].to_unsafe_h)
-      end
-      if params[:business_certificate].present?
-        merged_params.merge!(params[:business_certificate].to_unsafe_h)
-      end
-
-      ActionController::Parameters.new(merged_params).permit(
+      params.require(:std_business_certificate).permit(
         :bzac_cd, :bzac_nm, :compreg_slip, :bizman_yn_cd, :store_nm_cd, :rptr_nm_cd,
         :corp_reg_no_cd, :bizcond_cd, :indstype_cd, :dup_bzac_yn_cd, :zip_cd, :zipaddr_cd,
         :dtl_addr_cd, :rmk, :clbiz_ymd, :attached_file_nm, :use_yn_cd,

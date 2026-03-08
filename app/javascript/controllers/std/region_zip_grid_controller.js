@@ -4,6 +4,10 @@ import { postJson, buildCompositeKey } from "controllers/grid/grid_utils"
 import { isApiAlive } from "controllers/grid/core/api_guard"
 import { fetchJson } from "controllers/grid/core/http_client"
 import { setGridRowData } from "controllers/grid/grid_api_utils"
+import {
+  getSearchFormValue,
+  setSearchFormValue
+} from "controllers/grid/core/search_form_bridge"
 
 export default class extends Controller {
   static targets = [
@@ -320,7 +324,12 @@ export default class extends Controller {
     const codeDisplayInput = wrapper.querySelector("[data-search-popup-target='codeDisplay']")
 
     if (codeInput) {
-      codeInput.value = normalizedCode
+      const searchFieldName = codeInput.getAttribute("name")
+      if (searchFieldName) {
+        setSearchFormValue(this.application, searchFieldName, normalizedCode, { fieldElement: codeInput })
+      } else {
+        codeInput.value = normalizedCode
+      }
     }
     if (displayInput) {
       displayInput.value = normalizedDisplay
@@ -332,7 +341,17 @@ export default class extends Controller {
 
   inputValue(name) {
     const input = this.element.querySelector(`[name='${name}']`)
-    return input?.value?.toString().trim() || ""
+    if (!input) return ""
+
+    const match = String(name || "").match(/^q\[([^\]]+)\]$/)
+    if (match) {
+      return getSearchFormValue(this.application, match[1], {
+        toUpperCase: false,
+        fieldElement: input
+      })
+    }
+
+    return input.value?.toString().trim() || ""
   }
 
   get currentCorpCode() {

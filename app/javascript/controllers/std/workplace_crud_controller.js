@@ -1,8 +1,9 @@
 import BaseGridController from "controllers/base_grid_controller"
 import { showAlert } from "components/ui/alert"
+import { setResourceFormValue } from "controllers/grid/core/resource_form_bridge"
 
 export default class extends BaseGridController {
-  static resourceName = "workplace"
+  static resourceName = "std_workplace"
   static deleteConfirmKey = "workplNm"
   static entityLabel = "작업장"
 
@@ -53,8 +54,8 @@ export default class extends BaseGridController {
       this.fieldCorpCdTarget.value = corpCd
     }
 
-    this.setRadioValue("workplace[wm_yn_cd]", "N")
-    this.setRadioValue("workplace[use_yn_cd]", "Y")
+    this.setRadioValue("wm_yn_cd", "N")
+    this.setRadioValue("use_yn_cd", "Y")
     this.syncPopupDisplaysFromCodes()
     this.openModal()
   }
@@ -86,8 +87,8 @@ export default class extends BaseGridController {
     this.fieldRemkCdTarget.value = data.remk_cd || ""
     this.fieldWorkplCdTarget.readOnly = true
 
-    this.setRadioValue("workplace[wm_yn_cd]", data.wm_yn_cd || "N")
-    this.setRadioValue("workplace[use_yn_cd]", data.use_yn_cd || "Y")
+    this.setRadioValue("wm_yn_cd", data.wm_yn_cd || "N")
+    this.setRadioValue("use_yn_cd", data.use_yn_cd || "Y")
     this.syncPopupDisplaysFromCodes()
     this.openModal()
   }
@@ -97,8 +98,8 @@ export default class extends BaseGridController {
     this.fieldIdTarget.value = ""
     this.fieldWorkplCdTarget.readOnly = false
     this.fieldCtryCdTarget.value = "KR"
-    this.setRadioValue("workplace[wm_yn_cd]", "N")
-    this.setRadioValue("workplace[use_yn_cd]", "Y")
+    this.setRadioValue("wm_yn_cd", "N")
+    this.setRadioValue("use_yn_cd", "Y")
     this.syncPopupDisplaysFromCodes()
   }
 
@@ -107,22 +108,14 @@ export default class extends BaseGridController {
   }
 
   setRadioValue(fieldName, value) {
-    const radios = this.formTarget.querySelectorAll(`input[type='radio'][name='${fieldName}']`)
-    if (radios.length === 0) return
-
     const normalized = String(value || "").trim().toUpperCase()
-    let matched = false
-    radios.forEach((radio) => {
-      const isMatch = radio.value === normalized
-      radio.checked = isMatch
-      if (isMatch) {
-        matched = true
-      }
-    })
-
-    if (!matched) {
-      radios[0].checked = true
+    const match = String(fieldName || "").match(/^([^\[]+)\[([^\]]+)\]$/)
+    if (match) {
+      setResourceFormValue(this.application, match[2], normalized, { resourceName: match[1], fieldElement: this.formTarget })
+      return
     }
+
+    setResourceFormValue(this.application, fieldName, normalized, { resourceName: this.constructor.resourceName, fieldElement: this.formTarget })
   }
 
   handlePopupSelected = (event) => {

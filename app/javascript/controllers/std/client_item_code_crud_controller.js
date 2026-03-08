@@ -1,7 +1,7 @@
 import BaseGridController from "controllers/base_grid_controller"
 
 export default class extends BaseGridController {
-  static resourceName = "client_item_code"
+  static resourceName = "std_client_item_code"
   static deleteConfirmKey = "itemCd"
   static entityLabel = "거래처별아이템코드"
 

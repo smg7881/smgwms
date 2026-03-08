@@ -27,7 +27,7 @@ class Std::WorkplacesControllerTest < ActionDispatch::IntegrationTest
 
   test "create update and destroy work with modal endpoints" do
     post std_workplaces_url, params: {
-      workplace: {
+      std_workplace: {
         corp_cd: "C001",
         workpl_cd: "WP0100",
         dept_cd: "DEPT01",
@@ -42,7 +42,7 @@ class Std::WorkplacesControllerTest < ActionDispatch::IntegrationTest
     assert_equal "신규작업장", StdWorkplace.find_by!(workpl_cd: "WP0100").workpl_nm
 
     patch std_workplace_url("WP0100"), params: {
-      workplace: {
+      std_workplace: {
         workpl_cd: "WP9999",
         dept_cd: "DEPT02",
         workpl_nm: "수정작업장",
@@ -65,7 +65,7 @@ class Std::WorkplacesControllerTest < ActionDispatch::IntegrationTest
 
   test "create rejects same upper workplace code as workplace code" do
     post std_workplaces_url, params: {
-      workplace: {
+      std_workplace: {
         corp_cd: "C001",
         workpl_cd: "WPSELF",
         upper_workpl_cd: "WPSELF",

@@ -9,9 +9,10 @@ import BaseGridController from "controllers/base_grid_controller"
 import { showAlert, confirmAction } from "components/ui/alert"
 import { AttachmentMixin } from "controllers/concerns/attachment_mixin"
 import { TrixMixin } from "controllers/concerns/trix_mixin"
+import { setResourceFormValue } from "controllers/grid/core/resource_form_bridge"
 
 class NoticeCrudController extends BaseGridController {
-  static resourceName = "notice"
+  static resourceName = "adm_notice"
   static deleteConfirmKey = "title"
   static entityLabel = "공지사항"
 
@@ -97,24 +98,16 @@ class NoticeCrudController extends BaseGridController {
   }
 
   setRadioValue(field, value) {
-    const scope = this.formScopeKey()
-    this.formTarget.querySelectorAll(`input[type='radio'][name='${scope}[${field}]']`).forEach((radio) => {
-      radio.checked = radio.value === value
+    const normalized = String(value || "").trim().toUpperCase()
+    setResourceFormValue(this.application, field, normalized, {
+      resourceName: this.constructor.resourceName,
+      fieldElement: this.formTarget
     })
-  }
-
-  formScopeKey() {
-    const candidateName = this.hasFieldCategoryCodeTarget
-      ? this.fieldCategoryCodeTarget.name
-      : this.formTarget.querySelector("[name*='[']")?.name
-
-    const match = String(candidateName || "").match(/^([^\[]+)\[/)
-    return match ? match[1] : this.constructor.resourceName
   }
 
   async save() {
     const formData = new FormData(this.formTarget)
-    const scope = this.formScopeKey()
+    const scope = this.constructor.resourceName
 
     this.appendRemovedAttachmentIds(formData, scope)
 

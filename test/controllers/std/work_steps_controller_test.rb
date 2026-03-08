@@ -26,7 +26,7 @@ class Std::WorkStepsControllerTest < ActionDispatch::IntegrationTest
 
   test "create update and destroy work with modal endpoints" do
     post std_work_steps_url, params: {
-      work_step: {
+      std_work_step: {
         work_step_cd: "00002",
         work_step_nm: "DOOR운송",
         work_step_level1_cd: "10",
@@ -42,7 +42,7 @@ class Std::WorkStepsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "DOOR운송", StdWorkStep.find_by!(work_step_cd: "00002").work_step_nm
 
     patch std_work_step_url("00002"), params: {
-      work_step: {
+      std_work_step: {
         work_step_cd: "99999",
         work_step_nm: "DOOR회수",
         work_step_level1_cd: "10",
@@ -67,7 +67,7 @@ class Std::WorkStepsControllerTest < ActionDispatch::IntegrationTest
 
   test "create rejects invalid level2 mapping" do
     post std_work_steps_url, params: {
-      work_step: {
+      std_work_step: {
         work_step_cd: "00003",
         work_step_nm: "오류케이스",
         work_step_level1_cd: "10",

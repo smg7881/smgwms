@@ -6,7 +6,7 @@
  */
 
 import { isApiAlive } from "controllers/grid/core/api_guard"
-import { getResourceFormValueFromElement, setResourceFormValueFromElement } from "controllers/grid/core/resource_form_bridge"
+import { getResourceFormValueFromElement, setResourceFormValue } from "controllers/grid/core/resource_form_bridge"
 
 /**
  * 날짜형 데이터(Date 객체 혹은 날짜 문자열)를 HTML5 `<input type="date">` 요소와 호환되는
@@ -54,30 +54,10 @@ function withDetailSyncSuppressed(controller, callback) {
  * @param {any} value 주입하고자 하는 실제 값
  */
 function setDetailFieldValue(controller, fieldEl, value) {
-  const bridged = setResourceFormValueFromElement(controller.application, fieldEl, value)
-  if (bridged) return
+  const fieldName = fieldEl.getAttribute("name")
+  if (!fieldName) return false
 
-  const normalized = value == null ? "" : value
-
-  if (fieldEl.type === "checkbox") {
-    fieldEl.checked = normalized === true || fieldEl.value === String(normalized)
-    return
-  }
-
-  if (fieldEl.type === "radio") {
-    fieldEl.checked = fieldEl.value === String(normalized)
-    return
-  }
-
-  if (fieldEl.tagName === "SELECT" && fieldEl.multiple) {
-    const values = Array.isArray(normalized) ? normalized.map((v) => String(v)) : [String(normalized)]
-    Array.from(fieldEl.options).forEach((option) => {
-      option.selected = values.includes(option.value)
-    })
-    return
-  }
-
-  fieldEl.value = normalized
+  return setResourceFormValue(controller.application, fieldName, value, { fieldElement: fieldEl })
 }
 
 /**
@@ -87,22 +67,7 @@ function setDetailFieldValue(controller, fieldEl, value) {
  * @returns {any} 추출된 필드 값
  */
 function getDetailFieldValue(controller, fieldEl) {
-  const bridged = getResourceFormValueFromElement(controller.application, fieldEl)
-  if (bridged !== null && bridged !== undefined) return bridged
-
-  if (fieldEl.type === "checkbox") {
-    return fieldEl.checked ? fieldEl.value : ""
-  }
-
-  if (fieldEl.type === "radio") {
-    return fieldEl.checked ? fieldEl.value : ""
-  }
-
-  if (fieldEl.tagName === "SELECT" && fieldEl.multiple) {
-    return Array.from(fieldEl.selectedOptions).map((option) => option.value)
-  }
-
-  return fieldEl.value
+  return getResourceFormValueFromElement(controller.application, fieldEl)
 }
 
 /**

@@ -28,7 +28,7 @@ class Std::ZipcodesControllerTest < ActionDispatch::IntegrationTest
 
   test "create update and destroy work with modal endpoints" do
     post std_zipcodes_url, params: {
-      zipcode: {
+      std_zip_code: {
         authenticity_token: "token",
         ctry_lookup: "대한민국",
         ctry_cd: "KR",
@@ -53,7 +53,7 @@ class Std::ZipcodesControllerTest < ActionDispatch::IntegrationTest
     assert_equal "테스트아파트", row.apt_bild_nm
 
     patch std_zipcode_url(row.id), params: {
-      zipcode: {
+      std_zip_code: {
         ctry_cd: "US",
         zipcd: "CHANGED",
         seq_no: 99,

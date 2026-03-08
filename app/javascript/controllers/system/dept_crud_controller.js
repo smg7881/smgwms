@@ -6,9 +6,10 @@
  * - 그리드 액션 이벤트(dept-crud:*) 수신
  */
 import BaseGridController from "controllers/base_grid_controller"
+import { setResourceFormValue } from "controllers/grid/core/resource_form_bridge"
 
 export default class extends BaseGridController {
-  static resourceName = "dept"
+  static resourceName = "adm_dept"
   static deleteConfirmKey = "deptNm"
   static entityLabel = "부서"
 
@@ -108,8 +109,9 @@ export default class extends BaseGridController {
 
   setUseYn(value = "Y") {
     const selected = String(value || "Y").toUpperCase() === "N" ? "N" : "Y"
-    this.formTarget.querySelectorAll("input[type='radio'][name='dept[use_yn]']").forEach((radio) => {
-      radio.checked = radio.value === selected
+    setResourceFormValue(this.application, "use_yn", selected, {
+      resourceName: this.constructor.resourceName,
+      fieldElement: this.formTarget
     })
   }
 }

@@ -107,7 +107,7 @@ class Std::ZipcodesController < Std::BaseController
     def zipcode_attributes
       refresh_zipcode_column_information
 
-      permitted = params.require(:zipcode).permit(*zipcode_param_keys).to_h
+      permitted = params.require(:std_zip_code).permit(*zipcode_param_keys).to_h
       permitted.slice(*StdZipCode.attribute_names)
     end
 

@@ -1,9 +1,10 @@
 import BaseGridController from "controllers/base_grid_controller"
 import { showAlert } from "components/ui/alert"
 import { AttachmentMixin } from "controllers/concerns/attachment_mixin"
+import { setResourceFormValue } from "controllers/grid/core/resource_form_bridge"
 
 class BusinessCertificateCrudController extends BaseGridController {
-  static resourceName = "business_certificate"
+  static resourceName = "std_business_certificate"
   static deleteConfirmKey = "bzacNm"
   static entityLabel = "사업자등록증"
 
@@ -223,52 +224,21 @@ class BusinessCertificateCrudController extends BaseGridController {
     this.syncPopupDisplaysFromCodes()
   }
 
-  formScopeKey() {
-    const candidateName = this.hasFieldBzacCdTarget
-      ? this.fieldBzacCdTarget.name
-      : this.formTarget.querySelector("[name*='[']")?.name
-
-    const match = String(candidateName || "").match(/^([^\[]+)\[/)
-    if (match) {
-      return match[1]
-    }
-
-    return this.constructor.resourceName
-  }
-
   setScopedFieldValue(fieldName, value) {
-    if (!this.hasFormTarget) return
-
-    const input = this.formTarget.querySelector(`[name$='[${fieldName}]']`)
-    if (!input) return
-
-    input.value = value == null ? "" : value
+    setResourceFormValue(this.application, fieldName, value == null ? "" : value, {
+      resourceName: this.constructor.resourceName,
+      fieldElement: this.formTarget
+    })
   }
 
   setRadioValue(fieldName, value) {
-    if (!this.hasFormTarget) return
-
-    const radios = this.formTarget.querySelectorAll(`input[type='radio'][name$='[${fieldName}]']`)
-    if (radios.length === 0) return
-
     const normalized = String(value || "").trim().toUpperCase()
-    let matched = false
-    radios.forEach((radio) => {
-      const isMatch = radio.value === normalized
-      radio.checked = isMatch
-      if (isMatch) {
-        matched = true
-      }
-    })
-
-    if (!matched) {
-      radios[0].checked = true
-    }
+    setResourceFormValue(this.application, fieldName, normalized, { resourceName: this.constructor.resourceName, fieldElement: this.formTarget })
   }
 
   async save() {
     const formData = new FormData(this.formTarget)
-    const scope = this.formScopeKey()
+    const scope = this.constructor.resourceName
     this.appendRemovedAttachmentIds(formData, scope)
 
     const id = this.hasFieldIdTarget && this.fieldIdTarget.value ? this.fieldIdTarget.value : null

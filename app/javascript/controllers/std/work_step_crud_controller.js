@@ -1,7 +1,8 @@
 import BaseGridController from "controllers/base_grid_controller"
+import { setResourceFormValue } from "controllers/grid/core/resource_form_bridge"
 
 export default class extends BaseGridController {
-  static resourceName = "work_step"
+  static resourceName = "std_work_step"
   static deleteConfirmKey = "workStepNm"
   static entityLabel = "작업단계"
 
@@ -41,7 +42,7 @@ export default class extends BaseGridController {
     this.modalTitleTarget.textContent = "기본작업단계 추가"
     this.mode = "create"
     this.fieldWorkStepCdTarget.readOnly = false
-    this.setRadioValue("work_step[use_yn_cd]", "Y")
+    this.setRadioValue("use_yn_cd", "Y")
     this.openModal()
   }
 
@@ -63,7 +64,7 @@ export default class extends BaseGridController {
     this.fieldRmkCdTarget.value = data.rmk_cd || ""
     this.fieldWorkStepCdTarget.readOnly = true
 
-    this.setRadioValue("work_step[use_yn_cd]", data.use_yn_cd || "Y")
+    this.setRadioValue("use_yn_cd", data.use_yn_cd || "Y")
     this.openModal()
   }
 
@@ -72,25 +73,17 @@ export default class extends BaseGridController {
     this.fieldIdTarget.value = ""
     this.fieldWorkStepCdTarget.readOnly = false
     this.fieldSortSeqTarget.value = 0
-    this.setRadioValue("work_step[use_yn_cd]", "Y")
+    this.setRadioValue("use_yn_cd", "Y")
   }
 
   setRadioValue(fieldName, value) {
-    const radios = this.formTarget.querySelectorAll(`input[type='radio'][name='${fieldName}']`)
-    if (radios.length === 0) return
-
     const normalized = String(value || "").trim().toUpperCase()
-    let matched = false
-    radios.forEach((radio) => {
-      const isMatch = radio.value === normalized
-      radio.checked = isMatch
-      if (isMatch) {
-        matched = true
-      }
-    })
-
-    if (!matched) {
-      radios[0].checked = true
+    const match = String(fieldName || "").match(/^([^\[]+)\[([^\]]+)\]$/)
+    if (match) {
+      setResourceFormValue(this.application, match[2], normalized, { resourceName: match[1], fieldElement: this.formTarget })
+      return
     }
+
+    setResourceFormValue(this.application, fieldName, normalized, { resourceName: this.constructor.resourceName, fieldElement: this.formTarget })
   }
 }

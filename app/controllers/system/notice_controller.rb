@@ -79,15 +79,7 @@ class System::NoticeController < System::BaseController
     end
 
     def notice_params
-      merged_params = {}
-      if params[:adm_notice].present?
-        merged_params.merge!(params[:adm_notice].to_unsafe_h)
-      end
-      if params[:notice].present?
-        merged_params.merge!(params[:notice].to_unsafe_h)
-      end
-
-      ActionController::Parameters.new(merged_params).permit(
+      params.require(:adm_notice).permit(
         :category_code,
         :title,
         :content,
