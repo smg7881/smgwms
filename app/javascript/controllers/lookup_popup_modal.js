@@ -7,12 +7,7 @@
  * 호출부(search_popup_controller.js 등)는 변경 없이 그대로 사용합니다.
  */
 
-import { PopupManager } from "controllers/popup/popup_manager"
-
-function defaultTitle(type) {
-  const label = String(type ?? "").trim()
-  return label ? `${label} 조회` : "조회"
-}
+import { PopupManager, defaultTitle } from "controllers/popup/popup_manager"
 
 /**
  * 검색 팝업을 열고 사용자가 선택한 항목을 Promise로 반환합니다.

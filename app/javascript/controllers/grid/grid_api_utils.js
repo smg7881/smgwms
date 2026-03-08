@@ -15,9 +15,7 @@ export function hideNoRowsOverlay(api) {
 
   const rowCount = api.getDisplayedRowCount?.() || 0
   if (rowCount > 0) {
-    if (typeof api.setGridOption === "function") {
-      api.setGridOption("loading", false)
-    }
+    api.setGridOption("loading", false)
     api.hideOverlay?.()
   }
 }

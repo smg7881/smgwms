@@ -278,7 +278,7 @@ export const AttachmentMixin = {
     const removeButton = document.createElement("button")
     removeButton.type = "button"
     removeButton.classList.add("rf-multi-file-remove")
-    removeButton.textContent = "횞"
+    removeButton.textContent = "×"
     removeButton.setAttribute("aria-label", `${name} 삭제`)
     removeButton.setAttribute("data-role", "remove")
 

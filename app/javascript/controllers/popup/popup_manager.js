@@ -34,7 +34,7 @@ function buildFrameSrc(baseUrl, keyword, frameId) {
   return `${url.pathname}${url.search}${url.hash}`
 }
 
-function defaultTitle(type) {
+export function defaultTitle(type) {
   const label = String(type ?? "").trim()
   return label ? `${label} 조회` : "조회"
 }

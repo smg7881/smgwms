@@ -85,7 +85,7 @@ export function unbindDependentSelects(controller) {
  * @param {string} errorMessage - 오류 시 표시할 메시지
  * @returns {Array|null} 결과 배열 또는 null
  */
-export async function loadSelectOptions(controller, baseUrl, params, errorMessage) {
+export async function loadSelectOptions(_controller, baseUrl, params, errorMessage) {
   const query = new URLSearchParams(params)
 
   try {

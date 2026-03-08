@@ -390,9 +390,6 @@ export default class BaseGridController extends Controller {
     if (typeof manager.deleteRows === "function") {
       return manager.deleteRows({ beforeDelete })
     }
-    if (typeof manager.deleteSelectedRows === "function") {
-      return manager.deleteSelectedRows(deleteLabel)
-    }
     return false
   }
 

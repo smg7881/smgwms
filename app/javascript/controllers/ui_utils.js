@@ -37,7 +37,6 @@ export function activateTab(tab, controller) {
         controller.tabPanelTargets.forEach((panel) => {
             const isActive = panel.dataset.tabPanel === tab
             panel.classList.toggle("is-active", isActive)
-            panel.classList.toggle("hidden", !isActive)
             panel.hidden = !isActive
         })
     }

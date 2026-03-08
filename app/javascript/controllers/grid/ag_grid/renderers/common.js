@@ -252,7 +252,8 @@ export const COMMON_RENDERER_REGISTRY = {
     button.style.border = "0"
     button.style.padding = "0"
     button.style.textAlign = "left"
-    button.addEventListener("click", () => emit(button, "notice-crud:edit", { id: params.data.id }))
+    const eventName = params.colDef?.cellRendererParams?.eventName || "notice-crud:edit"
+    button.addEventListener("click", () => emit(button, eventName, { id: params.data.id }))
     return button
   }
 }

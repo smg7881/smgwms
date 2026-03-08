@@ -648,7 +648,7 @@ export default class GridCrudManager {
     }
     if (typeof result === "object") {
       return {
-        valid: result.valid !== false ? true : false,
+        valid: result.valid !== false,
         code: result.code || defaults.code,
         message: result.message || defaults.message,
         field: result.field || defaults.field,

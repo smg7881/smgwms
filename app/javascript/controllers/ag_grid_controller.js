@@ -369,11 +369,6 @@ export default class extends Controller {
       this.gridApi.setGridOption('quickFilterText', '')
     }
 
-    // 변경사항 적용 이벤트 발송 (AG-grid 내장 이벤트)
-    if (typeof this.gridApi.onFilterChanged === 'function') {
-      this.gridApi.onFilterChanged()
-    }
-
     showAlert("필터가 초기화되었습니다", null, "info")
   }
 
@@ -690,6 +685,8 @@ export default class extends Controller {
       }
     }
 
+    // queueMicrotask: 현재 태스크 완료 직후 마이크로태스크로 최초 실행
+    // setTimeout 0: 일부 브라우저/AG Grid 버전에서 컬럼 초기화가 마이크로태스크보다 늦게 완료되는 경우를 보완
     queueMicrotask(reposition)
     setTimeout(reposition, 0)
   }
