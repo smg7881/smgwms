@@ -80,6 +80,7 @@ const CONTROLLERS = [
   ["om-pre-order-reception", "controllers/om/pre_order_reception_controller"],
   ["om-internal-order", "controllers/om/internal_order_controller"],
   ["om-order-manual-completion", "controllers/om/order_manual_completion_controller"],
+  ["om-order-inquiry", "controllers/om/order_inquiry_controller"],
   ["wm-cust-rule-grid", "controllers/wm/cust_rule_grid_controller"],
   ["wm-stock-move-grid", "controllers/wm/stock_move_grid_controller"],
   ["wm-pur-fee-rt-grid", "controllers/wm/pur_fee_rt_grid_controller"],

@@ -9,11 +9,11 @@
   button_width = field[:button_width].presence || "40px"
 
   display_style = if display_width.present?
-    "flex: 0 0 #{display_width}; max-width: #{display_width}; min-width: 0;"
+    "flex: 1 1 #{display_width}; max-width: #{display_width}; min-width: 120px;"
   else
     "flex: 1 1 auto; min-width: 0;"
   end
-  code_style = "flex: 0 0 #{code_width}; max-width: #{code_width};"
+  code_style = "flex: 0 1 #{code_width}; max-width: #{code_width}; min-width: 72px;"
   button_style = "width: #{button_width}; min-width: #{button_width};"
 %>
 <div class="flex flex-col gap-1 col-span-24 min-w-0 <%= span_classes_for(field, cols: cols) %>"

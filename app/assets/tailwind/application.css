@@ -564,6 +564,24 @@ select.form-grid-select {
   text-decoration: line-through;
 }
 
+/* AG Grid no-rows overlay center alignment */
+.ag-overlay .ag-overlay-panel {
+  height: 100% !important;
+}
+
+.ag-overlay .ag-overlay-no-rows-wrapper {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.ag-overlay .ag-overlay-no-rows-wrapper .ag-overlay-no-rows-center {
+  padding-top: 0 !important;
+  margin: 0 !important;
+}
+
 .row-status-icon {
   @apply inline-flex items-center justify-center w-4 font-bold leading-none;
 }
