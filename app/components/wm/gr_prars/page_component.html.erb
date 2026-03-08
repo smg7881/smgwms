@@ -8,6 +8,7 @@
      data-wm-gr-prar-grid-save-url-template-value="<%= save_url_template %>"
      data-wm-gr-prar-grid-confirm-url-template-value="<%= confirm_url_template %>"
      data-wm-gr-prar-grid-cancel-url-template-value="<%= cancel_url_template %>"
+     data-wm-gr-prar-grid-generate-url-value="<%= generate_url %>"
      data-wm-gr-prar-grid-staged-locations-url-value="<%= staged_locations_url %>"
      data-wm-gr-prar-grid-selected-master-value="<%= selected_gr_prar_no.to_s %>">
 
@@ -65,6 +66,11 @@
 
         <%# 액션 버튼 %>
         <div class="flex gap-2 py-1">
+          <button type="button"
+                  class="btn btn-sm btn-secondary"
+                  data-action="click->wm-gr-prar-grid#generatePrar">
+            입고예정생성
+          </button>
           <button type="button"
                   class="btn btn-sm btn-primary"
                   data-action="click->wm-gr-prar-grid#saveGr">

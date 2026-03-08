@@ -46,11 +46,15 @@ export default class extends BaseGridController {
     }
   }
 
-  buildNewRowOverrides() {
-    return {
+  addRow(event) {
+    if (event) event.preventDefault()
+
+    const rowOverrides = {
       ctry_cd: this.ctryCodeFromSearch(),
       ymd: this.defaultYmd
     }
+
+    super.addRow({ overrides: rowOverrides })
   }
 
   async generateWeekends() {

@@ -2,7 +2,6 @@ import BaseGridController from "controllers/base_grid_controller"
 import { showAlert } from "components/ui/alert"
 import { setSelectOptions as setSelectOptionsUtil, clearSelectOptions } from "controllers/grid/grid_select_utils"
 import { bindDependentSelects, unbindDependentSelects, loadSelectOptions } from "controllers/grid/grid_dependent_select_utils"
-import { refreshGridCells } from "controllers/grid/grid_api_utils"
 
 export default class extends BaseGridController {
   static values = {
@@ -75,35 +74,30 @@ export default class extends BaseGridController {
         zone_cd: "ZONE코드",
         loc_cd: "로케이션코드"
       },
-      onCellValueChanged: (event) => this.normalizeCodeField(event)
     }
   }
 
-  addRow() {
-    if (!this.manager?.api) return
+  addRow(event) {
+    if (event) event.preventDefault()
 
     const workplCd = this.workplKeywordFromSearch()
     const areaCd = this.areaKeywordFromSearch()
     const zoneCd = this.zoneKeywordFromSearch()
+    const rowOverrides = {
+      workpl_cd: workplCd,
+      area_cd: areaCd,
+      zone_cd: zoneCd
+    }
 
     if (!workplCd || !areaCd || !zoneCd) {
       showAlert("작업장, AREA, ZONE을 모두 선택해야 입력할 수 있습니다.")
       return
     }
 
-    super.addRow()
-  }
-
-  buildNewRowOverrides() {
-    return {
-      workpl_cd: this.workplKeywordFromSearch(),
-      area_cd: this.areaKeywordFromSearch(),
-      zone_cd: this.zoneKeywordFromSearch()
-    }
-  }
-
-  buildAddRowConfig() {
-    return { startCol: "loc_cd" }
+    super.addRow({
+      overrides: rowOverrides,
+      config: { startCol: "loc_cd" }
+    })
   }
 
   beforeDeleteRows(selectedNodes) {
@@ -117,21 +111,6 @@ export default class extends BaseGridController {
     }
 
     return false
-  }
-
-  normalizeCodeField(event) {
-    const field = event?.colDef?.field
-    const codeFields = ["workpl_cd", "area_cd", "zone_cd", "loc_cd", "loc_class_cd", "loc_type_cd", "use_yn", "has_stock"]
-    if (!codeFields.includes(field)) return
-    if (!event?.node?.data) return
-
-    const row = event.node.data
-    row[field] = (row[field] || "").toString().trim().toUpperCase()
-    refreshGridCells(this.manager.api, {
-      rowNodes: [event.node],
-      columns: [field],
-      force: true
-    })
   }
 
   get saveMessage() {

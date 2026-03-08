@@ -39,6 +39,7 @@ export default class extends BaseGridController {
     saveUrlTemplate: String,
     confirmUrlTemplate: String,
     cancelUrlTemplate: String,
+    generateUrl: String,
     stagedLocationsUrl: String,
     selectedMaster: String
   }
@@ -274,6 +275,53 @@ export default class extends BaseGridController {
   activateTab(tab) {
     activateTab(tab, this)
     this.#resizeCurrentTabGrid(tab)
+  }
+
+  async generatePrar(event) {
+    event?.preventDefault()
+
+    if (!this.generateUrlValue) {
+      showAlert("Error", "생성 URL이 설정되지 않았습니다.", "error")
+      return
+    }
+
+    const workplCd = this.getSearchFormValue("workpl_cd")
+    if (!workplCd) {
+      showAlert("Warning", "작업장을 먼저 선택해주세요.", "warning")
+      return
+    }
+
+    const custCd = this.getSearchFormValue("cust_cd")
+    const grTypeCd = this.getSearchFormValue("gr_type_cd")
+    const prarYmdFrom = this.getSearchFormValue("prar_ymd_from", { toUpperCase: false })
+
+    const ok = await confirmAction(
+      "입고예정생성",
+      custCd
+        ? `작업장 [${workplCd}] / 고객 [${custCd}] 기준으로 입고예정을 생성하시겠습니까?`
+        : `작업장 [${workplCd}] 기준으로 입고예정을 생성하시겠습니까?`
+    )
+    if (!ok) {
+      return
+    }
+
+    const response = await postJson(this.generateUrlValue, {
+      workpl_cd: workplCd,
+      cust_cd: custCd,
+      gr_type_cd: grTypeCd,
+      prar_ymd: prarYmdFrom
+    })
+    if (!response?.success) {
+      return
+    }
+
+    const generatedNo = response?.data?.gr_prar_no?.toString?.() || ""
+    if (generatedNo !== "") {
+      this.selectedMasterValue = generatedNo
+    }
+
+    showAlert("Success", response.message || "입고예정이 생성되었습니다.", "success")
+    this.#refreshMasterGrid()
   }
 
   async saveMasterRows() {

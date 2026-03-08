@@ -38,13 +38,16 @@ export default class extends BaseGridController {
     }
   }
 
-  buildNewRowOverrides() {
-    const workplCd = this.getSearchFormValue("workpl_cd")
+  addRow(event) {
+    if (event) event.preventDefault()
 
-    return {
+    const workplCd = this.getSearchFormValue("workpl_cd")
+    const rowOverrides = {
       workpl_cd: workplCd,
       workpl_nm: this.resolveWorkplaceName(workplCd)
     }
+
+    super.addRow({ overrides: rowOverrides })
   }
 
   syncWorkplaceName(event) {
@@ -52,7 +55,6 @@ export default class extends BaseGridController {
     if (!event?.node?.data) return
 
     const row = event.node.data
-    row.workpl_cd = (row.workpl_cd || "").trim().toUpperCase()
     row.workpl_nm = this.resolveWorkplaceName(row.workpl_cd)
 
     if (row.__is_new && row.workpl_cd && !row.workpl_nm) {

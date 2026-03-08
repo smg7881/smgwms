@@ -45,6 +45,84 @@ class Wm::GrPrarsController < Wm::BaseController
     render json: locs.map { |l| { value: l.loc_cd, label: l.loc_cd } }
   end
 
+  # POST /wm/gr_prars/generate  입고예정 생성
+  def generate
+    attrs = generate_params
+    workpl_cd = attrs[:workpl_cd].to_s.strip.upcase
+    if workpl_cd.blank?
+      render json: { success: false, errors: [ "작업장을 선택해주세요." ] }, status: :unprocessable_entity
+      return
+    end
+
+    requested_cust_cd = attrs[:cust_cd].to_s.strip.upcase.presence
+    reference_header = latest_reference_header(workpl_cd, requested_cust_cd)
+
+    cust_cd = requested_cust_cd || reference_header&.cust_cd.presence || "CUST01"
+    corp_cd = reference_header&.corp_cd.presence || "DEFAULT"
+    gr_type_cd = attrs[:gr_type_cd].to_s.strip.upcase.presence || reference_header&.gr_type_cd.presence || "10"
+    ord_reason_cd = reference_header&.ord_reason_cd.presence || "01"
+    dptar_type_cd = reference_header&.dptar_type_cd.presence || "10"
+    dptar_cd = reference_header&.dptar_cd.presence || "DPT01"
+    prar_ymd = normalize_prar_ymd(attrs[:prar_ymd])
+
+    created = nil
+    ActiveRecord::Base.transaction do
+      gr_prar_no = generate_gr_prar_no
+      ord_no = "AUTO#{Time.current.strftime("%y%m%d%H%M%S")}#{format("%02d", rand(100))}"
+
+      created = Wm::GrPrar.create!(
+        gr_prar_no: gr_prar_no,
+        workpl_cd: workpl_cd,
+        corp_cd: corp_cd,
+        cust_cd: cust_cd,
+        gr_type_cd: gr_type_cd,
+        ord_reason_cd: ord_reason_cd,
+        gr_stat_cd: Wm::GrPrar::GR_STAT_PENDING,
+        prar_ymd: prar_ymd,
+        ord_no: ord_no,
+        dptar_type_cd: dptar_type_cd,
+        dptar_cd: dptar_cd
+      )
+
+      detail_rows = build_detail_seed_rows(workpl_cd: workpl_cd, cust_cd: cust_cd, limit: 3)
+      detail_rows.each_with_index do |row, index|
+        Wm::GrPrarDtl.create!(
+          gr_prar_no: created.gr_prar_no,
+          lineno: index + 1,
+          item_cd: row[:item_cd],
+          item_nm: row[:item_nm],
+          unit_cd: row[:unit_cd],
+          gr_prar_qty: row[:gr_prar_qty],
+          gr_qty: 0,
+          gr_rslt_qty: 0,
+          gr_stat_cd: Wm::GrPrar::GR_STAT_PENDING,
+          stock_attr_col01: row[:stock_attr_col01],
+          stock_attr_col02: row[:stock_attr_col02],
+          stock_attr_col03: row[:stock_attr_col03],
+          stock_attr_col04: row[:stock_attr_col04],
+          stock_attr_col05: row[:stock_attr_col05],
+          stock_attr_col06: row[:stock_attr_col06],
+          stock_attr_col07: row[:stock_attr_col07],
+          stock_attr_col08: row[:stock_attr_col08],
+          stock_attr_col09: row[:stock_attr_col09],
+          stock_attr_col10: row[:stock_attr_col10]
+        )
+      end
+    end
+
+    render json: {
+      success: true,
+      message: "입고예정이 생성되었습니다.",
+      data: {
+        gr_prar_no: created.gr_prar_no,
+        workpl_cd: created.workpl_cd,
+        cust_cd: created.cust_cd
+      }
+    }
+  rescue => e
+    render json: { success: false, errors: [ e.message ] }, status: :unprocessable_entity
+  end
+
   # POST /wm/gr_prars/:id/save  입고내역저장 (복잡한 트랜잭션)
   # POST /wm/gr_prars/batch_save
   # POST /wm/gr_prars/:gr_prar_id/details/batch_save
@@ -355,6 +433,104 @@ class Wm::GrPrarsController < Wm::BaseController
   private
     def menu_code_for_permission
       "WM_GR_PRAR"
+    end
+
+    def generate_params
+      params.permit(:workpl_cd, :cust_cd, :gr_type_cd, :prar_ymd)
+    end
+
+    def latest_reference_header(workpl_cd, cust_cd)
+      scope = Wm::GrPrar.where(workpl_cd: workpl_cd)
+      if cust_cd.present?
+        by_customer = scope.where(cust_cd: cust_cd).order(update_time: :desc, create_time: :desc).first
+        if by_customer
+          return by_customer
+        end
+      end
+
+      scope.order(update_time: :desc, create_time: :desc).first
+    end
+
+    def normalize_prar_ymd(raw_value)
+      value = raw_value.to_s.strip.delete("-")
+      if value.match?(/\A\d{8}\z/)
+        value
+      else
+        Time.current.strftime("%Y%m%d")
+      end
+    end
+
+    def generate_gr_prar_no
+      10.times do
+        candidate = "GR" + Time.current.strftime("%y%m%d%H%M%S") + format("%03d", rand(1000))
+        unless Wm::GrPrar.exists?(gr_prar_no: candidate)
+          return candidate
+        end
+      end
+      raise "입고예정번호 생성에 실패했습니다."
+    end
+
+    def build_detail_seed_rows(workpl_cd:, cust_cd:, limit:)
+      rows = []
+      recent_gr_prar_nos = Wm::GrPrar.where(workpl_cd: workpl_cd, cust_cd: cust_cd)
+                                     .order(update_time: :desc, create_time: :desc)
+                                     .limit(20)
+                                     .pluck(:gr_prar_no)
+
+      if recent_gr_prar_nos.any?
+        source_rows = Wm::GrPrarDtl.where(gr_prar_no: recent_gr_prar_nos)
+                                   .order(update_time: :desc, create_time: :desc)
+                                   .limit(limit)
+        source_rows.each_with_index do |detail, index|
+          rows << build_detail_seed_row(detail, index)
+        end
+      end
+
+      while rows.size < limit
+        fallback_index = rows.size + 1
+        rows << {
+          item_cd: format("ITEM%03d", fallback_index),
+          item_nm: "자동생성품목#{fallback_index}",
+          unit_cd: "EA",
+          gr_prar_qty: (fallback_index * 10),
+          stock_attr_col01: nil,
+          stock_attr_col02: nil,
+          stock_attr_col03: nil,
+          stock_attr_col04: nil,
+          stock_attr_col05: nil,
+          stock_attr_col06: nil,
+          stock_attr_col07: nil,
+          stock_attr_col08: nil,
+          stock_attr_col09: nil,
+          stock_attr_col10: nil
+        }
+      end
+
+      rows.first(limit)
+    end
+
+    def build_detail_seed_row(detail, index)
+      qty = detail.gr_prar_qty.to_f
+      if qty <= 0
+        qty = (index + 1) * 10
+      end
+
+      {
+        item_cd: detail.item_cd.to_s.strip.presence || format("ITEM%03d", index + 1),
+        item_nm: detail.item_nm.to_s.strip.presence || "자동생성품목#{index + 1}",
+        unit_cd: detail.unit_cd.to_s.strip.presence || "EA",
+        gr_prar_qty: qty,
+        stock_attr_col01: detail.stock_attr_col01,
+        stock_attr_col02: detail.stock_attr_col02,
+        stock_attr_col03: detail.stock_attr_col03,
+        stock_attr_col04: detail.stock_attr_col04,
+        stock_attr_col05: detail.stock_attr_col05,
+        stock_attr_col06: detail.stock_attr_col06,
+        stock_attr_col07: detail.stock_attr_col07,
+        stock_attr_col08: detail.stock_attr_col08,
+        stock_attr_col09: detail.stock_attr_col09,
+        stock_attr_col10: detail.stock_attr_col10
+      }
     end
 
     def search_params

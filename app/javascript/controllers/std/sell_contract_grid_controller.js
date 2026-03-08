@@ -3,25 +3,6 @@ import { switchTab, activateTab } from "controllers/ui_utils"
 import * as GridFormUtils from "controllers/grid/grid_form_utils"
 import { refreshGridCells } from "controllers/grid/grid_api_utils"
 
-const CODE_FIELDS = [
-  "corp_cd",
-  "bzac_cd",
-  "sell_ctrt_no",
-  "ctrt_sctn_cd",
-  "ctrt_kind_cd",
-  "bef_ctrt_no",
-  "ctrt_dept_cd",
-  "ctrt_cnctr_reason_cd",
-  "indgrp_cd",
-  "loan_limt_over_yn_cd",
-  "vat_sctn_cd",
-  "apv_mthd_cd",
-  "apv_type_cd",
-  "bilg_mthd_cd",
-  "dcsn_yn_cd",
-  "use_yn_cd"
-]
-
 const DATE_FIELDS = [
   "ord_recp_poss_ymd",
   "strt_ctrt_ymd",
@@ -369,10 +350,6 @@ export default class extends BaseGridController {
       return value.replace(/[^0-9]/g, "")
     }
 
-    if (CODE_FIELDS.includes(fieldName)) {
-      return value.trim().toUpperCase()
-    }
-
     if (DATE_FIELDS.includes(fieldName)) {
       return this.toDateInputValue(value)
     }
@@ -429,8 +406,6 @@ export default class extends BaseGridController {
     const row = event.node.data
     if (field === "bizman_no") {
       row[field] = (row[field] || "").toString().replace(/[^0-9]/g, "")
-    } else if (CODE_FIELDS.includes(field)) {
-      row[field] = (row[field] || "").toString().trim().toUpperCase()
     }
 
     refreshGridCells(this.masterManager?.api, {

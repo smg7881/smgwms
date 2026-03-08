@@ -84,6 +84,34 @@ class Wm::GrPrarsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "LOT-A", detail.stock_attr_col01
   end
 
+  test "generate creates inbound plan and details" do
+    assert_difference("Wm::GrPrar.count", 1) do
+      assert_difference("Wm::GrPrarDtl.count", 3) do
+        post generate_wm_gr_prars_url, params: {
+          workpl_cd: "WP01",
+          cust_cd: "CUST01",
+          gr_type_cd: "10",
+          prar_ymd: "2026-03-08"
+        }, as: :json
+      end
+    end
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    assert_equal true, body["success"]
+    assert_equal "입고예정이 생성되었습니다.", body["message"]
+
+    created_no = body.dig("data", "gr_prar_no")
+    assert created_no.present?
+
+    created = Wm::GrPrar.find(created_no)
+    assert_equal "WP01", created.workpl_cd
+    assert_equal "CUST01", created.cust_cd
+    assert_equal Wm::GrPrar::GR_STAT_PENDING, created.gr_stat_cd
+    assert_equal "20260308", created.prar_ymd
+    assert_equal 3, created.details.count
+  end
+
   test "save_gr returns standard batch data and updates stocks" do
     gr_prar = create_gr_prar_with_detail
 

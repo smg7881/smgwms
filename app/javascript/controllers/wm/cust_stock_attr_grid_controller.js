@@ -46,13 +46,11 @@ export default class extends BaseGridController {
       return
     }
 
-    super.addRow()
-  }
-
-  buildNewRowOverrides() {
-    return {
+    const rowOverrides = {
       cust_cd: this.getSearchFormValue("cust_cd"),
       cust_nm: this.getSearchFormValue("cust_nm")
     }
+
+    super.addRow({ overrides: rowOverrides })
   }
 }

@@ -16,20 +16,6 @@ import {
   refreshMasterRowCells
 } from "controllers/grid/grid_form_utils"
 
-const CODE_FIELDS = [
-  "ord_no",
-  "ord_stat_cd",
-  "ord_type_cd",
-  "bilg_cust_cd",
-  "ctrt_cust_cd",
-  "ord_reason_cd",
-  "ord_exec_dept_cd",
-  "ord_exec_ofcr_cd",
-  "dpt_type_cd",
-  "dpt_cd",
-  "arv_type_cd",
-  "arv_cd"
-]
 const DATE_FIELDS = ["strt_req_ymd"]
 const DATETIME_FIELDS = ["aptd_req_dtm"]
 const MAX_ITEM_ROWS = 20
@@ -427,10 +413,6 @@ export default class extends BaseGridController {
   normalizeDetailFieldValue(fieldName, rawValue) {
     const value = (rawValue || "").toString()
 
-    if (CODE_FIELDS.includes(fieldName)) {
-      return value.trim().toUpperCase()
-    }
-
     if (DATE_FIELDS.includes(fieldName)) {
       return this.normalizeDateStoreValue(value)
     }
@@ -475,10 +457,6 @@ export default class extends BaseGridController {
     const row = event?.node?.data
     if (!field || !row) return
 
-    if (field === "item_cd" || field.endsWith("_cd")) {
-      row[field] = (row[field] || "").toString().trim().toUpperCase()
-    }
-
     if (field === "item_nm") {
       row[field] = (row[field] || "").toString().trim()
     }
@@ -498,9 +476,7 @@ export default class extends BaseGridController {
     if (!field || !event?.node?.data) return
 
     const row = event.node.data
-    if (CODE_FIELDS.includes(field)) {
-      row[field] = (row[field] || "").toString().trim().toUpperCase()
-    } else if (DATE_FIELDS.includes(field)) {
+    if (DATE_FIELDS.includes(field)) {
       row[field] = this.normalizeDateStoreValue(row[field])
     } else if (DATETIME_FIELDS.includes(field)) {
       row[field] = this.normalizeDateTimeStoreValue(row[field])

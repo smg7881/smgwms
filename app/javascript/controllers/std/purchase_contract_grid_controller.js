@@ -10,31 +10,6 @@ import {
   toDateInputValue
 } from "controllers/grid/grid_form_utils"
 
-// 코드성 입력값: 저장 전 trim + upper 정규화 대상 필드
-const CODE_FIELDS = [
-  "corp_cd",
-  "bzac_cd",
-  "pur_ctrt_no",
-  "ctrt_sctn_cd",
-  "ctrt_kind_cd",
-  "bef_ctrt_no",
-  "cprtco_ofcr_cd",
-  "ctrt_cnctr_reason_cd",
-  "ctrt_ofcr_cd",
-  "ctrt_dept_cd",
-  "loan_limt_over_yn_cd",
-  "vat_sctn_cd",
-  "apv_mthd_cd",
-  "apv_type_cd",
-  "bilg_mthd_cd",
-  "dcsn_yn_cd",
-  "use_yn_cd",
-  "pay_cond_cd",
-  "bzac_sctn_cd",
-  "work_step_no1_cd",
-  "work_step_no2_cd"
-]
-
 // 날짜 입력값: input[type=date] 형식으로 정규화할 필드
 const DATE_FIELDS = [
   "strt_ctrt_ymd",
@@ -368,10 +343,6 @@ export default class extends BaseGridController {
       return value.replace(/[^0-9]/g, "")
     }
 
-    if (CODE_FIELDS.includes(fieldName)) {
-      return value.trim().toUpperCase()
-    }
-
     if (DATE_FIELDS.includes(fieldName)) {
       return toDateInputValue(value)
     }
@@ -390,8 +361,6 @@ export default class extends BaseGridController {
     const row = event.node.data
     if (field === "bizman_no") {
       row[field] = (row[field] || "").toString().replace(/[^0-9]/g, "")
-    } else if (CODE_FIELDS.includes(field)) {
-      row[field] = (row[field] || "").toString().trim().toUpperCase()
     }
 
     const api = this.masterManager?.api

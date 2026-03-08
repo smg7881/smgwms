@@ -57,13 +57,17 @@ export default class extends BaseGridController {
     }
   }
 
-  buildNewRowOverrides() {
-    return {
+  addRow(event) {
+    if (event) event.preventDefault()
+
+    const rowOverrides = {
       ctry_cd: this.ctryCodeFromSearch() || "KR",
       fnc_or_cd: this.fncOrCdFromSearch(),
       std_ymd: this.stdYmdFromSearch() || this.yesterdayDate,
       anno_dgrcnt: this.annoDgrcntFromSearch() || "FIRST"
     }
+
+    super.addRow({ overrides: rowOverrides })
   }
 
   // 조회조건 추출 헬퍼

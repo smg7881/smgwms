@@ -120,6 +120,7 @@ Rails.application.routes.draw do
       collection do
         get :staged_locations
         post :batch_save
+        post :generate
       end
       resources :details, controller: :gr_prars, only: [ :index ] do
         post :batch_save, on: :collection

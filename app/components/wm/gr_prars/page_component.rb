@@ -51,6 +51,10 @@ class Wm::GrPrars::PageComponent < Wm::BasePageComponent
       helpers.staged_locations_wm_gr_prars_path(format: :json)
     end
 
+    def generate_url
+      helpers.generate_wm_gr_prars_path
+    end
+
     def selected_master_label
       selected_gr_prar_no.present? ? "선택 입고예정: #{selected_gr_prar_no}" : "입고예정을 먼저 선택하세요."
     end

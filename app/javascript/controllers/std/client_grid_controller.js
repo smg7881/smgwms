@@ -24,28 +24,6 @@ import {
 } from "controllers/grid/grid_popup_utils"
 import { refreshGridCells } from "controllers/grid/grid_api_utils"
 
-// 코드성 필드: 상세 폼/그리드 입력 시 대문자 정규화 대상
-const CODE_FIELDS = [
-  "bzac_cd",
-  "mngt_corp_cd",
-  "bzac_sctn_grp_cd",
-  "bzac_sctn_cd",
-  "bzac_kind_cd",
-  "upper_bzac_cd",
-  "rpt_bzac_cd",
-  "ctry_cd",
-  "tpl_logis_yn_cd",
-  "if_yn_cd",
-  "branch_yn_cd",
-  "sell_bzac_yn_cd",
-  "pur_bzac_yn_cd",
-  "bilg_bzac_cd",
-  "elec_taxbill_yn_cd",
-  "fnc_or_cd",
-  "rpt_sales_emp_cd",
-  "use_yn_cd"
-]
-
 // 날짜 필드: input[type=date] 포맷으로 정규화 대상
 const DATE_FIELDS = ["aply_strt_day_cd", "aply_end_day_cd"]
 const YES_NO_VALUES = ["Y", "N"]
@@ -589,10 +567,6 @@ export default class extends BaseGridController {
       return value.replace(/[^0-9]/g, "")
     }
 
-    if (CODE_FIELDS.includes(fieldName)) {
-      return value.trim().toUpperCase()
-    }
-
     if (DATE_FIELDS.includes(fieldName)) {
       return toDateInputValue(value)
     }
@@ -681,8 +655,6 @@ export default class extends BaseGridController {
     const row = event.node.data
     if (field === "bizman_no") {
       row[field] = (row[field] || "").toString().replace(/[^0-9]/g, "")
-    } else if (CODE_FIELDS.includes(field)) {
-      row[field] = (row[field] || "").toString().trim().toUpperCase()
     }
 
     const api = this.masterManager?.api

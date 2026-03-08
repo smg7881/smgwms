@@ -51,7 +51,14 @@ export default class extends BaseGridController {
     }
   }
 
-  buildNewRowOverrides() {
+  addRow(event) {
+    if (event) event.preventDefault()
+
+    const rowOverrides = this.rowOverridesFromSearch()
+    super.addRow({ overrides: rowOverrides })
+  }
+
+  rowOverridesFromSearch() {
     const deptCode = this.getSearchFormValue("dept_cd")
     const custCode = this.getSearchFormValue("cust_cd")
     const expImpDomSctnCd = this.getSearchFormValue("exp_imp_dom_sctn_cd") || "DOMESTIC"
