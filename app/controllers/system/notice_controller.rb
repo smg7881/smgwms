@@ -45,18 +45,6 @@ class System::NoticeController < System::BaseController
     end
   end
 
-  def bulk_destroy
-    ids = Array(params[:ids]).map { |id| id.to_i }.uniq
-
-    if ids.empty?
-      render_failure(errors: [ "삭제할 공지사항을 선택해주세요." ])
-      return
-    end
-
-    deleted_count = AdmNotice.where(id: ids).destroy_all.size
-    render_success(message: "#{deleted_count}건 삭제되었습니다.")
-  end
-
   private
     def filtered_notices_scope
       scope = AdmNotice.ordered

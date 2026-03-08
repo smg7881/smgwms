@@ -86,22 +86,6 @@ class System::NoticeControllerTest < ActionDispatch::IntegrationTest
     assert_equal 0, @notice.reload.attachments.count
   end
 
-  test "bulk destroys notices" do
-    another = AdmNotice.create!(
-      category_code: "EVENT",
-      title: "삭제 대상",
-      content: "삭제",
-      is_top_fixed: "N",
-      is_published: "Y"
-    )
-
-    assert_difference("AdmNotice.count", -2) do
-      delete bulk_destroy_system_notice_index_url, params: { ids: [ @notice.id, another.id ] }, as: :json
-    end
-
-    assert_response :success
-  end
-
   test "non-admin cannot access notice endpoints" do
     delete session_path
     post session_path, params: { email_address: "user@example.com", password: "password" }

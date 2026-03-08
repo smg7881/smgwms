@@ -152,13 +152,6 @@ export default class extends BaseGridController {
   }
 
   get currentRoleCode() {
-    const formValue = this.getSearchFormValue("role_cd", { toUpperCase: true })
-    if (formValue) return formValue
-
-    const select = this.element.querySelector("#q_role_cd")
-    const selectValue = select?.value?.toString().trim().toUpperCase()
-    if (selectValue) return selectValue
-
-    return this.selectedRoleCodeTarget.value?.toString().trim().toUpperCase() || ""
+    return this.getSearchFormValue("role_cd", { toUpperCase: true })
   }
 }

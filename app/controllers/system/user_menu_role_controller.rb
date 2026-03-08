@@ -15,7 +15,7 @@ class System::UserMenuRoleController < System::BaseController
       AdmRole.none
     end
 
-    render json: roles.map { |role| role_json(role) }
+    render json: roles.map { |role| role_json(role, user) }
   end
 
   def menus_by_user_role
@@ -62,8 +62,9 @@ class System::UserMenuRoleController < System::BaseController
       }
     end
 
-    def role_json(role)
+    def role_json(role, user = nil)
       {
+        user_id_code: user&.user_id_code,
         role_cd: role.role_cd,
         role_nm: role.role_nm,
         description: role.description

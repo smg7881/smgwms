@@ -3,10 +3,6 @@ class System::Notice::PageComponent < System::BasePageComponent
     def collection_path(**) = helpers.system_notice_index_path(**)
     def member_path(id, **) = helpers.system_notice_path(id, **)
 
-    def bulk_delete_url
-      helpers.bulk_destroy_system_notice_index_path
-    end
-
     def search_fields
       [
         {

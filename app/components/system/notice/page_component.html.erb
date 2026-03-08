@@ -1,8 +1,7 @@
 <div data-controller="notice-crud"
      data-notice-crud-create-url-value="<%= create_url %>"
      data-notice-crud-update-url-value="<%= update_url %>"
-     data-notice-crud-delete-url-value="<%= delete_url %>"
-     data-notice-crud-bulk-delete-url-value="<%= bulk_delete_url %>">
+     data-notice-crud-delete-url-value="<%= delete_url %>">
   <%= render Ui::SearchFormComponent.new(
     url: create_url,
     fields: search_fields,
@@ -13,8 +12,7 @@
   <%= render Ui::GridHeaderComponent.new(
     icon: "bell", title: "공지사항 목록", grid_id: "system-notice",
     buttons: [
-      { label: "등록", class: "btn btn-sm btn-primary", action: "click->notice-crud#openCreate" },
-      { label: "선택삭제", class: "btn btn-sm btn-secondary", action: "click->notice-crud#deleteSelected" }
+      { label: "등록", class: "btn btn-sm btn-primary", action: "click->notice-crud#openCreate" }
     ]
   ) %>
 
@@ -23,7 +21,6 @@
     url: grid_url,
     height: "calc(100vh - 370px)",
     page_size: 20,
-    row_selection: "multiple",
     grid_id: "system-notice"
   ) %>
 

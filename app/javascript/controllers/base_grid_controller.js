@@ -612,14 +612,31 @@ export default class BaseGridController extends Controller {
     const cfg = this._detailCfgs?.find((item) => item.role === role)
     if (!cfg) return []
 
-    const keyField = cfg.masterKeyField
-    const keyValue = rowData?.[keyField]
-    if (!keyValue || rowData?.__is_deleted || rowData?.__is_new) return []
+    const keyFields = Array.isArray(cfg.masterKeyField) ? cfg.masterKeyField : [cfg.masterKeyField]
+    const keyParams = {}
+    const hasMissingKey = keyFields.some((fieldName) => {
+      const rawValue = rowData?.[fieldName]
+      const normalizedValue = rawValue == null ? "" : String(rawValue).trim()
+      keyParams[fieldName] = normalizedValue
+      return normalizedValue === ""
+    })
+    if (hasMissingKey || rowData?.__is_deleted || rowData?.__is_new) return []
 
     try {
+      if (typeof cfg.fetchRows === "function") {
+        const rows = await cfg.fetchRows.call(this, rowData, {
+          role,
+          keyField: keyFields.length === 1 ? keyFields[0] : keyFields,
+          keyValue: keyFields.length === 1 ? keyParams[keyFields[0]] : keyParams
+        })
+        return Array.isArray(rows) ? rows : []
+      }
+
       const template = this[cfg.listUrlTemplate]
       if (!template) return []
-      const url = buildTemplateUrl(template, cfg.placeholder || ":id", keyValue)
+      const url = keyFields.length === 1
+        ? buildTemplateUrl(template, cfg.placeholder || ":id", keyParams[keyFields[0]])
+        : buildTemplateUrl(template, keyParams)
       const rows = await fetchJson(url)
       return Array.isArray(rows) ? rows : []
     } catch {

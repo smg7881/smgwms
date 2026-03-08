@@ -13,12 +13,12 @@ class System::UserMenuRole::PageComponent < System::BasePageComponent
       helpers.users_system_user_menu_role_index_path(format: :json, q: q_params)
     end
 
-    def roles_by_user_url
-      helpers.roles_by_user_system_user_menu_role_index_path
+    def roles_list_url_template
+      "#{helpers.roles_by_user_system_user_menu_role_index_path}?user_id_code=:user_id_code"
     end
 
-    def menus_by_user_role_url
-      helpers.menus_by_user_role_system_user_menu_role_index_path
+    def menus_list_url_template
+      "#{helpers.menus_by_user_role_system_user_menu_role_index_path}?user_id_code=:user_id_code&role_cd=:role_cd"
     end
 
     def search_fields
