@@ -1,5 +1,6 @@
 import BaseGridController from "controllers/base_grid_controller"
 import { switchTab, activateTab } from "controllers/ui_utils"
+import { refreshGridCells } from "controllers/grid/grid_api_utils"
 import {
   bindDetailFieldEvents,
   unbindDetailFieldEvents,
@@ -396,7 +397,7 @@ export default class extends BaseGridController {
     const api = this.masterManager?.api
     if (!api) return
 
-    api.refreshCells({
+    refreshGridCells(api, {
       rowNodes: [event.node],
       columns: [field],
       force: true

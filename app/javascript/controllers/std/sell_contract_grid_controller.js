@@ -1,6 +1,7 @@
 import BaseGridController from "controllers/base_grid_controller"
 import { switchTab, activateTab } from "controllers/ui_utils"
 import * as GridFormUtils from "controllers/grid/grid_form_utils"
+import { refreshGridCells } from "controllers/grid/grid_api_utils"
 
 const CODE_FIELDS = [
   "corp_cd",
@@ -432,7 +433,7 @@ export default class extends BaseGridController {
       row[field] = (row[field] || "").toString().trim().toUpperCase()
     }
 
-    this.masterManager?.api?.refreshCells({
+    refreshGridCells(this.masterManager?.api, {
       rowNodes: [event.node],
       columns: [field],
       force: true

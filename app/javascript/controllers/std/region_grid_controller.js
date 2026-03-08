@@ -1,6 +1,7 @@
 import BaseGridController from "controllers/base_grid_controller"
 import { isApiAlive } from "controllers/grid/core/api_guard"
 import { fetchJson } from "controllers/grid/core/http_client"
+import { refreshGridCells } from "controllers/grid/grid_api_utils"
 
 export default class extends BaseGridController {
   connect() {
@@ -147,7 +148,7 @@ export default class extends BaseGridController {
     })
 
     if (rowNodes.length > 0) {
-      api.refreshCells({
+      refreshGridCells(api, {
         rowNodes,
         columns: ["corp_nm", "upper_regn_nm"],
         force: true

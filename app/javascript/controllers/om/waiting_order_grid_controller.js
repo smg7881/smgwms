@@ -3,7 +3,7 @@ import { showAlert, confirmAction } from "components/ui/alert"
 import { buildTemplateUrl, refreshSelectionLabel } from "controllers/grid/grid_utils"
 import { isApiAlive } from "controllers/grid/core/api_guard"
 import { fetchJson } from "controllers/grid/core/http_client"
-import { setManagerRowData } from "controllers/grid/grid_api_utils"
+import { refreshGridCells, setManagerRowData } from "controllers/grid/grid_api_utils"
 
 const NUMBER_FIELDS = [
   "ord_qty",
@@ -221,7 +221,7 @@ export default class extends BaseGridController {
 
     const api = this.gridApi("detail")
     if (isApiAlive(api)) {
-      api.refreshCells({
+      refreshGridCells(api, {
         rowNodes: [event.node],
         columns: ["div_qty", "div_wgt", "div_vol", "balance_qty", "balance_wgt", "balance_vol"],
         force: true

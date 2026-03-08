@@ -1,4 +1,5 @@
 import BaseGridController from "controllers/base_grid_controller"
+import { refreshGridCells } from "controllers/grid/grid_api_utils"
 
 const YES_NO_VALUES = ["Y", "N"]
 
@@ -214,7 +215,7 @@ export default class extends BaseGridController {
     rowNode.setDataValue("work_step_level1_cd", selectedLevel1Code)
     rowNode.setDataValue("work_step_level2_cd", selectedLevel2Code)
 
-    this.detailManager?.api?.refreshCells({
+    refreshGridCells(this.detailManager?.api, {
       rowNodes: [rowNode],
       columns: ["work_step_cd", "work_step_level1_cd", "work_step_level2_cd"],
       force: true
@@ -235,7 +236,7 @@ export default class extends BaseGridController {
       if (!this.validChildCode(this.workType2MapValue, row.wrk_type1_cd, row.wrk_type2_cd)) {
         row.wrk_type2_cd = ""
       }
-      this.masterManager.api.refreshCells({
+      refreshGridCells(this.masterManager.api, {
         rowNodes: [event.node],
         columns: ["wrk_type1_cd", "wrk_type2_cd"],
         force: true
@@ -247,7 +248,7 @@ export default class extends BaseGridController {
       if (!this.validChildCode(this.workType2MapValue, row.wrk_type1_cd, row.wrk_type2_cd)) {
         row.wrk_type2_cd = ""
       }
-      this.masterManager.api.refreshCells({
+      refreshGridCells(this.masterManager.api, {
         rowNodes: [event.node],
         columns: ["wrk_type2_cd"],
         force: true
@@ -266,7 +267,7 @@ export default class extends BaseGridController {
       if (!this.validChildCode(this.workStepLevel2MapValue, row.work_step_level1_cd, row.work_step_level2_cd)) {
         row.work_step_level2_cd = ""
       }
-      this.detailManager.api.refreshCells({
+      refreshGridCells(this.detailManager.api, {
         rowNodes: [event.node],
         columns: ["work_step_level2_cd"],
         force: true

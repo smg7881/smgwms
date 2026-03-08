@@ -2,6 +2,7 @@ import BaseGridController from "controllers/base_grid_controller"
 import { showAlert } from "components/ui/alert"
 import { setSelectOptions as setSelectOptionsUtil, clearSelectOptions } from "controllers/grid/grid_select_utils"
 import { bindDependentSelects, unbindDependentSelects, loadSelectOptions } from "controllers/grid/grid_dependent_select_utils"
+import { refreshGridCells } from "controllers/grid/grid_api_utils"
 
 export default class extends BaseGridController {
   static values = {
@@ -126,7 +127,7 @@ export default class extends BaseGridController {
 
     const row = event.node.data
     row[field] = (row[field] || "").toString().trim().toUpperCase()
-    this.manager.api.refreshCells({
+    refreshGridCells(this.manager.api, {
       rowNodes: [event.node],
       columns: [field],
       force: true

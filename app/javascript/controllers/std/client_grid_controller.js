@@ -22,6 +22,7 @@ import {
   setPopupValues,
   setPopupDisabled
 } from "controllers/grid/grid_popup_utils"
+import { refreshGridCells } from "controllers/grid/grid_api_utils"
 
 // 코드성 필드: 상세 폼/그리드 입력 시 대문자 정규화 대상
 const CODE_FIELDS = [
@@ -687,7 +688,7 @@ export default class extends BaseGridController {
     const api = this.masterManager?.api
     if (!api) return
 
-    api.refreshCells({
+    refreshGridCells(api, {
       rowNodes: [event.node],
       columns: [field],
       force: true

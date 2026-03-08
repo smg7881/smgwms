@@ -7,6 +7,30 @@
 import { isApiAlive } from "controllers/grid/core/api_guard"
 
 /**
+ * AG-Grid 셀 UI를 공통 규격으로 refresh 합니다.
+ * @param {Object} api AG-Grid 인스턴스
+ * @param {Object} options refreshCells 옵션
+ * @param {Array<RowNode>} [options.rowNodes] 새로 그릴 행 노드 배열
+ * @param {Array<string>} [options.columns] 새로 그릴 컬럼 ID 배열
+ * @param {boolean} [options.force=true] 강제 refresh 여부
+ * @returns {boolean} 실행 여부
+ */
+export function refreshGridCells(api, { rowNodes, columns, force = true } = {}) {
+  if (!isApiAlive(api)) return false
+
+  const refreshOptions = { force }
+  if (Array.isArray(rowNodes) && rowNodes.length > 0) {
+    refreshOptions.rowNodes = rowNodes
+  }
+  if (Array.isArray(columns) && columns.length > 0) {
+    refreshOptions.columns = columns
+  }
+
+  api.refreshCells(refreshOptions)
+  return true
+}
+
+/**
  * 그리드 데이터가 존재할 경우, "표시할 데이터가 없습니다" 혹은 "로딩 중" 등의 오버레이 레이어를 숨깁니다.
  * @param {Object} api AG-Grid 인스턴스
  */
@@ -69,7 +93,7 @@ export function setManagerRowData(manager, rows = []) {
  * @param {Array<RowNode>} rowNodes 다시 그릴 대상 AG-Grid 행 노드 배열
  */
 export function refreshStatusCells(api, rowNodes) {
-  api.refreshCells({
+  refreshGridCells(api, {
     rowNodes,
     columns: ["__row_status"],
     force: true

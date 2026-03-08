@@ -7,6 +7,7 @@
 
 import { isApiAlive } from "controllers/grid/core/api_guard"
 import { getResourceFormValueFromElement, setResourceFormValue } from "controllers/grid/core/resource_form_bridge"
+import { refreshGridCells } from "controllers/grid/grid_api_utils"
 
 /**
  * 날짜형 데이터(Date 객체 혹은 날짜 문자열)를 HTML5 `<input type="date">` 요소와 호환되는
@@ -319,7 +320,7 @@ export function refreshMasterRowCells(controller, columns = []) {
   const node = findMasterNodeByData(controller, controller.currentMasterRow)
   if (!node) return
 
-  controller.manager.api.refreshCells({
+  refreshGridCells(controller.manager.api, {
     rowNodes: [node],
     columns,
     force: true

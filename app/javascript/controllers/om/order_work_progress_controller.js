@@ -52,13 +52,11 @@ export default class extends BaseGridController {
   }
 
   resizeGridForTab(tabId) {
-    setTimeout(() => {
-      if (tabId === "items") {
-        this.gridApi("items")?.sizeColumnsToFit?.()
-      } else if (tabId === "progress") {
-        this.gridApi("progresses")?.sizeColumnsToFit?.()
-      }
-    }, 10)
+    if (tabId === "items") {
+      this.sizeColumnsToFitWhenVisible("items", { delay: 10 })
+    } else if (tabId === "progress") {
+      this.sizeColumnsToFitWhenVisible("progresses", { delay: 10 })
+    }
   }
 
   bindMaster(master) {

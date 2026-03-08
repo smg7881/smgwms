@@ -1,6 +1,7 @@
 import BaseGridController from "controllers/base_grid_controller"
 import { showAlert } from "components/ui/alert"
 import { resolveNameFromMap } from "controllers/grid/grid_utils"
+import { refreshGridCells } from "controllers/grid/grid_api_utils"
 
 export default class extends BaseGridController {
   static values = {
@@ -38,7 +39,7 @@ export default class extends BaseGridController {
   }
 
   buildNewRowOverrides() {
-    const workplCd = this.selectedWorkplaceCodeFromSearch()
+    const workplCd = this.getSearchFormValue("workpl_cd")
 
     return {
       workpl_cd: workplCd,
@@ -60,7 +61,7 @@ export default class extends BaseGridController {
       showAlert("유효한 작업장코드를 선택해주세요.")
     }
 
-    this.manager.api.refreshCells({
+    refreshGridCells(this.manager.api, {
       rowNodes: [event.node],
       columns: ["workpl_cd", "workpl_nm"],
       force: true
@@ -69,10 +70,6 @@ export default class extends BaseGridController {
 
   resolveWorkplaceName(workplCd) {
     return resolveNameFromMap(this.workplaceNameMap, workplCd)
-  }
-
-  selectedWorkplaceCodeFromSearch() {
-    return this.getSearchFormValue("workpl_cd")
   }
 
   get saveMessage() {

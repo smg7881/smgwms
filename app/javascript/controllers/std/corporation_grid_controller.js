@@ -1,4 +1,5 @@
 import BaseGridController from "controllers/base_grid_controller"
+import { refreshGridCells } from "controllers/grid/grid_api_utils"
 
 export default class extends BaseGridController {
   static targets = [...BaseGridController.targets, "masterGrid", "countryGrid", "selectedCorpLabel"]
@@ -166,7 +167,7 @@ export default class extends BaseGridController {
       const { stdTime, summerTime } = this.timezoneMeta(row.timezone_cd)
       row.std_time = stdTime
       row.summer_time = summerTime
-      this.countryManager.api.refreshCells({
+      refreshGridCells(this.countryManager.api, {
         rowNodes: [event.node],
         columns: ["std_time", "summer_time"],
         force: true
@@ -182,7 +183,7 @@ export default class extends BaseGridController {
           node.data.rpt_yn_cd = "N"
         }
       })
-      this.countryManager.api.refreshCells({
+      refreshGridCells(this.countryManager.api, {
         force: true,
         columns: ["rpt_yn_cd"]
       })

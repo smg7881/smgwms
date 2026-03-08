@@ -256,6 +256,29 @@ export default class BaseGridController extends Controller {
   }
 
   /**
+   * 지정한 그리드가 실제로 보이는 상태(폭 > 0)가 될 때까지 재시도하면서 sizeColumnsToFit()를 호출합니다.
+   * 탭/아코디언/모달 등 초기 숨김 상태에서 발생하는 AG Grid warning #29를 방지하기 위한 유틸입니다.
+   * @param {string} name - 그리드 역할명
+   * @param {Object} options - 최초 지연(delay), 최대 재시도 횟수(maxAttempts), 재시도 간격(retryDelay)
+   */
+  sizeColumnsToFitWhenVisible(name, { delay = 0, maxAttempts = 8, retryDelay = 50 } = {}) {
+    const attemptFit = (attempt) => {
+      const api = this.gridApi(name)
+      const entry = this.#gridRegistry.get(name)
+      const hostElement = entry?.element
+      const width = hostElement?.getBoundingClientRect?.().width || 0
+
+      if (isApiAlive(api) && width > 0) {
+        api.sizeColumnsToFit?.()
+      } else if (attempt < maxAttempts) {
+        setTimeout(() => attemptFit(attempt + 1), retryDelay)
+      }
+    }
+
+    setTimeout(() => attemptFit(0), delay)
+  }
+
+  /**
    * 지정한 그리드의 루트(최상단 0번째 렌더된 행)에 키보드 포커싱을 강제로 위치시킵니다.
    * @param {string} name - 그리드 역할명
    * @param {Object} options 플래그 옵션 (노출 보장, 체크박스 자동 선택 등)

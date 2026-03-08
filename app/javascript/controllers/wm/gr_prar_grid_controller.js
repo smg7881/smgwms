@@ -443,13 +443,11 @@ export default class extends BaseGridController {
   }
 
   #resizeCurrentTabGrid(tab) {
-    setTimeout(() => {
-      if (tab === "detail") {
-        this.gridApi("detail")?.sizeColumnsToFit?.()
-      } else if (tab === "exec") {
-        this.gridApi("exec")?.sizeColumnsToFit?.()
-      }
-    }, 50)
+    if (tab === "detail") {
+      this.sizeColumnsToFitWhenVisible("detail", { delay: 50 })
+    } else if (tab === "exec") {
+      this.sizeColumnsToFitWhenVisible("exec", { delay: 50 })
+    }
   }
 
   #refreshMasterGrid() {

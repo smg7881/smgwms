@@ -20,6 +20,7 @@ import { loadClientGridData, loadServerGridPage } from "controllers/grid/ag_grid
 import { RENDERER_REGISTRY } from "controllers/grid/ag_grid/renderers"
 import { openLookupPopup } from "controllers/lookup_popup_modal"
 import { isApiAlive } from "controllers/grid/core/api_guard"
+import { refreshGridCells } from "controllers/grid/grid_api_utils"
 import {
   saveColumnState as saveColumnStateUtil,
   resetColumnState as resetColumnStateUtil,
@@ -552,7 +553,7 @@ export default class extends Controller {
 
       const refreshColumns = [nameField, codeField].filter(Boolean)
       if (refreshColumns.length > 0) {
-        this.gridApi.refreshCells({
+        refreshGridCells(this.gridApi, {
           rowNodes: [rowNode],
           columns: refreshColumns,
           force: true
@@ -700,4 +701,3 @@ export default class extends Controller {
   }
 
 }
-

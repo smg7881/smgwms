@@ -4,7 +4,7 @@
  * AG Grid 셀 단위 클립보드(Ctrl+C / Ctrl+V) 처리 유틸리티 함수 모음.
  * ag_grid_controller.js에서 분리된 순수 로직입니다.
  */
-import { isApiAlive } from "controllers/grid/core/api_guard"
+import { refreshGridCells } from "controllers/grid/grid_api_utils"
 
 /**
  * Ctrl/Cmd+C 단축키 여부를 판별합니다.
@@ -101,9 +101,7 @@ export async function pasteCurrentCellValue(cellEvent, gridApi, localClipboard, 
   if (String(rowNode.data[field] ?? "") === String(text)) return
 
   rowNode.setDataValue(field, text)
-  if (isApiAlive(gridApi)) {
-    gridApi.refreshCells({ rowNodes: [rowNode], columns: [field], force: true })
-  }
+  refreshGridCells(gridApi, { rowNodes: [rowNode], columns: [field], force: true })
 }
 
 /**

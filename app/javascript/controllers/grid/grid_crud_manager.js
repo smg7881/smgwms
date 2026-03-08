@@ -18,7 +18,7 @@
  * }
  */
 import { isApiAlive } from "controllers/grid/core/api_guard"
-import { collectRows, refreshStatusCells, hideNoRowsOverlay } from "controllers/grid/grid_api_utils"
+import { collectRows, refreshGridCells, refreshStatusCells, hideNoRowsOverlay } from "controllers/grid/grid_api_utils"
 import { uuid, formatValidationError } from "controllers/grid/grid_utils"
 import { showAlert } from "components/ui/alert"
 
@@ -126,7 +126,7 @@ export default class GridCrudManager {
     const txResult = this.#api.applyTransaction({ add: [newRow], addIndex: 0 })
     hideNoRowsOverlay(this.#api)
 
-    this.#api.refreshCells({ columns: ["__row_no"], force: true })
+    refreshGridCells(this.#api, { columns: ["__row_no"], force: true })
     this.#api.startEditingCell({ rowIndex: 0, colKey: startCol || this.#config.firstEditCol })
 
     return txResult
@@ -175,7 +175,7 @@ export default class GridCrudManager {
 
     if (rowsToRemove.length > 0) {
       this.#api.applyTransaction({ remove: rowsToRemove })
-      this.#api.refreshCells({ columns: ["__row_no"], force: true })
+      refreshGridCells(this.#api, { columns: ["__row_no"], force: true })
     }
 
     if (nodesToRefresh.length > 0) {
@@ -389,7 +389,7 @@ export default class GridCrudManager {
     if (row.__is_new) return false
 
     row[field] = event.oldValue || ""
-    this.#api.refreshCells({
+    refreshGridCells(this.#api, {
       rowNodes: [event.node],
       columns: [field],
       force: true

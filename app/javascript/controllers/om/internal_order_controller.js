@@ -3,7 +3,7 @@ import { showAlert } from "components/ui/alert"
 import { postJson, refreshSelectionLabel } from "controllers/grid/grid_utils"
 import { fetchJson } from "controllers/grid/core/http_client"
 import { hasChanges } from "controllers/grid/grid_state_utils"
-import { collectRows, setManagerRowData } from "controllers/grid/grid_api_utils"
+import { collectRows, refreshGridCells, setManagerRowData } from "controllers/grid/grid_api_utils"
 import { switchTab, activateTab } from "controllers/ui_utils"
 import {
   bindDetailFieldEvents,
@@ -486,7 +486,7 @@ export default class extends BaseGridController {
     this.syncCurrentItemsToMaster()
     this.markCurrentMasterAsUpdated()
 
-    this.itemManager.api?.refreshCells({
+    refreshGridCells(this.itemManager?.api, {
       rowNodes: [event.node],
       columns: [field],
       force: true
@@ -509,7 +509,7 @@ export default class extends BaseGridController {
     const api = this.masterManager?.api
     if (!api) return
 
-    api.refreshCells({
+    refreshGridCells(api, {
       rowNodes: [event.node],
       columns: [field],
       force: true
@@ -661,12 +661,7 @@ export default class extends BaseGridController {
 
   resizeItemsGridWhenVisible() {
     if (this.activeTab !== "items") return
-    const api = this.itemManager?.api
-    if (!api) return
-
-    setTimeout(() => {
-      api.sizeColumnsToFit?.()
-    }, 50)
+    this.sizeColumnsToFitWhenVisible("items", { delay: 50 })
   }
 
   formatDateTimeForInput(rawValue) {
@@ -706,4 +701,3 @@ export default class extends BaseGridController {
     return compact
   }
 }
-
