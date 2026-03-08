@@ -11,6 +11,20 @@ class Wm::ZoneController < Wm::BaseController
     end
   end
 
+  def areas
+    workpl_cd = params[:workpl_cd].to_s.strip.upcase
+    if workpl_cd.blank?
+      render json: []
+      return
+    end
+
+    rows = WmArea.where(workpl_cd: workpl_cd, use_yn: "Y").ordered.map do |area|
+      { area_cd: area.area_cd, area_nm: area.area_nm }
+    end
+
+    render json: rows
+  end
+
   def zones
     workpl_cd = params[:workpl_cd].to_s.strip.upcase
     area_cd = params[:area_cd].to_s.strip.upcase

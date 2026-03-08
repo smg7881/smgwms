@@ -2,6 +2,7 @@ import BaseGridController from "controllers/base_grid_controller"
 import { showAlert } from "components/ui/alert"
 import { refreshSelectionLabel } from "controllers/grid/grid_utils"
 import { fetchJson } from "controllers/grid/core/http_client"
+import { buildChainConfig, bindDependentSelects, unbindDependentSelects } from "controllers/grid/grid_dependent_select_utils"
 
 const YES_NO_VALUES = ["Y", "N"]
 
@@ -10,6 +11,7 @@ export default class extends BaseGridController {
 
   static values = {
     ...BaseGridController.values,
+    areasUrl: String,
     zonesUrl: String,
     selectedWorkplCd: String,
     selectedAreaCd: String,
@@ -19,6 +21,35 @@ export default class extends BaseGridController {
   connect() {
     super.connect()
     this.refreshSelectedLabel()
+    this.bindSearchFields()
+  }
+
+  disconnect() {
+    this.unbindSearchFields()
+    super.disconnect()
+  }
+
+  bindSearchFields() {
+    if (!this.hasAreasUrlValue) return
+    bindDependentSelects(this, buildChainConfig(this.#dependentSelectChain()))
+  }
+
+  unbindSearchFields() {
+    unbindDependentSelects(this)
+  }
+
+  #dependentSelectChain() {
+    return [
+      {
+        field: "workpl_cd",
+        childField: "area_cd",
+        url: this.areasUrlValue,
+        params: (vals) => ({ workpl_cd: vals.workpl_cd }),
+        valueField: "area_cd",
+        labelFields: ["area_cd", "area_nm"],
+        errorMessage: "구역 목록 조회에 실패했습니다.",
+      }
+    ]
   }
 
   masterConfig() {

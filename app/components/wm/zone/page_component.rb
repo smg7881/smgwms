@@ -1,7 +1,13 @@
 class Wm::Zone::PageComponent < Wm::BasePageComponent
+  include Wm::CascadingWorkplaceSelect
+
   private
     def collection_path(**) = helpers.wm_zone_index_path(**)
     def member_path(_id, **) = helpers.wm_zone_index_path(**)
+
+    def areas_url
+      helpers.areas_wm_zone_index_path(format: :json)
+    end
 
     def zones_url
       helpers.zones_wm_zone_index_path(format: :json)
@@ -78,37 +84,5 @@ class Wm::Zone::PageComponent < Wm::BasePageComponent
         { field: "update_by", headerName: "수정자", minWidth: 100, editable: false },
         { field: "update_time", headerName: "수정일시", minWidth: 170, formatter: "datetime", editable: false }
       ]
-    end
-
-    def workplace_search_options
-      workplace_records.map do |workplace|
-        {
-          label: "#{workplace.workpl_cd} - #{workplace.workpl_nm}",
-          value: workplace.workpl_cd
-        }
-      end
-    end
-
-    def area_search_options
-      options = [ { label: "전체", value: "" } ]
-      return options if selected_workpl_cd.blank?
-
-      options + WmArea.where(workpl_cd: selected_workpl_cd).ordered.map do |area|
-        {
-          label: "#{area.area_cd} - #{area.area_nm}",
-          value: area.area_cd
-        }
-      end
-    end
-
-    def selected_workpl_cd
-      @selected_workpl_cd ||= begin
-        value = query_params.dig("q", "workpl_cd").to_s.strip.upcase
-        value.presence || workplace_records.first&.workpl_cd
-      end
-    end
-
-    def workplace_records
-      @workplace_records ||= WmWorkplace.where(use_yn: "Y").ordered.to_a
     end
 end

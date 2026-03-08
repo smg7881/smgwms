@@ -20,6 +20,7 @@
 
 import { fetchJson } from "controllers/grid/core/http_client"
 import { showAlert } from "components/ui/alert"
+import { setSelectOptions, clearSelectOptions } from "controllers/grid/grid_select_utils"
 
 /**
  * 검색 폼 내 지정된 다단계 콤보박스(의존 SELECT) 요소들을 찾아 `change` 이벤트를 리스닝합니다.
@@ -94,6 +95,102 @@ export async function loadSelectOptions(_controller, baseUrl, params, errorMessa
     showAlert(errorMessage)
     return null
   }
+}
+
+/**
+ * 선언형 체인 배열을 bindDependentSelects에 전달할 { fields, onChange, hydrate } config로 변환합니다.
+ *
+ * 체인 항목(ChainLink) 구조:
+ * {
+ *   field:       string,            // 이 SELECT가 변경될 때 하위 로드를 트리거하는 필드명
+ *   childField:  string,            // 로드 결과를 채울 하위 필드명
+ *   url:         string,            // 데이터 조회 URL
+ *   params:      (vals) => Object,  // 쿼리 파라미터 빌더. vals = { 필드명: 현재선택값 } 맵
+ *   valueField:  string,            // 응답 row에서 option value로 쓸 키
+ *   labelFields: string[],          // 응답 row에서 label을 조합할 키 배열 (join " - ")
+ *   errorMessage?: string,          // 실패 시 alert 메시지
+ * }
+ *
+ * @param {Object[]} chain - ChainLink 배열
+ * @returns {{ fields, onChange, hydrate }}
+ */
+export function buildChainConfig(chain) {
+  // fields = 모든 field + 마지막 childField
+  const fields = [...chain.map((link) => link.field), chain[chain.length - 1].childField]
+
+  // fieldEls DOM 요소에서 직접 값을 읽습니다.
+  // getSearchFormValue()는 search-form Stimulus 컨트롤러가 연결된 후에만 동작하므로,
+  // connect() 초기(hydrate) 시점에는 DOM 요소를 직접 참조해야 정확한 값을 얻을 수 있습니다.
+  function readValues(fieldEls) {
+    const vals = {}
+    fields.forEach((name, idx) => {
+      const el = fieldEls[idx]
+      vals[name] = el ? (el.value || "").toString().trim().toUpperCase() : ""
+    })
+    return vals
+  }
+
+  // link 설정으로 하위 SELECT를 로드 후 options 세팅
+  async function loadChild(link, childEl, fieldEls, selectedValue = "") {
+    const vals = readValues(fieldEls)
+    const params = link.params(vals)
+    const rows = await loadSelectOptions(
+      null,
+      link.url,
+      params,
+      link.errorMessage || `${link.childField} 목록 조회에 실패했습니다.`
+    )
+    if (!rows) return
+    const options = rows.map((row) => ({
+      value: row[link.valueField],
+      label: link.labelFields.map((f) => row[f] || "").filter(Boolean).join(" - "),
+    }))
+    setSelectOptions(childEl, options, selectedValue)
+  }
+
+  // onChange[i] = chain[i].field 변경 시 → i 이후 하위 모두 clear, childField만 reload
+  const onChange = chain.map((link, i) => async (_controller, fieldEls) => {
+    // i+1 (childField) ~ 마지막까지 clear
+    for (let j = i + 1; j < fieldEls.length; j++) {
+      clearSelectOptions(fieldEls[j])
+    }
+    const vals = readValues(fieldEls)
+    const parentVal = vals[link.field]
+    if (!parentVal) return
+    await loadChild(link, fieldEls[i + 1], fieldEls, "")
+  })
+
+  // hydrate = 초기 진입 시 저장된 선택값 복원하며 순서대로 로드
+  const hydrate = async (_controller, fieldEls) => {
+    const vals = readValues(fieldEls)
+
+    for (let i = 0; i < chain.length; i++) {
+      const link = chain[i]
+      const parentVal = vals[link.field]
+      const childVal = vals[link.childField]
+      const childEl = fieldEls[i + 1]
+
+      if (!parentVal) {
+        // 부모 미선택 → 이후 모두 clear
+        for (let j = i + 1; j < fieldEls.length; j++) {
+          clearSelectOptions(fieldEls[j])
+        }
+        break
+      }
+
+      await loadChild(link, childEl, fieldEls, childVal)
+
+      // 복원 실패(값이 없음)라면 이후 clear
+      if (!childVal) {
+        for (let j = i + 2; j < fieldEls.length; j++) {
+          clearSelectOptions(fieldEls[j])
+        }
+        break
+      }
+    }
+  }
+
+  return { fields, onChange, hydrate }
 }
 
 /**

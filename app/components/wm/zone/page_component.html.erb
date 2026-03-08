@@ -1,5 +1,6 @@
 <div data-controller="zone-grid"
      data-action="ag-grid:ready->zone-grid#registerGrid"
+     data-zone-grid-areas-url-value="<%= areas_url %>"
      data-zone-grid-zones-url-value="<%= zones_url %>"
      data-zone-grid-batch-url-value="<%= batch_save_url %>">
   <%= render Ui::SearchFormComponent.new(

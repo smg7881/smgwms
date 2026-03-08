@@ -84,6 +84,7 @@ Rails.application.routes.draw do
       post :batch_save, on: :collection
     end
     resources :zone, controller: :zone, only: [ :index ] do
+      get :areas, on: :collection
       get :zones, on: :collection
       post :batch_save, on: :collection
     end
