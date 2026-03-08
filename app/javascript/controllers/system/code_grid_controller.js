@@ -75,9 +75,44 @@ export default class extends BaseGridController {
         manager: this.detailManagerConfig(),
         parentGrid: "master",
         onMasterRowChange: (rowData) => this.onMasterRowChanged(rowData),
-        detailLoader: (rowData) => this.loadDetailRows("detail", rowData)
+        detailLoader: async (rowData) => this.loadDetailRows("detail", rowData)
       }
     }
+  }
+
+  get masterManager() {
+    return this.gridManager("master")
+  }
+
+  get detailManager() {
+    return this.gridManager("detail")
+  }
+
+  async saveMasterRows() {
+    await this.saveRowsWith({
+      manager: this.masterManager,
+      batchUrl: this.masterBatchUrlValue,
+      saveMessage: "코드 데이터가 저장되었습니다.",
+      onSuccess: () => this.refreshGrid("master")
+    })
+  }
+
+  async saveDetailRows() {
+    const hasSelection = this.requireMasterSelection(this.selectedCodeValue, {
+      entityLabel: "코드",
+      message: "코드를 먼저 선택해주세요."
+    })
+    if (!hasSelection) {
+      return
+    }
+
+    const batchUrl = this.buildDetailBatchUrl(this.detailBatchUrlTemplateValue, this.selectedCodeValue, ":code")
+    await this.saveRowsWith({
+      manager: this.detailManager,
+      batchUrl,
+      saveMessage: "상세코드 데이터가 저장되었습니다.",
+      onSuccess: () => this.refreshGrid("master")
+    })
   }
 
   masterManagerConfig() {

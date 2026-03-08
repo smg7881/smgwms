@@ -79,6 +79,7 @@ const CONTROLLERS = [
   ["om-pre-order-reception-error", "controllers/om/pre_order_reception_error_controller"],
   ["om-pre-order-reception", "controllers/om/pre_order_reception_controller"],
   ["om-internal-order", "controllers/om/internal_order_controller"],
+  ["om-service-order-form", "controllers/om/service_order_form_controller"],
   ["om-order-manual-completion", "controllers/om/order_manual_completion_controller"],
   ["om-order-inquiry", "controllers/om/order_inquiry_controller"],
   ["wm-cust-rule-grid", "controllers/wm/cust_rule_grid_controller"],
@@ -87,6 +88,7 @@ const CONTROLLERS = [
   ["wm-sell-fee-rt-grid", "controllers/wm/sell_fee_rt_grid_controller"],
   ["wm-rate-retroact-grid", "controllers/wm/rate_retroact_grid_controller"],
   ["wm-gr-prar-grid", "controllers/wm/gr_prar_grid_controller"],
+  ["wm-gi-prar-grid", "controllers/wm/gi_prar_grid_controller"],
   ["flatpickr", "controllers/flatpickr_controller"],
   ["tom-select", "controllers/tom_select_controller"]
 ]

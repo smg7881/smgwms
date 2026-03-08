@@ -1,0 +1,128 @@
+<div class="std-client-screen"
+     data-controller="wm-gi-prar-grid"
+     data-action="ag-grid:ready->wm-gi-prar-grid#registerGrid"
+     data-wm-gi-prar-grid-master-batch-url-value="<%= master_batch_save_url %>"
+     data-wm-gi-prar-grid-detail-batch-url-template-value="<%= detail_batch_save_url_template %>"
+     data-wm-gi-prar-grid-detail-list-url-template-value="<%= detail_list_url_template %>"
+     data-wm-gi-prar-grid-pick-list-url-template-value="<%= pick_list_url_template %>"
+     data-wm-gi-prar-grid-assign-url-template-value="<%= assign_url_template %>"
+     data-wm-gi-prar-grid-pick-url-template-value="<%= pick_url_template %>"
+     data-wm-gi-prar-grid-confirm-url-template-value="<%= confirm_url_template %>"
+     data-wm-gi-prar-grid-cancel-url-template-value="<%= cancel_url_template %>"
+     data-wm-gi-prar-grid-selected-master-value="<%= selected_gi_prar_no.to_s %>">
+  <%= render Ui::SearchFormComponent.new(
+    url: collection_path,
+    fields: search_fields,
+    cols: 4,
+    enable_collapse: true,
+    class: "std-client-search"
+  ) %>
+
+  <section class="std-client-master">
+    <%= render Ui::GridHeaderComponent.new(
+      icon: "list-checks",
+      title: "출고지시 목록",
+      grid_id: "gi-prar-master",
+      class: "std-client-section-head",
+      title_class: "std-client-section-title",
+      icon_class: "w-4 h-4"
+    ) %>
+
+    <%= render Ui::AgGridComponent.new(
+      columns: master_columns,
+      url: collection_path(format: :json),
+      height: "260px",
+      pagination: true,
+      row_selection: "single",
+      grid_id: "gi-prar-master",
+      data: { wm_gi_prar_grid_target: "masterGrid" }
+    ) %>
+  </section>
+
+  <section class="std-client-detail">
+    <div class="std-client-selected" data-wm-gi-prar-grid-target="selectedMasterLabel"><%= selected_master_label %></div>
+
+    <%= render Ui::TabsComponent.new(
+      target_controller: "wm-gi-prar-grid",
+      tabs: [
+        { id: "detail", label: "아이템상세" },
+        { id: "pick", label: "할당/피킹" }
+      ]
+    ) %>
+
+    <div class="std-client-panel is-active" data-wm-gi-prar-grid-target="tabPanel" data-tab-panel="detail">
+      <%= render Ui::GridHeaderComponent.new(
+        icon: "package-open",
+        title: "출고지시 상세",
+        grid_id: "gi-prar-detail",
+        class: "std-client-section-head",
+        title_class: "std-client-section-title",
+        icon_class: "w-4 h-4",
+        buttons: [
+          { label: "상세저장", class: "btn btn-sm btn-primary", action: "click->wm-gi-prar-grid#saveDetailRows" }
+        ]
+      ) %>
+
+      <% if selected_gi_prar_no.present? %>
+        <%= render Ui::AgGridComponent.new(
+          columns: detail_columns,
+          url: "/wm/gi_prars/#{selected_gi_prar_no}/details.json",
+          height: "260px",
+          pagination: false,
+          row_selection: "single",
+          grid_id: "gi-prar-detail",
+          data: { wm_gi_prar_grid_target: "detailGrid" }
+        ) %>
+      <% else %>
+        <%= render Ui::AgGridComponent.new(
+          columns: detail_columns,
+          row_data: [],
+          height: "260px",
+          pagination: false,
+          row_selection: "single",
+          grid_id: "gi-prar-detail",
+          data: { wm_gi_prar_grid_target: "detailGrid" }
+        ) %>
+      <% end %>
+    </div>
+
+    <div class="std-client-panel" data-wm-gi-prar-grid-target="tabPanel" data-tab-panel="pick" hidden>
+      <%= render Ui::GridHeaderComponent.new(
+        icon: "pickaxe",
+        title: "할당/피킹 목록",
+        grid_id: "gi-prar-pick",
+        class: "std-client-section-head",
+        title_class: "std-client-section-title",
+        icon_class: "w-4 h-4",
+        buttons: [
+          { label: "할당", class: "btn btn-sm btn-secondary", action: "click->wm-gi-prar-grid#assignGi" },
+          { label: "피킹", class: "btn btn-sm btn-primary", action: "click->wm-gi-prar-grid#pickGi" },
+          { label: "출고확정", class: "btn btn-sm btn-success", action: "click->wm-gi-prar-grid#confirmGi" },
+          { label: "출고취소", class: "btn btn-sm btn-error", action: "click->wm-gi-prar-grid#cancelGi" }
+        ]
+      ) %>
+
+      <% if selected_gi_prar_no.present? %>
+        <%= render Ui::AgGridComponent.new(
+          columns: pick_columns,
+          url: "/wm/gi_prars/#{selected_gi_prar_no}/picks.json",
+          height: "260px",
+          pagination: false,
+          row_selection: "single",
+          grid_id: "gi-prar-pick",
+          data: { wm_gi_prar_grid_target: "pickGrid" }
+        ) %>
+      <% else %>
+        <%= render Ui::AgGridComponent.new(
+          columns: pick_columns,
+          row_data: [],
+          height: "260px",
+          pagination: false,
+          row_selection: "single",
+          grid_id: "gi-prar-pick",
+          data: { wm_gi_prar_grid_target: "pickGrid" }
+        ) %>
+      <% end %>
+    </div>
+  </section>
+</div>

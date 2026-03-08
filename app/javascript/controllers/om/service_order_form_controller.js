@@ -1,203 +1,267 @@
-﻿import { Controller } from "@hotwired/stimulus"
-import { showAlert, confirmAction } from "components/ui/alert"
-import { get, post, put } from "@rails/request.js"
+import BaseGridController from "controllers/base_grid_controller"
+import { showAlert } from "components/ui/alert"
+import { buildTemplateUrl } from "controllers/grid/grid_utils"
+import { refreshGridCells } from "controllers/grid/grid_api_utils"
 
-export default class extends Controller {
-    static values = {
-        url: String
+const DETAIL_WEIGHT_PER_QTY = 1.5
+const DETAIL_VOLUME_PER_QTY = 2.0
+
+export default class extends BaseGridController {
+  static targets = [
+    ...BaseGridController.targets,
+    "masterGrid",
+    "detailGrid",
+    "selectedOrderLabel"
+  ]
+
+  static values = {
+    ...BaseGridController.values,
+    detailBatchUrlTemplate: String,
+    detailListUrlTemplate: String,
+    selectedOrder: String
+  }
+
+  connect() {
+    super.connect()
+    this.refreshSelectedLabel()
+  }
+
+  masterConfig() {
+    return {
+      role: "master",
+      key: {
+        field: "ord_no",
+        stateProperty: "selectedOrderValue",
+        labelTarget: "selectedOrderLabel",
+        entityLabel: "오더",
+        emptyMessage: "오더를 먼저 선택하세요."
+      },
+      onRowChange: {
+        trackCurrentRow: false,
+        syncForm: false
+      },
+      beforeSearch: {
+        clearValidation: false,
+        clearForm: false
+      },
+      onAdded: (rowData) => {
+        this.selectedOrderValue = rowData?.ord_no || ""
+        this.refreshSelectedLabel()
+        this.clearDetailRows?.()
+      }
+    }
+  }
+
+  detailGrids() {
+    return [{
+      role: "detail",
+      masterKeyField: "ord_no",
+      placeholder: ":id",
+      listUrlTemplate: "detailListUrlTemplateValue",
+      batchUrlTemplate: "detailBatchUrlTemplateValue",
+      entityLabel: "오더",
+      selectionMessage: "오더를 먼저 선택하세요.",
+      saveMessage: "오더 상세 내역이 저장되었습니다.",
+      fetchErrorMessage: "오더 상세 내역 조회에 실패했습니다.",
+      overrides: ({ selectedValue }) => ({ ord_no: selectedValue }),
+      onSaveSuccess: () => this.refreshGrid("master")
+    }]
+  }
+
+  gridRoles() {
+    return {
+      master: {
+        target: "masterGrid",
+        manager: "masterManagerConfig",
+        masterKeyField: "ord_no"
+      },
+      detail: {
+        target: "detailGrid",
+        manager: "detailManagerConfig",
+        parentGrid: "master",
+        onMasterRowChange: (rowData) => this.onMasterRowChanged(rowData),
+        detailLoader: (rowData) => this.loadDetailRows("detail", rowData)
+      }
+    }
+  }
+
+  masterManagerConfig() {
+    return {
+      pkFields: ["ord_no"],
+      fields: {
+        ord_no: "trimUpper",
+        ord_stat_cd: "trimUpper",
+        ord_type_cd: "trimUpper",
+        cust_cd: "trimUpper",
+        cust_nm: "trim",
+        dpt_ar_cd: "trimUpper",
+        arv_ar_cd: "trimUpper"
+      },
+      defaultRow: {
+        ord_no: "",
+        ord_stat_cd: "",
+        ord_type_cd: "",
+        cust_cd: "",
+        cust_nm: "",
+        dpt_ar_cd: "",
+        arv_ar_cd: ""
+      },
+      blankCheckFields: ["ord_no"],
+      comparableFields: [],
+      firstEditCol: "ord_no"
+    }
+  }
+
+  detailManagerConfig() {
+    return {
+      pkFields: ["seq_no"],
+      fields: {
+        seq_no: "number",
+        ord_no: "trimUpper",
+        item_cd: "trimUpper",
+        item_nm: "trim",
+        ord_qty: "number",
+        ord_wgt: "number",
+        ord_vol: "number"
+      },
+      defaultRow: {
+        seq_no: null,
+        ord_no: "",
+        item_cd: "",
+        item_nm: "",
+        ord_qty: 0,
+        ord_wgt: 0,
+        ord_vol: 0
+      },
+      blankCheckFields: ["item_cd", "item_nm"],
+      comparableFields: ["item_cd", "item_nm", "ord_qty", "ord_wgt", "ord_vol"],
+      validationRules: {
+        requiredFields: ["item_cd"],
+        fieldLabels: {
+          item_cd: "아이템코드"
+        }
+      },
+      firstEditCol: "item_cd",
+      onCellValueChanged: (event) => this.normalizeDetailField(event)
+    }
+  }
+
+  get masterManager() {
+    return this.gridManager("master")
+  }
+
+  get detailManager() {
+    return this.gridManager("detail")
+  }
+
+  get manager() {
+    return this.masterManager
+  }
+
+  set manager(_value) {
+    // BaseGridController 단일그리드 모드 호환 흡수
+  }
+
+  beforeSearchReset() {
+    this.selectedOrderValue = ""
+    this.refreshSelectedLabel()
+    this.clearDetailRows?.()
+  }
+
+  onMasterRowChanged(rowData) {
+    this.selectedOrderValue = rowData?.ord_no || ""
+    this.refreshSelectedLabel()
+  }
+
+  normalizeDetailField(event) {
+    const row = event?.node?.data
+    const field = event?.colDef?.field
+    if (!row || !field) return
+
+    row.ord_no = this.selectedOrderValue || row.ord_no || ""
+
+    if (field === "ord_qty") {
+      const qty = Number(row.ord_qty) || 0
+      row.ord_wgt = Number((qty * DETAIL_WEIGHT_PER_QTY).toFixed(3))
+      row.ord_vol = Number((qty * DETAIL_VOLUME_PER_QTY).toFixed(3))
     }
 
-    static targets = [
-        "grid", "form", "methodInput", "idInput",
-        "ctrtNo", "ordTypeCd", "custCd", "custNm", "bilgCustCd", "reqCustCd", "ctrtCustCd",
-        "custOfcrNm", "custOfcrTel", "tranDivCd", "remark",
-        "dptTypeCd", "dptCd", "dptAddr", "reqStartDt",
-        "arvTypeCd", "arvCd", "arvAddr", "aptdReqYmd",
-        "ordNoDisplay", "changeReason"
-    ]
+    refreshGridCells(this.detailManager?.api, {
+      rowNodes: [event.node],
+      columns: ["ord_no", field, "ord_wgt", "ord_vol"],
+      force: true
+    })
+  }
 
-    connect() {
-        this.agGridController = null
-        this.newOrder() // 기본 모드는 신규
+  async saveDetailRows() {
+    if (!this.selectedOrderValue) {
+      showAlert("오더를 먼저 선택하세요.")
+      return
     }
 
-    onGridReady(event) {
-        this.agGridController = this.application.getControllerForElementAndIdentifier(
-            this.gridTarget,
-            "ag-grid"
-        )
-
-        // Ag Grid의 cell value change event를 가로채서 환산 적용
-        const gridOptions = this.agGridController.gridOptions
-        gridOptions.onCellValueChanged = this.onCellValueChanged.bind(this)
+    const detailRows = []
+    this.detailManager?.api?.forEachNode((node) => {
+      if (!node?.data || node.data.__is_deleted) return
+      detailRows.push(node.data)
+    })
+    if (detailRows.length > 1) {
+      showAlert("서비스 오더 상세는 1건만 입력할 수 있습니다.")
+      return
     }
 
-    // 검색 성공 시 상세에 데이터를 불러오는 Mockup (배열의 1번 데이터 클릭이라 가정)
-    loadDetail(event) {
-        if (!event.detail || !event.detail[0]) return;
+    const batchUrl = buildTemplateUrl(this.detailBatchUrlTemplateValue, ":id", this.selectedOrderValue)
+    await this.saveRowsWith({
+      manager: this.detailManager,
+      batchUrl,
+      saveMessage: "오더 상세 내역이 저장되었습니다.",
+      onSuccess: () => this.refreshGrid("master")
+    })
+  }
 
-        // 이 코드에서는 목록을 별도 검색 그리드가 아니라 
-        // "조회 시 가장 최신 1개를 불러오거나" 등으로 제어해야 하나 
-        // PRD 컨셉상 Form에 데이터를 바인딩합니다.
-        const data = event.detail[0]
-        this.setFormData(data)
+  addDetailRow() {
+    const manager = this.detailManager
+    if (!manager?.api) return
+
+    if (!this.selectedOrderValue) {
+      showAlert("오더를 먼저 선택하세요.")
+      return
     }
 
-    setFormData(data) {
-        this.formTarget.reset()
-
-        this.methodInputTarget.value = "put"
-        this.idInputTarget.value = data.ord_no
-
-        this.ctrtNoTarget.value = data.ctrt_no || ""
-        this.ordTypeCdTarget.value = data.ord_type_cd || ""
-
-        // 주요 키 값 수정 비활성화 제어
-        this.ctrtNoTarget.readOnly = true
-        this.ordTypeCdTarget.disabled = true
-        this.dptTypeCdTarget.disabled = true
-        this.arvTypeCdTarget.disabled = true
-
-        this.custCdTarget.value = data.cust_cd || ""
-        this.reqStartDtTarget.value = data.req_start_dt || ""
-
-        this.dptTypeCdTarget.value = data.dpt_type_cd || ""
-        this.dptCdTarget.value = data.dpt_cd || ""
-        this.arvTypeCdTarget.value = data.arv_type_cd || ""
-        this.arvCdTarget.value = data.arv_cd || ""
-
-        this.ordNoDisplayTarget.value = data.ord_no || ""
-
-        // 수정 모드이므로 사유란 노출
-        const reasonGroup = this.changeReasonTarget.closest('[data-resource-form-target="fieldGroup"]')
-        if (reasonGroup) {
-            reasonGroup.classList.remove("hidden")
-        }
+    const rowCount = manager.api.getDisplayedRowCount()
+    if (rowCount >= 1) {
+      showAlert("서비스 오더 상세는 1건만 입력할 수 있습니다.")
+      return
     }
 
-    newOrder() {
-        this.formTarget.reset()
+    this.addRow({
+      manager,
+      overrides: {
+        seq_no: 1,
+        ord_no: this.selectedOrderValue
+      },
+      config: { startCol: "item_cd" }
+    })
+  }
 
-        this.methodInputTarget.value = "post"
-        this.idInputTarget.value = ""
-        this.ordNoDisplayTarget.value = ""
-
-        // 수정 비활성화된 항목들 활성화
-        this.ctrtNoTarget.readOnly = false
-        this.ordTypeCdTarget.disabled = false
-        this.dptTypeCdTarget.disabled = false
-        this.arvTypeCdTarget.disabled = false
-
-        // 사유란 숨김
-        const reasonGroup = this.changeReasonTarget.closest('[data-resource-form-target="fieldGroup"]')
-        if (reasonGroup) {
-            reasonGroup.classList.add("hidden")
-        }
-        this.changeReasonTarget.value = ""
-
-        if (this.agGridController) {
-            this.agGridController.gridOptions.api.setRowData([]) // 아이템 초기화
-        }
+  async cancelSelectedOrder() {
+    const ordNo = (this.selectedOrderValue || "").toString().trim()
+    if (ordNo === "") {
+      showAlert("취소할 오더를 먼저 선택하세요.")
+      return
     }
 
-    async saveOrder() {
-        const formData = new FormData(this.formTarget)
-        const method = this.methodInputTarget.value
-
-        let submitUrl = this.urlValue
-        if (method === "put") {
-            submitUrl = `${this.urlValue}/${this.idInputTarget.value}`
-            if (!this.changeReasonTarget.value) {
-                showAlert("수정 사유를 기입해주세요.")
-                this.changeReasonTarget.focus()
-                return
-            }
-        }
-
-        try {
-            const response = await (method === "put" ? put(submitUrl, { body: formData }) : post(submitUrl, { body: formData }))
-            const data = await response.json()
-
-            if (response.ok && data.success) {
-                showAlert(data.message)
-                if (method === "post") {
-                    this.ordNoDisplayTarget.value = data.ord_no // 채번된 번호 매핑
-                    this.methodInputTarget.value = "put"
-                    this.idInputTarget.value = data.ord_no
-                    const reasonGroup = this.changeReasonTarget.closest('[data-resource-form-target="fieldGroup"]')
-                    if (reasonGroup) {
-                        reasonGroup.classList.remove("hidden")
-                    }
-                }
-            } else {
-                showAlert(data.message || "오류가 발생했습니다.")
-            }
-        } catch (error) {
-            console.error(error)
-            showAlert("서버 연결에 실패했습니다.")
-        }
+    const reason = window.prompt("오더 취소 사유를 입력해주세요:")
+    if (!reason || reason.trim() === "") {
+      return
     }
 
-    async cancelOrder() {
-        const ordNo = this.idInputTarget.value
-        if (!ordNo) {
-            showAlert("취소할 오더가 선택되지 않았습니다.")
-            return
-        }
-
-        const cancelReason = prompt("오더 취소 사유를 입력해주세요:")
-        if (!cancelReason) {
-            return
-        }
-
-        try {
-            const cancelUrl = `${this.urlValue}/${ordNo}/cancel`
-            const response = await post(cancelUrl, {
-                body: JSON.stringify({ order: { cancel_reason: cancelReason } })
-            })
-
-            const data = await response.json()
-            if (response.ok && data.success) {
-                showAlert(data.message)
-            } else {
-                showAlert(data.message || "취소에 실패했습니다.")
-            }
-        } catch (e) {
-            console.error(e)
-            showAlert("오류가 발생했습니다.")
-        }
-    }
-
-    // AG Grid Events
-    addRow() {
-        if (this.agGridController) {
-            this.agGridController.gridOptions.api.applyTransaction({ add: [{}] })
-        }
-    }
-
-    removeRow() {
-        if (this.agGridController) {
-            const selected = this.agGridController.gridOptions.api.getSelectedRows()
-            if (selected.length === 0) {
-                showAlert("삭제할 대상을 선택해주세요.")
-                return
-            }
-            this.agGridController.gridOptions.api.applyTransaction({ remove: selected })
-        }
-    }
-
-    // 수량 입력시 중량/부피 환산 Mock Logic
-    onCellValueChanged(params) {
-        if (params.colDef.field === "qty") {
-            const qty = Number(params.newValue) || 0
-
-            // 실제로는 DB에서 총중량, CBM을 가져와야 하나, 여기서는 
-            // 아이템코드 길이나 임의 값 기반으로 생성한다고 Mocking 함.
-            const mockTotWgt = 1.5
-            const mockCbm = 2.0
-
-            params.node.setDataValue("wgt", parseFloat((qty * mockTotWgt).toFixed(2)))
-            params.node.setDataValue("vol", parseFloat((qty * mockCbm).toFixed(2)))
-        }
-    }
+    const url = `/om/service_orders/${encodeURIComponent(ordNo)}/cancel`
+    await this.postAction(url, { order: { cancel_reason: reason.trim() } }, {
+      onSuccess: () => {
+        showAlert("오더가 취소되었습니다.")
+        this.refreshGrid("master")
+        this.clearDetailRows?.()
+      }
+    })
+  }
 }

@@ -133,6 +133,22 @@ Rails.application.routes.draw do
         post :cancel
       end
     end
+
+    resources :gi_prars, only: [ :index ] do
+      collection do
+        post :batch_save
+      end
+      resources :details, controller: :gi_prars, only: [ :index ] do
+        post :batch_save, on: :collection
+      end
+      member do
+        get :picks
+        post :assign
+        post :pick
+        post :confirm
+        post :cancel
+      end
+    end
   end
 
   namespace :std do
@@ -278,6 +294,10 @@ Rails.application.routes.draw do
       post :retransmit, on: :collection
     end
     resources :service_orders, only: [ :index, :create, :update ] do
+      member do
+        get :items
+        post :batch_save_items
+      end
       post :cancel, on: :member
     end
     resources :pre_order_file_uploads, only: [ :index ] do

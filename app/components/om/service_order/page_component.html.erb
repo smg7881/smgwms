@@ -1,107 +1,72 @@
-  <div data-controller="om-service-order-form" data-om-service-order-form-url-value="<%= collection_path %>">
-    
-    <!-- 검색 조건 영역 -->
-    <div class="mb-5">
-      <%= render Ui::SearchFormComponent.new(
-        url: collection_path(format: :json),
-        fields: search_fields,
-        cols: 4,
-        enable_collapse: true
-      ) %>
-    </div>
+<div class="std-client-screen om-service-order-screen"
+     data-controller="om-service-order-form"
+     data-action="ag-grid:ready->om-service-order-form#registerGrid"
+     data-om-service-order-form-detail-batch-url-template-value="<%= detail_batch_save_url_template %>"
+     data-om-service-order-form-detail-list-url-template-value="<%= detail_list_url_template %>"
+     data-om-service-order-form-selected-order-value="<%= selected_order.to_s %>">
+  <%= render Ui::SearchFormComponent.new(
+    url: create_url,
+    fields: search_fields,
+    cols: 4,
+    enable_collapse: true,
+    class: "std-client-search"
+  ) %>
 
-    <!-- 우측 상단 툴바 버튼 영역 -->
-    <div class="flex justify-end mb-2">
-      <%= render Ui::GridToolbarComponent.new(
-        buttons: [
-          { label: "신규", class: "btn btn-sm btn-primary", action: "click->om-service-order-form#newOrder" },
-          { label: "저장", class: "btn btn-sm btn-success", action: "click->om-service-order-form#saveOrder" },
-          { label: "오더취소", class: "btn btn-sm btn-danger", action: "click->om-service-order-form#cancelOrder" }
-        ]
-      ) %>
-    </div>
+  <section class="std-client-master">
+    <%= render Ui::GridHeaderComponent.new(
+      icon: "clipboard-list", title: "서비스 오더 목록", grid_id: "om-service-order-master",
+      class: "std-client-section-head", title_class: "std-client-section-title", icon_class: "w-4 h-4",
+      buttons: [
+        { label: "오더취소", class: "btn btn-sm btn-danger", action: "click->om-service-order-form#cancelSelectedOrder" }
+      ]
+    ) %>
 
-    <!-- 마스터 : 서비스 오더 등록/수정 폼 -->
-    <div class="mb-4">
-      <input type="hidden" data-om-service-order-form-target="methodInput" value="post">
-      <input type="hidden" data-om-service-order-form-target="idInput">
-      
-      <%= render Ui::ResourceFormComponent.new(
-        model: nil,
-        title: "기본 정보",
-        url: collection_path,
-        method: :post,
-        target_controller: "om-service-order-form",
-        form_data: { om_service_order_form_target: "form" },
-        fields: [
-          # 1 Row
-          { field: "ctrt_no_nm", code_field: "ctrt_no", popup_type: "client", type: "popup", hide_display: true, label: "계약번호", required: true, target: "ctrtNo" },
-          { field: "ord_type_cd", type: "select", options: common_code_options("75"), include_blank: "선택", label: "오더유형", required: true, target: "ordTypeCd" },
-          { field: "cust_nm", code_field: "cust_cd", type: "popup", popup_type: "client", hide_display: true, label: "고객코드", required: true, target: "custCd", data: { action_target: "custCdSearchBtn", om_service_order_form_target: "custNm" } },
-          { field: "bilg_cust_cd", type: "input", label: "청구고객", required: true, disabled: true, target: "bilgCustCd" },
+    <%= render Ui::AgGridComponent.new(
+      columns: master_columns,
+      url: grid_url,
+      height: "250px",
+      page_size: 20,
+      row_selection: "single",
+      grid_id: "om-service-order-master",
+      data: { om_service_order_form_target: "masterGrid" }
+    ) %>
+  </section>
 
-          # 2 Row
-          { field: "req_cust_cd", type: "input", label: "오더요청고객", required: true, disabled: true, target: "reqCustCd" },
-          { field: "ctrt_cust_cd", type: "input", label: "계약고객", required: true, disabled: true, target: "ctrtCustCd" },
-          { field: "cust_ofcr_nm", type: "input", label: "고객담당자", required: true, target: "custOfcrNm" },
-          { field: "cust_ofcr_tel", type: "input", label: "전화번호", required: true, target: "custOfcrTel" },
+  <section class="std-client-detail">
+    <%= render Ui::GridHeaderComponent.new(
+      icon: "list-tree", title: "오더 상세", grid_id: "om-service-order-detail",
+      class: "std-client-section-head", title_class: "std-client-section-title", icon_class: "w-4 h-4",
+      buttons: [
+        { label: "행추가", class: "btn btn-sm btn-primary", action: "click->om-service-order-form#addDetailRow" },
+        { label: "행삭제", class: "btn btn-sm btn-danger", action: "click->om-service-order-form#deleteDetailRows" },
+        { label: "저장", class: "btn btn-sm btn-success", action: "click->om-service-order-form#saveDetailRows" }
+      ]
+    ) do |header| %>
+      <% header.with_subtitle do %>
+        <p class="text-text-secondary text-xs" data-om-service-order-form-target="selectedOrderLabel"><%= selected_order_label %></p>
+      <% end %>
+    <% end %>
 
-          # 3 Row
-          { field: "tran_div_cd", type: "select", options: common_code_options("87"), include_blank: "선택", label: "운송구분", required: true, target: "tranDivCd" },
-          { field: "remark", type: "input", label: "특이사항", col_span: 3, target: "remark" },
-
-          # 출발지
-          { field: "dpt_cd_nm", code_field: "dpt_cd", popup_type: "client", type: "popup", hide_display: true, label: "출발지코드", target: "dptCd" },
-          { field: "dpt_type_cd", type: "select", label: "출발지유형", options: common_code_options("75"), include_blank: "선택", target: "dptTypeCd" },
-          { field: "dpt_addr", type: "input", label: "출발지주소", disabled: true, target: "dptAddr" },
-          { field: "req_start_dt", type: "input", input_type: "date", label: "시작요청일", value: Time.current.strftime("%Y-%m-%d"), target: "reqStartDt" },
-
-          # 도착지
-          { field: "arv_cd_nm", code_field: "arv_cd", popup_type: "client", type: "popup", hide_display: true, label: "도착지코드", target: "arvCd" },
-          { field: "arv_type_cd", type: "select", label: "도착지유형", options: common_code_options("75"), include_blank: "선택", target: "arvTypeCd" },
-          { field: "arv_addr", type: "input", label: "도착지주소", disabled: true, target: "arvAddr" },
-          { field: "aptd_req_ymd", type: "input", input_type: "datetime-local", label: "납기요청일", value: Time.current.end_of_day.strftime("%Y-%m-%dT%H:%M"), target: "aptdReqYmd" },
-
-          # 상태
-          { field: "ord_no_display", type: "input", label: "오더번호", disabled: true, placeholder: "저장 시 채번됩니다.", target: "ordNoDisplay" },
-          { field: "change_reason", type: "input", label: "수정사유", placeholder: "수정/취소 사유 입력", target: "changeReason" },
-        ],
-        cols: 4,
-        show_buttons: false
-      ) %>
-    </div>
-
-    <!-- 디테일 : 아이템 상세내역 (그리드) -->
-    <div class="flex flex-col flex-1 h-full min-h-[300px]">
-      <%= render Ui::GridHeaderComponent.new(
-        icon: "list", title: "아이템 상세내역", grid_id: "om-service-order-items",
-        class: "flex items-center justify-between gap-3 mb-3",
-        icon_class: "w-4 h-4 text-gray-500",
-        buttons: [
-          { label: "추가", class: "btn btn-sm btn-secondary", action: "click->om-service-order-form#addRow" },
-          { label: "삭제", class: "btn btn-sm btn-danger", action: "click->om-service-order-form#removeRow" }
-        ]
-      ) %>
-      
+    <% if detail_grid_url.present? %>
       <%= render Ui::AgGridComponent.new(
-        grid_id: "om-service-order-items",
-        url: grid_url,
-        columns: [
-          { field: "item_cd", headerName: "아이템코드", width: 150, editable: true, cellEditor: "agTextCellEditor" },
-          { field: "item_nm", headerName: "아이템명", width: 200 },
-          { field: "basis_unit_cd", headerName: "기본단위", width: 100 },
-          { field: "qty", headerName: "수량", headerClass: "text-right bg-blue-50", cellClass: "text-right", type: "numericColumn", editable: true },
-          { field: "qty_unit_cd", headerName: "수량단위", width: 100 },
-          { field: "wgt", headerName: "중량", headerClass: "text-right bg-gray-50", cellClass: "text-right", type: "numericColumn" },
-          { field: "wgt_unit_cd", headerName: "중량단위", width: 100 },
-          { field: "vol", headerName: "부피", headerClass: "text-right bg-gray-50", cellClass: "text-right", type: "numericColumn" },
-          { field: "vol_unit_cd", headerName: "부피단위", width: 100 }
-        ],
+        columns: detail_columns,
+        url: detail_grid_url,
+        height: "300px",
+        pagination: false,
         row_selection: "multiple",
-        data: { 
-          om_service_order_form_target: "grid",
-          action: "ag-grid:grid-ready->om_service_order_form#onGridReady search-form:success@window->om_service_order_form#loadDetail"
-        }
+        grid_id: "om-service-order-detail",
+        data: { om_service_order_form_target: "detailGrid" }
       ) %>
-    </div>
-  </div>
+    <% else %>
+      <%= render Ui::AgGridComponent.new(
+        columns: detail_columns,
+        row_data: [],
+        height: "300px",
+        pagination: false,
+        row_selection: "multiple",
+        grid_id: "om-service-order-detail",
+        data: { om_service_order_form_target: "detailGrid" }
+      ) %>
+    <% end %>
+  </section>
+</div>

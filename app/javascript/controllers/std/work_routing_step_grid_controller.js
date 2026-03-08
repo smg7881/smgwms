@@ -74,9 +74,44 @@ export default class extends BaseGridController {
         manager: "detailManagerConfig",
         parentGrid: "master",
         onMasterRowChange: (rowData) => this.onMasterRowChanged(rowData),
-        detailLoader: (rowData) => this.loadDetailRows("detail", rowData)
+        detailLoader: async (rowData) => this.loadDetailRows("detail", rowData)
       }
     }
+  }
+
+  get masterManager() {
+    return this.gridManager("master")
+  }
+
+  get detailManager() {
+    return this.gridManager("detail")
+  }
+
+  async saveMasterRows() {
+    await this.saveRowsWith({
+      manager: this.masterManager,
+      batchUrl: this.masterBatchUrlValue,
+      saveMessage: "기준작업경로 정보가 저장되었습니다.",
+      onSuccess: () => this.refreshGrid("master")
+    })
+  }
+
+  async saveDetailRows() {
+    const hasSelection = this.requireMasterSelection(this.selectedWorkRoutingValue, {
+      entityLabel: "작업경로",
+      message: "작업경로를 먼저 선택해주세요."
+    })
+    if (!hasSelection) {
+      return
+    }
+
+    const batchUrl = this.buildDetailBatchUrl(this.detailBatchUrlTemplateValue, this.selectedWorkRoutingValue, ":id")
+    await this.saveRowsWith({
+      manager: this.detailManager,
+      batchUrl,
+      saveMessage: "작업경로별 작업단계 정보가 저장되었습니다.",
+      onSuccess: () => this.refreshGrid("master")
+    })
   }
 
   masterManagerConfig() {

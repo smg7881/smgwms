@@ -42,3 +42,14 @@ screens:
     route_master_controller: wm/gr_prars
     route_detail_controller: wm/gr_prars
     route_detail_parent_param: gr_prar_id
+
+  - key: wm_gi_prars
+    data_controller: wm-gi-prar-grid
+    page_component_path: app/components/wm/gi_prars/page_component.rb
+    page_view_path: app/components/wm/gi_prars/page_component.html.erb
+    js_controller_path: app/javascript/controllers/wm/gi_prar_grid_controller.js
+    master_controller_path: app/controllers/wm/gi_prars_controller.rb
+    detail_controller_path: app/controllers/wm/gi_prars_controller.rb
+    route_master_controller: wm/gi_prars
+    route_detail_controller: wm/gi_prars
+    route_detail_parent_param: gi_prar_id

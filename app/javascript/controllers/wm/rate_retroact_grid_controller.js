@@ -77,7 +77,7 @@ export default class extends BaseGridController {
         manager: this.detailManagerConfig(),
         parentGrid: "master",
         onMasterRowChange: (rowData) => this.onMasterRowChanged(rowData),
-        detailLoader: (rowData) => this.fetchDetailRows(rowData)
+        detailLoader: async (rowData) => this.fetchDetailRows(rowData)
       }
     }
   }
