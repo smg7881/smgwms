@@ -23,27 +23,21 @@ export default class extends BaseGridController {
 
   connect() {
     super.connect()
-    this.handleDelete = this.handleDelete.bind(this)
-    this.connectBase({
+    this.connectModal({
       events: [
-        { name: "std-work-step-crud:edit", handler: this.handleEdit },
+        { name: "std-work-step-crud:edit",   handler: this.handleEdit },
         { name: "std-work-step-crud:delete", handler: this.handleDelete }
       ]
     })
   }
 
   disconnect() {
-    this.disconnectBase()
+    this.disconnectModal()
     super.disconnect()
   }
 
   openCreate() {
-    this.resetForm()
-    this.modalTitleTarget.textContent = "기본작업단계 추가"
-    this.mode = "create"
-    this.fieldWorkStepCdTarget.readOnly = false
-    this.setRadioValue("use_yn_cd", "Y")
-    this.openModal()
+    this.openCreateModal({ title: "기본작업단계 추가" })
   }
 
   handleEdit = (event) => {
@@ -69,11 +63,13 @@ export default class extends BaseGridController {
   }
 
   resetForm() {
-    this.formTarget.reset()
-    this.fieldIdTarget.value = ""
-    this.fieldWorkStepCdTarget.readOnly = false
-    this.fieldSortSeqTarget.value = 0
-    this.setRadioValue("use_yn_cd", "Y")
+    this.resetFormBase({
+      hooks: [
+        () => { this.fieldWorkStepCdTarget.readOnly = false },
+        () => { this.fieldSortSeqTarget.value = 0 },
+        () => this.setRadioValue("use_yn_cd", "Y")
+      ]
+    })
   }
 
   setRadioValue(fieldName, value) {

@@ -21,7 +21,6 @@ import { attachDrag } from "controllers/popup/popup_drag_mixin"
 import { requestJson as requestJsonCore } from "controllers/grid/core/http_client"
 import { syncAllPopupDisplaysFromCodes } from "controllers/grid/grid_popup_utils"
 import {
-  getResourceFieldElement,
   getResourceFormValue as getResourceFormValueFromBridge,
   setResourceFormValue as setResourceFormValueFromBridge
 } from "controllers/grid/core/resource_form_bridge"
@@ -43,6 +42,17 @@ export const ModalMixin = {
   },
 
   /**
+   * handleDelete 바인딩 + initHooks 실행 + connectBase를 한 번에 처리하는 래퍼 헬퍼입니다.
+   * 컨트롤러 connect()에서 connectBase 대신 사용합니다.
+   * @param {Object} options events 배열, initHooks 배열 (선택)
+   */
+  connectModal({ events = [], initHooks = [] } = {}) {
+    this.handleDelete = this.handleDelete.bind(this)
+    initHooks.forEach(hook => hook.call(this))
+    this.connectBase({ events })
+  },
+
+  /**
    * 믹스인이 컨트롤러에서 해제될 때 호출해야 하는 정리 헬퍼입니다.
    * `connectBase`에서 등록했던 모든 커스텀 이벤트와 델리게이트 클릭 리스너를 DOM에서 제거해 메모리 누수를 방지합니다.
    */
@@ -58,11 +68,57 @@ export const ModalMixin = {
   },
 
   /**
+   * 컨트롤러 disconnect()에서 호출해야 하는 정리 헬퍼입니다.
+   * connectModal()에서 등록한 이벤트 구독과 클릭 리스너를 모두 제거합니다.
+   */
+  disconnectModal() {
+    this.disconnectBase()
+  },
+
+  /**
    * 현재 컨트롤러의 identifier를 기반으로 취소(cancel) 역할이 부여된 버튼을 찾기 위한 CSS 선택자를 동적으로 반환합니다.
    * @returns {string} 취소 버튼 CSS 선택자
    */
   get cancelRoleSelector() {
     return `[data-${this.identifier}-role='cancel']`
+  },
+
+  /**
+   * 신규 생성 모달을 여는 공통 헬퍼입니다.
+   * resetForm → 제목 설정 → defaults 적용 → readOnly/readWrite → mode="create" → openModal 순서로 실행합니다.
+   * @param {Object} options title, defaults, readOnly 요소 배열, readWrite 요소 배열, afterReset 콜백
+   */
+  openCreateModal({ title, defaults = {}, readOnly = [], readWrite = [], afterReset = null } = {}) {
+    this.resetForm()
+    if (afterReset) afterReset.call(this)
+    if (this.hasModalTitleTarget && title != null) this.modalTitleTarget.textContent = title
+    this.setFieldValues(defaults)
+    readOnly.forEach(el => { el.readOnly = true })
+    readWrite.forEach(el => { el.readOnly = false })
+    this.mode = "create"
+    this.openModal()
+  },
+
+  /**
+   * 수정 모달을 여는 공통 헬퍼입니다.
+   * resetForm → 제목 설정 → id 세팅 → fieldMap 또는 자동 스프레드로 값 채우기 → readOnly/readWrite → afterFill → mode="update" → openModal 순서로 실행합니다.
+   * fieldMap 미지정 시 data의 모든 키(id 제외)를 자동으로 setFieldValues에 전달합니다.
+   * @param {Object} data 서버에서 받은 행 데이터
+   * @param {Object} options title, fieldMap, defaults, readOnly 요소 배열, readWrite 요소 배열, afterFill 콜백
+   */
+  openEditModal(data, { title, fieldMap = null, defaults = {}, readOnly = [], readWrite = [], afterFill = null } = {}) {
+    this.resetForm()
+    if (this.hasModalTitleTarget && title != null) this.modalTitleTarget.textContent = title
+    if (this.hasFieldIdTarget) this.fieldIdTarget.value = data.id ?? ""
+    const values = fieldMap
+      ? Object.fromEntries(Object.entries(fieldMap).map(([formField, dataKey]) => [formField, data[dataKey] ?? defaults[formField] ?? ""]))
+      : { ...defaults, ...Object.fromEntries(Object.entries(data).filter(([k]) => k !== "id").map(([k, v]) => [k, v ?? ""])) }
+    this.setFieldValues(values)
+    readOnly.forEach(el => { el.readOnly = true })
+    readWrite.forEach(el => { el.readOnly = false })
+    if (afterFill) afterFill.call(this, data)
+    this.mode = "update"
+    this.openModal()
   },
 
   /**
@@ -117,6 +173,19 @@ export const ModalMixin = {
   },
 
   /**
+   * 폼 리셋의 공통 로직을 처리하는 베이스 헬퍼입니다.
+   * formTarget.reset() → fieldId 초기화 → defaults 적용 → hooks 실행 순서로 처리합니다.
+   * 컨트롤러의 resetForm()에서 this.formTarget.reset() + this.fieldIdTarget.value = "" 대신 사용합니다.
+   * @param {Object} options defaults 객체, hooks 콜백 배열 (선택)
+   */
+  resetFormBase({ defaults = {}, hooks = [] } = {}) {
+    if (this.hasFormTarget) this.formTarget.reset()
+    if (this.hasFieldIdTarget) this.fieldIdTarget.value = ""
+    this.setFieldValues(defaults)
+    hooks.forEach(hook => hook.call(this))
+  },
+
+  /**
    * formTarget에 입력된 값들을 기반으로 순수 JSON(Key-Value) 객체를 빌드해냅니다.
    * 배열형 파라미터나 빈 문자열을 null로 치환하는 등의 전처리를 포함합니다.
    * @returns {Object} JSON 페이로드 객체
@@ -167,16 +236,27 @@ export const ModalMixin = {
   },
 
   /**
-   * 입력된 폼 정보를 JSON 페이로드로 묶어 서버로 저장(Create/Update) 요청을 보냅니다.
-   * 현재 모달이 신규 생성(create) 상태인지, 기존 항목 수정 상태인지에 따라 HTTP Method(POST/PATCH)와 URL을 변환합니다.
+   * 입력된 폼 정보를 서버로 저장(Create/Update) 요청을 보냅니다.
+   * 컨트롤러에 buildMultipartFormData()가 정의된 경우 multipart/form-data로 전송하고,
+   * 그렇지 않으면 기존 JSON 경로(buildJsonPayload)로 동작합니다.
+   * 현재 모달 모드(create/update)에 따라 HTTP Method(POST/PATCH)와 URL을 결정합니다.
    */
   async save() {
-    const payload = this.buildJsonPayload()
-    if (this.hasFieldIdTarget && this.fieldIdTarget.value) payload.id = this.fieldIdTarget.value
-
     const isCreate = this.mode === "create"
-    const id = payload.id
-    delete payload.id
+    let body, isMultipart, id
+
+    if (typeof this.buildMultipartFormData === "function") {
+      body = this.buildMultipartFormData()
+      isMultipart = true
+      id = this.hasFieldIdTarget ? this.fieldIdTarget.value : null
+    } else {
+      const payload = this.buildJsonPayload()
+      if (this.hasFieldIdTarget && this.fieldIdTarget.value) payload.id = this.fieldIdTarget.value
+      id = payload.id
+      delete payload.id
+      body = { [this.constructor.resourceName]: payload }
+      isMultipart = false
+    }
 
     const url = isCreate ? this.createUrlValue : this.updateUrlValue.replace(":id", id)
     const method = isCreate ? "POST" : "PATCH"
@@ -184,7 +264,8 @@ export const ModalMixin = {
     try {
       const { response, result } = await this.requestJson(url, {
         method,
-        body: { [this.constructor.resourceName]: payload }
+        body,
+        isMultipart
       })
 
       if (!response.ok || !result.success) {
@@ -265,21 +346,6 @@ export const ModalMixin = {
   setFieldValues(values = {}) {
     Object.entries(values).forEach(([fieldName, value]) => {
       this.setFieldValue(fieldName, value)
-    })
-  },
-
-  /**
-   * 폼 태그의 내부를 탐색하여 넘겨받은 필드명과 일치하는 실제 HTML Input Element 노드를 찾아냅니다.
-   * @param {string} resourceName 모델 네임스페이스 (예: 'user')
-   * @param {string} fieldName 실제 단일 필드 네임 (예: 'phone')
-   * @returns {HTMLElement|null} 찾은 DOM 엘리먼트
-   */
-  findFieldInput(resourceName, fieldName) {
-    if (!this.hasFormTarget) return null
-    const { resourceName: parsedResourceName, pureFieldName } = this.resolveResourceField(fieldName)
-    return getResourceFieldElement(pureFieldName, {
-      resourceName: resourceName || parsedResourceName,
-      fieldElement: this.formTarget
     })
   },
 

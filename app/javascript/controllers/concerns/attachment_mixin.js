@@ -14,9 +14,9 @@
  *   - "selectedFiles"    : 업로드 대기 중인 파일 렌더 영역
  *
  * 컨트롤러 생명주기 훅에서 호출해야 할 메서드:
- *   - connect()    → this.initAttachment()
- *   - resetForm()  → this.resetAttachment()
- *   - save()       → this.appendRemovedAttachmentIds(formData, scope)
+ *   - connect()                → this.connectModal({ initHooks: [this.initAttachment] })
+ *   - resetForm()              → this.resetFormBase({ hooks: [this.resetAttachment] })
+ *   - buildMultipartFormData() → this.appendRemovedAttachmentIds(formData, scope)
  */
 import { showAlert } from "components/ui/alert"
 

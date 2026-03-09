@@ -29,33 +29,26 @@ export default class extends BaseGridController {
 
   connect() {
     super.connect()
-    this.handleDelete = this.handleDelete.bind(this)
-
-    this.connectBase({
+    this.connectModal({
       events: [
         { name: "menu-crud:add-child", handler: this.handleAddChild },
-        { name: "menu-crud:edit", handler: this.handleEdit },
-        { name: "menu-crud:delete", handler: this.handleDelete }
+        { name: "menu-crud:edit",      handler: this.handleEdit },
+        { name: "menu-crud:delete",    handler: this.handleDelete }
       ]
     })
   }
 
   disconnect() {
-    this.disconnectBase()
+    this.disconnectModal()
     super.disconnect()
   }
 
   openCreate() {
-    this.resetForm()
-    this.modalTitleTarget.textContent = "최상위 메뉴 추가"
-    this.setFieldValues({
-      parent_cd: "",
-      menu_level: 1,
-      menu_type: "FOLDER"
+    this.openCreateModal({
+      title: "최상위 메뉴 추가",
+      defaults: { parent_cd: "", menu_level: 1, menu_type: "FOLDER" },
+      readWrite: [this.fieldMenuCdTarget]
     })
-    this.fieldMenuCdTarget.readOnly = false
-    this.mode = "create"
-    this.openModal()
   }
 
   openAddTopLevel() {
@@ -64,50 +57,26 @@ export default class extends BaseGridController {
 
   handleAddChild = (event) => {
     const { parentCd, parentLevel } = event.detail
-    this.resetForm()
-    this.modalTitleTarget.textContent = "하위 메뉴 추가"
-
-    this.setFieldValues({
-      parent_cd: parentCd || "",
-      menu_level: Number(parentLevel || 1) + 1,
-      menu_type: "MENU"
+    this.openCreateModal({
+      title: "하위 메뉴 추가",
+      defaults: {
+        parent_cd: parentCd || "",
+        menu_level: Number(parentLevel || 1) + 1,
+        menu_type: "MENU"
+      },
+      readWrite: [this.fieldMenuCdTarget]
     })
-    this.fieldMenuCdTarget.readOnly = false
-    this.mode = "create"
-    this.openModal()
   }
 
   handleEdit = (event) => {
     const data = event.detail.menuData
-    this.resetForm()
-    this.modalTitleTarget.textContent = "메뉴 수정"
-
-    this.fieldIdTarget.value = data.id ?? ""
-
-    this.setFieldValues({
-      menu_cd: data.menu_cd || "",
-      menu_nm: data.menu_nm || "",
-      parent_cd: data.parent_cd || "",
-      menu_url: data.menu_url || "",
-      menu_icon: data.menu_icon || "",
-      sort_order: data.sort_order ?? 0,
-      menu_level: data.menu_level || "",
-      menu_type: data.menu_type || "MENU",
-      use_yn: data.use_yn || "Y",
-      tab_id: data.tab_id || ""
+    this.openEditModal(data, {
+      title: "메뉴 수정",
+      readOnly: [this.fieldMenuCdTarget]
     })
-
-    this.fieldMenuCdTarget.readOnly = true
-    this.mode = "update"
-    this.openModal()
   }
 
   resetForm() {
-    this.formTarget.reset()
-    this.fieldIdTarget.value = ""
-    this.setFieldValues({
-      sort_order: 0,
-      use_yn: "Y"
-    })
+    this.resetFormBase({ defaults: { sort_order: 0, use_yn: "Y" } })
   }
 }

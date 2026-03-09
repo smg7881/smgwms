@@ -27,19 +27,17 @@ export default class extends BaseGridController {
 
   connect() {
     super.connect()
-    // handleDelete는 ModalMixin에서 일반 메서드로 정의되어 있으므로 this 바인딩이 필요합니다.
-    this.handleDelete = this.handleDelete.bind(this)
-    this.connectBase({
+    this.connectModal({
       events: [
-        { name: "std-workplace-crud:edit", handler: this.handleEdit },
+        { name: "std-workplace-crud:edit",   handler: this.handleEdit },
         { name: "std-workplace-crud:delete", handler: this.handleDelete },
-        { name: "search-popup:selected", handler: this.handlePopupSelected }
+        { name: "search-popup:selected",     handler: this.handlePopupSelected }
       ]
     })
   }
 
   disconnect() {
-    this.disconnectBase()
+    this.disconnectModal()
     super.disconnect()
   }
 

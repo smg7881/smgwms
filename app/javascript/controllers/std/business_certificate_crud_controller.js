@@ -29,19 +29,18 @@ class BusinessCertificateCrudController extends BaseGridController {
 
   connect() {
     super.connect()
-    this.initAttachment()
-    this.handleDelete = this.handleDelete.bind(this)
-    this.connectBase({
+    this.connectModal({
       events: [
         { name: "std-business-certificate-crud:edit", handler: this.handleEdit },
         { name: "std-business-certificate-crud:delete", handler: this.handleDelete },
         { name: "search-popup:selected", handler: this.handlePopupSelected }
-      ]
+      ],
+      initHooks: [this.initAttachment]
     })
   }
 
   disconnect() {
-    this.disconnectBase()
+    this.disconnectModal()
     super.disconnect()
   }
 
@@ -236,34 +235,10 @@ class BusinessCertificateCrudController extends BaseGridController {
     setResourceFormValue(this.application, fieldName, normalized, { resourceName: this.constructor.resourceName, fieldElement: this.formTarget })
   }
 
-  async save() {
+  buildMultipartFormData() {
     const formData = new FormData(this.formTarget)
-    const scope = this.constructor.resourceName
-    this.appendRemovedAttachmentIds(formData, scope)
-
-    const id = this.hasFieldIdTarget && this.fieldIdTarget.value ? this.fieldIdTarget.value : null
-    const isCreate = this.mode === "create"
-    const url = isCreate ? this.createUrlValue : this.updateUrlValue.replace(":id", id)
-    const method = isCreate ? "POST" : "PATCH"
-
-    try {
-      const { response, result } = await this.requestJson(url, {
-        method,
-        body: formData,
-        isMultipart: true
-      })
-
-      if (!response.ok || !result.success) {
-        showAlert("저장 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
-        return
-      }
-
-      showAlert(result.message || "저장되었습니다.")
-      this.closeModal()
-      this._refreshModalGrid()
-    } catch {
-      showAlert("저장 실패: 네트워크 오류")
-    }
+    this.appendRemovedAttachmentIds(formData, this.constructor.resourceName)
+    return formData
   }
 
   setAuditPreviewForCreate() {

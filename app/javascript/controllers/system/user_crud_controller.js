@@ -3,10 +3,9 @@
  *
  * BaseGridController를 상속받아 사용자 CRUD 모달을 제어합니다.
  * - 프로필 사진 선택/미리보기/삭제 처리
- * - multipart 저장(save) 오버라이드
+ * - buildMultipartFormData()를 선언하여 ModalMixin.save()가 multipart로 전송
  */
 import BaseGridController from "controllers/base_grid_controller"
-import { showAlert } from "components/ui/alert"
 
 export default class extends BaseGridController {
   static resourceName = "user"
@@ -36,27 +35,24 @@ export default class extends BaseGridController {
 
   connect() {
     super.connect()
-    this.handleDelete = this.handleDelete.bind(this)
-    this.connectBase({
+    this.connectModal({
       events: [
-        { name: "user-crud:edit", handler: this.handleEdit },
+        { name: "user-crud:edit",   handler: this.handleEdit },
         { name: "user-crud:delete", handler: this.handleDelete }
       ]
     })
   }
 
   disconnect() {
-    this.disconnectBase()
+    this.disconnectModal()
     super.disconnect()
   }
 
   openCreate() {
-    this.resetForm()
-    this.modalTitleTarget.textContent = "사용자 추가"
-    this.fieldUserIdCodeTarget.readOnly = false
-    this.setFieldValues({ work_status: "ACTIVE" })
-    this.mode = "create"
-    this.openModal()
+    this.openCreateModal({
+      title: "사용자 추가",
+      readWrite: [this.fieldUserIdCodeTarget]
+    })
   }
 
   openAdd() {
@@ -65,65 +61,23 @@ export default class extends BaseGridController {
 
   handleEdit = (event) => {
     const data = event.detail.userData
-    this.resetForm()
-    this.modalTitleTarget.textContent = "사용자 수정"
-
-    this.fieldIdTarget.value = data.id ?? ""
-    this.setFieldValues({
-      user_id_code: data.user_id_code || "",
-      user_nm: data.user_nm || "",
-      email_address: data.email_address || "",
-      dept_cd: data.dept_cd || "",
-      dept_nm: data.dept_nm || "",
-      role_cd: data.role_cd || "",
-      position_cd: data.position_cd || "",
-      job_title_cd: data.job_title_cd || "",
-      work_status: data.work_status || "ACTIVE",
-      hire_date: data.hire_date || "",
-      resign_date: data.resign_date || "",
-      phone: data.phone || "",
-      address: data.address || "",
-      detail_address: data.detail_address || ""
+    this.openEditModal(data, {
+      title: "사용자 수정",
+      readOnly: [this.fieldUserIdCodeTarget],
+      afterFill: (d) => {
+        if (d.photo_url) {
+          this.photoPreviewTarget.src = d.photo_url
+          this.photoRemoveBtnTarget.hidden = false
+        }
+      }
     })
-
-    this.fieldUserIdCodeTarget.readOnly = true
-    if (data.photo_url) {
-      this.photoPreviewTarget.src = data.photo_url
-      this.photoRemoveBtnTarget.hidden = false
-    }
-
-    this.mode = "update"
-    this.openModal()
   }
 
-  async save() {
+  buildMultipartFormData() {
     const formData = new FormData(this.formTarget)
     const photoFile = this.photoInputTarget.files[0]
     if (photoFile) formData.append("user[photo]", photoFile)
-
-    const id = this.hasFieldIdTarget && this.fieldIdTarget.value ? this.fieldIdTarget.value : null
-    const isCreate = this.mode === "create"
-    const url = isCreate ? this.createUrlValue : this.updateUrlValue.replace(":id", id)
-    const method = isCreate ? "POST" : "PATCH"
-
-    try {
-      const { response, result } = await this.requestJson(url, {
-        method,
-        body: formData,
-        isMultipart: true
-      })
-
-      if (!response.ok || !result.success) {
-        showAlert("저장 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
-        return
-      }
-
-      showAlert(result.message || "저장되었습니다.")
-      this.closeModal()
-      this._refreshModalGrid()
-    } catch {
-      showAlert("저장 실패: 네트워크 오류")
-    }
+    return formData
   }
 
   triggerPhotoSelect() {
@@ -149,9 +103,9 @@ export default class extends BaseGridController {
   }
 
   resetForm() {
-    this.formTarget.reset()
-    this.fieldIdTarget.value = ""
-    this.setFieldValues({ work_status: "ACTIVE" })
-    this.removePhoto()
+    this.resetFormBase({
+      defaults: { work_status: "ACTIVE" },
+      hooks: [this.removePhoto]
+    })
   }
 }

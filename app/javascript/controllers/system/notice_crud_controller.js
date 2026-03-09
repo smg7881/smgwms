@@ -4,6 +4,7 @@
  * BaseGridController를 상속받아 공지사항 CRUD 모달을 제어합니다.
  * - 첨부파일/에디터 동작은 AttachmentMixin, TrixMixin으로 위임
  * - 공지사항 상세 조회 후 폼 주입 및 일괄 삭제 지원
+ * - buildMultipartFormData()를 선언하여 ModalMixin.save()가 multipart로 전송
  */
 import BaseGridController from "controllers/base_grid_controller"
 import { showAlert } from "components/ui/alert"
@@ -34,27 +35,22 @@ class NoticeCrudController extends BaseGridController {
 
   connect() {
     super.connect()
-    this.initAttachment()
-    this.handleDelete = this.handleDelete.bind(this)
-
-    this.connectBase({
+    this.connectModal({
       events: [
-        { name: "notice-crud:edit", handler: this.handleEdit },
+        { name: "notice-crud:edit",   handler: this.handleEdit },
         { name: "notice-crud:delete", handler: this.handleDelete }
-      ]
+      ],
+      initHooks: [this.initAttachment]
     })
   }
 
   disconnect() {
-    this.disconnectBase()
+    this.disconnectModal()
     super.disconnect()
   }
 
   openCreate() {
-    this.resetForm()
-    this.modalTitleTarget.textContent = "공지사항 등록"
-    this.mode = "create"
-    this.openModal()
+    this.openCreateModal({ title: "공지사항 등록" })
   }
 
   handleEdit = async (event) => {
@@ -99,44 +95,21 @@ class NoticeCrudController extends BaseGridController {
     })
   }
 
-  async save() {
+  buildMultipartFormData() {
     const formData = new FormData(this.formTarget)
-    const scope = this.constructor.resourceName
-
-    this.appendRemovedAttachmentIds(formData, scope)
-
-    const id = this.hasFieldIdTarget && this.fieldIdTarget.value ? this.fieldIdTarget.value : null
-    const isCreate = this.mode === "create"
-    const url = isCreate ? this.createUrlValue : this.updateUrlValue.replace(":id", id)
-    const method = isCreate ? "POST" : "PATCH"
-
-    try {
-      const { response, result } = await this.requestJson(url, {
-        method,
-        body: formData,
-        isMultipart: true
-      })
-
-      if (!response.ok || !result.success) {
-        showAlert("저장 실패: " + (result.errors || ["요청 처리 실패"]).join(", "))
-        return
-      }
-
-      showAlert(result.message || "저장되었습니다.")
-      this.closeModal()
-      this._refreshModalGrid()
-    } catch {
-      showAlert("저장 실패: 네트워크 오류")
-    }
+    this.appendRemovedAttachmentIds(formData, this.constructor.resourceName)
+    return formData
   }
 
   resetForm() {
-    this.formTarget.reset()
-    this.fieldIdTarget.value = ""
-    this.setRadioValue("is_top_fixed", "N")
-    this.setRadioValue("is_published", "Y")
-    this.setContentValue("")
-    this.resetAttachment()
+    this.resetFormBase({
+      hooks: [
+        () => this.setRadioValue("is_top_fixed", "N"),
+        () => this.setRadioValue("is_published", "Y"),
+        () => this.setContentValue(""),
+        this.resetAttachment
+      ]
+    })
   }
 }
 

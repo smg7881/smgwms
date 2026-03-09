@@ -20,9 +20,7 @@ export default class extends BaseGridController {
 
   connect() {
     super.connect()
-    // handleDelete는 ModalMixin에서 일반 메서드로 정의되어 있으므로 this 바인딩이 필요합니다.
-    this.handleDelete = this.handleDelete.bind(this)
-    this.connectBase({
+    this.connectModal({
       events: [
         { name: "std-client-item-code-crud:edit", handler: this.handleEdit },
         { name: "std-client-item-code-crud:delete", handler: this.handleDelete },
@@ -32,7 +30,7 @@ export default class extends BaseGridController {
   }
 
   disconnect() {
-    this.disconnectBase()
+    this.disconnectModal()
     super.disconnect()
   }
 
