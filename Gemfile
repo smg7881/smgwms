@@ -76,5 +76,5 @@ gem "tailwindcss-rails", "~> 4.2"
 gem "browser", "~> 6.2"
 
 gem "caxlsx", "~> 4.4"
-gem "caxlsx_rails", "~> 0.6.4"
+gem "caxlsx_rails", "~> 0.7.1"
 gem "roo", "~> 3.0"
